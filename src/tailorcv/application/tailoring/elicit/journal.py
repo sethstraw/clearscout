@@ -21,11 +21,12 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Written:
-    """What a confirmed write did: the file, the log, and the new identifiers."""
+    """What a confirmed write did: the file, the log, the new identifiers and parse."""
 
     master_cv: Path
     journal: Path
     entry_ids: tuple[str, ...]
+    inventory: CvInventory
 
 
 def write(
@@ -54,7 +55,10 @@ def write(
     journal_path = _log(path.parent, confirmed, added, at=at, master_cv=path)
     replace_private(path, proposed)
     return Written(
-        master_cv=path, journal=journal_path, entry_ids=tuple(entry.id for entry in added)
+        master_cv=path,
+        journal=journal_path,
+        entry_ids=tuple(entry.id for entry in added),
+        inventory=after,
     )
 
 

@@ -299,6 +299,37 @@ def test_publications_stay_capped_and_in_document_order(inventory, settings) -> 
     assert positions == sorted(positions)
 
 
+def test_the_publication_floor_keeps_the_strongest_papers_not_the_earliest(
+    inventory, settings
+) -> None:
+    """Trimming to ``min_publications`` gives up the weakest paper, wherever it sits."""
+    earlier, later = inventory.of_kind(EntryKind.PUBLICATION)[:2]
+    spec = make_spec(("r01", "Publishing", Importance.NICE_TO_HAVE))
+    evidence = EvidenceMap(
+        matches=(
+            Match(
+                requirement_id="r01",
+                entry_ids=(earlier.id,),
+                classification=Classification.TRANSFERABLE,
+                strength=Strength.WEAK,
+            ),
+            Match(
+                requirement_id="r01",
+                entry_ids=(later.id,),
+                classification=Classification.DIRECT,
+                strength=Strength.STRONG,
+            ),
+        )
+    )
+    one_floor = settings.model_copy(update={"min_publications": 1})
+    plan = build_plan(inventory, spec, evidence, one_floor, TODAY)
+
+    assert plan.scores[later.id] > plan.scores[earlier.id]
+    assert plan.publication_ids == (earlier.id, later.id)
+    assert later.id not in plan.drop_order
+    assert earlier.id in plan.drop_order
+
+
 def test_publications_are_sacrificed_before_experience_bullets(inventory, settings) -> None:
     kafka = bullet_id(inventory, "Rebuilt the ingestion tier")
     registry = bullet_id(inventory, "Designed the schema registry")

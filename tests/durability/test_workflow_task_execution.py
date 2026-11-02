@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import re
 from collections.abc import Collection
 from datetime import UTC, datetime
 from pathlib import Path
@@ -436,6 +438,76 @@ def test_discovery_writes_a_confirmed_claim_to_the_canonical_master_cv_only(
     with durable_database.session() as session:
         versions = session.scalars(select(MasterCvVersion)).all()
         assert len(versions) == 2
+
+
+@pytest.mark.parametrize(
+    ("undated", "text", "reason"),
+    [
+        (True, ANSWER, "no dated role"),
+        (False, "- led two engineers and deployed Python systems in production.", "list marker"),
+        (False, "* led two engineers and deployed Python systems in production.", "list marker"),
+    ],
+    ids=["undated-master", "dashed-claim", "starred-claim"],
+)
+def test_discovery_refuses_a_write_that_would_leave_a_non_canonical_master_cv(
+    durable_database: Database,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    undated: bool,
+    text: str,
+    reason: str,
+) -> None:
+    workspace_id, job_id, queue, worker = _evaluated_studio(durable_database, tmp_path)
+    master = tmp_path / "workspace" / "master.md"
+    if undated:
+        content = re.sub(
+            r"^[A-Z][a-z]+ \d{4} to .*$",
+            "",
+            master.read_text(encoding="utf-8"),
+            flags=re.MULTILINE,
+        ).encode("utf-8")
+        master.write_bytes(content)
+        with durable_database.session() as session:
+            version = session.scalars(select(MasterCvVersion)).one()
+            version.content_sha256 = hashlib.sha256(content).hexdigest()
+            version.byte_size = len(content)
+    master_before = master.read_bytes()
+    monkeypatch.setattr(
+        "tailorcv.application.tailoring.pipeline.import_cv",
+        lambda *args, **kwargs: pytest.fail("a discovery write must not call a provider"),
+    )
+    discovered = _answer_the_gap(workspace_id, job_id, queue, worker)
+    role_key = discovered.progress["placements"]["roles"][0]["key"]
+    canonical = tmp_path / "workspace" / "master-cv" / "CV_Master.md"
+    canonical_before = canonical.read_bytes() if canonical.exists() else None
+
+    task = queue.enqueue(
+        workspace_id=workspace_id,
+        task_type="workflow.discovery",
+        payload={
+            "job_posting_id": job_id,
+            "replies": [ANSWER],
+            "proposal": {
+                "text": text,
+                "scope": "Python systems",
+                "role_key": role_key,
+                "section": "",
+                "ambiguities": [],
+            },
+            "confirmed_points": CONFIRMED_POINTS,
+            "write_confirmed": True,
+        },
+        idempotency_key="discover-non-canonical",
+    )
+    assert worker.run_once()
+
+    refused = queue.get(str(task.id))
+    assert refused.status == "failed"
+    assert reason in (refused.error_message or "")
+    assert master.read_bytes() == master_before
+    assert (canonical.read_bytes() if canonical.exists() else None) == canonical_before
+    with durable_database.session() as session:
+        assert len(session.scalars(select(MasterCvVersion)).all()) == 1
 
 
 def test_discovery_parses_one_master_cv_across_proposal_and_write_phases(

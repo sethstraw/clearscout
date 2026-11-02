@@ -5,10 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from tailorcv.application.discovery.source_continuation.limits import MAX_AUTOMATIC_ATTEMPTS
+from tailorcv.application.discovery.source_continuation.limits import (
+    MAX_AUTOMATIC_ATTEMPTS,
+    PUBLISHER_GONE_OUTCOMES,
+)
 from tailorcv.application.discovery.source_reading import (
     ContinuationLabelSource,
     ContinuationRelation,
@@ -107,16 +110,41 @@ class ListedPostingCredit:
     reader_counts_bodies: bool = False
 
 
+_PERSON_HELD = and_(
+    SourceScanFrontierItem.status == "pending",
+    SourceScanFrontierItem.automatic_eligible.is_(False),
+    SourceScanFrontierItem.deferred_reason.in_(PUBLISHER_GONE_OUTCOMES),
+)
+
+
 def continuation_frontier_counts(session: Session, continuation_id: str) -> tuple[int, int]:
-    """Return one continuation's pending count and its pending-plus-failed count."""
+    """Return one continuation's pending count and the count that blocks certifying its scan.
+
+    Every pending or failed row blocks except a link held for a person after a gone answer.
+    """
     rows = session.execute(
-        select(SourceScanFrontierItem.status, func.count())
+        select(SourceScanFrontierItem.status, _PERSON_HELD, func.count())
         .where(SourceScanFrontierItem.continuation_id == continuation_id)
-        .group_by(SourceScanFrontierItem.status)
+        .group_by(SourceScanFrontierItem.status, _PERSON_HELD)
     )
-    counts = {str(status): int(count) for status, count in rows}
-    pending = counts.get("pending", 0)
-    return pending, pending + counts.get("failed", 0)
+    pending = blocking = 0
+    for status, held, count in rows:
+        if status == "pending":
+            pending += count
+        if status in {"pending", "failed"} and not held:
+            blocking += count
+    return pending, blocking
+
+
+def person_held_frontier_urls(session: Session, continuation_id: str) -> list[str]:
+    """Return links held after a gone answer (404 or 410); a certified scan never withdraws them."""
+    return list(
+        session.scalars(
+            select(SourceScanFrontierItem.url).where(
+                SourceScanFrontierItem.continuation_id == continuation_id, _PERSON_HELD
+            )
+        )
+    )
 
 
 def owner_source_id(session: Session, source_scan_id: str) -> str:

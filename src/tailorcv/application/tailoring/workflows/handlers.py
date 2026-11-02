@@ -17,7 +17,7 @@ from tailorcv.application.job_search.postings.rulings import (
     RequirementRulingService,
     dispute_block,
 )
-from tailorcv.application.master_cv import MasterCvService
+from tailorcv.application.master_cv import MasterCvService, canonical_problem
 from tailorcv.application.master_cv.cv import CvInventory, parse_cv
 from tailorcv.application.tailoring import elicit
 from tailorcv.application.tailoring.pipeline import StoredMasterCv
@@ -294,6 +294,11 @@ class DiscoveryHandler:
             inventory=inventory,
             at=datetime.now(UTC),
         )
+        # The write lands in a scratch copy; a non-canonical result would be standardized, a
+        # paid call, on import.
+        problem = canonical_problem(written.inventory)
+        if problem:
+            raise ValidationError(f"The master CV cannot take this discovery write: {problem}.")
         version = MasterCvService(self.service.database, self.service.storage).import_source(
             workspace_id=workspace_id,
             filename="CV_Master.md",

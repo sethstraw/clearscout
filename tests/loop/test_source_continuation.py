@@ -33,6 +33,7 @@ from tailorcv.application.discovery.source_continuation import (
     CONTINUATION_CHUNK_SIZE,
     DISCOVERED_DURING_FOLLOW_UP,
     LATEST_SCAN_FIRST,
+    MANUAL_RECOVERY_NOTE,
     MAX_AUTOMATIC_ATTEMPTS,
     MAX_NO_PROGRESS_TASKS,
     POSTING_DETAIL_COMPLETED,
@@ -8182,11 +8183,15 @@ class _DrainingBoard:
         detail: SourceDetailSummary | None = None,
         continued_detail: SourceDetailSummary | None = None,
         skip_reasons: dict[str, int] | None = None,
+        held: tuple[str, ...] = (),
+        held_reason: str = "stable_http_410",
     ) -> None:
         self.listed = listed
         self.continued = continued
         self.skip_reasons = skip_reasons or {}
         self.deferred = deferred
+        self.held = held
+        self.held_reason = held_reason
         self.read_pages = read_pages
         self.discovery_truncated = False
         self.detail = detail or SourceDetailSummary()
@@ -8206,12 +8211,24 @@ class _DrainingBoard:
         return SourceRead(
             listings=[_posting(self.listed)],
             complete=False,
-            raw_count=1 + len(self.deferred) + len(self.read_pages),
+            raw_count=1 + len(self.deferred) + len(self.held) + len(self.read_pages),
             outcome=SourceReadOutcome.CRAWL_CONTINUATION,
-            deferred_targets=tuple(_continuation(url) for url in self.deferred),
+            deferred_targets=(
+                *(_continuation(url) for url in self.deferred),
+                *(
+                    replace(
+                        _continuation(url),
+                        automatic_eligible=False,
+                        deferred_reason=self.held_reason,
+                    )
+                    for url in self.held
+                ),
+            ),
             attempted_target_urls=(self.listed, *self.read_pages),
             discovery_truncated=self.discovery_truncated,
-            exhausted_outcome=SourceReadOutcome.PUBLISHER_INDEX if self.deferred else None,
+            exhausted_outcome=(
+                SourceReadOutcome.PUBLISHER_INDEX if self.deferred or self.held else None
+            ),
             detail=self.detail,
             skip_reasons=self.skip_reasons,
         )
@@ -8836,6 +8853,131 @@ def test_a_drained_traversal_after_a_refused_board_api_withdraws_nothing(
     scan = _board_scan_row(durable_database)
     assert not scan.complete
     assert scan.status == "incomplete"
+
+
+@pytest.mark.parametrize("reason", ["stable_http_404", "stable_http_410"])
+@pytest.mark.parametrize("continued", [True, False], ids=["after-continuation", "at-record"])
+def test_a_traversal_leaving_only_person_held_links_certifies_and_keeps_their_openings(
+    durable_database: Database, continued: bool, reason: str
+) -> None:
+    workspace_id = _workspace(durable_database)
+    source_id = _source(durable_database, workspace_id, "Globex", "https://jobs.example/globex")
+    state_target_titles(durable_database, workspace_id, "Data Platform Lead")
+    listed = "https://jobs.example/globex/listed"
+    continued_url = "https://jobs.example/globex/continued"
+    held = "https://jobs.example/globex/held"
+    gone = "https://jobs.example/globex/gone"
+    _stage_known_rows(durable_database, workspace_id, source_id, (listed, held, gone))
+
+    worker = _enqueue_scan(
+        durable_database,
+        workspace_id,
+        _DrainingBoard(
+            listed,
+            continued_url,
+            (continued_url,) if continued else (),
+            held=(held,),
+            held_reason=reason,
+        ),
+    )
+    for _ in range(6):
+        if not worker.run_once():
+            break
+
+    scan = _board_scan_row(durable_database)
+    assert scan.complete is True
+    assert MANUAL_RECOVERY_NOTE not in scan.notes
+    assert _withdrawn_urls(durable_database) == {gone}
+    with durable_database.session() as session:
+        row = session.scalars(
+            select(SourceScanFrontierItem).where(SourceScanFrontierItem.url == held)
+        ).one()
+        assert (row.status, row.automatic_eligible) == ("pending", False)
+
+
+@pytest.mark.parametrize(
+    "reason",
+    ["stable_http_401", "stable_http_403", "policy_refused", "invalid_publisher_response"],
+)
+@pytest.mark.parametrize("continued", [True, False], ids=["after-continuation", "at-record"])
+def test_a_collection_link_held_unread_keeps_the_scan_open_and_its_postings_staged(
+    durable_database: Database, continued: bool, reason: str
+) -> None:
+    workspace_id = _workspace(durable_database)
+    source_id = _source(durable_database, workspace_id, "Globex", "https://jobs.example/globex")
+    state_target_titles(durable_database, workspace_id, "Data Platform Lead")
+    listed = "https://jobs.example/globex/listed"
+    continued_url = "https://jobs.example/globex/continued"
+    collection = "https://jobs.example/globex/jobs/pharmacy"
+    child = "https://jobs.example/globex/jobs/pharmacy/clinical-pharmacist"
+    _stage_known_rows(durable_database, workspace_id, source_id, (listed, child))
+
+    for _scan in range(2):
+        worker = _enqueue_scan(
+            durable_database,
+            workspace_id,
+            _DrainingBoard(
+                listed,
+                continued_url,
+                (continued_url,) if continued else (),
+                held=(collection,),
+                held_reason=reason,
+            ),
+        )
+        for _ in range(6):
+            if not worker.run_once():
+                break
+
+        assert _withdrawn_urls(durable_database) == set()
+    with durable_database.session() as session:
+        scans = session.scalars(select(SourceScan)).all()
+    assert scans and not any(scan.complete for scan in scans)
+
+
+class _FailingContinuationBoard(_DrainingBoard):
+    """Defer one automatic link whose every continuation read fails."""
+
+    def continue_listings(
+        self,
+        _employer: str,
+        targets: tuple[SourceContinuationTarget, ...],
+        *,
+        root_url: str = "",
+        handoff_scopes: tuple[tuple[str, str, str], ...] = (),
+        employer_is_authoritative: bool = False,
+        options: object = None,
+    ) -> SourceRead:
+        self.continue_calls += 1
+        raise RuntimeError("synthetic publisher outage")
+
+
+def test_a_failed_link_a_retry_can_resolve_still_blocks_certification(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    source_id = _source(durable_database, workspace_id, "Globex", "https://jobs.example/globex")
+    state_target_titles(durable_database, workspace_id, "Data Platform Lead")
+    listed = "https://jobs.example/globex/listed"
+    failing = "https://jobs.example/globex/failing"
+    held = "https://jobs.example/globex/held"
+    gone = "https://jobs.example/globex/gone"
+    _stage_known_rows(durable_database, workspace_id, source_id, (listed, gone))
+
+    board = _FailingContinuationBoard(listed, failing, (failing,), held=(held,))
+    worker = _enqueue_scan(durable_database, workspace_id, board)
+    for _ in range(12):
+        if not worker.run_once():
+            break
+
+    assert board.continue_calls == MAX_AUTOMATIC_ATTEMPTS
+    with durable_database.session() as session:
+        statuses = {row.url: row.status for row in session.scalars(select(SourceScanFrontierItem))}
+    assert (statuses[failing], statuses[held]) == ("failed", "pending")
+    scan = _board_scan_row(durable_database)
+    assert not scan.complete
+    assert scan.status == "incomplete"
+    assert MANUAL_RECOVERY_NOTE in scan.notes
+    assert _withdrawn_urls(durable_database) == set()
 
 
 def test_a_drained_listed_traversal_keeps_a_posting_robots_disallows(

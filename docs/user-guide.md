@@ -407,6 +407,12 @@ later lists the same posting, and that board's complete read marks it withdrawn
 once the board stops listing it. Adding the link of a posting a board already
 staged does not make it yours.
 
+An aggregator read, such as Himalayas or Arbeitnow, takes only a fixed number
+of the site's newest listings, so it is never complete and a scan never marks
+its rows withdrawn. A staged aggregator row whose job has expired stays in the
+queue until you dismiss it, or until **Refresh posting** reads the posting as
+closed.
+
 The Dismissed panel offers **Restore and keep**. A marked posting that closes
 at its source remains visible as no longer listed, but does not count as ready
 for review.

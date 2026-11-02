@@ -30,7 +30,11 @@ from tailorcv.application.discovery.source_continuation.publisher import (
     publisher_listing_coverage,
     retain_publisher_search_read,
 )
-from tailorcv.application.discovery.source_continuation.targets import completed_frontier_urls
+from tailorcv.application.discovery.source_continuation.targets import (
+    completed_frontier_urls,
+    continuation_frontier_counts,
+    person_held_frontier_urls,
+)
 from tailorcv.application.discovery.source_lifecycle import source_read_address
 from tailorcv.application.discovery.source_reading import SourceDetailCoverage, SourceRead
 from tailorcv.application.failures import ConflictError
@@ -218,7 +222,6 @@ def retain_paged_listing_counts(
 def settle_drained_continuation(
     session: Session,
     continuation: SourceScanContinuation,
-    counts: dict[str, int],
     correlation_id: str,
     *,
     check_absent: AbsenceCheck | None = None,
@@ -227,7 +230,7 @@ def settle_drained_continuation(
     scan = session.get(SourceScan, continuation.source_scan_id)
     if scan is None:
         return
-    unresolved = counts["pending"] + counts["failed"]
+    _pending, unresolved = continuation_frontier_counts(session, continuation.id)
     listing_coverage = (
         (
             alignerr_listing_coverage(session, continuation, scan)
@@ -253,13 +256,16 @@ def settle_drained_continuation(
         session,
         continuation.workspace_id,
         scan.source_id,
-        (
-            listing_coverage.posting_urls
-            if listing_coverage is not None
-            else SourceDetailCoverage.from_json(scan.detail_coverage).posting_urls
-            if scan.detail_coverage is not None
-            else _traversal_read_urls(session, scan.id, continuation.id)
-        ),
+        [
+            *(
+                listing_coverage.posting_urls
+                if listing_coverage is not None
+                else SourceDetailCoverage.from_json(scan.detail_coverage).posting_urls
+                if scan.detail_coverage is not None
+                else _traversal_read_urls(session, scan.id, continuation.id)
+            ),
+            *person_held_frontier_urls(session, continuation.id),
+        ],
         scan.scanned_on,
         correlation_id=correlation_id,
         read=WithdrawingRead(

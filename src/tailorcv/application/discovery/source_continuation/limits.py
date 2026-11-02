@@ -22,6 +22,11 @@ DISCOVERED_DURING_FOLLOW_UP = "discovered_during_follow_up"
 CARRIED_ORIGIN = "source.scan.carry_forward"
 
 
+# A publisher link that answered gone is held for a person; it neither blocks certification
+# nor is withdrawn by one. A refused or unreadable link still blocks, since it was never read.
+PUBLISHER_GONE_OUTCOMES = frozenset({"stable_http_404", "stable_http_410"})
+
+
 HELD_UNTIL_REEMITTED = frozenset(
     {"posting_identity_not_established", "shape_probe_pending", "low_priority_navigation"}
 )

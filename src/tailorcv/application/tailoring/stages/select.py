@@ -866,14 +866,15 @@ def _drop_order(
     page passes the cap only where nothing within it could use the room. They
     leave from the role holding the most, weakest first, which undoes top-up's
     deepening a level at a time. Everything else expendable follows, weakest
-    first. The floors keep shape: the configured minimum of publications
-    survives, and no role loses its last couple of bullets. The only answer to a
+    first. The floors keep shape: the strongest papers up to the configured
+    minimum survive, and no role loses its last couple of bullets. The only answer to a
     must-have is never listed.
     """
     selected = tuple(entry_id for ids in role_bullets.values() for entry_id in ids)
     protected = _sole_answers((*selected, *publications, *education), requirements_for, must_haves)
     over_cap: dict[str, list[str]] = {}
-    within: list[str] = list(publications[settings.min_publications :])
+    ranked_publications = sorted(publications, key=lambda entry_id: -scores.get(entry_id, 0.0))
+    within: list[str] = ranked_publications[settings.min_publications :]
     floor = settings.min_bullets_per_role
     cap = max(settings.max_bullets_per_role, floor)
     for role in recent:

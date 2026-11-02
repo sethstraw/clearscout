@@ -36,6 +36,7 @@ from tailorcv.application.discovery.source_continuation.publisher import (
 from tailorcv.application.discovery.source_continuation.targets import (
     ListedPostingCredit,
     completed_frontier_urls,
+    person_held_frontier_urls,
 )
 from tailorcv.application.discovery.source_lifecycle import source_read_address
 from tailorcv.application.discovery.source_reading import (
@@ -510,14 +511,27 @@ class ScanRecorder:
                 session,
                 source.workspace_id,
                 source.id,
-                listing_coverage.posting_urls
-                if listing_coverage is not None
-                else SourceDetailCoverage.from_json(row.detail_coverage).posting_urls
-                if row.detail_coverage is not None
-                else [
-                    *read_context.listing_urls,
-                    *read_context.attempted_target_urls,
-                    *(completed_frontier_urls(session, continuation_id) if continuation_id else ()),
+                [
+                    *(
+                        listing_coverage.posting_urls
+                        if listing_coverage is not None
+                        else SourceDetailCoverage.from_json(row.detail_coverage).posting_urls
+                        if row.detail_coverage is not None
+                        else [
+                            *read_context.listing_urls,
+                            *read_context.attempted_target_urls,
+                            *(
+                                completed_frontier_urls(session, continuation_id)
+                                if continuation_id
+                                else ()
+                            ),
+                        ]
+                    ),
+                    *(
+                        person_held_frontier_urls(session, continuation_id)
+                        if continuation_id
+                        else ()
+                    ),
                 ],
                 today,
                 correlation_id=correlation_id,

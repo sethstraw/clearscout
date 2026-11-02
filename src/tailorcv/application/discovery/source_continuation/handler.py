@@ -794,7 +794,6 @@ class SourceContinuationHandler:
                 settle_drained_continuation(
                     session,
                     continuation,
-                    counts,
                     record.correlation_id,
                     check_absent=queue_absence_checks(
                         self.sweep.batch_commands, continuation.workspace_id, record.correlation_id
