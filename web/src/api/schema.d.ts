@@ -4778,6 +4778,11 @@ export interface components {
             database_exists: boolean;
             /** Database Reachable */
             database_reachable: boolean;
+            /**
+             * Free Mode
+             * @description True while the configured provider has no API key; paid actions are refused.
+             */
+            free_mode: boolean;
             /** Head Revision */
             head_revision: string | null;
             /** Schema Current */
@@ -6790,6 +6795,24 @@ export interface components {
             unavailable_reason?: string | null;
             /** Unchanged */
             unchanged?: string[];
+        };
+        /**
+         * Problem
+         * @description RFC 9457-style safe error body without internal trace data.
+         */
+        Problem: {
+            /** Correlation Id */
+            correlation_id: string;
+            /** Detail */
+            detail: string;
+            /** Hint */
+            hint?: string | null;
+            /** Status */
+            status: number;
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
         };
         /**
          * PromptDetailResponse
@@ -10669,6 +10692,15 @@ export interface operations {
                     "application/json": components["schemas"]["TaskResponse"];
                 };
             };
+            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -11662,6 +11694,15 @@ export interface operations {
                     "application/json": components["schemas"]["TaskResponse"];
                 };
             };
+            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -11880,6 +11921,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
             /** @description Validation Error */
@@ -12564,6 +12614,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MasterCvImportResponse"];
+                };
+            };
+            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
             /** @description Validation Error */

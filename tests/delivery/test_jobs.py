@@ -23,12 +23,14 @@ from tailorcv.infrastructure.persistence.models import (
     Workspace,
 )
 from tests.support.artifacts import runtime_storage
+from tests.support.doubles import MemoryStore
 from tests.support.scenarios import (
     evaluation_commit,
     pending_posting_content,
     seed_pending_discovery,
     workspace_with_committed_evaluation,
 )
+from tests.support.suite import SUITE_PROVIDER
 
 
 def test_pending_discovery_can_be_tracked_and_applied_without_evaluation(
@@ -413,7 +415,11 @@ def test_reevaluate_endpoint_enqueues_discovery_evaluate_for_the_posting(
     finally:
         database.dispose()
     with TestClient(
-        create_app(durable_database_url, tmp_path / "artifacts"),
+        create_app(
+            durable_database_url,
+            tmp_path / "artifacts",
+            key_store=MemoryStore({SUITE_PROVIDER: "test-key-not-real"}),
+        ),
         base_url="http://localhost",
     ) as client:
         workspace_id = client.post(

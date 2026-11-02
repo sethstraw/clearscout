@@ -12,6 +12,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { useWorkspace } from "../../providers";
 import { DecidedWithoutOutcome } from "./DecidedWithoutOutcome";
+import { FirstRunChecklist } from "./FirstRunChecklist";
 
 function JobList({
   title,
@@ -100,7 +101,7 @@ export function CommandCenterPage() {
   const { workspaceId } = useWorkspace();
   const summary = useWorkspaceSummary(workspaceId);
   const tasks = useTasks(workspaceId);
-  if (summary.isLoading) return <LoadingState label="Building your command center" />;
+  if (summary.isLoading) return <LoadingState label="Opening Home" />;
   if (summary.isError) return <ErrorState error={summary.error} />;
   const activeTasks = (tasks.data ?? []).filter((task) =>
     ["queued", "running", "needs_review", "committing"].includes(task.status),
@@ -115,17 +116,18 @@ export function CommandCenterPage() {
   return (
     <Page
       eyebrow="Today"
-      title="Command Center"
-      description="The important work, separated from the noise."
+      title="Home"
+      description="What needs you today."
       action={
         <Link
           className="button button--primary"
-          to={actionableApplications > 0 ? "/applications" : "/jobs"}
+          to={actionableApplications > 0 ? "/apply" : "/jobs"}
         >
           {actionableApplications > 0 ? "Review applications" : "Explore jobs"}
         </Link>
       }
     >
+      <FirstRunChecklist workspaceId={workspaceId} />
       <DecidedWithoutOutcome
         count={summary.data?.decided_without_outcome_count ?? 0}
         jobs={summary.data?.decided_without_outcome ?? []}

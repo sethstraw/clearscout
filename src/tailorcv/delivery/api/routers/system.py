@@ -6,12 +6,15 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from tailorcv import __version__
+from tailorcv.application.failures import UnavailableError
 from tailorcv.application.tasks import TaskQueueService
 from tailorcv.delivery.api.constants import API_PREFIX
 from tailorcv.delivery.api.dependencies import (
+    ApiState,
     ApiStateDep,
     api_state,
     database_for,
+    paid_work_ready,
     schema_state,
 )
 from tailorcv.delivery.api.models.system import HealthResponse
@@ -62,4 +65,13 @@ def health(state: ApiStateDep) -> HealthResponse:
         current_revision=schema.current_revision if schema is not None else None,
         head_revision=schema.head_revision if schema is not None else None,
         worker_available=worker_available,
+        free_mode=free_mode(state),
     )
+
+
+def free_mode(state: ApiState) -> bool:
+    """Report free mode, treating unreadable settings as no paid work possible."""
+    try:
+        return not paid_work_ready(state)
+    except UnavailableError:
+        return True

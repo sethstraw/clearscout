@@ -13,6 +13,7 @@ import { Level } from "./Level";
 import { OpportunityThesis } from "./OpportunityThesis";
 import { Pay } from "./Pay";
 import { Places } from "./Places";
+import { TargetTitles } from "./TargetTitles";
 import { Working } from "./Working";
 import { useSearchParameterSave, type ConflictRecovery } from "./useSearchParameterSave";
 
@@ -776,6 +777,23 @@ export function SearchParameterSetup({
       </section>
 
       {recoveryPanel}
+      <section aria-labelledby="target-titles-heading" className="panel">
+        <header>
+          <div>
+            <h2 id="target-titles-heading">Target titles</h2>
+            <p>Board scans look for these titles.</p>
+          </div>
+        </header>
+        <div className="panel-body">
+          <TargetTitles
+            lanes={options.data?.lanes ?? []}
+            onChange={(values) =>
+              patch({ seniority: { ...draft.seniority, target_titles: values } })
+            }
+            values={draft.seniority.target_titles ?? []}
+          />
+        </div>
+      </section>
       <datalist id="country-list">
         {COUNTRIES.map((country) => (
           <option key={country} value={country} />
@@ -826,6 +844,7 @@ export function SearchParameterSetup({
           lanes={options.data?.lanes ?? []}
           levels={options.data?.levels ?? []}
           patch={patch}
+          targetTitles={false}
         />
         <Focus caps={options.data.caps} draft={draft} patch={patch} />
       </details>

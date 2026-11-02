@@ -118,3 +118,19 @@
 	border-radius: 0.25rem;
 	padding: 0.1rem 0.25rem;
 }
+
+/* Driver.js CSS loads with the tour, after this file, so the doubled class wins. */
+.driver-popover.driver-popover {
+	background: var(--surface);
+	color: var(--ink);
+	font-family: inherit;
+}
+
+.driver-popover.driver-popover .driver-popover-title {
+	font-size: var(--text-md);
+}
+
+.driver-popover.driver-popover .driver-popover-description {
+	color: var(--ink-soft);
+	font-size: var(--text-sm);
+}

@@ -366,6 +366,24 @@ describe("SearchParameterSetup", () => {
       "Places and residence",
     );
   });
+  it("shows target titles up front, outside every folded section", async () => {
+    server.use(...settingsHandlers({ parameters: STORED }));
+
+    render(
+      <MemoryRouter>
+        <AppProviders>
+          <SearchParameterSetup workspaceId={WORKSPACE_ID} />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+
+    const panel = await screen.findByRole("region", { name: "Target titles" });
+    const inputs = screen.getAllByRole("textbox", { name: "Target titles" });
+    expect(inputs).toHaveLength(1);
+    expect(panel.contains(inputs[0]!)).toBe(true);
+    expect(panel.closest("details")).toBeNull();
+  });
+
   it("saves the place marked as home as the person's residence", async () => {
     const saves = requestLog();
     server.use(

@@ -17,6 +17,13 @@ class ConflictError(ApplicationError):
     """A write conflicts with immutable history or an idempotency key."""
 
 
+FREE_MODE_REASON = "No provider API key is set, so paid actions are off."
+
+
+class FreeModeError(ConflictError):
+    """Paid work was requested while the configured provider has no API key."""
+
+
 class ValidationError(ApplicationError):
     """A request violates a domain rule after structural validation."""
 

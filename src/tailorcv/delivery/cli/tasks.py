@@ -33,8 +33,10 @@ def tailor(
     data_root: DataRootOption = None,
 ) -> None:
     """Queue the paid tailoring workflow that the API and worker share."""
+    from tailorcv.application.config import load_settings
     from tailorcv.application.tasks import TaskQueueService, validate_task_payload
     from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
+    from tailorcv.infrastructure.providers.credentials import find
 
     with _reporting_errors():
         payload = validate_task_payload(
@@ -47,7 +49,10 @@ def tailor(
         )
         storage = RuntimeStorage.resolve(database_url, data_root=data_root)
         with open_database(storage.database_url) as database:
-            task = TaskQueueService(database).enqueue(
+            queue = TaskQueueService(
+                database, paid_work_ready=lambda: find(load_settings().provider) is not None
+            )
+            task = queue.enqueue(
                 workspace_id=workspace_id,
                 task_type="workflow.tailor",
                 payload=payload,

@@ -1,6 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
+import { MemoryRouter } from "react-router-dom";
+
+import type { Health } from "../api/client/types";
 
 import { AppProviders } from "../providers";
 import { PaidAction } from "./PaidAction";
@@ -133,4 +136,80 @@ it("continues a retry under the original authorization", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Continue task" }));
 
   await vi.waitFor(() => expect(onContinue).toHaveBeenCalledOnce());
+});
+
+function healthInFreeMode(freeMode: boolean) {
+  let providerReads = 0;
+  server.use(
+    http.get("*/api/v1/health", () =>
+      HttpResponse.json({
+        status: "ok",
+        version: "0.1.0",
+        database_reachable: true,
+        schema_current: true,
+        current_revision: "0001",
+        head_revision: "0001",
+        database_exists: true,
+        worker_available: true,
+        free_mode: freeMode,
+      } satisfies Health),
+    ),
+    http.get("*/api/v1/providers", () => {
+      providerReads++;
+      return HttpResponse.json([]);
+    }),
+  );
+  return () => providerReads;
+}
+
+function renderSearchAction(onAct = vi.fn()) {
+  render(
+    <AppProviders>
+      <MemoryRouter>
+        <PaidAction
+          label="Search the web"
+          taskType="search.guided_campaign"
+          onAct={onAct}
+          costs={costs}
+          confirmation={{
+            title: "Run search?",
+            description: "Paid search",
+            confirmLabel: "Approve search",
+          }}
+        />
+      </MemoryRouter>
+    </AppProviders>,
+  );
+  return onAct;
+}
+
+it("puts the Paid mark and the estimate on the button and in its description", async () => {
+  const providerReads = healthInFreeMode(false);
+  renderSearchAction();
+  const button = screen.getByRole<HTMLButtonElement>("button", { name: "Search the web" });
+  expect(within(button).getByText("Paid")).toBeTruthy();
+  expect(within(button).getByText(/about \$0\.25 per attempt/)).toBeTruthy();
+  const description = (button.getAttribute("aria-describedby") ?? "")
+    .split(" ")
+    .map((id) => document.getElementById(id)?.textContent ?? "")
+    .join(" ");
+  expect(description).toBe("Paid about $0.25 per attempt");
+  await vi.waitFor(() => expect(button.disabled).toBe(false));
+  expect(screen.queryByText("Spends money")).toBeNull();
+  expect(providerReads()).toBe(0);
+});
+
+it("disables paid work in free mode and links to the provider settings", async () => {
+  const providerReads = healthInFreeMode(true);
+  const onAct = renderSearchAction();
+  expect(await screen.findByText("Add a provider key to use paid actions.")).toBeTruthy();
+  const button = screen.getByRole<HTMLButtonElement>("button", { name: "Search the web" });
+  expect(button.disabled).toBe(true);
+  expect(within(button).getByText("Paid")).toBeTruthy();
+  const link = screen.getByRole("link", { name: "Open provider settings" });
+  expect(link.getAttribute("href")).toBe("/settings?tab=provider");
+  fireEvent.click(button);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(onAct).not.toHaveBeenCalled();
+  expect(providerReads()).toBe(0);
 });

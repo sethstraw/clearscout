@@ -31,6 +31,7 @@ from tailorcv.delivery.api.dependencies import (
     MasterCvServiceDep,
     bounded_body,
 )
+from tailorcv.delivery.api.models.base import FREE_MODE_RESPONSES
 from tailorcv.delivery.api.models.workspaces import MasterCvEdit
 
 router = APIRouter()
@@ -40,6 +41,7 @@ router = APIRouter()
     f"{API_PREFIX}/workspaces/{{workspace_id}}/master-cv/import",
     response_model=MasterCvImportResponse,
     status_code=201,
+    responses=FREE_MODE_RESPONSES,
     tags=["workspaces"],
     openapi_extra={
         "requestBody": {

@@ -4,9 +4,67 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
+from tailorcv.application.config import Settings
 from tailorcv.bootstrap.api import create_app
+from tests.support.doubles import MemoryStore
+from tests.support.suite import SUITE_PROVIDER
+
+
+def _keyless_client(durable_database_url: str, tmp_path: Path) -> TestClient:
+    return TestClient(
+        create_app(
+            durable_database_url,
+            tmp_path / "artifacts",
+            key_store=MemoryStore(),
+            settings=Settings(provider=SUITE_PROVIDER),
+        ),
+        base_url="http://localhost",
+    )
+
+
+def test_an_import_that_needs_the_model_is_refused_as_free_mode_without_a_key(
+    durable_database_url: str, tmp_path: Path
+) -> None:
+    with _keyless_client(durable_database_url, tmp_path) as client:
+        workspace_id = client.post(
+            "/api/v1/workspaces", json={"slug": "keyless", "name": "Keyless"}
+        ).json()["id"]
+        refused = client.post(
+            f"/api/v1/workspaces/{workspace_id}/master-cv/import",
+            params={"filename": "notes.txt"},
+            content=b"Jane Example. Builds data platforms. No dated roles here.",
+            headers={"Content-Type": "text/plain"},
+        )
+        versions = client.get(f"/api/v1/workspaces/{workspace_id}/master-cv/versions").json()
+        documented = client.get("/api/v1/openapi.json").json()
+
+    assert refused.status_code == 409
+    assert refused.json()["type"] == "urn:tailorcv:problem:free-mode"
+    assert versions == []
+    route = documented["paths"]["/api/v1/workspaces/{workspace_id}/master-cv/import"]
+    assert "409" in route["post"]["responses"]
+
+
+@pytest.mark.parametrize("filename", ["My CV.md", "My CV.txt"])
+def test_a_canonical_cv_is_adopted_without_a_provider_key(
+    durable_database_url: str, tmp_path: Path, master_cv: Path, filename: str
+) -> None:
+    with _keyless_client(durable_database_url, tmp_path) as client:
+        workspace_id = client.post(
+            "/api/v1/workspaces", json={"slug": "keyless", "name": "Keyless"}
+        ).json()["id"]
+        imported = client.post(
+            f"/api/v1/workspaces/{workspace_id}/master-cv/import",
+            params={"filename": filename},
+            content=master_cv.read_bytes(),
+            headers={"Content-Type": "text/plain"},
+        )
+
+    assert imported.status_code == 201
+    assert imported.json()["method"] == "adopted"
 
 
 def test_workspace_onboarding_uploads_and_versions_a_master_cv(

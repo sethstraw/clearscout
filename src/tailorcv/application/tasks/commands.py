@@ -11,7 +11,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from tailorcv.application.failures import (
+    FREE_MODE_REASON,
     ConflictError,
+    FreeModeError,
     NotFoundError,
     UnavailableError,
     ValidationError,
@@ -24,6 +26,7 @@ from tailorcv.application.tasks.records import (
     task_pending_discovery_ids,
     task_response,
 )
+from tailorcv.application.tasks.registry import task_is_paid
 from tailorcv.application.workspaces.parameters import parameters_in
 from tailorcv.domain import TASK_TYPES, TaskStatus, new_id, utc_now
 from tailorcv.infrastructure.persistence.database import Database
@@ -96,11 +99,16 @@ class TaskCommands:
         events: TaskEventLog,
         *,
         reader_alive: Callable[[int, str], bool | None] | None = None,
+        paid_work_ready: Callable[[], bool] | None = None,
     ) -> None:
-        """Use the supplied transaction boundary and event writer."""
+        """Use the supplied transaction boundary and event writer.
+
+        With ``paid_work_ready`` set, a paid task type is refused while it answers False.
+        """
         self.database = database
         self.events = events
         self.reader_alive = reader_alive
+        self.paid_work_ready = paid_work_ready
 
     def enqueue(
         self,
@@ -114,6 +122,7 @@ class TaskCommands:
         correlation_id: str | None = None,
     ) -> TaskResponse:
         """Create one queued task or replay the identical existing request."""
+        self._refuse_paid_work_without_key(task_type)
         with self.database.exclusive_session() as session:
             return self.enqueue_in_session(
                 session,
@@ -125,6 +134,15 @@ class TaskCommands:
                 origin=origin,
                 correlation_id=correlation_id,
             )
+
+    def _refuse_paid_work_without_key(self, task_type: str) -> None:
+        # Runs before any session opens, so the key lookup never holds the write lock.
+        if (
+            self.paid_work_ready is not None
+            and task_is_paid(task_type.strip())
+            and not self.paid_work_ready()
+        ):
+            raise FreeModeError(FREE_MODE_REASON)
 
     def enqueue_in_session(
         self,

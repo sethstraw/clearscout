@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   GuidedCampaignPreview,
-  PostingRefusal,
   RunCostHistory,
   SearchParameterOptions,
   SourceList,
@@ -18,7 +17,9 @@ import {
   pendingDiscoveryPage,
 } from "../features/job-search/pendingDiscoveryFixtures";
 import {
+  boardSource,
   screenedOutTitlePage,
+  sourceList,
   sourceScan,
   sourceScanHistory,
   sourceScanOutcomePage,
@@ -73,12 +74,11 @@ interface FindPageReads extends PendingQueueReads {
   onOutcomeRequest?: (url: URL) => void;
   scans?: SourceScanHistory;
   sources?: SourceList;
-  refusals?: PostingRefusal[];
   costHistory?: RunCostHistory[];
   onEnqueue?: (body: Record<string, unknown>) => Promise<void> | void;
 }
 
-/** Every read the four Find tabs make, on top of the shared pending-queue set. */
+/** Every read the three Find tabs make, on top of the shared pending-queue set. */
 function findPageHandlers(reads: FindPageReads = {}): HttpHandler[] {
   return [
     evaluationPreflightHandler(),
@@ -97,7 +97,6 @@ function findPageHandlers(reads: FindPageReads = {}): HttpHandler[] {
         unavailable_source_ids: [],
       }),
     ),
-    http.get(`${WORKSPACE}/posting-refusals`, () => HttpResponse.json(reads.refusals ?? [])),
     http.get(`${WORKSPACE}/screened-out-titles`, () => HttpResponse.json(screenedOutTitlePage([]))),
     http.get(`${WORKSPACE}/refusal-pattern-proposals`, () => HttpResponse.json([])),
     http.get(`${WORKSPACE}/guided-campaign-configuration`, () =>
@@ -213,7 +212,7 @@ describe("JobSearchPage", () => {
     window.history.replaceState(
       {},
       "",
-      "/find?tab=refusals&scan=task-1&source=Missing%20%26%20Board&keep=unchanged",
+      "/find?tab=boards&scan=task-1&source=Missing%20%26%20Board&keep=unchanged",
     );
     const mount = () =>
       render(
@@ -241,7 +240,7 @@ describe("JobSearchPage", () => {
     await waitFor(() =>
       expect(new URLSearchParams(window.location.search).has("source")).toBe(false),
     );
-    expect(new URLSearchParams(window.location.search).get("tab")).toBe("refusals");
+    expect(new URLSearchParams(window.location.search).get("tab")).toBe("boards");
     expect(new URLSearchParams(window.location.search).get("scan")).toBe("task-1");
     expect(new URLSearchParams(window.location.search).get("keep")).toBe("unchanged");
     view.unmount();
@@ -253,16 +252,12 @@ describe("JobSearchPage", () => {
   it("keeps recurring search actions separate from setup", async () => {
     window.localStorage.setItem("tailorcv.workspace", "workspace-search");
     useFindPage({
-      sources: {
-        items: [
-          {
-            id: "source-1",
-            name: "Example Cooperative",
-            enabled: true,
-            terms: { condition: "Published synthetic fixture." },
-          },
-        ],
-      } as SourceList,
+      sources: sourceList([
+        boardSource({
+          name: "Example Cooperative",
+          terms: { condition: "Published synthetic fixture.", url: "" },
+        }),
+      ]),
     });
 
     render(
@@ -278,13 +273,13 @@ describe("JobSearchPage", () => {
     expect(
       screen.getByRole("link", { name: "Review search preferences" }).getAttribute("href"),
     ).toBe("/settings?tab=search");
-    expect(screen.getByRole("tab", { name: "Review found jobs", selected: true })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Review", selected: true })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Pending discoveries" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "Your application path" })).toBeTruthy();
     for (const name of ["My background", "My search", "My shortlist", "My application"]) {
       expect(screen.getByRole("link", { name })).toBeTruthy();
     }
-    fireEvent.click(screen.getByRole("tab", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
     await waitFor(() =>
       expect(
         screen.getByRole<HTMLButtonElement>("button", { name: "Scan for openings" }).disabled,
@@ -303,7 +298,7 @@ describe("JobSearchPage", () => {
     try {
       render(
         <AppProviders>
-          <MemoryRouter initialEntries={["/find?tab=campaign"]}>
+          <MemoryRouter initialEntries={["/find?tab=web"]}>
             <JobSearchPage />
           </MemoryRouter>
         </AppProviders>,
@@ -316,37 +311,9 @@ describe("JobSearchPage", () => {
     }
   });
 
-  it("shows postings refused before evaluation", async () => {
+  it("keeps board sources and scan history together under Boards", async () => {
     window.localStorage.setItem("tailorcv.workspace", "workspace-search");
     useFindPage({
-      refusals: [
-        {
-          id: "refusal-1",
-          job_posting_id: "job-1",
-          pending_discovery_id: null,
-          posting_url: "https://boards.example.test/jobs/1",
-          employer: "Example",
-          title: "Restricted role",
-          condition: "Work authorization",
-          reason: "The posting requires an authorization the workspace does not state.",
-          refused_at: "2026-08-13T12:00:00Z",
-          search_parameter_set_id: "parameters-7",
-          search_parameter_version: 7,
-        },
-        {
-          id: "refusal-2",
-          job_posting_id: null,
-          pending_discovery_id: null,
-          posting_url: null,
-          employer: "Example",
-          title: "Unversioned role",
-          condition: "Location",
-          reason: "The posting is outside every saved place.",
-          refused_at: "2026-08-12T12:00:00Z",
-          search_parameter_set_id: null,
-          search_parameter_version: null,
-        },
-      ],
       scans: sourceScanHistory([
         sourceScan({
           id: "scan-1",
@@ -374,28 +341,15 @@ describe("JobSearchPage", () => {
       </AppProviders>,
     );
 
-    fireEvent.click(await screen.findByRole("tab", { name: "Screened out" }));
-    expect(await screen.findByText("Refusal history")).toBeTruthy();
-    expect(
-      screen.getByText(/past refusal decisions, not the posting's current status/),
-    ).toBeTruthy();
-    expect(
-      screen.getByRole("link", { name: "Restricted role at Example" }).getAttribute("href"),
-    ).toBe("https://boards.example.test/jobs/1");
-    expect(screen.queryByRole("link", { name: "Unversioned role at Example" })).toBeNull();
-    expect(screen.getByText("Work authorization")).toBeTruthy();
-    expect(screen.getByText("v7")).toBeTruthy();
-    expect(screen.getByText("No saved version")).toBeTruthy();
-    expect(
-      screen.getByText("The posting requires an authorization the workspace does not state."),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "Scan for openings" }));
+    expect(screen.queryByRole("tab", { name: "Screened out" })).toBeNull();
+    fireEvent.click(await screen.findByRole("tab", { name: "Boards" }));
+    expect(await screen.findByText("Board sources")).toBeTruthy();
     expect(await screen.findByText("Board scan history")).toBeTruthy();
     expect(screen.getByText("Example careers")).toBeTruthy();
     expect(screen.getByText(/10 listed \/ 9 read \/ 8 kept \/ 2 new/)).toBeTruthy();
   });
 
-  it("shows the screened-out summary on the Screened out tab and scrolls a deep-linked ledger into view", async () => {
+  it("shows the screened-out summary on the Boards tab and scrolls a deep-linked ledger into view", async () => {
     window.localStorage.setItem("tailorcv.workspace", "workspace-search");
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
@@ -413,7 +367,7 @@ describe("JobSearchPage", () => {
         limit: 250,
       },
     });
-    window.history.replaceState({}, "", "/find?tab=refusals&scan=task-1#screened-candidates");
+    window.history.replaceState({}, "", "/find?tab=boards&scan=task-1#screened-candidates");
 
     render(
       <AppProviders>
@@ -429,7 +383,7 @@ describe("JobSearchPage", () => {
     expect(await screen.findByRole("heading", { name: "Screened candidates" })).toBeTruthy();
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByRole("tab", { name: "Review found jobs" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Review" }));
     expect(screen.queryByText(/Screened out in latest scans/)).toBeNull();
   });
 
@@ -526,7 +480,9 @@ describe("JobSearchPage", () => {
     expect(runButton.disabled).toBe(false);
     expect(runButton.className).toContain("button--paid");
     const described = runButton.getAttribute("aria-describedby") ?? "";
-    expect(document.getElementById(described)?.textContent).toBe("Past runs: about $1.32 total");
+    expect(document.getElementById(described)?.textContent).toContain(
+      "Past runs: about $1.32 total",
+    );
     fireEvent.click(runButton);
     expect(
       within(await screen.findByRole("dialog")).getByText(

@@ -15,8 +15,10 @@ export function Level({
   lanes,
   levels,
   patch,
+  targetTitles = true,
 }: SectionProps & {
   basic?: boolean;
+  targetTitles?: boolean;
   employmentTypes: string[];
   lanes: string[];
   levels: string[];
@@ -93,12 +95,16 @@ export function Level({
           </select>
           <small className="field-note">Nobody knows every name their own job goes by.</small>
         </label>
-        <TargetTitles
-          basic={basic}
-          lanes={lanes}
-          onChange={(values) => patch({ seniority: { ...draft.seniority, target_titles: values } })}
-          values={draft.seniority.target_titles ?? []}
-        />
+        {targetTitles && (
+          <TargetTitles
+            basic={basic}
+            lanes={lanes}
+            onChange={(values) =>
+              patch({ seniority: { ...draft.seniority, target_titles: values } })
+            }
+            values={draft.seniority.target_titles ?? []}
+          />
+        )}
         <TokenField
           hint="Blank excludes nothing."
           label="Titles to exclude"

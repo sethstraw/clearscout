@@ -9,6 +9,7 @@ import { server } from "../../test/msw/server";
 import { jobSummary } from "../job-ledger/jobFixtures";
 import { taskRecord } from "../job-search/pendingDiscoveryFixtures";
 import { CommandCenterPage } from "./CommandCenter";
+import { firstRunHandlers } from "./firstRunFixtures";
 
 const FIXED_NOW = Date.parse("2026-09-20T12:00:00Z");
 
@@ -112,6 +113,7 @@ function renderPage(summary: WorkspaceSummary = SUMMARY, tasks: Task[] = TASKS) 
   server.use(
     http.get("*/api/v1/workspaces/:workspaceId/summary", () => HttpResponse.json(summary)),
     http.get("*/api/v1/tasks", () => HttpResponse.json(tasks)),
+    ...firstRunHandlers(),
   );
   render(
     <AppProviders>
@@ -297,7 +299,7 @@ describe("CommandCenterPage", () => {
 
     expect(screen.getAllByRole("button", { name: /^Record applied for / })).toHaveLength(7);
     expect(screen.getByText("Waiting Role 7")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Command Center" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Home" })).toBeTruthy();
   });
 
   it("flags a posting that closed while waiting and offers its closure first", async () => {
@@ -341,8 +343,9 @@ describe("CommandCenterPage", () => {
     expect(screen.getByText("Best fit with your CV")).toBeTruthy();
     expect(screen.getByText("Waiting on you")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Review applications" }).getAttribute("href")).toBe(
-      "/applications",
+      "/apply",
     );
+    expect(await screen.findByRole("region", { name: "Get started" })).toBeTruthy();
     expect(
       screen.getByRole("img", {
         name: "Application pipeline: Ready 2, Applied 1, Interview 0, Offer 0",

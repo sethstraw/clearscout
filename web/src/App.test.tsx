@@ -1,10 +1,11 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, delay, http, type HttpHandler } from "msw";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Health, Provider, Task, Workspace } from "./api/client/types";
 import { App, RouteFallback } from "./App";
+import { jobList } from "./features/job-ledger/jobFixtures";
 import { AppProviders } from "./providers";
 import { server } from "./test/msw/server";
 import { TASK_TYPE_CATALOG } from "./test/taskTypes";
@@ -50,6 +51,7 @@ function health(workerAvailable: boolean): Health {
     current_revision: "0001",
     head_revision: "0001",
     worker_available: workerAvailable,
+    free_mode: false,
   };
 }
 
@@ -203,42 +205,105 @@ describe("App onboarding route", () => {
 
     await screen.findByRole("heading", { name: "Page not found" });
 
-    const expected: [string, string][] = [
-      ["Command Center", "Command"],
-      ["Master CV", "CV"],
-      ["Find jobs", "Find"],
-      ["Tracked postings", "Postings"],
-      ["Applications", "Applications"],
-      ["Tailored documents", "Tailored"],
-      ["Notes, tags, saved views", "Notes"],
-      ["Prompts", "Prompts"],
-      ["Settings", "Settings"],
+    const expected: [string, string, string][] = [
+      ["Home", "Home", "/"],
+      ["CV", "CV", "/cv"],
+      ["Find jobs", "Find", "/find"],
+      ["Jobs", "Jobs", "/jobs"],
+      ["Apply", "Apply", "/apply"],
+      ["Settings", "Settings", "/settings"],
     ];
-    for (const [label, short] of expected) {
-      const link = screen.getByRole("link", { name: label });
+    const primary = screen.getByRole("navigation");
+    expect(within(primary).getAllByRole("link")).toHaveLength(expected.length);
+    for (const [label, short, href] of expected) {
+      const link = within(primary).getByRole("link", { name: label });
       const labels = Array.from(link.querySelectorAll("span")).map((span) => span.textContent);
       expect(labels).toEqual([label, short]);
+      expect(link.getAttribute("href")).toBe(href);
       // The narrow bar shows the short label, so it has to sit inside the accessible name.
       expect(label.toLowerCase()).toContain(short.toLowerCase());
     }
   });
 
-  it("addresses the admin at the path the server redirects to", async () => {
+  it("carries the open-task count on the Activity footer link", async () => {
     window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
     stubMatchMedia();
-    server.use(...shellHandlers({ workspaces: [READY_WORKSPACE] }));
+    server.use(...shellHandlers({ workspaces: [READY_WORKSPACE], tasks: [queuedRefresh] }));
 
     renderApp("/not-a-route");
 
-    await screen.findByRole("heading", { name: "Page not found" });
+    const activity = await screen.findByRole("link", { name: "Activity, 1 active" });
+    expect(activity.getAttribute("href")).toBe("/tasks");
+    expect(within(screen.getByRole("navigation")).queryByRole("link", { name: /Activity/ })).toBe(
+      null,
+    );
+  });
 
-    const browser = screen.getByRole("link", { name: "Data browser" });
+  it.each([
+    ["/applications", "/apply?tab=applications"],
+    ["/documents", "/apply?tab=documents"],
+    ["/records", "/settings?tab=records"],
+    ["/prompts", "/settings?tab=advanced&section=prompts"],
+    ["/spend", "/settings?tab=costs"],
+    ["/api-playground", "/settings?tab=advanced&section=diagnostics"],
+    ["/find?tab=scans#source-scan-history-heading", "/find?tab=boards#source-scan-history-heading"],
+    ["/find?tab=pending", "/find?tab=review"],
+    ["/find?tab=refusals", "/find?tab=review&constraint=excluded_only"],
+    [
+      "/find?tab=refusals&scan=task-1&source=Acme#screened-candidates",
+      "/find?tab=boards&scan=task-1&source=Acme#screened-candidates",
+    ],
+    ["/find?tab=campaign", "/find?tab=web"],
+    ["/settings?tab=search&section=sources", "/find?tab=boards"],
+    ["/settings?tab=workspace", "/settings?tab=provider"],
+    ["/settings?tab=signals", "/settings?tab=advanced&section=diagnostics"],
+  ])("sends the moved address %s to %s", async (from, to) => {
+    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    stubMatchMedia();
+    // Only the address matters here, so every page read stays open.
+    server.use(
+      ...shellHandlers({ workspaces: [READY_WORKSPACE] }),
+      http.all(`${API}/*`, () => delay("infinite")),
+    );
 
-    // The bare path costs a redirect, and jsdom cannot tell an anchor from a
-    // NavLink here, so the trailing slash is the part a test can hold.
-    expect(browser.getAttribute("href")).toBe("/admin/");
+    render(
+      <MemoryRouter initialEntries={[from]}>
+        <AppProviders>
+          <App />
+          <CurrentAddress />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("current-address").textContent).toBe(to));
+  });
+
+  it("opens Apply on the Applications tab with the board inside it", async () => {
+    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    stubMatchMedia();
+    server.use(
+      ...shellHandlers({ workspaces: [READY_WORKSPACE] }),
+      http.get(`${API}/jobs`, () => HttpResponse.json(jobList())),
+    );
+
+    renderApp("/applications");
+
+    expect(await screen.findByRole("heading", { name: "Apply", level: 1 })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Applications", selected: true })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Documents" })).toBeTruthy();
+    expect(await screen.findByRole("region", { name: "Application pipeline" })).toBeTruthy();
+    expect(screen.getAllByRole("main")).toHaveLength(1);
   });
 });
+
+function CurrentAddress() {
+  const location = useLocation();
+  return (
+    <output data-testid="current-address">
+      {`${location.pathname}${location.search}${location.hash}`}
+    </output>
+  );
+}
 
 describe("RouteFallback", () => {
   it("offers a reload only once the page has been opening a while", () => {

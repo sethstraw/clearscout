@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from tailorcv.application.config import Settings
 from tailorcv.application.tasks import UNPAID, TaskQueueService, task_types
 from tailorcv.application.workspaces import WorkspaceService
 from tailorcv.bootstrap.api import create_app
@@ -16,7 +17,9 @@ from tailorcv.domain import TaskStatus, utc_now
 from tailorcv.infrastructure.persistence.database import Database
 from tailorcv.infrastructure.persistence.models import PendingDiscovery
 from tests.support.artifacts import runtime_storage
+from tests.support.doubles import MemoryStore
 from tests.support.scenarios import board_source, scan_workspace, state_target_titles
+from tests.support.suite import SUITE_PROVIDER
 
 
 def test_evaluation_preflight_is_available_without_a_worker_or_provider_key(
@@ -132,6 +135,43 @@ def test_queueing_is_refused_while_no_worker_is_running(
     assert listed == []
 
 
+def test_a_paid_task_without_a_provider_key_is_refused_as_free_mode(
+    durable_database_url: str, tmp_path: Path
+) -> None:
+    database = Database(durable_database_url)
+    workspace_id = scan_workspace(database)
+    TaskQueueService(database).renew_worker_presence(worker_id="worker-a")
+    database.dispose()
+    with TestClient(
+        create_app(
+            durable_database_url,
+            tmp_path / "artifacts",
+            key_store=MemoryStore(),
+            settings=Settings(provider=SUITE_PROVIDER),
+        ),
+        base_url="http://localhost",
+    ) as client:
+        response = client.post(
+            "/api/v1/tasks",
+            json={
+                "workspace_id": workspace_id,
+                "task_type": "workflow.tailor",
+                "payload": {"job_posting_id": "synthetic-posting"},
+            },
+            headers={"Idempotency-Key": "free-mode-tailor"},
+        )
+        listed = client.get("/api/v1/tasks", params={"workspace_id": workspace_id}).json()
+        documented = client.get("/api/v1/openapi.json").json()
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["type"] == "urn:tailorcv:problem:free-mode"
+    assert "\n" not in body["detail"]
+    assert body["hint"] == "Add an API key in Settings > Provider."
+    assert listed == []
+    assert "409" in documented["paths"]["/api/v1/tasks"]["post"]["responses"]
+
+
 @pytest.mark.parametrize("task_type", ["posting.refresh", "discovery.evaluate"])
 def test_an_archived_job_is_explained_without_queueing_work(
     durable_database_url: str, tmp_path: Path, task_type: str
@@ -156,7 +196,12 @@ def test_an_archived_job_is_explained_without_queueing_work(
     queue = TaskQueueService(database)
     queue.renew_worker_presence(worker_id="worker-a")
     with TestClient(
-        create_app(durable_database_url, tmp_path / "artifacts"), base_url="http://localhost"
+        create_app(
+            durable_database_url,
+            tmp_path / "artifacts",
+            key_store=MemoryStore({SUITE_PROVIDER: "test-key-not-real"}),
+        ),
+        base_url="http://localhost",
     ) as client:
         response = client.post(
             "/api/v1/tasks",

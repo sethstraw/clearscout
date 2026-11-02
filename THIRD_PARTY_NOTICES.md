@@ -51,6 +51,11 @@ rather than as a notice obligation.
 | npm | @eslint/object-schema | 3.0.5 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/@eslint/object-schema/v/3.0.5) |
 | npm | @eslint/plugin-kit | 0.7.3 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/@eslint/plugin-kit/v/0.7.3) |
 | npm | @exodus/bytes | 1.16.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@exodus/bytes/v/1.16.0) |
+| npm | @floating-ui/core | 1.8.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@floating-ui/core/v/1.8.0) |
+| npm | @floating-ui/dom | 1.8.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@floating-ui/dom/v/1.8.0) |
+| npm | @floating-ui/react | 0.27.20 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@floating-ui/react/v/0.27.20) |
+| npm | @floating-ui/react-dom | 2.1.9 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@floating-ui/react-dom/v/2.1.9) |
+| npm | @floating-ui/utils | 0.2.12 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@floating-ui/utils/v/0.2.12) |
 | npm | @humanfs/core | 0.19.2 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/@humanfs/core/v/0.19.2) |
 | npm | @humanfs/node | 0.16.8 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/@humanfs/node/v/0.16.8) |
 | npm | @humanfs/types | 0.15.0 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/@humanfs/types/v/0.15.0) |
@@ -275,6 +280,7 @@ rather than as a notice obligation.
 | npm | devlop | 1.1.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/devlop/v/1.1.0) |
 | npm | direction | 2.0.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/direction/v/2.0.1) |
 | npm | dom-accessibility-api | 0.5.16 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/dom-accessibility-api/v/0.5.16) |
+| npm | driver.js | 1.10.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/driver.js/v/1.10.2) |
 | npm | dunder-proto | 1.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/dunder-proto/v/1.0.1) |
 | npm | electron-to-chromium | 1.5.402 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/electron-to-chromium/v/1.5.402) |
 | npm | emoji-regex | 8.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/emoji-regex/v/8.0.0) |
@@ -609,6 +615,7 @@ rather than as a notice obligation.
 | npm | style-to-js | 1.1.21 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/style-to-js/v/1.1.21) |
 | npm | style-to-object | 1.0.14 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/style-to-object/v/1.0.14) |
 | npm | supports-color | 10.2.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/supports-color/v/10.2.2) |
+| npm | tabbable | 6.5.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/tabbable/v/6.5.1) |
 | npm | tagged-tag | 1.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/tagged-tag/v/1.0.0) |
 | npm | tiny-invariant | 1.3.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/tiny-invariant/v/1.3.3) |
 | npm | tinybench | 6.2.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/tinybench/v/6.2.3) |

@@ -192,3 +192,25 @@
 	height: 250px;
 	padding: 1rem 1rem 0.5rem 0.4rem;
 }
+
+.first-run {
+	margin-bottom: 1.15rem;
+}
+
+.first-run__steps {
+	display: grid;
+	gap: 0.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0 1.2rem 1.2rem;
+}
+
+.first-run__step {
+	align-items: center;
+	display: flex;
+	gap: 0.6rem;
+}
+
+.first-run__step.done {
+	color: var(--ink-soft);
+}

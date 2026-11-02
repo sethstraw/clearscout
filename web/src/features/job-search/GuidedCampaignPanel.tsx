@@ -840,7 +840,7 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
                 Import a master CV
               </a>{" "}
               or{" "}
-              <a className="text-button" href="/settings">
+              <a className="text-button" href="/settings?tab=provider">
                 Configure provider access in Settings
               </a>
               , then retry the preview.

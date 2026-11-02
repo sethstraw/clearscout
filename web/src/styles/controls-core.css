@@ -62,24 +62,33 @@
 	justify-items: start;
 }
 
-.paid-action-mark {
+.button--paid {
+	align-items: flex-start;
+	flex-direction: column;
+	gap: 0.2rem;
+}
+
+.paid-action-cost {
 	align-items: center;
-	background: color-mix(in srgb, var(--amber) 14%, var(--surface));
-	border: 1px solid color-mix(in srgb, var(--amber) 40%, var(--line));
-	border-radius: 999px;
-	color: var(--amber);
 	display: inline-flex;
+	flex-wrap: wrap;
 	font-size: var(--text-2xs);
+	font-weight: 600;
+	gap: 0.4rem;
+	text-align: start;
+}
+
+.paid-action-mark {
+	border: 1px solid currentColor;
+	border-radius: 999px;
 	font-weight: 720;
 	letter-spacing: 0.02em;
 	line-height: 1.2;
-	padding: 0.18rem 0.5rem;
+	padding: 0.08rem 0.45rem;
 	text-transform: uppercase;
 }
 
 .paid-action-spend {
-	color: var(--ink-soft);
-	font-size: var(--text-2xs);
 	max-width: 46ch;
 }
 

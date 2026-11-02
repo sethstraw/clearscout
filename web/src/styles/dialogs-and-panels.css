@@ -71,3 +71,22 @@
 .tab-panel {
 	min-width: 0;
 }
+
+.toggletip-button {
+	font-size: var(--text-2xs);
+	height: 1.5rem;
+	vertical-align: middle;
+	width: 1.5rem;
+}
+
+.toggletip {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.6rem;
+	box-shadow: var(--shadow);
+	color: var(--ink);
+	font-size: var(--text-sm);
+	max-width: 36ch;
+	padding: 0.6rem 0.8rem;
+	z-index: 30;
+}

@@ -30,6 +30,7 @@ from tailorcv.delivery.api.dependencies import (
     TaskQueueServiceDep,
     WorkspaceId,
 )
+from tailorcv.delivery.api.models.base import FREE_MODE_RESPONSES
 from tailorcv.delivery.api.models.tasks import TaskCreate
 from tailorcv.domain import TASK_STATUSES, TaskStatus
 
@@ -75,6 +76,7 @@ def list_tasks(
     f"{API_PREFIX}/tasks",
     response_model=TaskResponse,
     status_code=202,
+    responses=FREE_MODE_RESPONSES,
     tags=["tasks"],
 )
 def enqueue_task(
@@ -179,6 +181,7 @@ def resume_source_batch(
     f"{API_PREFIX}/tasks/{{task_id}}/retry",
     response_model=TaskResponse,
     status_code=202,
+    responses=FREE_MODE_RESPONSES,
     tags=["tasks"],
 )
 def retry_task(

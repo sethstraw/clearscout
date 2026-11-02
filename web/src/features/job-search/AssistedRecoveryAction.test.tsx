@@ -75,10 +75,11 @@ describe("AssistedRecoveryAction", () => {
     );
 
     expect(screen.getByRole("button", { name: "Estimate assisted recovery (1)" })).not.toBeNull();
-    expect(screen.queryByText("Spends money")).toBeNull();
+    expect(screen.queryByText("Paid")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Estimate assisted recovery (1)" }));
 
-    expect(await screen.findByText("Spends money")).not.toBeNull();
+    const run = await screen.findByRole("button", { name: "Run assisted recovery" });
+    expect(within(run).getByText("Paid")).not.toBeNull();
   });
 });

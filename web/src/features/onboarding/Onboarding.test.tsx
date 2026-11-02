@@ -298,7 +298,7 @@ describe("WelcomePage", () => {
       screen
         .getByRole("link", { name: "Configure provider access in Settings" })
         .getAttribute("href"),
-    ).toBe("/settings");
+    ).toBe("/settings?tab=provider");
     expect(screen.getByRole("link", { name: "Import a master CV" }).getAttribute("href")).toBe(
       "/cv",
     );

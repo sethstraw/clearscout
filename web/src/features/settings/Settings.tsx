@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 
 import type { Guardrails } from "../../api/client";
 import {
@@ -13,26 +13,52 @@ import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
 import { Page } from "../../components/Page";
 import { ErrorState, LoadingState } from "../../components/States";
 import { TabPanel, Tabs } from "../../components/Tabs";
-import { SourceManager } from "../job-search/SourceManager";
+import { ApiPlaygroundPage } from "../../pages/ApiPlaygroundPage";
+import { PromptsPage } from "../../pages/PromptsPage";
+import { SpendPage } from "../../pages/SpendPage";
+import { WorkspacePage } from "../../pages/WorkspacePage";
+import { PRODUCT_NAME } from "../../productName";
+import { PostingRefusals } from "../job-search/PostingRefusals";
 import { SearchParameterSetup } from "../search-parameters/SearchParameterSetup";
 import { GuardrailPreviewPanel } from "./GuardrailPreviewPanel";
 import { LearningLoopMetricsPanel } from "./LearningLoopMetricsPanel";
-import { PriceRefreshControl } from "./PriceRefreshControl";
 import { ProviderPanel } from "./ProviderPanel";
 import { RunCostHistoryPanel } from "./RunCostHistoryPanel";
 import { useWorkspaceDraft } from "../../hooks/useWorkspaceDraft";
 import { useWorkspace } from "../../providers";
 
 const settingsTabs = [
-  { id: "workspace", label: "Workspace" },
   { id: "search", label: "Search" },
+  { id: "provider", label: "Provider" },
   { id: "drafting", label: "Drafting" },
-  { id: "signals", label: "Activity & signals" },
+  { id: "costs", label: "Costs" },
+  { id: "records", label: "Notes & tags" },
+  { id: "advanced", label: "Advanced" },
 ] as const;
 type SettingsTab = (typeof settingsTabs)[number]["id"];
 
+const advancedSections = [
+  { id: "prompts", label: "Prompts" },
+  { id: "diagnostics", label: "Diagnostics" },
+  { id: "refusals", label: "Posting refusals" },
+] as const;
+type AdvancedSection = (typeof advancedSections)[number]["id"];
+
 function isSettingsTab(value: string | null): value is SettingsTab {
   return settingsTabs.some((item) => item.id === value);
+}
+
+function isAdvancedSection(value: string | null): value is AdvancedSection {
+  return advancedSections.some((item) => item.id === value);
+}
+
+/** Where an address from before the Settings sections were regrouped now points. */
+function movedSettingsAddress(params: URLSearchParams): string | null {
+  const tab = params.get("tab");
+  if (tab === "search" && params.get("section") === "sources") return "/find?tab=boards";
+  if (tab === "workspace") return "/settings?tab=provider";
+  if (tab === "signals") return "/settings?tab=advanced&section=diagnostics";
+  return null;
 }
 
 export function SettingsPage() {
@@ -41,13 +67,14 @@ export function SettingsPage() {
   const workspaces = useWorkspaces();
   const [searchParams, setSearchParams] = useSearchParams();
   const requested = searchParams.get("tab");
-  const tab: SettingsTab = isSettingsTab(requested) ? requested : "workspace";
+  const tab: SettingsTab = isSettingsTab(requested) ? requested : "search";
+  const moved = movedSettingsAddress(searchParams);
   const setTab = (value: SettingsTab) => {
-    const next = new URLSearchParams(searchParams);
-    if (value === "workspace") next.delete("tab");
-    else next.set("tab", value);
+    const next = new URLSearchParams();
+    if (value !== "search") next.set("tab", value);
     setSearchParams(next, { replace: true });
   };
+  if (moved) return <Navigate replace to={moved} />;
   if (health.isLoading || workspaces.isLoading)
     return <LoadingState label="Checking local health" />;
   if (health.isError || workspaces.isError)
@@ -56,7 +83,7 @@ export function SettingsPage() {
     <Page
       eyebrow="Settings"
       title="Settings"
-      description="Set up your search, provider access, local paths, and service health."
+      description="Set up your search, your provider key, and what runs may cost."
     >
       <Tabs
         id="settings-tabs"
@@ -66,91 +93,20 @@ export function SettingsPage() {
         selected={tab}
       />
       <TabPanel id="settings-tabs" selected={tab}>
-        {tab === "workspace" && <WorkspaceTab />}
-        {tab === "search" && <SearchTab workspaceId={workspaceId} />}
+        {tab === "search" && <SearchParameterSetup workspaceId={workspaceId} />}
+        {tab === "provider" && <ProviderTab />}
         {tab === "drafting" && <DraftingTab workspaceId={workspaceId} />}
-        {tab === "signals" && <SignalsTab workspaceId={workspaceId} />}
+        {tab === "costs" && <CostsTab workspaceId={workspaceId} />}
+        {tab === "records" && <WorkspacePage />}
+        {tab === "advanced" && <AdvancedTab workspaceId={workspaceId} />}
       </TabPanel>
     </Page>
   );
 }
 
-function WorkspaceTab() {
-  const { workspaceId } = useWorkspace();
-  const health = useHealth();
-  const workspaces = useWorkspaces();
-  const workspace = workspaces.data?.find((item) => item.id === workspaceId);
+function ProviderTab() {
   return (
     <section className="settings-grid">
-      <article className="panel health-card">
-        <header>
-          <div>
-            <h2>Service health</h2>
-            <p>TailorCV {health.data?.version}</p>
-          </div>
-          <span className={`health-dot ${health.data?.status === "ok" ? "healthy" : ""}`}>
-            <i />
-            {health.data?.status}
-          </span>
-        </header>
-        <dl className="settings-list">
-          <div>
-            <dt>Database</dt>
-            <dd>{health.data?.database_reachable ? "Reachable" : "Unavailable"}</dd>
-          </div>
-          <div>
-            <dt>Schema revision</dt>
-            <dd>{health.data?.current_revision ?? "None"}</dd>
-          </div>
-          <div>
-            <dt>Schema current</dt>
-            <dd>{health.data?.schema_current ? "Yes" : "No, run an explicit upgrade"}</dd>
-          </div>
-          <div>
-            <dt>Background worker</dt>
-            <dd>{health.data?.worker_available ? "Running" : "Not running"}</dd>
-          </div>
-        </dl>
-      </article>
-      <article className="panel">
-        <header>
-          <div>
-            <h2>Workspace</h2>
-            <p>User-owned data boundary</p>
-          </div>
-        </header>
-        <dl className="settings-list">
-          <div>
-            <dt>Name</dt>
-            <dd>{workspace?.name}</dd>
-          </div>
-          <div>
-            <dt>Short name</dt>
-            <dd>{workspace?.slug}</dd>
-          </div>
-          <div>
-            <dt>Documents folder</dt>
-            <dd className="path-value">{workspace?.root_path ?? "Not linked"}</dd>
-          </div>
-          <div>
-            <dt>Workspace ID</dt>
-            <dd className="path-value">{workspace?.id}</dd>
-          </div>
-        </dl>
-      </article>
-      <article className="panel">
-        <header>
-          <div>
-            <h2>Setup walkthrough</h2>
-            <p>Return to free setup and review optional paid features.</p>
-          </div>
-        </header>
-        <div className="panel-body">
-          <Link className="button button--quiet" to="/welcome">
-            Open setup walkthrough
-          </Link>
-        </div>
-      </article>
       <ProviderPanel />
       <article className="panel privacy-card">
         <p className="eyebrow">Privacy boundary</p>
@@ -168,48 +124,146 @@ function WorkspaceTab() {
           <li>No document content in browser storage</li>
         </ul>
       </article>
+      <article className="panel">
+        <header>
+          <div>
+            <h2>Setup walkthrough</h2>
+            <p>Return to free setup and review optional paid features.</p>
+          </div>
+        </header>
+        <div className="panel-body">
+          <Link className="button button--quiet" to="/welcome">
+            Open setup walkthrough
+          </Link>
+        </div>
+      </article>
     </section>
   );
 }
 
-const searchSubTabs = [
-  { id: "settings", label: "Settings" },
-  { id: "sources", label: "Sources" },
-] as const;
-type SearchSubTab = (typeof searchSubTabs)[number]["id"];
-
-function isSearchSubTab(value: string | null): value is SearchSubTab {
-  return searchSubTabs.some((item) => item.id === value);
+function CostsTab({ workspaceId }: { workspaceId: string }) {
+  return (
+    <>
+      <SpendPage />
+      <RunCostHistoryPanel workspaceId={workspaceId} />
+    </>
+  );
 }
 
-function SearchTab({ workspaceId }: { workspaceId: string }) {
+function AdvancedTab({ workspaceId }: { workspaceId: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const requested = searchParams.get("section");
-  const subTab: SearchSubTab = isSearchSubTab(requested) ? requested : "settings";
-  const setSubTab = (value: SearchSubTab) => {
+  const section: AdvancedSection = isAdvancedSection(requested) ? requested : "prompts";
+  const setSection = (value: string) => {
     const next = new URLSearchParams(searchParams);
-    if (value === "settings") next.delete("section");
-    else next.set("section", value);
+    next.set("section", value);
     setSearchParams(next, { replace: true });
   };
   return (
     <>
       <Tabs
-        id="settings-search-tabs"
-        items={searchSubTabs}
-        label="Search sections"
-        onSelect={(id) => setSubTab(id as SearchSubTab)}
-        selected={subTab}
+        id="settings-advanced-tabs"
+        items={advancedSections}
+        label="Advanced sections"
+        onSelect={setSection}
+        selected={section}
       />
-      <TabPanel id="settings-search-tabs" selected={subTab}>
-        {subTab === "settings" && (
-          <>
-            <SearchParameterSetup workspaceId={workspaceId} />
-            <RunCostHistoryPanel workspaceId={workspaceId} />
-          </>
-        )}
-        {subTab === "sources" && <SourceManager workspaceId={workspaceId} />}
+      <TabPanel id="settings-advanced-tabs" selected={section}>
+        {section === "prompts" && <PromptsPage />}
+        {section === "diagnostics" && <DiagnosticsSection workspaceId={workspaceId} />}
+        {section === "refusals" && <PostingRefusals workspaceId={workspaceId} />}
       </TabPanel>
+    </>
+  );
+}
+
+function DiagnosticsSection({ workspaceId }: { workspaceId: string }) {
+  const health = useHealth();
+  const workspaces = useWorkspaces();
+  const workspace = workspaces.data?.find((item) => item.id === workspaceId);
+  return (
+    <>
+      <section className="settings-grid">
+        <article className="panel health-card">
+          <header>
+            <div>
+              <h2>Service health</h2>
+              <p>
+                {PRODUCT_NAME} {health.data?.version}
+              </p>
+            </div>
+            <span className={`health-dot ${health.data?.status === "ok" ? "healthy" : ""}`}>
+              <i />
+              {health.data?.status}
+            </span>
+          </header>
+          <dl className="settings-list">
+            <div>
+              <dt>Database</dt>
+              <dd>{health.data?.database_reachable ? "Reachable" : "Unavailable"}</dd>
+            </div>
+            <div>
+              <dt>Schema revision</dt>
+              <dd>{health.data?.current_revision ?? "None"}</dd>
+            </div>
+            <div>
+              <dt>Schema current</dt>
+              <dd>{health.data?.schema_current ? "Yes" : "No, run an explicit upgrade"}</dd>
+            </div>
+            <div>
+              <dt>Background worker</dt>
+              <dd>{health.data?.worker_available ? "Running" : "Not running"}</dd>
+            </div>
+          </dl>
+        </article>
+        <article className="panel">
+          <header>
+            <div>
+              <h2>Workspace</h2>
+              <p>User-owned data boundary</p>
+            </div>
+          </header>
+          <dl className="settings-list">
+            <div>
+              <dt>Name</dt>
+              <dd>{workspace?.name}</dd>
+            </div>
+            <div>
+              <dt>Short name</dt>
+              <dd>{workspace?.slug}</dd>
+            </div>
+            <div>
+              <dt>Documents folder</dt>
+              <dd className="path-value">{workspace?.root_path ?? "Not linked"}</dd>
+            </div>
+            <div>
+              <dt>Workspace ID</dt>
+              <dd className="path-value">{workspace?.id}</dd>
+            </div>
+          </dl>
+        </article>
+        <article className="panel">
+          <header>
+            <div>
+              <h2>Diagnostic tools</h2>
+              <p>For when something has gone wrong.</p>
+            </div>
+          </header>
+          <ul className="record-list">
+            <li>
+              <Link to="/tasks">Activity</Link>
+              <small>Every background task, and why any of them failed.</small>
+            </li>
+            <li>
+              {/* A server-rendered page outside the router, so not a Link. */}
+              <a href="/admin/">Data browser</a>
+              <small>Read the local database table by table.</small>
+            </li>
+          </ul>
+        </article>
+        <LearningLoopMetricsPanel workspaceId={workspaceId} />
+      </section>
+      <ApiPlaygroundPage />
     </>
   );
 }
@@ -220,46 +274,6 @@ function DraftingTab({ workspaceId }: { workspaceId: string }) {
       <GuardrailsEditor workspaceId={workspaceId} />
       <GuardrailHistory workspaceId={workspaceId} />
     </>
-  );
-}
-
-function SignalsTab({ workspaceId }: { workspaceId: string }) {
-  return (
-    <section className="settings-grid">
-      <LearningLoopMetricsPanel workspaceId={workspaceId} />
-      <article className="panel">
-        <header>
-          <div>
-            <h2>Model spend</h2>
-            <p>Recorded provider costs, per stage, per model, and per call.</p>
-          </div>
-        </header>
-        <div className="panel-body">
-          <Link className="button button--quiet" to="/spend">
-            Open spend report
-          </Link>
-          <PriceRefreshControl />
-        </div>
-      </article>
-      <article className="panel">
-        <header>
-          <div>
-            <h2>Diagnostics</h2>
-            <p>Useful when something has gone wrong, or when you are working on TailorCV itself.</p>
-          </div>
-        </header>
-        <ul className="record-list">
-          <li>
-            <Link to="/tasks">Tasks</Link>
-            <small>Every queued and completed background job, with why any of them failed.</small>
-          </li>
-          <li>
-            <Link to="/api-playground">API Playground</Link>
-            <small>Browse and exercise this local instance from its own OpenAPI schema.</small>
-          </li>
-        </ul>
-      </article>
-    </section>
   );
 }
 

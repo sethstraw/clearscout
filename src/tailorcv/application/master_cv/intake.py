@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from tailorcv.application.config import Settings
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
+from tailorcv.application.failures import (
+    FREE_MODE_REASON,
+    ConflictError,
+    FreeModeError,
+    NotFoundError,
+    ValidationError,
+)
 from tailorcv.application.master_cv.cv import LIST_MARKER, CvInventory, parse_cv
 from tailorcv.application.workspaces import WorkspaceSettingsService, layout_for, prepare_layout
 from tailorcv.infrastructure.artifacts.files import (
@@ -80,12 +87,22 @@ class MasterCvIntake:
     """Own source validation, optional standardization, and private source retention."""
 
     def __init__(
-        self, database: Database, storage: RuntimeStorage, settings: WorkspaceSettingsService
+        self,
+        database: Database,
+        storage: RuntimeStorage,
+        settings: WorkspaceSettingsService,
+        *,
+        paid_work_ready: Callable[[], bool] | None = None,
     ) -> None:
-        """Configure the workspace state needed to prepare imported source bytes."""
+        """Configure the workspace state needed to prepare imported source bytes.
+
+        With ``paid_work_ready`` set, a source that needs the model is refused while it
+        answers False.
+        """
         self.database = database
         self.storage = storage
         self.settings = settings
+        self.paid_work_ready = paid_work_ready
 
     def prepare(
         self,
@@ -131,6 +148,8 @@ class MasterCvIntake:
         if inventory is not None:
             markdown = content.decode("utf-8")
         else:
+            if self.paid_work_ready is not None and not self.paid_work_ready():
+                raise FreeModeError(FREE_MODE_REASON)
             method = "standardized"
             markdown, inventory, report, spent = self._standardize(
                 workspace_id=workspace_id,

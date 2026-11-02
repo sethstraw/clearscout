@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from tailorcv.application.config import Settings
 from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
 from tailorcv.application.master_cv.artifacts import MasterCvArtifacts
@@ -24,7 +26,13 @@ from tailorcv.infrastructure.providers.credentials import Prompter
 class MasterCvService:
     """Expose master-CV intake, version commands, artifacts, and queries through one port."""
 
-    def __init__(self, database: Database, storage: RuntimeStorage) -> None:
+    def __init__(
+        self,
+        database: Database,
+        storage: RuntimeStorage,
+        *,
+        paid_work_ready: Callable[[], bool] | None = None,
+    ) -> None:
         """Compose collaborators around one database and runtime storage root."""
         self.database = database
         self.storage = storage
@@ -32,7 +40,9 @@ class MasterCvService:
         self.settings = WorkspaceSettingsService(database)
         self.artifact_coordination = MasterCvArtifacts(self.artifacts)
         self.queries = MasterCvQueries(database, storage, self.artifact_coordination)
-        self.intake = MasterCvIntake(database, storage, self.settings)
+        self.intake = MasterCvIntake(
+            database, storage, self.settings, paid_work_ready=paid_work_ready
+        )
         self.commands = MasterCvVersionCommands(database, self.intake, self.queries)
 
     def versions(self, workspace_id: str) -> list[MasterCvVersionResponse]:

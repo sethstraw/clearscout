@@ -13,6 +13,7 @@ from tailorcv.shared.models import StrictModel
 MAX_KEY_LENGTH = 500
 
 
+# free_mode is the negation of the check that refuses a paid task at enqueue.
 class HealthResponse(StrictModel):
     """Read-only service and migration health."""
 
@@ -24,6 +25,9 @@ class HealthResponse(StrictModel):
     current_revision: str | None
     head_revision: str | None
     worker_available: bool
+    free_mode: bool = Field(
+        description="True while the configured provider has no API key; paid actions are refused."
+    )
 
 
 class ApiOnlyRootResponse(StrictModel):

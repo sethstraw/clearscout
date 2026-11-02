@@ -109,7 +109,7 @@ export function WelcomePage() {
               intake, board scans, tracking, and posting refresh need neither.
             </p>
             <div className="button-row">
-              <Link className="button button--quiet" to="/settings">
+              <Link className="button button--quiet" to="/settings?tab=provider">
                 Configure provider access in Settings
               </Link>
               <Link className="button button--quiet" to="/cv">

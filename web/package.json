@@ -20,8 +20,10 @@
     "api:generate": "openapi-typescript openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
+    "@floating-ui/react": "0.27.20",
     "@tanstack/react-query": "5.105.2",
     "@uiw/react-md-editor": "4.1.2",
+    "driver.js": "1.10.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-hook-form": "7.91.0",

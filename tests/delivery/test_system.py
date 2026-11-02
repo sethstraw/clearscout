@@ -4,11 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
+from tailorcv.application.config import ProviderName, Settings
 from tailorcv.application.tasks import TaskQueueService
 from tailorcv.bootstrap.api import create_app
 from tailorcv.infrastructure.persistence.database import Database
+from tailorcv.shared.errors import ConfigError
+from tests.support.doubles import MemoryStore
+from tests.support.suite import SUITE_PROVIDER
 
 
 def test_health_is_read_only_when_database_is_missing(tmp_path: Path) -> None:
@@ -43,6 +48,45 @@ def test_health_reports_whether_a_worker_is_available(
             assert running["status"] == "ok"
     finally:
         database.dispose()
+
+
+@pytest.mark.parametrize(
+    ("keys", "free_mode"), [({}, True), ({SUITE_PROVIDER: "test-key-not-real"}, False)]
+)
+def test_health_reports_free_mode_until_the_configured_provider_has_a_key(
+    tmp_path: Path, keys: dict[ProviderName, str], free_mode: bool
+) -> None:
+    with TestClient(
+        create_app(
+            f"sqlite+pysqlite:///{tmp_path / 'unused.sqlite3'}",
+            key_store=MemoryStore(keys),
+            settings=Settings(provider=SUITE_PROVIDER),
+        ),
+        base_url="http://localhost",
+    ) as client:
+        health = client.get("/api/v1/health").json()
+
+    assert health["free_mode"] is free_mode
+
+
+def test_health_reports_free_mode_while_settings_are_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unreadable() -> Settings:
+        raise ConfigError("tailorcv.toml is not valid TOML")
+
+    monkeypatch.setattr("tailorcv.delivery.api.dependencies.load_settings", unreadable)
+    with TestClient(
+        create_app(
+            f"sqlite+pysqlite:///{tmp_path / 'unused.sqlite3'}",
+            key_store=MemoryStore({SUITE_PROVIDER: "test-key-not-real"}),
+        ),
+        base_url="http://localhost",
+    ) as client:
+        response = client.get("/api/v1/health")
+
+    assert response.status_code == 200
+    assert response.json()["free_mode"] is True
 
 
 def test_an_upgrade_while_the_server_runs_does_not_need_a_restart(tmp_path: Path) -> None:

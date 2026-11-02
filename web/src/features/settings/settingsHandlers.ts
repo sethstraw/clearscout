@@ -24,6 +24,7 @@ const HEALTHY = {
   head_revision: "0001",
   database_exists: true,
   worker_available: false,
+  free_mode: false,
 } satisfies Health;
 
 const WORKSPACES = [

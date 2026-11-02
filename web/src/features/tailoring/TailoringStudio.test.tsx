@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -297,11 +297,12 @@ describe("TailoringStudio", () => {
     for (const name of ["Re-evaluate job", GENERATE, "Regenerate new version"]) {
       expect(spendOn(name)).toMatch(/cost shown before you run|about \$[\d.]+ per run/);
       expect(screen.getByRole("button", { name }).className).toContain("button--paid");
+      expect(within(screen.getByRole("button", { name })).getByText("Paid")).toBeTruthy();
     }
     const free = screen.getByRole("button", { name: "Explore a gap" });
     expect(free.className).toContain("button--quiet");
     expect(free.closest(".paid-action")).toBeNull();
-    expect(screen.getAllByText("Spends money")).toHaveLength(3);
+    expect(within(free).queryByText("Paid")).toBeNull();
     expect(await screen.findByText("No provider charge.")).toBeTruthy();
   });
 

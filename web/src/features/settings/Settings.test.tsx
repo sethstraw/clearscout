@@ -1,12 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, delay, http } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   GuardrailVersion,
+  Health,
   LearningLoopMetrics,
   LearningLoopPolicyState,
+  PostingRefusal,
   PriceRefresh,
 } from "../../api/client/types";
 import { AppProviders } from "../../providers";
@@ -26,6 +28,31 @@ import {
 afterEach(() => {
   window.sessionStorage.clear();
 });
+
+const LEARNING_METRICS = {
+  workspace_id: "workspace-settings",
+  computed_at: "2026-09-19T09:00:00Z",
+  top_n: 10,
+  reproposed_rejected_identities: { numerator: 0, denominator: 0 },
+  master_cv_proposal_acceptance: { numerator: 0, denominator: 0 },
+  pending_queue_missed_matches: { numerator: 0, denominator: 0 },
+} satisfies LearningLoopMetrics;
+
+const LEARNING_POLICY = {
+  workspace_id: "workspace-settings",
+  version: 0,
+  effective_at: null,
+  content_sha256: "",
+  policy: {
+    enable_dispute_reextraction: false,
+    enable_dispute_rematch: false,
+    missed_requirement_penalty: -5,
+    propose_after_count: 3,
+    propose_window_days: 30,
+    propose_after_ruling_count: 3,
+    propose_missing_after_count: 3,
+  },
+} satisfies LearningLoopPolicyState;
 
 function installSettings(reads: SettingsReads = {}) {
   server.use(...settingsHandlers(reads));
@@ -85,28 +112,19 @@ describe("SettingsPage", () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByText("TailorCV 0.1.0")).toBeTruthy();
-    expect(screen.getByText("Synthetic Search")).toBeTruthy();
-    expect(screen.getByText("Not running")).toBeTruthy();
-    expect(screen.getByText("Credentials stay behind the API.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Open setup walkthrough" }).getAttribute("href")).toBe(
-      "/welcome",
-    );
-    expect(document.body.textContent).not.toContain("Recent worker activity");
-    expect(document.body.textContent).not.toContain("sk-");
-
-    fireEvent.click(await screen.findByRole("tab", { name: "Search" }));
+    expect(await screen.findByRole("tab", { name: "Search", selected: true })).toBeTruthy();
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Search",
+      "Provider",
+      "Drafting",
+      "Costs",
+      "Notes & tags",
+      "Advanced",
+    ]);
     expect(await screen.findByText("Search setup")).toBeTruthy();
-    expect(screen.queryByRole("tablist", { name: "Search parameter sections" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Sources" })).toBeNull();
     expect(screen.getByText("Advanced search controls").closest("details")?.open).toBe(false);
     expect(screen.getByRole("heading", { name: "Optional guided search (paid)" })).toBeTruthy();
-    expect(
-      screen
-        .getByRole("link", { name: "Find roles from my background (paid)" })
-        .getAttribute("href"),
-    ).toBe("/find?tab=campaign");
-    expect(await screen.findByText("What runs have cost")).toBeTruthy();
-    expect(screen.getByText("$0.1250")).toBeTruthy();
     expect(screen.getByText(/no job is ruled out by them/)).toBeTruthy();
     expect(
       screen.getByRole<HTMLButtonElement>("button", { name: "Save as new version" }).disabled,
@@ -123,14 +141,103 @@ describe("SettingsPage", () => {
         .value,
     ).toBe("Own technical direction with bounded delivery scope.");
 
-    fireEvent.click(screen.getByRole("tab", { name: "Sources" }));
-    expect(await screen.findByText("Board sources")).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Sources" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Provider" }));
+    expect(await screen.findByText("Credentials stay behind the API.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open setup walkthrough" }).getAttribute("href")).toBe(
+      "/welcome",
+    );
+    expect(document.body.textContent).not.toContain("sk-");
 
-    fireEvent.click(await screen.findByRole("tab", { name: "Activity & signals" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Costs" }));
+    expect(await screen.findByText("What runs have cost")).toBeTruthy();
+    expect(await screen.findByText("$0.1250")).toBeTruthy();
+    expect(await screen.findByText("Spend by model")).toBeTruthy();
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+  });
+
+  it("keeps health, workspace details, and the data browser under Advanced > Diagnostics", async () => {
+    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    installSettings();
+    server.use(
+      http.get("*/api/v1/workspaces/:workspaceId/learning-loop-metrics", () =>
+        HttpResponse.json(LEARNING_METRICS),
+      ),
+      http.get("*/api/v1/workspaces/:workspaceId/learning-loop-policy", () =>
+        HttpResponse.json(LEARNING_POLICY),
+      ),
+      http.get("*/api/v1/openapi.json", () => delay("infinite")),
+    );
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/settings?tab=advanced&section=diagnostics"]}>
+          <SettingsPage />
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByText("TailorCV 0.1.0")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Diagnostics", selected: true })).toBeTruthy();
+    expect(screen.getByText("Synthetic Search")).toBeTruthy();
+    expect(screen.getByText("Not running")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Activity" }).getAttribute("href")).toBe("/tasks");
+    // The bare path costs a redirect, and jsdom cannot tell an anchor from a
+    // router link here, so the trailing slash is the part a test can hold.
+    expect(screen.getByRole("link", { name: "Data browser" }).getAttribute("href")).toBe("/admin/");
+    expect(screen.getByText("Reading the generated API contract")).toBeTruthy();
+  });
+
+  it("lists refused postings under Advanced > Posting refusals", async () => {
+    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    installSettings();
+    server.use(
+      http.get("*/api/v1/workspaces/:workspaceId/posting-refusals", () =>
+        HttpResponse.json([
+          {
+            id: "refusal-1",
+            job_posting_id: "job-1",
+            pending_discovery_id: null,
+            posting_url: "https://boards.example.test/jobs/1",
+            employer: "Example",
+            title: "Restricted role",
+            condition: "Work authorization",
+            reason: "The posting requires an authorization the workspace does not state.",
+            refused_at: "2026-08-13T12:00:00Z",
+            search_parameter_set_id: "parameters-7",
+            search_parameter_version: 7,
+          },
+          {
+            id: "refusal-2",
+            job_posting_id: null,
+            pending_discovery_id: null,
+            posting_url: null,
+            employer: "Example",
+            title: "Unversioned role",
+            condition: "Location",
+            reason: "The posting is outside every saved place.",
+            refused_at: "2026-08-12T12:00:00Z",
+            search_parameter_set_id: null,
+            search_parameter_version: null,
+          },
+        ] satisfies PostingRefusal[]),
+      ),
+    );
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/settings?tab=advanced&section=refusals"]}>
+          <SettingsPage />
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByText("Refusal history")).toBeTruthy();
     expect(
-      (await screen.findByRole("link", { name: "Open spend report" })).getAttribute("href"),
-    ).toBe("/spend");
+      screen.getByRole("link", { name: "Restricted role at Example" }).getAttribute("href"),
+    ).toBe("https://boards.example.test/jobs/1");
+    expect(screen.queryByRole("link", { name: "Unversioned role at Example" })).toBeNull();
+    expect(screen.getByText("v7")).toBeTruthy();
+    expect(screen.getByText("No saved version")).toBeTruthy();
   });
 
   it("lists saved guardrail versions", async () => {
@@ -212,7 +319,8 @@ describe("SettingsPage", () => {
         current_revision: "0001",
         head_revision: "0001",
         worker_available: true,
-      },
+        free_mode: false,
+      } satisfies Health,
       guardrails: guardrails({
         version: 3,
         content_sha256: "current-digest",
@@ -448,63 +556,12 @@ describe("SettingsPage", () => {
     ).toBeTruthy();
   });
 
-  it("offers the same price refresh beside the Model spend card", async () => {
+  it("offers the price refresh on the Costs tab", async () => {
     window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
-    const metrics = {
-      workspace_id: "workspace-settings",
-      computed_at: "2026-09-19T09:00:00Z",
-      top_n: 10,
-      reproposed_rejected_identities: { numerator: 0, denominator: 0 },
-      master_cv_proposal_acceptance: { numerator: 0, denominator: 0 },
-      pending_queue_missed_matches: { numerator: 0, denominator: 0 },
-    } satisfies LearningLoopMetrics;
-    const policy = {
-      workspace_id: "workspace-settings",
-      version: 0,
-      effective_at: null,
-      content_sha256: "",
-      policy: {
-        enable_dispute_reextraction: false,
-        enable_dispute_rematch: false,
-        missed_requirement_penalty: -5,
-        propose_after_count: 3,
-        propose_window_days: 30,
-        propose_after_ruling_count: 3,
-        propose_missing_after_count: 3,
-      },
-    } satisfies LearningLoopPolicyState;
     let posts = 0;
+    installSettings();
     server.use(
-      http.get("*/api/v1/health", () =>
-        HttpResponse.json({
-          status: "ok",
-          version: "0.1.0",
-          database_reachable: true,
-          schema_current: true,
-          current_revision: "0001",
-          worker_available: true,
-        }),
-      ),
-      http.get("*/api/v1/workspaces", () =>
-        HttpResponse.json([
-          {
-            id: "workspace-settings",
-            slug: "synthetic",
-            name: "Synthetic Search",
-            root_path: null,
-          },
-        ]),
-      ),
       http.get("*/api/v1/tasks/types", () => HttpResponse.json(TASK_TYPE_CATALOG)),
-      http.get("*/api/v1/tasks", () => HttpResponse.json([])),
-      http.get("*/api/v1/providers", () => HttpResponse.json([])),
-      http.get("*/api/v1/workspaces/:workspaceId/spend-history", () => HttpResponse.json([])),
-      http.get("*/api/v1/workspaces/:workspaceId/learning-loop-metrics", () =>
-        HttpResponse.json(metrics),
-      ),
-      http.get("*/api/v1/workspaces/:workspaceId/learning-loop-policy", () =>
-        HttpResponse.json(policy),
-      ),
       http.post("*/api/v1/billing/prices/refresh", () => {
         posts += 1;
         return HttpResponse.json({
@@ -543,14 +600,12 @@ describe("SettingsPage", () => {
 
     render(
       <AppProviders>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={["/settings?tab=costs"]}>
           <SettingsPage />
         </MemoryRouter>
       </AppProviders>,
     );
 
-    fireEvent.click(await screen.findByRole("tab", { name: "Activity & signals" }));
-    expect(await screen.findByRole("link", { name: "Open spend report" })).toBeTruthy();
     const refresh = await screen.findByRole("button", {
       name: "Refresh prices from the catalog",
     });

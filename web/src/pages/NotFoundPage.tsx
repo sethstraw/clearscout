@@ -7,22 +7,22 @@ export function NotFoundPage() {
     <Page
       action={
         <Link className="button button--primary" to="/">
-          Open Command Center
+          Open Home
         </Link>
       }
-      description="The local page you requested does not exist. No data was changed."
+      description="This page does not exist. No data was changed."
       eyebrow="404"
       title="Page not found"
     >
       <section className="panel not-found-panel">
-        <h2>Try a known destination</h2>
-        <p>Use the navigation, return to the Command Center, or open the API Playground.</p>
+        <h2>Try a known page</h2>
+        <p>Use the navigation, or open one of these.</p>
         <div className="button-row">
           <Link className="button button--quiet" to="/jobs">
             Jobs
           </Link>
-          <Link className="button button--quiet" to="/api-playground">
-            API Playground
+          <Link className="button button--quiet" to="/settings?tab=advanced&section=diagnostics">
+            Diagnostics
           </Link>
         </div>
       </section>

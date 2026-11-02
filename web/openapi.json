@@ -5193,6 +5193,11 @@
             "title": "Database Reachable",
             "type": "boolean"
           },
+          "free_mode": {
+            "description": "True while the configured provider has no API key; paid actions are refused.",
+            "title": "Free Mode",
+            "type": "boolean"
+          },
           "head_revision": {
             "anyOf": [
               {
@@ -5233,7 +5238,8 @@
           "schema_current",
           "current_revision",
           "head_revision",
-          "worker_available"
+          "worker_available",
+          "free_mode"
         ],
         "title": "HealthResponse",
         "type": "object"
@@ -10574,6 +10580,52 @@
           "source"
         ],
         "title": "PriceRefreshResponse",
+        "type": "object"
+      },
+      "Problem": {
+        "additionalProperties": false,
+        "description": "RFC 9457-style safe error body without internal trace data.",
+        "properties": {
+          "correlation_id": {
+            "title": "Correlation Id",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "correlation_id"
+        ],
+        "title": "Problem",
         "type": "object"
       },
       "PromptDetailResponse": {
@@ -19511,6 +19563,16 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -21112,6 +21174,16 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -21475,6 +21547,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
           },
           "422": {
             "content": {
@@ -22535,6 +22617,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
           },
           "422": {
             "content": {

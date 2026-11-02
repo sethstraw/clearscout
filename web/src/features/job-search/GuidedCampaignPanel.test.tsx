@@ -296,7 +296,7 @@ describe("GuidedCampaignPanel", () => {
       screen
         .getByRole("link", { name: "Configure provider access in Settings" })
         .getAttribute("href"),
-    ).toBe("/settings");
+    ).toBe("/settings?tab=provider");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByLabelText("Model calls").getAttribute("aria-invalid")).toBeNull();
     expect(screen.getByLabelText("Hosted searches").getAttribute("aria-invalid")).toBeNull();

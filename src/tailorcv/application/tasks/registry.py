@@ -131,6 +131,12 @@ def task_type_catalog() -> tuple[TaskTypeResponse, ...]:
     )
 
 
+def task_is_paid(task_type: str) -> bool:
+    """Return whether a registered task type can reach a billing provider."""
+    spec = TASK_REGISTRY.get(task_type)
+    return spec is not None and spec.paid
+
+
 def validate_task_payload(task_type: str, payload: dict[str, Any]) -> dict[str, Any]:
     """Validate and normalize a production task payload through its one spec."""
     spec = TASK_REGISTRY.get(task_type)

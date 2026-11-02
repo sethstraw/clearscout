@@ -12,6 +12,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 from tailorcv.application.failures import (
     CareerPageUnreadableError,
     ConflictError,
+    FreeModeError,
     NotFoundError,
     UnavailableError,
     ValidationError,
@@ -25,7 +26,7 @@ from tailorcv.delivery.api.http_security import (
     origin_authority,
     secure_headers,
 )
-from tailorcv.delivery.api.models.base import Problem
+from tailorcv.delivery.api.models.base import FREE_MODE_PROBLEM, Problem
 
 
 async def secure_local_response(request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -89,6 +90,18 @@ async def not_found(request: Request, error: NotFoundError) -> JSONResponse:
 async def conflict(request: Request, error: ConflictError) -> JSONResponse:
     """Translate an application conflict into a safe problem response."""
     return problem(request, 409, "Conflict", str(error), "conflict")
+
+
+async def free_mode(request: Request, error: FreeModeError) -> JSONResponse:
+    """Refuse paid work while no provider key is set, pointing at where to add one."""
+    return problem(
+        request,
+        409,
+        "Free mode",
+        str(error),
+        FREE_MODE_PROBLEM,
+        hint="Add an API key in Settings > Provider.",
+    )
 
 
 async def invalid(request: Request, error: ValidationError) -> JSONResponse:
@@ -183,6 +196,7 @@ def install_middleware(app: FastAPI) -> None:
     app.middleware("http")(secure_local_response)
     app.exception_handler(NotFoundError)(not_found)
     app.exception_handler(ConflictError)(conflict)
+    app.exception_handler(FreeModeError)(free_mode)
     app.exception_handler(ValidationError)(invalid)
     app.exception_handler(UnavailableError)(unavailable)
     app.exception_handler(CareerPageUnreadableError)(page_unreadable)

@@ -1,7 +1,8 @@
 import { useId, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { type EvaluationSelection } from "../api/client";
-import { useEvaluationPreflight, type TaskCosts } from "../api/hooks";
+import { useEvaluationPreflight, useFreeMode, type TaskCosts } from "../api/hooks";
 import { useConfirmation } from "../confirmations";
 import type { ConfirmationOptions } from "../providers/ConfirmDialog";
 import { EvaluationCostDetails } from "./EvaluationCostDetails";
@@ -16,10 +17,13 @@ type Activation =
   | { confirmation: ConfirmationOptions; onContinue: () => void; onAct?: never; onPrepare?: never }
   | { onPrepare: () => void; confirmation?: never; onAct?: never; onContinue?: never };
 
+const PAID_MARK = "Paid";
+const FREE_MODE_REASON = "Add a provider key to use paid actions.";
+const PROVIDER_SETTINGS_PATH = "/settings?tab=provider";
+
 /**
- * One affordance for every control that can reach a billing provider. The
- * control carries the "Spends money" mark and a one-line typical-cost hint; the
- * measured spread lives in the confirmation modal.
+ * The one control for work that can reach a billing provider. The button carries
+ * the Paid mark and the estimate; with no provider key it stays disabled.
  */
 export function PaidAction({
   ariaLabel,
@@ -45,6 +49,8 @@ export function PaidAction({
   evaluation?: { workspaceId: string; selection: EvaluationSelection };
 }) {
   const confirm = useConfirmation();
+  const free = useFreeMode();
+  const reasonId = useId();
   const preflight = useEvaluationPreflight(evaluation?.workspaceId ?? "");
   const [preparing, setPreparing] = useState(false);
   const preparingRef = useRef(false);
@@ -53,12 +59,11 @@ export function PaidAction({
   const spend = compact ? costs.summary(taskType, count) : costs.inline(taskType, count);
   return (
     <div className="paid-action">
-      <span className="paid-action-mark">Spends money</span>
       <button
-        aria-label={ariaLabel}
-        aria-describedby={spendId}
+        aria-label={ariaLabel ?? (preparing ? "Preparing cost estimate" : label)}
+        aria-describedby={free ? `${spendId} ${reasonId}` : spendId}
         className="button button--paid"
-        disabled={disabled || !costs.loaded || costs.isError}
+        disabled={free || disabled || !costs.loaded || costs.isError}
         aria-disabled={preparing || undefined}
         aria-busy={preparing || undefined}
         onClick={() => {
@@ -118,11 +123,18 @@ export function PaidAction({
         }}
         type="button"
       >
-        {preparing ? "Preparing cost estimate" : label}
+        <span className="paid-action-label">{preparing ? "Preparing cost estimate" : label}</span>
+        <span className="paid-action-cost" id={spendId}>
+          <span className="paid-action-mark">{PAID_MARK}</span>{" "}
+          <span className="paid-action-spend">{evaluation ? `Past runs: ${spend}` : spend}</span>
+        </span>
       </button>
-      <small className="paid-action-spend" id={spendId}>
-        {evaluation ? `Past runs: ${spend}` : spend}
-      </small>
+      {free && (
+        <small className="field-note" id={reasonId}>
+          <span>{FREE_MODE_REASON}</span>{" "}
+          <Link to={PROVIDER_SETTINGS_PATH}>Open provider settings</Link>
+        </small>
+      )}
       {estimateError && <p role="alert">{estimateError}</p>}
     </div>
   );

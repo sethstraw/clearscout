@@ -3,6 +3,7 @@
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import partial
 from pathlib import Path
 from typing import Annotated
 
@@ -45,7 +46,7 @@ from tailorcv.infrastructure.persistence.database import Database
 from tailorcv.infrastructure.persistence.migration import MigrationStatus
 from tailorcv.infrastructure.persistence.migration import status as migration_status
 from tailorcv.infrastructure.providers.billing import OpenAIBillingClient, OrganizationBilling
-from tailorcv.infrastructure.providers.credentials import KeyStore, find_admin_key
+from tailorcv.infrastructure.providers.credentials import KeyStore, find, find_admin_key
 from tailorcv.infrastructure.web_fetch.company_research import CompanyResearchFetcher
 from tailorcv.infrastructure.web_fetch.ingest.url import USER_AGENT
 from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
@@ -144,7 +145,7 @@ def provide_master_cvs(
     state: Annotated[ApiState, Depends(api_state)],
 ) -> MasterCvService:
     """Build the master-CV application service for one request."""
-    return MasterCvService(database, state.storage)
+    return MasterCvService(database, state.storage, paid_work_ready=partial(paid_work_ready, state))
 
 
 def provide_source_scans(
@@ -249,9 +250,15 @@ def provide_spend_reconciliation(
 
 def provide_tasks(
     database: Annotated[Database, Depends(provide_database)],
+    state: Annotated[ApiState, Depends(api_state)],
 ) -> TaskQueueService:
-    """Build the task-queue application service for one request."""
-    return TaskQueueService(database)
+    """Build the task-queue application service, refusing paid work without a key."""
+    return TaskQueueService(database, paid_work_ready=partial(paid_work_ready, state))
+
+
+def paid_work_ready(state: ApiState) -> bool:
+    """Return whether the configured provider has a key, reading settings only when asked."""
+    return find(provide_settings(state).provider, store=state.key_store) is not None
 
 
 def provide_documents(

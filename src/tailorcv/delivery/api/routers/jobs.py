@@ -36,6 +36,7 @@ from tailorcv.delivery.api.dependencies import (
     WorkflowServiceDep,
     WorkspaceId,
 )
+from tailorcv.delivery.api.models.base import FREE_MODE_RESPONSES
 from tailorcv.delivery.api.models.jobs import (
     JobArchiveBatchBody,
     TailoringPreflightResponse,
@@ -354,6 +355,7 @@ def posting_diff(
     f"{API_PREFIX}/jobs/{{job_posting_id}}/reevaluate",
     response_model=TaskResponse,
     status_code=202,
+    responses=FREE_MODE_RESPONSES,
     tags=["jobs"],
 )
 def reevaluate_job(

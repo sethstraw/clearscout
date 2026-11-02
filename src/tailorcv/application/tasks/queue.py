@@ -31,11 +31,12 @@ class TaskQueueService:
         database: Database,
         *,
         reader_alive: Callable[[int, str], bool | None] | None = None,
+        paid_work_ready: Callable[[], bool] | None = None,
     ) -> None:
         """Compose commands, leases, events, and queries over one database."""
         self.database = database
         self.events = TaskEventLog(database)
-        self.commands = TaskCommands(database, self.events)
+        self.commands = TaskCommands(database, self.events, paid_work_ready=paid_work_ready)
         self.leases = TaskLeases(database, self.events)
         self.queries = TaskQueries(database)
         self.reader_alive = reader_alive

@@ -1,13 +1,21 @@
 """Contract checks for the production task registry."""
 
+import sqlite3
 from pathlib import Path
 
 import pytest
+from sqlalchemy import func, select
 
-from tailorcv.application.tasks import task_types
+from tailorcv.application.failures import FreeModeError
+from tailorcv.application.tasks import TaskQueueService, task_types
 from tailorcv.bootstrap.api import create_app
 from tailorcv.delivery.api.models.tasks import TaskCreate
 from tailorcv.infrastructure.persistence.database import Database
+from tailorcv.infrastructure.persistence.models import BackgroundTask, ModelCall
+from tailorcv.infrastructure.providers.credentials import find
+from tests.support.doubles import MemoryStore
+from tests.support.scenarios import board_source, scan_workspace, tracked_board_posting
+from tests.support.suite import SUITE_PROVIDER
 
 
 def test_openapi_task_response_exposes_the_production_vocabulary_as_an_enum(
@@ -48,6 +56,104 @@ def test_a_payload_carrying_a_spend_ceiling_is_refused() -> None:
                 "payload": {"job_posting_id": "synthetic-job", "approved_cap_cents": 27},
             }
         )
+
+
+def _free_mode_queue(database: Database, store: MemoryStore) -> TaskQueueService:
+    return TaskQueueService(
+        database, paid_work_ready=lambda: find(SUITE_PROVIDER, store=store) is not None
+    )
+
+
+def test_a_paid_task_is_refused_without_a_provider_key_and_nothing_is_stored(
+    durable_database: Database,
+) -> None:
+    workspace_id = scan_workspace(durable_database)
+    queue = _free_mode_queue(durable_database, MemoryStore())
+
+    with pytest.raises(FreeModeError):
+        queue.enqueue(
+            workspace_id=workspace_id,
+            task_type="workflow.tailor",
+            payload={"job_posting_id": "synthetic-job"},
+            idempotency_key="free-mode-tailor",
+        )
+
+    assert queue.list_tasks(workspace_id) == []
+    with durable_database.session() as session:
+        assert session.scalar(select(func.count()).select_from(BackgroundTask)) == 0
+        assert session.scalar(select(func.count()).select_from(ModelCall)) == 0
+
+
+def test_a_paid_task_is_queued_once_the_configured_provider_has_a_key(
+    durable_database: Database,
+) -> None:
+    workspace_id = scan_workspace(durable_database)
+    source_id = board_source(durable_database, workspace_id, "Acme", "https://example.test/jobs")
+    job_id = tracked_board_posting(
+        durable_database,
+        workspace_id,
+        source_id,
+        title="Data Platform Lead",
+        url="https://example.test/jobs/1",
+    )
+    queue = _free_mode_queue(durable_database, MemoryStore({SUITE_PROVIDER: "test-key-not-real"}))
+
+    task = queue.enqueue(
+        workspace_id=workspace_id,
+        task_type="workflow.tailor",
+        payload={"job_posting_id": job_id},
+        idempotency_key="keyed-tailor",
+    )
+
+    assert task.status == "queued"
+    assert [listed.id for listed in queue.list_tasks(workspace_id)] == [task.id]
+
+
+def test_the_key_check_runs_before_the_write_lock_is_taken(durable_database: Database) -> None:
+    workspace_id = scan_workspace(durable_database)
+    path = durable_database.engine.url.database
+    assert path is not None
+
+    def write_lock_free() -> bool:
+        probe = sqlite3.connect(path, timeout=0, isolation_level=None)
+        try:
+            probe.execute("BEGIN IMMEDIATE")
+            probe.execute("ROLLBACK")
+            return True
+        except sqlite3.OperationalError:
+            return False
+        finally:
+            probe.close()
+
+    observed: list[bool] = []
+
+    def ready() -> bool:
+        observed.append(write_lock_free())
+        return False
+
+    with pytest.raises(FreeModeError):
+        TaskQueueService(durable_database, paid_work_ready=ready).enqueue(
+            workspace_id=workspace_id,
+            task_type="workflow.tailor",
+            payload={"job_posting_id": "synthetic-job"},
+            idempotency_key="lock-order",
+        )
+
+    assert observed == [True]
+
+
+def test_a_free_task_is_queued_without_a_provider_key(durable_database: Database) -> None:
+    workspace_id = scan_workspace(durable_database)
+    queue = _free_mode_queue(durable_database, MemoryStore())
+
+    task = queue.enqueue(
+        workspace_id=workspace_id,
+        task_type="artifact.verify",
+        payload={"artifact_id": "synthetic-artifact"},
+        idempotency_key="free-verify",
+    )
+
+    assert task.status == "queued"
 
 
 def test_a_source_scan_accepts_an_entire_large_selection() -> None:

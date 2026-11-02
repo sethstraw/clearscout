@@ -6,19 +6,17 @@ import { BrandMark } from "./components/Brand";
 import { Icons } from "./components/Icons";
 import { ErrorState, LoadingState } from "./components/States";
 import { JobSearchPage } from "./pages/JobSearchPage";
+import { PRODUCT_NAME } from "./productName";
 import { useWorkspace } from "./providers";
 import { WelcomePage } from "./pages/WelcomePage";
 
-const ApplicationsPage = lazy(() =>
-  import("./pages/ApplicationsPage").then((module) => ({ default: module.ApplicationsPage })),
-);
 const ApplicationFilesPage = lazy(() =>
   import("./pages/ApplicationFilesPage").then((module) => ({
     default: module.ApplicationFilesPage,
   })),
 );
-const ApiPlaygroundPage = lazy(() =>
-  import("./pages/ApiPlaygroundPage").then((module) => ({ default: module.ApiPlaygroundPage })),
+const ApplyPage = lazy(() =>
+  import("./pages/ApplyPage").then((module) => ({ default: module.ApplyPage })),
 );
 const CommandCenterPage = lazy(() =>
   import("./pages/CommandCenterPage").then((module) => ({ default: module.CommandCenterPage })),
@@ -41,20 +39,8 @@ const ScoringPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage })),
 );
-const SpendPage = lazy(() =>
-  import("./pages/SpendPage").then((module) => ({ default: module.SpendPage })),
-);
-const PromptsPage = lazy(() =>
-  import("./pages/PromptsPage").then((module) => ({ default: module.PromptsPage })),
-);
 const TasksPage = lazy(() =>
   import("./pages/TasksPage").then((module) => ({ default: module.TasksPage })),
-);
-const DocumentsPage = lazy(() =>
-  import("./pages/DocumentsPage").then((module) => ({ default: module.DocumentsPage })),
-);
-const WorkspacePage = lazy(() =>
-  import("./pages/WorkspacePage").then((module) => ({ default: module.WorkspacePage })),
 );
 
 // A page chunk can still fail to arrive. Offer a recovery action once it runs long.
@@ -84,62 +70,31 @@ export function RouteFallback() {
 }
 
 /**
- * Group navigation by job-search stage. The short label rides under the icon in the
- * narrow bottom bar, where the full label does not fit; aria-label keeps the full
- * label as the accessible name in every layout.
+ * The short label rides under the icon in the narrow bar, where the full label
+ * does not fit; aria-label keeps the full label as the accessible name.
  */
 const navigation = [
-  {
-    section: "Today",
-    items: [{ to: "/", label: "Command Center", short: "Command", icon: Icons.home }],
-  },
-  {
-    section: "Your CV",
-    items: [{ to: "/cv", label: "Master CV", short: "CV", icon: Icons.cv }],
-  },
-  {
-    section: "Find",
-    items: [{ to: "/find", label: "Find jobs", short: "Find", icon: Icons.search }],
-  },
-  {
-    section: "Decide",
-    items: [{ to: "/jobs", label: "Tracked postings", short: "Postings", icon: Icons.jobs }],
-  },
-  {
-    section: "Apply",
-    items: [
-      {
-        to: "/applications",
-        label: "Applications",
-        short: "Applications",
-        icon: Icons.applications,
-      },
-      {
-        to: "/documents",
-        label: "Tailored documents",
-        short: "Tailored",
-        icon: Icons.documents,
-      },
-    ],
-  },
-  {
-    section: "Records",
-    items: [
-      { to: "/records", label: "Notes, tags, saved views", short: "Notes", icon: Icons.notes },
-    ],
-  },
-  {
-    section: "System",
-    items: [{ to: "/tasks", label: "Background tasks", short: "Tasks", icon: Icons.tasks }],
-  },
-  {
-    section: "Settings",
-    items: [
-      { to: "/prompts", label: "Prompts", short: "Prompts", icon: Icons.prompts },
-      { to: "/settings", label: "Settings", short: "Settings", icon: Icons.settings },
-    ],
-  },
-];
+  { to: "/", label: "Home", short: "Home", icon: Icons.home },
+  { to: "/cv", label: "CV", short: "CV", icon: Icons.cv },
+  { to: "/find", label: "Find jobs", short: "Find", icon: Icons.search },
+  { to: "/jobs", label: "Jobs", short: "Jobs", icon: Icons.jobs },
+  { to: "/apply", label: "Apply", short: "Apply", icon: Icons.applications },
+  { to: "/settings", label: "Settings", short: "Settings", icon: Icons.settings },
+] as const;
+
+/** Old addresses that still arrive from bookmarks, docs, and server redirects. */
+const MOVED_ROUTES = [
+  ["/applications", "/apply?tab=applications"],
+  ["/documents", "/apply?tab=documents"],
+  ["/records", "/settings?tab=records"],
+  ["/prompts", "/settings?tab=advanced&section=prompts"],
+  ["/spend", "/settings?tab=costs"],
+  ["/api-playground", "/settings?tab=advanced&section=diagnostics"],
+] as const;
+
+function navLinkClass({ isActive }: { isActive: boolean }) {
+  return isActive ? "nav-link active" : "nav-link";
+}
 
 function prefersCollapsedNav() {
   return window.localStorage.getItem("tailorcv.nav") === "collapsed";
@@ -190,6 +145,7 @@ export function App() {
     );
   }
 
+  const badge = activeTasks.length;
   return (
     <div className="app-shell" data-nav={navCollapsed ? "collapsed" : "expanded"}>
       <a className="skip-link" href="#main-content">
@@ -199,7 +155,7 @@ export function App() {
         <div className="brand">
           <BrandMark />
           <div>
-            <strong>TailorCV</strong>
+            <strong>{PRODUCT_NAME}</strong>
             <span>Follow the evidence path.</span>
           </div>
         </div>
@@ -220,35 +176,37 @@ export function App() {
           )}
         </button>
         <nav>
-          {navigation.map(({ section, items }) => (
-            <div className="nav-section" key={section}>
-              <p className="nav-section-label">{section}</p>
-              {items.map(({ to, label, short, icon: Icon }) => {
-                const badge = to === "/tasks" && activeTasks.length > 0 ? activeTasks.length : 0;
-                const ariaLabel = badge > 0 ? `${label}, ${badge} active` : label;
-                return (
-                  <NavLink
-                    aria-label={ariaLabel}
-                    className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-                    end={to === "/"}
-                    key={to}
-                    to={to}
-                  >
-                    <Icon />
-                    <span className="nav-link-label">{label}</span>
-                    <span className="nav-link-short">{short}</span>
-                    {badge > 0 ? (
-                      <span aria-hidden="true" className="nav-link-badge">
-                        {badge}
-                      </span>
-                    ) : null}
-                  </NavLink>
-                );
-              })}
-            </div>
-          ))}
+          <div className="nav-section">
+            {navigation.map(({ to, label, short, icon: Icon }) => (
+              <NavLink
+                aria-label={label}
+                className={navLinkClass}
+                end={to === "/"}
+                key={to}
+                to={to}
+              >
+                <Icon />
+                <span className="nav-link-label">{label}</span>
+                <span className="nav-link-short">{short}</span>
+              </NavLink>
+            ))}
+          </div>
         </nav>
         <div className="sidebar-footer">
+          <NavLink
+            aria-label={badge > 0 ? `Activity, ${badge} active` : "Activity"}
+            className={navLinkClass}
+            to="/tasks"
+          >
+            <Icons.tasks />
+            <span className="nav-link-label">Activity</span>
+            <span className="nav-link-short">Activity</span>
+            {badge > 0 ? (
+              <span aria-hidden="true" className="nav-link-badge">
+                {badge}
+              </span>
+            ) : null}
+          </NavLink>
           <label htmlFor="workspace-select">Workspace</label>
           <select
             id="workspace-select"
@@ -269,10 +227,6 @@ export function App() {
           >
             {dark ? <Icons.sun /> : <Icons.moon />}
           </button>
-          {/* A server-rendered page outside the router, so not a NavLink. */}
-          <a className="sidebar-tool-link" href="/admin/">
-            Data browser
-          </a>
         </div>
       </aside>
       <div className="content">
@@ -294,19 +248,17 @@ export function App() {
             <Route path="/" element={<CommandCenterPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/jobs/:jobId" element={<JobPage />} />
-            <Route path="/applications" element={<ApplicationsPage />} />
+            <Route path="/apply" element={<ApplyPage />} />
             <Route path="/applications/:applicationId" element={<ApplicationFilesPage />} />
-            <Route path="/documents" element={<DocumentsPage />} />
-            <Route path="/records" element={<WorkspacePage />} />
             <Route path="/find" element={<JobSearchPage />} />
             <Route path="/find/scoring" element={<ScoringPage />} />
             <Route path="/cv" element={<MasterCvPage />} />
-            <Route path="/prompts" element={<PromptsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/api-playground" element={<ApiPlaygroundPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/spend" element={<SpendPage />} />
             <Route path="/welcome" element={<WelcomePage />} />
+            {MOVED_ROUTES.map(([from, to]) => (
+              <Route element={<Navigate replace to={to} />} key={from} path={from} />
+            ))}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
