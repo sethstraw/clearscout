@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import shutil
 import subprocess
 import sys
@@ -413,3 +414,40 @@ def test_gate_scopes_cover_release_security_package_and_workflows() -> None:
     assert "check-wheel-contents==0.6.3" in gate
     assert "npx" not in gate
     assert "npm --prefix web run typecheck" in gate
+
+
+def test_post_checkout_prepares_only_a_new_worktree(tmp_path: Path) -> None:
+    """A new worktree gets web/dist and a uv sync; a branch switch gets neither."""
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    fake_uv = tools / "uv"
+    fake_uv.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$PWD/uv-calls"\n', encoding="utf-8")
+    fake_uv.chmod(0o755)
+    env = {**os.environ, "PATH": f"{tools}:{os.environ['PATH']}"}
+
+    git_bin = shutil.which("git")
+    assert git_bin is not None
+
+    def git(cwd: Path, *args: str) -> None:
+        subprocess.run(  # noqa: S603 - resolved executable, fixed arguments
+            [git_bin, *args], cwd=cwd, check=True, capture_output=True, env=env
+        )
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "config", "user.email", "fixture@example.invalid")
+    git(repo, "config", "user.name", "Fixture")
+    git(repo, "config", "core.hooksPath", str(ROOT / ".githooks"))
+    (repo / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+    git(repo, "add", "uv.lock")
+    git(repo, "commit", "-qm", "fixture", "--no-verify")
+
+    tree = tmp_path / "tree"
+    git(repo, "worktree", "add", "-q", "-b", "fixture", str(tree))
+    assert (tree / "web/dist").is_dir()
+    assert (tree / "uv-calls").read_text(encoding="utf-8").splitlines() == ["sync --frozen"]
+
+    git(repo, "checkout", "-q", "-b", "other")
+    assert not (repo / "web/dist").exists()
+    assert not (repo / "uv-calls").exists()
