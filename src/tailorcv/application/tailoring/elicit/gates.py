@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from tailorcv.application.master_cv.cv import CvInventory, EntryKind, kind_for_section
+from tailorcv.application.master_cv.cv import LIST_MARKER, CvInventory, EntryKind, kind_for_section
 from tailorcv.application.tailoring.stages.context import CITABLE
 from tailorcv.shared.errors import DiscoveryError
 
@@ -94,6 +94,11 @@ def propose(
     stripped = " ".join(text.split())
     if not stripped:
         raise DiscoveryError("A discovered fact needs wording. Nothing was given.")
+    if LIST_MARKER.match(stripped):
+        raise DiscoveryError(
+            "That wording starts with a list marker, which the master CV would not read.\n"
+            "  The write adds the bullet itself. Propose the wording without the leading marker."
+        )
     # Explain ownership conflicts instead of listing unmatched words.
     level, evidence = _no_higher_than_stated(stripped, line.replies)
     _only_figures_that_were_stated(stripped, line.replies)

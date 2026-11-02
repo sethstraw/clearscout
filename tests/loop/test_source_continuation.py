@@ -130,6 +130,7 @@ from tests.loop.test_board_mappings_listed_pages import (
     _icims_pages,
 )
 from tests.loop.test_board_paging import _ORACLE_SITE, _facet_board, _OracleBoard, _PhenomWindow
+from tests.loop.test_publisher_sources import _Client as _ScriptedPublisherClient
 from tests.loop.test_taleo_reader import _TaleoSite
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import (
@@ -8893,6 +8894,58 @@ def test_a_traversal_leaving_only_person_held_links_certifies_and_keeps_their_op
             select(SourceScanFrontierItem).where(SourceScanFrontierItem.url == held)
         ).one()
         assert (row.status, row.automatic_eligible) == ("pending", False)
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_a_publisher_gone_answer_read_through_traversal_certifies_the_drained_scan(
+    durable_database: Database, status: int
+) -> None:
+    workspace_id = _workspace(durable_database)
+    source_id = _source(durable_database, workspace_id, "Globex", "https://jobs.example/globex")
+    state_target_titles(durable_database, workspace_id, "Data Platform Lead")
+    listed = "https://jobs.example/globex/listed"
+    held = "https://jobs.example/globex/roles/held"
+    gone = "https://jobs.example/globex/gone"
+    _stage_known_rows(durable_database, workspace_id, source_id, (listed, held, gone))
+    request = httpx.Request("GET", held)
+    failure = httpx.HTTPStatusError(
+        "gone", request=request, response=httpx.Response(status, request=request)
+    )
+    publisher_read = PublisherSourceFetcher(
+        client=cast(Any, _ScriptedPublisherClient({held: failure}))
+    ).read(
+        "Globex",
+        "https://jobs.example/globex",
+        '<main><a href="/globex/roles/held">Held Role</a></main>',
+    )
+
+    class GoneLinkBoard(_DrainingBoard):
+        def listings(self, *args: Any, **kwargs: Any) -> SourceRead:
+            return replace(
+                super().listings(*args, **kwargs),
+                deferred_targets=publisher_read.deferred_targets,
+                exhausted_outcome=SourceReadOutcome.PUBLISHER_INDEX,
+            )
+
+    worker = _enqueue_scan(
+        durable_database, workspace_id, GoneLinkBoard(listed, f"{listed}/unused", ())
+    )
+    for _ in range(6):
+        if not worker.run_once():
+            break
+
+    scan = _board_scan_row(durable_database)
+    assert scan.complete is True
+    assert _withdrawn_urls(durable_database) == {gone}
+    with durable_database.session() as session:
+        row = session.scalars(
+            select(SourceScanFrontierItem).where(SourceScanFrontierItem.url == held)
+        ).one()
+        assert (row.status, row.automatic_eligible, row.deferred_reason) == (
+            "pending",
+            False,
+            f"stable_http_{status}",
+        )
 
 
 @pytest.mark.parametrize(

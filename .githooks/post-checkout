@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# On a first checkout (all-zero previous HEAD), create the empty web/dist that
+# hatchling force-includes and sync .venv, since a sandboxed commit cannot reach
+# the package index to build the editable install itself.
+
+[[ "$1" =~ ^0+$ && ! -e web/dist ]] || exit 0
+mkdir -p web/dist
+if [[ -f uv.lock ]] && command -v uv >/dev/null 2>&1; then
+  uv sync --frozen || printf 'post-checkout: uv sync --frozen failed\n' >&2
+fi
+exit 0

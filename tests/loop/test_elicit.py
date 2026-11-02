@@ -331,6 +331,16 @@ def test_a_claim_with_no_wording_is_refused(record: CvInventory) -> None:
         material(record, line, "   ")
 
 
+@pytest.mark.parametrize("marker", ["- ", "* "])
+def test_wording_that_starts_with_a_list_marker_is_refused(
+    record: CvInventory, marker: str
+) -> None:
+    """The master CV parser rejects such an entry, so it is refused before confirmation."""
+    line = answered("I built the retry layer for the ingestion jobs myself.")
+    with pytest.raises(DiscoveryError, match="list marker"):
+        material(record, line, f"{marker}Built the retry layer for the ingestion jobs.")
+
+
 def test_material_stays_pending_until_every_point_is_confirmed(record: CvInventory) -> None:
     proposed = material(
         record,
