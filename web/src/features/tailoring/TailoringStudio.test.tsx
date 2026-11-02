@@ -202,32 +202,27 @@ afterEach(() => {
 });
 
 describe("TailoringStudio", () => {
-  it("shows recorded evaluation cost before re-evaluating", async () => {
-    const traffic = useDiscovery({}, undefined, evaluationCostHistory);
-    studio();
+  it("points re-evaluation at the page header instead of repeating the action", async () => {
+    useDiscovery({}, undefined, evaluationCostHistory);
+    render(
+      <AppProviders>
+        <TailoringStudio
+          evaluateActionId="job-evaluate-action"
+          jobId="job-1"
+          workspaceId="workspace-1"
+        />
+      </AppProviders>,
+    );
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Re-evaluate job" })).toHaveProperty(
-        "disabled",
-        false,
-      ),
+      expect(screen.getByRole("button", { name: GENERATE })).toHaveProperty("disabled", false),
     );
-    // The dialog keeps the cost line it was opened with, so the read must have landed.
-    await waitFor(() => expect(spendOn("Re-evaluate job")).toMatch(/about \$0.25 per posting/));
-    fireEvent.click(screen.getByRole("button", { name: "Re-evaluate job" }));
-
-    expect(await screen.findByRole("dialog")).toBeTruthy();
-    expect(screen.getByRole("dialog").textContent).toContain(
-      "Estimated total at configured rates: $0.2000 USD.",
-    );
-    expect(traffic.posts).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "Confirm re-evaluation" }));
-
-    await waitFor(() => expect(traffic.posts).toHaveLength(1));
-    expect(traffic.posts[0]).toMatchObject({
-      task_type: "discovery.evaluate",
-      payload: { job_posting_id: "job-1", fresh: true },
-    });
+    expect(
+      screen
+        .getByRole("link", { name: "evaluation button in the page header" })
+        .getAttribute("href"),
+    ).toBe("#job-evaluate-action");
+    expect(screen.queryByRole("button", { name: /evaluat/i })).toBeNull();
   });
 
   it("labels an exact package reuse as free while forced regeneration stays paid", async () => {
@@ -290,11 +285,9 @@ describe("TailoringStudio", () => {
     studio();
 
     await waitFor(() =>
-      expect(spendOn("Re-evaluate job")).toMatch(
-        /cost shown before you run|about \$[\d.]+ per run/,
-      ),
+      expect(spendOn(GENERATE)).toMatch(/cost shown before you run|about \$[\d.]+ per run/),
     );
-    for (const name of ["Re-evaluate job", GENERATE, "Regenerate new version"]) {
+    for (const name of [GENERATE, "Regenerate new version"]) {
       expect(spendOn(name)).toMatch(/cost shown before you run|about \$[\d.]+ per run/);
       expect(screen.getByRole("button", { name }).className).toContain("button--paid");
       expect(within(screen.getByRole("button", { name })).getByText("Paid")).toBeTruthy();
@@ -303,7 +296,7 @@ describe("TailoringStudio", () => {
     expect(free.className).toContain("button--quiet");
     expect(free.closest(".paid-action")).toBeNull();
     expect(within(free).queryByText("Paid")).toBeNull();
-    expect(await screen.findByText("No provider charge.")).toBeTruthy();
+    expect(screen.queryByText("No provider charge.")).toBeNull();
   });
 
   it("includes the cover letter in the approved action", () => {
@@ -373,7 +366,7 @@ describe("TailoringStudio", () => {
     useDiscovery({});
     studio();
 
-    expect(await screen.findByText("Progress appears on the Tasks page.")).toBeTruthy();
+    expect(await screen.findByText("Progress appears in Activity.")).toBeTruthy();
     expect(screen.queryByText("No work has run for this job yet.")).toBeNull();
   });
 
@@ -665,9 +658,7 @@ describe("TailoringStudio", () => {
     );
     studio();
 
-    expect(
-      await screen.findByText("Checking current tailoring work before enabling paid actions."),
-    ).toBeTruthy();
+    expect(await screen.findByText("Checking current tailoring work.")).toBeTruthy();
     const generate = screen.getByRole("button", { name: GENERATE });
     expect(generate).toHaveProperty("disabled", true);
     expect(screen.queryByText("No work has run for this job yet.")).toBeNull();
@@ -714,7 +705,7 @@ describe("TailoringStudio", () => {
     }
     expect(await screen.findByRole("alert")).toHaveProperty(
       "textContent",
-      "Current tailoring work is unavailable. Reload or review Tasks before starting paid work.",
+      "Current tailoring work is unavailable. Reload or open Activity before starting new work.",
     );
     expect(screen.getByRole("button", { name: GENERATE })).toHaveProperty("disabled", true);
     expect(screen.getByRole("button", { name: "Regenerate new version" })).toHaveProperty(

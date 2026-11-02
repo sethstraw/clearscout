@@ -170,11 +170,11 @@ describe("SearchSuggestions", () => {
     expect(
       await screen.findByRole("heading", { name: "Suggestions from search vocabulary" }),
     ).toBeTruthy();
-    expect(screen.getByText(/bounded shortlist of saved suggestions/)).toBeTruthy();
-    expect(screen.getByText(/later searches use it only after you approve it/i)).toBeTruthy();
-    expect(screen.getByText(/does not merge or delete anything/)).toBeTruthy();
-    expect(screen.getByText(/Decisions save immediately and cost nothing/)).toBeTruthy();
+    expect(screen.getByText(/Decisions save at once/)).toBeTruthy();
     expect(await screen.findByText("Streaming Platform Engineer")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "How suggestions and review limits work" }));
+    expect(screen.getByText(/widens later searches only after you approve it/i)).toBeTruthy();
+    expect(screen.getByText(/merges or deletes nothing/)).toBeTruthy();
     expect(screen.getByText(/Review inbox - Job titles: 1 awaiting review, limit 8/)).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Needs review (3)" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Approved (1)" })).toBeTruthy();
@@ -203,7 +203,8 @@ describe("SearchSuggestions", () => {
     installSuggestions();
     panel();
     expect(await screen.findByText("Streaming Platform Engineer")).toBeTruthy();
-    expect(screen.getByText(/Existing approvals do not consume review capacity/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "How suggestions and review limits work" }));
+    expect(screen.getByText(/Approvals do not count against the review limit/)).toBeTruthy();
     expect(screen.getByText("1 awaiting review; inbox limit 8; room for 7 new")).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Approved (1)" })).toBeTruthy();
     expect(screen.queryByText(/active set is reduced/)).toBeNull();

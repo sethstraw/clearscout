@@ -3,6 +3,7 @@ import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 
 import type {
+  Health,
   SearchVocabularyConfiguration,
   SpendSummary,
   Task,
@@ -95,6 +96,19 @@ function installHandlers(
 ) {
   const enqueued: unknown[] = [];
   server.use(
+    http.get(`${API}/health`, () =>
+      HttpResponse.json({
+        status: "ok",
+        version: "0.1.0",
+        database_reachable: true,
+        schema_current: true,
+        current_revision: "0001",
+        head_revision: "0001",
+        database_exists: true,
+        worker_available: true,
+        free_mode: false,
+      } satisfies Health),
+    ),
     taskTypesHandler(),
     http.get(`${WORKSPACE}/search-vocabulary-configuration`, () =>
       HttpResponse.json(costs.configuration ?? vocabularyConfiguration),
@@ -144,7 +158,7 @@ describe("SearchVocabularyPanel", () => {
   it("restores the vocabulary action label after reload", async () => {
     installHandlers(vocabularyTask(), [vocabularyTask()]);
     panel();
-    expect(await screen.findByRole("button", { name: "Paid search running" })).toHaveProperty(
+    expect(await screen.findByRole("button", { name: "Search running" })).toHaveProperty(
       "disabled",
       true,
     );
@@ -168,9 +182,9 @@ describe("SearchVocabularyPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Propose search terms" }));
 
     await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Paid search running" }).hasAttribute("disabled"),
-      ).toBe(true),
+      expect(screen.getByRole("button", { name: "Search running" }).hasAttribute("disabled")).toBe(
+        true,
+      ),
     );
     expect(enqueued).toEqual([
       { workspace_id: "workspace-1", task_type: "search.vocabulary", payload: {} },
@@ -182,9 +196,7 @@ describe("SearchVocabularyPanel", () => {
     panel();
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain(
-      "The configured provider, extraction model, and effort could not be read",
-    );
+    expect(alert.textContent).toContain("The provider, model, and effort could not be read");
     expect(screen.getByRole("button", { name: "Propose new search terms" })).toHaveProperty(
       "disabled",
       true,
@@ -192,7 +204,7 @@ describe("SearchVocabularyPanel", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("shows cumulative recorded search-vocabulary spend from the workspace ledger", async () => {
+  it("points spending totals at Settings > Costs instead of repeating them", async () => {
     installHandlers(null, [], {
       spend: spendSummary({
         total_usd: 1.25,
@@ -206,9 +218,24 @@ describe("SearchVocabularyPanel", () => {
     panel();
     await waitUntilReady();
 
-    expect(screen.getByText(/Spent on search vocabulary/).textContent).toContain(
-      "$0.7500 across 4 recorded provider calls",
+    expect(
+      screen.getByRole("link", { name: "See spending in Settings" }).getAttribute("href"),
+    ).toBe("/settings?tab=costs");
+    expect(screen.queryByText(/\$0\.7500/)).toBeNull();
+  });
+
+  it("confirms in two sentences what runs and what it costs, naming the model below", async () => {
+    installHandlers(null);
+    panel();
+    await waitUntilReady();
+    fireEvent.click(screen.getByRole("button", { name: "Propose new search terms" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.textContent).toContain(
+      "Runs one call that reads your CV and proposes search terms, and it finds no jobs.",
     );
+    expect(dialog.textContent).not.toContain("scan registered sources for free");
+    expect(dialog.textContent).toContain("Configured provider:");
   });
 
   it("surfaces a search that fails after launch instead of leaving the panel blank", async () => {

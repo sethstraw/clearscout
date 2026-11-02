@@ -281,14 +281,36 @@ describe("JobSearchPage", () => {
     }
     fireEvent.click(screen.getByRole("tab", { name: "Boards" }));
     await waitFor(() =>
-      expect(
-        screen.getByRole<HTMLButtonElement>("button", { name: "Scan for openings" }).disabled,
-      ).toBe(false),
+      expect(screen.getByRole<HTMLButtonElement>("button", { name: "Scan now" }).disabled).toBe(
+        false,
+      ),
     );
-    expect(screen.getByRole("heading", { name: "Scan for openings" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Scan your boards" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "What a scan can read" })).toBeTruthy();
+  });
+
+  it("marks the tour targets and opens the help for the selected tab", async () => {
+    window.localStorage.setItem("tailorcv.workspace", "workspace-search");
+    useFindPage({ sources: sourceList([boardSource()]) });
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/find?tab=boards"]}>
+          <JobSearchPage />
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const scan = await screen.findByRole("button", { name: "Scan now" });
+    expect(scan.closest('[data-tour="find-scan"]')).not.toBeNull();
     expect(
-      screen.getByText(/Recognition does not guarantee permission or complete coverage/),
-    ).toBeTruthy();
+      screen
+        .getByRole("tablist", { name: "Find jobs sections" })
+        .closest('[data-tour="find-tabs"]'),
+    ).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Help: Boards" }));
+    expect(screen.getByRole("heading", { name: "Boards" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Take the tour" })).toBeTruthy();
   });
 
   it("renders the Find new jobs panels without a duplicate-key warning", async () => {
@@ -311,7 +333,7 @@ describe("JobSearchPage", () => {
     }
   });
 
-  it("keeps board sources and scan history together under Boards", async () => {
+  it("keeps board sources up front and scan history under a closed History", async () => {
     window.localStorage.setItem("tailorcv.workspace", "workspace-search");
     useFindPage({
       scans: sourceScanHistory([
@@ -343,8 +365,11 @@ describe("JobSearchPage", () => {
 
     expect(screen.queryByRole("tab", { name: "Screened out" })).toBeNull();
     fireEvent.click(await screen.findByRole("tab", { name: "Boards" }));
-    expect(await screen.findByText("Board sources")).toBeTruthy();
-    expect(await screen.findByText("Board scan history")).toBeTruthy();
+    const boards = await screen.findByRole("heading", { name: "Your boards" });
+    expect(boards.closest("details")).toBeNull();
+    const history = (await screen.findByText("Board scan history")).closest("details")!;
+    expect(history.open).toBe(false);
+    expect(within(history).getByText("History")).toBeTruthy();
     expect(screen.getByText("Example careers")).toBeTruthy();
     expect(screen.getByText(/10 listed \/ 9 read \/ 8 kept \/ 2 new/)).toBeTruthy();
   });
@@ -380,7 +405,8 @@ describe("JobSearchPage", () => {
     expect(
       await screen.findByText("Screened out in latest scans (3 listings from 1 source)"),
     ).toBeTruthy();
-    expect(await screen.findByRole("heading", { name: "Screened candidates" })).toBeTruthy();
+    const ledger = await screen.findByRole("heading", { name: "Screened candidates" });
+    expect(ledger.closest("details")!.open).toBe(true);
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
 
     fireEvent.click(screen.getByRole("tab", { name: "Review" }));
@@ -419,9 +445,9 @@ describe("JobSearchPage", () => {
       page: pending,
       costHistory: [
         {
-          task_type: "discovery.evaluate",
+          task_type: "discovery.evaluate_batch",
           currency: "USD",
-          unit: "run",
+          unit: "posting",
           measured_runs: 3,
           unpriced_runs: 0,
           replayed_runs: 0,
@@ -444,7 +470,7 @@ describe("JobSearchPage", () => {
     );
 
     await screen.findByRole("checkbox", { name: "Select Role 1 at Employer 1" });
-    expect(screen.queryByRole("button", { name: /^Full evaluation \(\d+, paid\)$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Full evaluation \(\d+\)$/ })).toBeNull();
     expect(screen.getAllByText("First seen 2026-08-10")).toHaveLength(11);
     expect(screen.getByText("Rank 2")).toBeTruthy();
     expect(screen.queryByText("Also advertised in Montreal, Vancouver.")).toBeNull();
@@ -475,7 +501,7 @@ describe("JobSearchPage", () => {
     }
     // The whole selection is enabled and runs as one batch.
     const runButton = screen.getByRole<HTMLButtonElement>("button", {
-      name: "Full evaluation (11, paid)",
+      name: "Full evaluation (11)",
     });
     expect(runButton.disabled).toBe(false);
     expect(runButton.className).toContain("button--paid");

@@ -8,16 +8,20 @@ from typing import Any
 
 from sqlalchemy import select
 
+from tailorcv.application.config import Stage
 from tailorcv.application.failures import NotFoundError
 from tailorcv.application.master_cv.anchoring import Anchor, Drift, reanchor_many
 from tailorcv.application.master_cv.artifacts import MasterCvArtifacts
-from tailorcv.application.master_cv.cv import Entry, parse_cv
+from tailorcv.application.master_cv.cv import CvInventory, Entry, parse_cv
+from tailorcv.application.master_cv.intake import canonical_problem
 from tailorcv.application.workspaces import (
     MasterCvContentResponse,
     MasterCvImpactResponse,
+    MasterCvRereadEstimateResponse,
     MasterCvVersionResponse,
     layout_for,
 )
+from tailorcv.application.workspaces.spend import recorded_call_cost
 from tailorcv.domain.statements import Known, Stated, carried_identities
 from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
 from tailorcv.infrastructure.persistence.database import Database
@@ -29,10 +33,12 @@ from tailorcv.infrastructure.persistence.models import (
     MasterCvEntry,
     MasterCvVersion,
     MatchEvidence,
+    ModelCall,
 )
 from tailorcv.shared.errors import CvParseError
 
 IMPACT_CITATION_LIMIT = 50
+REREAD_ORIGIN = "master_cv.import"
 
 
 def _citation_order(citation: dict[str, Any]) -> tuple[int, str, str, str]:
@@ -106,16 +112,13 @@ class MasterCvQueries:
             )
         )
 
-    def _carried_keys(self, workspace_id: str, version_id: str, content: str) -> set[str]:
+    def _carried_keys(self, version_id: str, proposed: CvInventory | None) -> set[str]:
         """Return the identities the proposed document still carries.
 
         An empty set where the proposal does not parse, so a citation reports no
         entry answer rather than a wrong one.
         """
-        layout = layout_for(workspace_id, storage=self.storage)
-        try:
-            proposed = parse_cv(layout.master_cv, text=content)
-        except CvParseError:
+        if proposed is None:
             return set()
         with self.database.session() as session:
             stored = [
@@ -125,6 +128,31 @@ class MasterCvQueries:
                 )
             ]
         return set(carried_identities(stored, _stated_entries(proposed.entries)).values())
+
+    def _parsed(self, workspace_id: str, content: str) -> CvInventory | None:
+        """Parse a proposed document, or return None where it does not parse."""
+        layout = layout_for(workspace_id, storage=self.storage)
+        try:
+            return parse_cv(layout.master_cv, text=content)
+        except CvParseError:
+            return None
+
+    def reread_estimate(self, workspace_id: str) -> MasterCvRereadEstimateResponse:
+        """Average the recorded cost of this workspace's past model re-reads of a CV."""
+        with self.database.session() as session:
+            rereads, _calls_unpriced, _total = recorded_call_cost(
+                session,
+                ModelCall.workspace_id == workspace_id,
+                ModelCall.origin == REREAD_ORIGIN,
+                ModelCall.stage == Stage.STRUCTURE.value,
+            )
+            _count, _unpriced, total = recorded_call_cost(
+                session,
+                ModelCall.workspace_id == workspace_id,
+                ModelCall.origin == REREAD_ORIGIN,
+            )
+        average = float(total / rereads) if rereads and total is not None else None
+        return MasterCvRereadEstimateResponse(past_rereads=rereads, average_usd=average)
 
     def impact(self, workspace_id: str, content: str) -> MasterCvImpactResponse:
         """Report which committed candidate citations an edit would contradict."""
@@ -152,7 +180,8 @@ class MasterCvQueries:
                     MatchEvidence.source_kind == "candidate",
                 )
             ).all()
-        carried = self._carried_keys(workspace_id, current.id, content)
+        proposed = self._parsed(workspace_id, content)
+        carried = self._carried_keys(current.id, proposed)
         drifts = self._edit_drifts(workspace_id, old_text, content, rows)
         citations: list[dict[str, Any]] = []
         for row, drift in zip(rows, drifts, strict=True):
@@ -209,6 +238,7 @@ class MasterCvQueries:
                 "returned_count": min(len(citations), IMPACT_CITATION_LIMIT),
                 "omitted_count": max(len(citations) - IMPACT_CITATION_LIMIT, 0),
                 "citations": citations[:IMPACT_CITATION_LIMIT],
+                "reread_reason": canonical_problem(proposed) if proposed is not None else None,
             }
         )
 

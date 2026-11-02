@@ -4,6 +4,7 @@ import { useConfirmation } from "../confirmations";
 import type { ConfirmationOptions } from "../providers/ConfirmDialog";
 
 export function ConfirmedActionButton({
+  ariaDescribedBy,
   ariaLabel,
   children,
   className,
@@ -11,6 +12,7 @@ export function ConfirmedActionButton({
   onConfirm,
   options,
 }: PropsWithChildren<{
+  ariaDescribedBy?: string;
   ariaLabel?: string;
   className?: string;
   disabled?: boolean;
@@ -20,6 +22,7 @@ export function ConfirmedActionButton({
   const confirm = useConfirmation();
   return (
     <button
+      aria-describedby={ariaDescribedBy}
       aria-label={ariaLabel}
       className={className}
       disabled={disabled}

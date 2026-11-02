@@ -32,15 +32,24 @@ def test_an_import_that_needs_the_model_is_refused_as_free_mode_without_a_key(
         workspace_id = client.post(
             "/api/v1/workspaces", json={"slug": "keyless", "name": "Keyless"}
         ).json()["id"]
-        refused = client.post(
+        unconfirmed = client.post(
             f"/api/v1/workspaces/{workspace_id}/master-cv/import",
             params={"filename": "notes.txt"},
+            content=b"Jane Example. Builds data platforms. No dated roles here.",
+            headers={"Content-Type": "text/plain"},
+        )
+        refused = client.post(
+            f"/api/v1/workspaces/{workspace_id}/master-cv/import",
+            params={"filename": "notes.txt", "confirm_reread": "true"},
             content=b"Jane Example. Builds data platforms. No dated roles here.",
             headers={"Content-Type": "text/plain"},
         )
         versions = client.get(f"/api/v1/workspaces/{workspace_id}/master-cv/versions").json()
         documented = client.get("/api/v1/openapi.json").json()
 
+    assert unconfirmed.status_code == 409
+    assert unconfirmed.json()["type"] == "urn:tailorcv:problem:conflict"
+    assert "re-read" in unconfirmed.json()["detail"]
     assert refused.status_code == 409
     assert refused.json()["type"] == "urn:tailorcv:problem:free-mode"
     assert versions == []
@@ -151,9 +160,42 @@ def test_master_cv_is_checked_for_impact_and_then_edited_in_place(
         assert again.json()["created"] is False
         assert len(client.get(f"/api/v1/workspaces/{workspace_id}/master-cv/versions").json()) == 2
 
+        undated = "# JANE Q. EXAMPLE\n\n## Summary\n\nBuilds data platforms.\n"
+        flagged = client.post(
+            f"/api/v1/workspaces/{workspace_id}/master-cv/impact", json={"content": undated}
+        )
+        assert flagged.json()["reread_reason"] == "it has no dated role"
+        refused = client.post(
+            f"/api/v1/workspaces/{workspace_id}/master-cv", json={"content": undated}
+        )
+        assert refused.status_code == 409
+        assert refused.json()["type"] == "urn:tailorcv:problem:conflict"
+        assert "no dated role" in refused.text
+
+
+def test_a_confirmed_re_read_is_refused_as_free_mode_without_a_key(
+    durable_database_url: str, tmp_path: Path, master_cv: Path
+) -> None:
+    with _keyless_client(durable_database_url, tmp_path) as client:
+        workspace_id = client.post(
+            "/api/v1/workspaces", json={"slug": "keyless", "name": "Keyless"}
+        ).json()["id"]
+        client.post(
+            f"/api/v1/workspaces/{workspace_id}/master-cv/import",
+            params={"filename": "My CV.md"},
+            content=master_cv.read_bytes(),
+        )
+        estimate = client.get(f"/api/v1/workspaces/{workspace_id}/master-cv/reread-estimate")
         refused = client.post(
             f"/api/v1/workspaces/{workspace_id}/master-cv",
-            json={"content": "# JANE Q. EXAMPLE\n\n## Summary\n\nBuilds data platforms.\n"},
+            json={
+                "content": "# JANE Q. EXAMPLE\n\n## Summary\n\nBuilds data platforms.\n",
+                "confirm_reread": True,
+            },
         )
-        assert refused.status_code == 422
-        assert "no dated role" in refused.text
+        versions = client.get(f"/api/v1/workspaces/{workspace_id}/master-cv/versions").json()
+
+    assert estimate.json() == {"past_rereads": 0, "average_usd": None}
+    assert refused.status_code == 409
+    assert refused.json()["type"] == "urn:tailorcv:problem:free-mode"
+    assert len(versions) == 1

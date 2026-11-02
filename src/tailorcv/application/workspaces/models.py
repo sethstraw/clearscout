@@ -195,6 +195,15 @@ class MasterCvImpactResponse(StrictModel):
     returned_count: int
     omitted_count: int
     citations: list[CitationImpactResponse]
+    # A save with a reason here standardizes the draft with the model.
+    reread_reason: str | None = None
+
+
+class MasterCvRereadEstimateResponse(StrictModel):
+    """What re-reading a CV with the model has cost in this workspace."""
+
+    past_rereads: int
+    average_usd: float | None
 
 
 class MasterCvEditResponse(MasterCvImportResponse):

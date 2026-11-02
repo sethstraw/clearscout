@@ -94,7 +94,11 @@ describe("mutation invalidations", () => {
 
     await fire(
       () => useImportMasterCv(workspaceId),
-      (mutation) => mutation.mutate(new File(["# CV\n"], "cv.md", { type: "text/markdown" })),
+      (mutation) =>
+        mutation.mutate({
+          file: new File(["# CV\n"], "cv.md", { type: "text/markdown" }),
+          confirmReread: false,
+        }),
     );
 
     expectWorkspaceInvalidation(filters, ["master-cv-versions", workspaceId]);
@@ -318,9 +322,10 @@ describe("task costs", () => {
     await waitFor(() => expect(result.current.loaded).toBe(true));
     expect(result.current.isPaid("search.guided_campaign")).toBe(true);
     expect(result.current.cost("search.guided_campaign")).toBe("Hosted-search prices vary.");
-    expect(result.current.summary("search.guided_campaign")).toBe(
-      "May incur provider charges. About $0.12 for 1 attempt (range $0.05 to $0.20, from 3 runs).",
-    );
+    expect(result.current.summary("search.guided_campaign")).toBe("about $0.12");
+    expect(result.current.summary("search.guided_campaign", 3)).toBe("about $0.36");
+    expect(result.current.summary("search.vocabulary")).toBe("");
+    expect(result.current.summary("posting.refresh")).toBe("No provider charge.");
     expect(result.current.inline("search.guided_campaign")).toBe("about $0.12 per attempt");
     expect(result.current.inline("search.guided_campaign", 3)).toBe("about $0.36 total");
     expect(result.current.confirmation("search.guided_campaign", 3)).toBe(

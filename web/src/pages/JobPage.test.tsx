@@ -95,17 +95,25 @@ function stubDisputeRefresh(
   return log;
 }
 
-async function runDisputeRefresh(kind: "extraction" | "fit" = "extraction") {
-  window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+/** Render the Fit workspace and open its Advanced fold, where dispute re-checks live. */
+async function renderFitAdvanced() {
   render(
     <AppProviders>
-      <MemoryRouter initialEntries={["/jobs/job-1"]}>
+      <MemoryRouter initialEntries={["/jobs/job-1?tab=evaluation"]}>
         <Routes>
           <Route path="/jobs/:jobId" element={<JobPage />} />
         </Routes>
       </MemoryRouter>
     </AppProviders>,
   );
+  const summary = await screen.findByText("Advanced", { selector: "summary" });
+  expect(summary.closest("details")?.open).toBe(false);
+  fireEvent.click(summary);
+}
+
+async function runDisputeRefresh(kind: "extraction" | "fit" = "extraction") {
+  window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+  await renderFitAdvanced();
   fireEvent.click(
     await screen.findByRole("button", {
       name: kind === "fit" ? "Refresh with fit re-match" : "Refresh with dispute re-extraction",
@@ -240,13 +248,15 @@ describe("JobPage", () => {
       "Application",
     ]);
     expect(screen.getByText("Against canada_remote")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Help: Job" })).toBeTruthy();
     fireEvent.click(screen.getByRole("tab", { name: "Tailor" }));
     expect(screen.getByRole("tab", { name: "Files" })).toBeTruthy();
+    const studioLink = screen.getByRole("link", { name: "evaluation button in the page header" });
+    const target = document.getElementById(studioLink.getAttribute("href")!.slice(1));
+    expect(target?.querySelector("button.button--paid")).toBeTruthy();
     expect(screen.getByRole("tablist", { name: "Tailoring workspace sections" })).toBeTruthy();
     const exportUrl = "/api/v1/jobs/job-1/fit-report/export?workspace_id=workspace-jobs";
-    expect(screen.getByRole("link", { name: "Download fit report" }).getAttribute("href")).toBe(
-      exportUrl,
-    );
+    expect(screen.queryByRole("link", { name: "Download fit report" })).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: "Fit" }));
     expect(screen.getByRole("tablist", { name: "Fit workspace sections" })).toBeTruthy();
     fireEvent.click(screen.getByRole("tab", { name: "Fit report" }));
@@ -757,7 +767,7 @@ describe("JobPage", () => {
     installJob({ detail: disabled });
     render(
       <AppProviders>
-        <MemoryRouter initialEntries={["/jobs/job-1"]}>
+        <MemoryRouter initialEntries={["/jobs/job-1?tab=evaluation"]}>
           <Routes>
             <Route path="/jobs/:jobId" element={<JobPage />} />
           </Routes>
@@ -765,6 +775,8 @@ describe("JobPage", () => {
       </AppProviders>,
     );
     expect(await screen.findByRole("button", { name: "Refresh posting" })).toBeTruthy();
+    expect(screen.getByRole("tablist", { name: "Fit workspace sections" })).toBeTruthy();
+    expect(screen.queryByText("Advanced", { selector: "summary" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Refresh with dispute re-extraction" })).toBeNull();
   });
 
@@ -777,7 +789,7 @@ describe("JobPage", () => {
     installJob({ detail: empty });
     render(
       <AppProviders>
-        <MemoryRouter initialEntries={["/jobs/job-1"]}>
+        <MemoryRouter initialEntries={["/jobs/job-1?tab=evaluation"]}>
           <Routes>
             <Route path="/jobs/:jobId" element={<JobPage />} />
           </Routes>
@@ -785,6 +797,8 @@ describe("JobPage", () => {
       </AppProviders>,
     );
     expect(await screen.findByRole("button", { name: "Refresh posting" })).toBeTruthy();
+    expect(screen.getByRole("tablist", { name: "Fit workspace sections" })).toBeTruthy();
+    expect(screen.queryByText("Advanced", { selector: "summary" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Refresh with dispute re-extraction" })).toBeNull();
   });
 
@@ -810,15 +824,7 @@ describe("JobPage", () => {
         updated_at: "2026-08-20T12:00:00Z",
       }),
     });
-    render(
-      <AppProviders>
-        <MemoryRouter initialEntries={["/jobs/job-1"]}>
-          <Routes>
-            <Route path="/jobs/:jobId" element={<JobPage />} />
-          </Routes>
-        </MemoryRouter>
-      </AppProviders>,
-    );
+    await renderFitAdvanced();
     const paid = await screen.findByRole("button", {
       name: "Refresh with dispute re-extraction",
     });
@@ -855,15 +861,7 @@ describe("JobPage", () => {
         updated_at: "2026-08-20T12:00:00Z",
       }),
     });
-    render(
-      <AppProviders>
-        <MemoryRouter initialEntries={["/jobs/job-1"]}>
-          <Routes>
-            <Route path="/jobs/:jobId" element={<JobPage />} />
-          </Routes>
-        </MemoryRouter>
-      </AppProviders>,
-    );
+    await renderFitAdvanced();
 
     expect(screen.queryByRole("button", { name: "Refresh with dispute re-extraction" })).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: "Refresh with fit re-match" }));
@@ -1104,7 +1102,7 @@ describe("JobPage", () => {
       vi.useRealTimers();
     }
     const error = await screen.findByText(
-      "Refresh status is unavailable. Reload or review Tasks before starting another refresh.",
+      "Refresh status is unavailable. Reload or open Activity before starting another refresh.",
     );
     expect(error.getAttribute("role")).toBe("alert");
     expect(

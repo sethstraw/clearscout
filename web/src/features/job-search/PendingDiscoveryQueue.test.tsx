@@ -40,9 +40,9 @@ const reviewCostHistory = [
 ] satisfies RunCostHistory[];
 const evaluationCostHistory = [
   {
-    task_type: "discovery.evaluate",
+    task_type: "discovery.evaluate_batch",
     currency: "USD",
-    unit: "run",
+    unit: "posting",
     measured_runs: 12,
     unpriced_runs: 0,
     replayed_runs: 0,
@@ -303,7 +303,7 @@ describe("PendingDiscoveryQueue selection", () => {
       within(attention).getByRole("button", { name: "Screened out: review your rules (1)" }),
     );
     expect(changes).toEqual([{ ...filters, readiness: "screening_refused" }]);
-    expect(screen.getByRole("button", { name: "Track job (free)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Track job" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Dismiss from pending" })).toBeTruthy();
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Refused role at Globex" }));
     expect(
@@ -313,7 +313,7 @@ describe("PendingDiscoveryQueue selection", () => {
     ).toBeTruthy();
     expect(screen.queryByText(/a refresh before either paid action/)).toBeNull();
     expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation (1, paid)" }).disabled,
+      screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation (1)" }).disabled,
     ).toBe(true);
     expect(submitted).toEqual([]);
     expect(dismissals).toEqual([]);
@@ -358,15 +358,13 @@ describe("PendingDiscoveryQueue selection", () => {
     fireEvent.click(await screen.findByLabelText("Select Role 1 at Globex"));
     view.rerender(queue({ discoveries: [second], queueTotal: 2 }));
     fireEvent.click(screen.getByLabelText("Select Role 2 at Globex"));
-    fireEvent.click(
-      within(selectedActions()).getByRole("button", { name: "Track selected (2, free)" }),
-    );
+    fireEvent.click(within(selectedActions()).getByRole("button", { name: "Track selected (2)" }));
     const dialog = await screen.findByRole("dialog");
     expect(dialog.textContent).toContain("including 1 selected on other pages");
     expect(within(dialog).getByText("Role 1 at Globex")).toBeTruthy();
     expect(within(dialog).getByText("Role 2 at Globex")).toBeTruthy();
     expect(dialog.textContent).toContain("No provider key or evaluation is needed.");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Track 2 jobs for free" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Track 2 jobs" }));
 
     await waitFor(() => expect(tracked).toHaveLength(1));
     expect(
@@ -395,12 +393,10 @@ describe("PendingDiscoveryQueue selection", () => {
     view.rerender(queue({ discoveries: [discovery("pending-3", "Role 3")], queueTotal: 2 }));
     expect(within(outcomes).getByRole("alert").textContent).toContain("Role 2 at Globex");
     failSecond = false;
-    fireEvent.click(
-      within(selectedActions()).getByRole("button", { name: "Track selected (1, free)" }),
-    );
+    fireEvent.click(within(selectedActions()).getByRole("button", { name: "Track selected (1)" }));
     fireEvent.click(
       within(await screen.findByRole("dialog")).getByRole("button", {
-        name: "Track 1 job for free",
+        name: "Track 1 job",
       }),
     );
     await waitFor(() => expect(within(outcomes).queryByRole("alert")).toBeNull());
@@ -431,15 +427,13 @@ describe("PendingDiscoveryQueue selection", () => {
     );
     const view = render(queue({ discoveries: [discovery("pending-1", "Role 1")] }));
     fireEvent.click(await screen.findByLabelText("Select Role 1 at Globex"));
-    fireEvent.click(
-      within(selectedActions()).getByRole("button", { name: "Track selected (1, free)" }),
-    );
+    fireEvent.click(within(selectedActions()).getByRole("button", { name: "Track selected (1)" }));
     await screen.findByRole("dialog");
     view.rerender(
       queue({ discoveries: [discovery("pending-2", "Role 2")], selectionScope: "snapshot-b" }),
     );
     fireEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Track 1 job for free" }),
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Track 1 job" }),
     );
     await screen.findByText("Selection changed. Select the jobs again before tracking.");
     expect(tracked).toEqual([]);
@@ -456,12 +450,10 @@ describe("PendingDiscoveryQueue selection", () => {
       await screen.findByRole("checkbox", { name: "Select eligible discoveries on this page" }),
     );
     expect(within(selectedActions()).getByText("1 selected")).toBeTruthy();
-    fireEvent.click(
-      within(selectedActions()).getByRole("button", { name: "Track selected (1, free)" }),
-    );
+    fireEvent.click(within(selectedActions()).getByRole("button", { name: "Track selected (1)" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Role 1 at Globex")).toBeTruthy();
-    expect(within(dialog).getByRole("button", { name: "Track 1 job for free" })).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: "Track 1 job" })).toBeTruthy();
   });
 
   it("submits selections retained across pages in one full-evaluation task", async () => {
@@ -478,7 +470,7 @@ describe("PendingDiscoveryQueue selection", () => {
     const actions = selectedActions();
     expect(within(actions).getByText("2 selected")).toBeTruthy();
     const evaluate = within(actions).getByRole<HTMLButtonElement>("button", {
-      name: "Full evaluation (2, paid)",
+      name: "Full evaluation (2)",
     });
     await waitFor(() => expect(evaluate.disabled).toBe(false));
     fireEvent.click(evaluate);
@@ -618,9 +610,11 @@ describe("PendingDiscoveryQueue selection", () => {
     const actions = selectedActions();
     expect(within(actions).getByText("15 selected")).toBeTruthy();
     const evaluate = within(actions).getByRole<HTMLButtonElement>("button", {
-      name: "Full evaluation (15, paid)",
+      name: "Full evaluation (15)",
     });
     await waitFor(() => expect(evaluate.disabled).toBe(false));
+    // The button prices the batch task it enqueues, from that task's measured history.
+    expect(within(evaluate).getByText("Past runs: about $4.50 total")).toBeTruthy();
     fireEvent.click(evaluate);
     const dialog = await screen.findByRole("dialog");
     expect(dialog.textContent).toContain("One task evaluates all 15 selected discoveries");
@@ -689,7 +683,7 @@ describe("PendingDiscoveryQueue selection", () => {
   async function submitEvaluation(selectedCount: number) {
     const actions = selectedActions();
     const evaluate = within(actions).getByRole<HTMLButtonElement>("button", {
-      name: `Full evaluation (${selectedCount}, paid)`,
+      name: `Full evaluation (${selectedCount})`,
     });
     await waitFor(() => expect(evaluate.disabled).toBe(false));
     fireEvent.click(evaluate);
@@ -816,7 +810,7 @@ describe("PendingDiscoveryQueue selection", () => {
     fireEvent.click(screen.getByLabelText("Select Role 1 at Globex"));
 
     expect(within(actions).getByText("1 selected")).toBeTruthy();
-    expect(within(actions).getByRole("button", { name: "Full evaluation (1, paid)" })).toBeTruthy();
+    expect(within(actions).getByRole("button", { name: "Full evaluation (1)" })).toBeTruthy();
     expect(within(actions).getByRole("button", { name: "Refresh posting" })).toBeTruthy();
   });
 
@@ -1035,7 +1029,7 @@ describe("PendingDiscoveryQueue origins", () => {
     render(queue({ discoveries: [paid, personAdded, unknown] }));
 
     const campaignRow = within(await screen.findByRole("row", { name: /Role 1/ }));
-    expect(campaignRow.getByText("Guided campaign (paid)")).toBeTruthy();
+    expect(campaignRow.getByText("Web search")).toBeTruthy();
     const personRow = within(screen.getByRole("row", { name: /Role 2/ }));
     expect(personRow.getByText("Added by you")).toBeTruthy();
     const unknownRow = within(screen.getByRole("row", { name: /Role 3/ }));
@@ -1084,10 +1078,6 @@ describe("PendingDiscoveryQueue favorite and kept rows", () => {
     expect(markers.getByRole("button", { name: "Kept (2)" }).title).toBe(
       "Keep: rows the program misjudged.",
     );
-    const help = screen.getByText("About this view").closest("details")!;
-    fireEvent.click(within(help).getByText("About this view"));
-    expect(help.open).toBe(true);
-    expect(within(help).getByText(/Both stay through bulk and program dismissals\./)).toBeTruthy();
   });
 
   it("lists a withdrawn kept row without counting it as needing attention", async () => {

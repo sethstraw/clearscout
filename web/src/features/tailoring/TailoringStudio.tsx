@@ -36,6 +36,7 @@ type RunTask = (taskType: string, payload: Record<string, unknown>) => void;
 
 function TailoringActions({
   billingSummary,
+  evaluateActionId,
   jobId,
   workspaceId,
   discoveryBusy,
@@ -48,6 +49,7 @@ function TailoringActions({
   tailoringUnavailable,
 }: {
   billingSummary: string;
+  evaluateActionId?: string;
   jobId: string;
   workspaceId: string;
   discoveryBusy: boolean;
@@ -88,11 +90,12 @@ function TailoringActions({
   return (
     <article className="panel studio-actions">
       <h2>Tailoring Studio</h2>
-      <p>Every action runs as durable work. Closing this page does not erase its progress.</p>
-      <p className="callout">
-        Re-evaluation stores a new evaluation version against the current posting, prompts,
-        parameters, and master CV.
-      </p>
+      {evaluateActionId && (
+        <p className="field-note">
+          To re-evaluate this job, use the{" "}
+          <a href={`#${evaluateActionId}`}>evaluation button in the page header</a>.
+        </p>
+      )}
       {billingSummary && (
         <p aria-label="Latest tailoring task billing" className="field-note" role="status">
           {billingSummary}
@@ -107,19 +110,6 @@ function TailoringActions({
         </p>
       )}
       <div className="button-row">
-        <PaidAction
-          evaluation={{ workspaceId, selection: { job_posting_ids: [jobId] } }}
-          confirmation={{
-            title: "Re-evaluate this job?",
-            description: "Store a new evaluation version for this tracked posting.",
-            confirmLabel: "Confirm re-evaluation",
-          }}
-          costs={costs}
-          disabled={enqueuePending || !costs.loaded}
-          label="Re-evaluate job"
-          onAct={() => run("discovery.evaluate", { job_posting_id: jobId, fresh: true })}
-          taskType="discovery.evaluate"
-        />
         <PaidAction
           costs={costs}
           disabled={enqueuePending || preflightPending || tailoringUnavailable}
@@ -143,17 +133,14 @@ function TailoringActions({
           }
           taskType="workflow.tailor"
         />
-        <div>
-          <button
-            className="button button--quiet"
-            disabled={discoveryBusy}
-            onClick={startDiscovery}
-            type="button"
-          >
-            Explore a gap
-          </button>
-          <small className="free-action">{costs.cost("workflow.discovery")}</small>
-        </div>
+        <button
+          className="button button--quiet"
+          disabled={discoveryBusy}
+          onClick={startDiscovery}
+          type="button"
+        >
+          Explore a gap
+        </button>
       </div>
       {preflightError && <p className="field-error">{preflightError}</p>}
       {enqueueError && <p className="field-error">{enqueueError}</p>}
@@ -161,7 +148,15 @@ function TailoringActions({
   );
 }
 
-export function TailoringStudio({ jobId, workspaceId }: { jobId: string; workspaceId: string }) {
+export function TailoringStudio({
+  evaluateActionId,
+  jobId,
+  workspaceId,
+}: {
+  evaluateActionId?: string;
+  jobId: string;
+  workspaceId: string;
+}) {
   const enqueue = useEnqueueTask(workspaceId);
   const taskQuery = useTasks(workspaceId);
   const [submitted, setSubmitted] = useState<Task[]>([]);
@@ -229,6 +224,7 @@ export function TailoringStudio({ jobId, workspaceId }: { jobId: string; workspa
     <section className="studio-grid">
       <TailoringActions
         billingSummary={tailorBillingSummary}
+        evaluateActionId={evaluateActionId}
         discoveryBusy={discoveryBusy}
         enqueueError={enqueue.isError ? enqueue.error.message : ""}
         enqueuePending={enqueue.isPending}
@@ -238,9 +234,9 @@ export function TailoringStudio({ jobId, workspaceId }: { jobId: string; workspa
         taskStateError={taskQuery.isError}
         taskStateMessage={
           taskQuery.isPending
-            ? "Checking current tailoring work before enabling paid actions."
+            ? "Checking current tailoring work."
             : taskQuery.isError
-              ? "Current tailoring work is unavailable. Reload or review Tasks before starting paid work."
+              ? "Current tailoring work is unavailable. Reload or open Activity before starting new work."
               : ""
         }
         tailoringUnavailable={taskQuery.isPending || taskQuery.isError || tailorBusy}
@@ -261,7 +257,7 @@ export function TailoringStudio({ jobId, workspaceId }: { jobId: string; workspa
                   ? task.error_message
                   : text(
                       task.progress.message ?? task.progress.outcome,
-                      "Progress appears on the Tasks page.",
+                      "Progress appears in Activity.",
                     )
                       .split("\n")
                       .map((line, index) => <span key={index}>{line}</span>)}

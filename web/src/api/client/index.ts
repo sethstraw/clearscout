@@ -160,6 +160,7 @@ export const api = {
   clearRequirementRuling: masterCvApi.clearRequirementRuling,
   masterCvImpact: masterCvApi.masterCvImpact,
   saveMasterCv: masterCvApi.saveMasterCv,
+  masterCvRereadEstimate: masterCvApi.masterCvRereadEstimate,
   pendingDiscoveries: masterCvApi.pendingDiscoveries,
   pendingDiscoveryPage: masterCvApi.pendingDiscoveryPage,
   pendingDiscoveryChanges: masterCvApi.pendingDiscoveryChanges,

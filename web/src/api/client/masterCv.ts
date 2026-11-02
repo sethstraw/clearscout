@@ -9,6 +9,7 @@ import type {
   MasterCvContent,
   MasterCvImpact,
   MasterCvEdit,
+  MasterCvRereadEstimate,
   PendingDiscovery,
   PendingDiscoveryChanges,
   PendingDiscoveryPage,
@@ -48,8 +49,12 @@ function rejectRequestInit(
 }
 
 export const masterCvApi = {
-  importMasterCv: (workspaceId: string, file: File, replace = false) => {
-    const query = new URLSearchParams({ filename: file.name, replace: String(replace) });
+  importMasterCv: (workspaceId: string, file: File, replace = false, confirmReread = false) => {
+    const query = new URLSearchParams({
+      filename: file.name,
+      replace: String(replace),
+      confirm_reread: String(confirmReread),
+    });
     return request<MasterCvImport>(
       `/workspaces/${encodeURIComponent(workspaceId)}/master-cv/import?${query}`,
       {
@@ -113,11 +118,15 @@ export const masterCvApi = {
       method: "POST",
       body: JSON.stringify({ content }),
     }),
-  saveMasterCv: (workspaceId: string, content: string) =>
+  saveMasterCv: (workspaceId: string, content: string, confirmReread = false) =>
     request<MasterCvEdit>(`/workspaces/${encodeURIComponent(workspaceId)}/master-cv`, {
       method: "POST",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, confirm_reread: confirmReread }),
     }),
+  masterCvRereadEstimate: (workspaceId: string) =>
+    request<MasterCvRereadEstimate>(
+      `/workspaces/${encodeURIComponent(workspaceId)}/master-cv/reread-estimate`,
+    ),
   pendingDiscoveries: (
     workspaceId: string,
     limit = 250,

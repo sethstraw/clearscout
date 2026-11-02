@@ -3,6 +3,8 @@ import { useId, useState } from "react";
 import type { ScanScheduleConfiguration, Source } from "../../api/client";
 import { useSaveScanSchedule, useScanSchedule } from "../../api/hooks";
 import { ApiError } from "../../api/http";
+import { Toggletip } from "../../components/Toggletip";
+import { PRODUCT_NAME } from "../../productName";
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -176,13 +178,16 @@ export function SourceScanSchedule({
   const sourceName = (id: string) => sources.find((source) => source.id === id)?.name ?? id;
   return (
     <section className="scan-schedule" aria-labelledby={`${fieldId}-heading`}>
-      <h3 id={`${fieldId}-heading`}>Schedule free scans</h3>
+      <h3 id={`${fieldId}-heading`}>Scan schedule</h3>
       <p>
-        Optional, with no provider charge. It only runs while your local TailorCV worker is running.
-      </p>
-      <p>
-        Scheduled board scans require manually saved target titles.{" "}
-        <a href="/settings?tab=search">Set up target titles</a>.
+        Optional. It runs only while {PRODUCT_NAME} is running.{" "}
+        <Toggletip label="How scheduled scans run">
+          Enabling or resuming starts at the next future occurrence. After a shutdown, the worker
+          queues one catch-up scan, not every missed run. Pause stops future scans; active scans
+          keep running until you cancel them in Activity. Resuming skips runs missed while paused.
+          For daylight saving changes, a repeated time runs once and a skipped time shifts forward
+          by the gap.
+        </Toggletip>
       </p>
       {!state ? (
         <p role="status">No scan schedule is enabled.</p>
@@ -253,6 +258,12 @@ export function SourceScanSchedule({
       {save.isError && (
         <p className="field-error" role="alert">
           {save.error.message}
+        </p>
+      )}
+      {(save.isError || state?.last_error) && (
+        <p>
+          Scheduled scans need a saved target title.{" "}
+          <a href="/settings?tab=search">Check target titles in Settings &gt; Search</a>
         </p>
       )}
       {conflict && (
@@ -366,8 +377,8 @@ export function SourceScanSchedule({
               <option value="selected">Saved source selection</option>
             </select>
             <p id={`${fieldId}-scope-note`} className="field-note">
-              All enabled sources changes with your source settings. A saved selection stays fixed
-              until you explicitly replace it.
+              All enabled sources follows your board settings. A saved selection stays fixed until
+              you replace it.
             </p>
             {configuration.scope === "selected" && (
               <>
@@ -434,22 +445,6 @@ export function SourceScanSchedule({
         </form>
       </details>
       {draft && <p className="field-note">Unsaved schedule changes.</p>}
-      <details className="scan-options">
-        <summary>How scheduled scans run</summary>
-        <p>
-          Enabling or resuming starts at the next future occurrence. After a shutdown, the worker
-          queues one catch-up scan for a missed occurrence, then returns to the calendar; it does
-          not queue every missed run.
-        </p>
-        <p>
-          Pause stops future scheduled scans. Active scans keep running; cancel them in Tasks.
-          Resuming does not catch up occurrences missed while paused.
-        </p>
-        <p>
-          For daylight saving changes, a repeated local time runs at its first occurrence. A time
-          skipped when the clocks move forward shifts forward by the size of that gap.
-        </p>
-      </details>
       {notice && <p role="status">{notice}</p>}
     </section>
   );

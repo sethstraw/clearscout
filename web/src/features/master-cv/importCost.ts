@@ -1,17 +1,13 @@
-/** Explain the server-determined cost before import. */
+/** Which imports reach the model, read from the filename before upload. */
 
-const CANONICAL_SUFFIXES = [".md", ".markdown"];
+const TEXT_SUFFIXES = [".md", ".markdown", ".txt"];
 
-export function importCostNote(filename: string): string {
-  const markdown = CANONICAL_SUFFIXES.some((suffix) => filename.toLowerCase().endsWith(suffix));
-  if (markdown) {
-    return (
-      "Markdown that already meets the canonical contract is adopted without a provider call. " +
-      "Anything else is standardized by the configured provider and may incur model-token charges."
-    );
-  }
-  return (
-    "This file is standardized by the configured provider before it becomes canonical, " +
-    "which may incur model-token charges."
-  );
+/**
+ * A text file in the canonical format is adopted without a model call. Any
+ * other file is re-read by the model; the server refuses a text file that
+ * needs one until the re-read is confirmed.
+ */
+export function needsModelRead(filename: string): boolean {
+  const name = filename.toLowerCase();
+  return !TEXT_SUFFIXES.some((suffix) => name.endsWith(suffix));
 }

@@ -7211,6 +7211,11 @@
         "additionalProperties": false,
         "description": "Proposed master CV Markdown, for an impact check or for an in-place edit.",
         "properties": {
+          "confirm_reread": {
+            "default": false,
+            "title": "Confirm Reread",
+            "type": "boolean"
+          },
           "content": {
             "maxLength": 26214400,
             "minLength": 1,
@@ -7353,6 +7358,17 @@
           "orphaned_count": {
             "title": "Orphaned Count",
             "type": "integer"
+          },
+          "reread_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reread Reason"
           },
           "returned_count": {
             "title": "Returned Count",
@@ -7539,6 +7555,33 @@
           "decided_at"
         ],
         "title": "MasterCvProposalResponse",
+        "type": "object"
+      },
+      "MasterCvRereadEstimateResponse": {
+        "additionalProperties": false,
+        "description": "What re-reading a CV with the model has cost in this workspace.",
+        "properties": {
+          "average_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Usd"
+          },
+          "past_rereads": {
+            "title": "Past Rereads",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "past_rereads",
+          "average_usd"
+        ],
+        "title": "MasterCvRereadEstimateResponse",
         "type": "object"
       },
       "MasterCvVersionResponse": {
@@ -22233,6 +22276,16 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -22562,7 +22615,7 @@
     },
     "/api/v1/workspaces/{workspace_id}/master-cv/import": {
       "post": {
-        "description": "Upload, standardize when necessary, and version one master CV.",
+        "description": "Upload, standardize when confirmed, and version one master CV.",
         "operationId": "import_master_cv_api_v1_workspaces__workspace_id__master_cv_import_post",
         "parameters": [
           {
@@ -22592,6 +22645,16 @@
             "schema": {
               "default": false,
               "title": "Replace",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "confirm_reread",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Confirm Reread",
               "type": "boolean"
             }
           }
@@ -22714,6 +22777,49 @@
           }
         },
         "summary": "List requirements no evaluation could answer from the master CV",
+        "tags": [
+          "workspaces"
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/master-cv/reread-estimate": {
+      "get": {
+        "description": "Average the recorded cost of past model re-reads of a CV.",
+        "operationId": "master_cv_reread_estimate_api_v1_workspaces__workspace_id__master_cv_reread_estimate_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MasterCvRereadEstimateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report what past model re-reads of a CV cost",
         "tags": [
           "workspaces"
         ]

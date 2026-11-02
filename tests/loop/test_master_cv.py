@@ -601,7 +601,37 @@ def test_an_edit_appends_a_version_and_leaves_the_earlier_one_readable(
         service.save_edit(str(workspace.id), "not a CV any more\n")
 
 
-def test_an_edit_the_canonical_parser_rejects_is_refused_without_a_model(
+UNDATED_EDIT = "# JANE Q. EXAMPLE\n\n## Summary\n\nJane Example builds data platforms.\n"
+
+
+@pytest.mark.parametrize("filename", ["Resume.docx", "notes.txt"])
+def test_an_unconfirmed_import_the_model_must_re_read_is_refused_without_a_model(
+    durable_database: Database,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    filename: str,
+) -> None:
+    workspace = _workspace(durable_database, tmp_path)
+    service = MasterCvService(
+        durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
+    )
+    monkeypatch.setattr(
+        "tailorcv.application.tailoring.pipeline.import_cv",
+        lambda *args, **kwargs: pytest.fail("an unconfirmed import must not call a provider"),
+    )
+
+    with pytest.raises(ConflictError, match="re-read"):
+        service.import_source(
+            workspace_id=str(workspace.id),
+            filename=filename,
+            content=UNDATED_EDIT.encode("utf-8"),
+            confirm_reread=False,
+        )
+
+    assert service.versions(str(workspace.id)) == []
+
+
+def test_an_unconfirmed_edit_that_needs_a_re_read_is_refused_without_a_model(
     durable_database: Database, tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     workspace = _workspace(durable_database, tmp_path)
@@ -615,12 +645,97 @@ def test_an_edit_the_canonical_parser_rejects_is_refused_without_a_model(
         "tailorcv.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: pytest.fail("saving an edit must not call a provider"),
     )
-    undated = "# JANE Q. EXAMPLE\n\n## Summary\n\nJane Example builds data platforms.\n"
 
-    with pytest.raises(ValidationError, match="no dated role"):
-        service.save_edit(str(workspace.id), undated)
+    with pytest.raises(ConflictError, match="no dated role"):
+        service.save_edit(str(workspace.id), UNDATED_EDIT)
 
     assert len(service.versions(str(workspace.id))) == 1
+
+
+def test_a_confirmed_re_read_standardizes_the_edit_and_appends_a_version(
+    durable_database: Database, tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = _workspace(durable_database, tmp_path)
+    service = MasterCvService(
+        durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
+    )
+    first = service.import_source(
+        workspace_id=str(workspace.id), filename="CV.md", content=master_cv.read_bytes()
+    )
+    read: list[str] = []
+
+    def import_cv(source: Path, settings: Any, *, destination: Path, **kwargs: Any) -> Any:
+        read.append(source.read_text(encoding="utf-8"))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        report = destination.parent / "Import_Report.md"
+        report.write_text("# Checked import\n", encoding="utf-8")
+        return FakeImportResult(
+            passed=True,
+            markdown=master_cv.read_text(encoding="utf-8") + "\n- A re-read line.\n",
+            report=report,
+        )
+
+    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.import_cv", import_cv)
+
+    saved = service.save_edit(str(workspace.id), UNDATED_EDIT, confirm_reread=True)
+
+    assert read == [UNDATED_EDIT]
+    assert saved.method == "standardized"
+    assert saved.created is True
+    assert saved.previous_master_cv_version_id == first.master_cv_version_id
+    assert len(service.versions(str(workspace.id))) == 2
+
+
+def test_impact_names_why_an_edit_needs_a_re_read(
+    durable_database: Database, tmp_path: Path, master_cv: Path
+) -> None:
+    workspace = _workspace(durable_database, tmp_path)
+    service = MasterCvService(
+        durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
+    )
+    service.import_source(
+        workspace_id=str(workspace.id), filename="CV.md", content=master_cv.read_bytes()
+    )
+
+    undated = service.impact(str(workspace.id), UNDATED_EDIT)
+    canonical = service.impact(str(workspace.id), master_cv.read_text(encoding="utf-8"))
+
+    assert undated.reread_reason == "it has no dated role"
+    assert canonical.reread_reason is None
+
+
+def test_the_re_read_estimate_averages_past_re_reads_and_stays_blank_without_one(
+    durable_database: Database, tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = _workspace(durable_database, tmp_path)
+    service = MasterCvService(
+        durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
+    )
+    before = service.reread_estimate(str(workspace.id))
+    ledger = Ledger(prices={"m": ModelPrice(input=2.0, output=12.0)})
+    ledger.record(CallManifest("ingest", "m", Usage(input_tokens=500_000)))
+    ledger.record(CallManifest("structure", "m", Usage(input_tokens=1_000_000)))
+
+    def import_cv(source: Path, settings: Any, *, destination: Path, **kwargs: Any) -> Any:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        report = destination.parent / "Import_Report.md"
+        report.write_text("# Checked import\n", encoding="utf-8")
+        return FakeImportResult(
+            passed=True,
+            markdown=master_cv.read_text(encoding="utf-8"),
+            report=report,
+            ledger=ledger,
+        )
+
+    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.import_cv", import_cv)
+    service.import_source(
+        workspace_id=str(workspace.id), filename="Resume.docx", content=b"synthetic Word package"
+    )
+    after = service.reread_estimate(str(workspace.id))
+
+    assert (before.past_rereads, before.average_usd) == (0, None)
+    assert after.past_rereads == 1
+    assert after.average_usd == pytest.approx(3.0)
 
 
 def test_saving_identical_content_writes_no_new_version(

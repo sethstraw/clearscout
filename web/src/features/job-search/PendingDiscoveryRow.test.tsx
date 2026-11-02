@@ -4,6 +4,8 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import type { PendingDiscovery, RelevanceReview, Task } from "../../api/client";
+import type { Health } from "../../api/client/types";
+import type { TaskCosts } from "../../api/hooks";
 import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { requestLog } from "../../test/requestLog";
@@ -118,8 +120,37 @@ type RowOptions = {
   detailsOpen?: boolean;
   evaluationTask?: Task;
   isSelected?: boolean;
+  onEvaluate?: (item: PendingDiscovery) => void;
   relevanceReview?: RelevanceReview;
 };
+
+const ROW_COSTS = {
+  loaded: true,
+  isError: false,
+  isPaid: () => true,
+  cost: () => "Paid",
+  inline: () => "about $0.40 per posting",
+  summary: () => "About $0.40 for 1 posting.",
+  confirmation: () => "About $0.40 for 1 posting (range $0.30 to $0.55, from 4 runs).",
+} satisfies TaskCosts;
+
+function healthWithFreeMode(freeMode: boolean) {
+  server.use(
+    http.get("*/api/v1/health", () =>
+      HttpResponse.json({
+        status: "ok",
+        version: "0.1.0",
+        database_reachable: true,
+        schema_current: true,
+        current_revision: "0001",
+        head_revision: "0001",
+        database_exists: true,
+        worker_available: true,
+        free_mode: freeMode,
+      } satisfies Health),
+    ),
+  );
+}
 
 function roleCell(): HTMLElement {
   const role = screen.getByText("Product Manager").closest("td");
@@ -156,7 +187,13 @@ it("keeps retained-body recovery guidance beside a readable classification expla
 
 function rowElement(
   item: PendingDiscovery,
-  { detailsOpen = false, evaluationTask, isSelected = false, relevanceReview }: RowOptions = {},
+  {
+    detailsOpen = false,
+    evaluationTask,
+    isSelected = false,
+    onEvaluate = () => undefined,
+    relevanceReview,
+  }: RowOptions = {},
 ) {
   return (
     <AppProviders>
@@ -164,12 +201,11 @@ function rowElement(
         <table>
           <tbody>
             <PendingDiscoveryRow
-              costsLoaded
+              costs={ROW_COSTS}
               detailsOpen={detailsOpen}
               dismissalOpen={false}
               dismissalPending={false}
               enqueuePending={false}
-              evaluationConfirmation="Run full evaluation?"
               evaluationTask={evaluationTask}
               isInFlight={false}
               isSelected={isSelected}
@@ -180,7 +216,7 @@ function rowElement(
               onDismissalClose={() => undefined}
               onDismissalPendingChange={() => undefined}
               onDismissalToggle={() => undefined}
-              onEvaluate={() => undefined}
+              onEvaluate={onEvaluate}
               onListingToggle={() => undefined}
               onSelect={() => undefined}
               registerCheckbox={() => undefined}
@@ -204,7 +240,7 @@ describe("PendingDiscoveryRow", () => {
         "Only part of this posting was read; the text appears cut off. Attach the full posting text or find the employer's page before a full evaluation.",
       ),
     ).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Full evaluation (paid)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Full evaluation" })).toBeNull();
     expect(screen.getByRole("button", { name: /^Attach posting text for/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Estimate assisted recovery for/ })).toBeTruthy();
   });
@@ -229,12 +265,42 @@ describe("PendingDiscoveryRow", () => {
       within(roleCell()).getByText("Screened out: conflicts with your search rules"),
     ).toBeTruthy();
     expect(screen.getByText(/The posting text is readable/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Track job (free)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Track job" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Hide details" }).ariaExpanded).toBe("true");
     expect(screen.getByRole("button", { name: "Dismiss from pending" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Full evaluation (paid)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Full evaluation" })).toBeNull();
     expect(screen.queryByText(/No posting text saved/)).toBeNull();
   });
+
+  it("hands Full evaluation to the queue's priced path and shows the estimate on the button", () => {
+    server.use(taskTypesHandler());
+    healthWithFreeMode(false);
+    const onEvaluate = vi.fn();
+    const item = baseItem();
+    renderRow(item, { onEvaluate });
+    const button = screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation" });
+    expect(within(button).getByText("Paid")).toBeTruthy();
+    expect(within(button).getByText("about $0.40 per posting")).toBeTruthy();
+    fireEvent.click(button);
+    expect(onEvaluate).toHaveBeenCalledWith(item);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("disables Full evaluation in free mode and links to the provider settings", async () => {
+    server.use(taskTypesHandler());
+    healthWithFreeMode(true);
+    const onEvaluate = vi.fn();
+    renderRow(baseItem(), { onEvaluate });
+    expect(await screen.findByText("Add a provider key to use paid actions.")).toBeTruthy();
+    const button = screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation" });
+    expect(button.disabled).toBe(true);
+    expect(screen.getByRole("link", { name: "Open provider settings" }).getAttribute("href")).toBe(
+      "/settings?tab=provider",
+    );
+    fireEvent.click(button);
+    expect(onEvaluate).not.toHaveBeenCalled();
+  });
+
   it("retains an unsaved closing date while Details is hidden and reopened", () => {
     const item = baseItem();
     const view = renderRow(item);
@@ -393,7 +459,7 @@ describe("PendingDiscoveryRow", () => {
     );
     renderRow(baseItem());
 
-    fireEvent.click(screen.getByRole("button", { name: "Track job (free)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Track job" }));
 
     await waitFor(() => expect(posts.requests).toHaveLength(1));
     expect(posts.requests[0]?.url.pathname).toBe(
@@ -733,7 +799,7 @@ describe("PendingDiscoveryRow", () => {
     if (!role) throw new Error("Expected the role cell.");
     expect(within(role).getByText("No longer listed")).toBeTruthy();
     expect(screen.getByText("No longer listed; evaluation disabled")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Full evaluation (paid)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Full evaluation" })).toBeNull();
     expect(screen.getByRole("button", { name: /Keep Product Manager/ }).ariaPressed).toBe("true");
   });
 
@@ -818,7 +884,7 @@ describe("PendingDiscoveryRow", () => {
       within(action)
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["Track job (free)", "Full evaluation (paid)", "Details", "Dismiss"]);
+    ).toEqual(["Track job", expect.stringMatching(/^Full evaluation/), "Details", "Dismiss"]);
   });
 
   it.each([
@@ -886,7 +952,7 @@ describe("PendingDiscoveryRow", () => {
           "Compare any stated pay with your preference yourself. You can track this job for free while pay remains unconfirmed.",
         ),
       ).toBeTruthy();
-      expect(screen.getByRole("button", { name: "Track job (free)" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Track job" })).toBeTruthy();
     },
   );
 

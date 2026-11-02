@@ -50,6 +50,7 @@ import {
 import { AssistedRecoveryAction } from "./AssistedRecoveryAction";
 import { PendingDiscoveryFilters } from "./PendingDiscoveryFilters";
 import { PendingDiscoveryIntake } from "./PendingDiscoveryIntake";
+import { copiesWorthKeepingInstead } from "./pendingDuplicateSuggestionModel";
 import { type ListingKind, PendingDiscoveryRow } from "./PendingDiscoveryRow";
 import { PublisherFactsRefresh } from "./PublisherFactsRefresh";
 import { SavedClosureAction } from "./SavedClosureAction";
@@ -138,7 +139,6 @@ function evaluationTasksByPending(tasks: readonly Task[] | undefined): Map<strin
   return map;
 }
 
-const HINT_KEY = "tailorcv.pendingKbdHint.dismissed";
 const SELECTION_BOUND_ID = "pending-selection-bound";
 
 type SelectedDiscovery = {
@@ -150,14 +150,6 @@ type Selection = {
   entries: ReadonlyMap<string, SelectedDiscovery>;
   scope: string;
 };
-
-function readHintDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(HINT_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 export function PendingDiscoveryQueue({
   countPending,
@@ -229,7 +221,6 @@ export function PendingDiscoveryQueue({
   >(new Map());
   // Held here because the bulk dismissal that sets it also clears the selection bar.
   const [bulkSkippedMarked, setBulkSkippedMarked] = useState(0);
-  const [hintDismissed, setHintDismissed] = useState(() => readHintDismissed());
   const tasks = useTasks(workspaceId);
   const evaluationTasks = useMemo(() => evaluationTasksByPending(tasks.data), [tasks.data]);
   const [selection, setSelection] = useState<Selection>(() => ({
@@ -307,7 +298,6 @@ export function PendingDiscoveryQueue({
     [clearSelection, enqueueTask, workspaceId],
   );
 
-  const evaluateRow = useCallback((id: string) => void evaluate([id]), [evaluate]);
   const toggleDetails = useCallback((id: string) => {
     setDetailsRowId((current) => (current === id ? null : id));
   }, []);
@@ -396,17 +386,30 @@ export function PendingDiscoveryQueue({
       evaluationPreparing.current = false;
       return;
     }
+    const retry = evaluationTasks.get(item.id)?.status === "failed";
+    const betterCopies = copiesWorthKeepingInstead(item.id, item.duplicate_suggestions ?? []);
+    const duplicateWarning =
+      betterCopies > 0
+        ? `This may be the same opening as ${betterCopies} other found ${betterCopies === 1 ? "job" : "jobs"} suggested to keep instead. Evaluating this one may pay for the same opening twice. `
+        : "";
     const approved = await confirm({
-      title: `Fully evaluate ${rowLabel(item)}?`,
-      description:
-        "This evaluation can incur provider charges. Review the advisory estimate before confirming.",
+      title: `${retry ? "Retry evaluation for" : "Fully evaluate"} ${rowLabel(item)}?`,
+      description: `${duplicateWarning}Review the estimate before you confirm.`,
       details: <EvaluationCostDetails estimate={estimate} />,
-      confirmLabel: "Run full evaluation",
+      confirmLabel: retry ? "Retry evaluation" : "Run full evaluation",
     });
     evaluationPreparing.current = false;
     setAnnounce("");
     if (approved) await evaluate([item.id]);
   };
+  // Memoized rows need one handler that never changes, so it reads the latest evaluateOne.
+  const evaluateOneRef = useRef(evaluateOne);
+  useEffect(() => {
+    evaluateOneRef.current = evaluateOne;
+  });
+  const evaluateRow = useCallback((item: PendingDiscovery) => {
+    void evaluateOneRef.current(item);
+  }, []);
 
   const reviewOne = async (item: PendingDiscovery) => {
     if (!costs.loaded) return setAnnounce("Costs still loading");
@@ -553,15 +556,6 @@ export function PendingDiscoveryQueue({
     onUndo: () => void undoDismiss(),
   });
 
-  const dismissHint = () => {
-    setHintDismissed(true);
-    try {
-      window.localStorage.setItem(HINT_KEY, "1");
-    } catch {
-      // A blocked localStorage still hides the hint for this session.
-    }
-  };
-
   const selectableVisibleIds = ordered
     .filter((item) => !evaluationInFlight(item.id) && !discoveryIsEvaluated(item))
     .map((item) => item.id);
@@ -632,7 +626,7 @@ export function PendingDiscoveryQueue({
     setTracking(true);
     try {
       const approved = await confirm({
-        title: `Track ${items.length} selected ${items.length === 1 ? "job" : "jobs"} for free?`,
+        title: `Track ${items.length} selected ${items.length === 1 ? "job" : "jobs"}?`,
         description: `Adds these ${items.length} selected jobs to tracked postings, including ${offPageCount} selected on other pages. No provider key or evaluation is needed. Each job is tracked separately; failed jobs stay selected for retry.`,
         details: (
           <ul>
@@ -644,7 +638,7 @@ export function PendingDiscoveryQueue({
             ))}
           </ul>
         ),
-        confirmLabel: `Track ${items.length} ${items.length === 1 ? "job" : "jobs"} for free`,
+        confirmLabel: `Track ${items.length} ${items.length === 1 ? "job" : "jobs"}`,
       });
       if (!approved) return;
       const current = trackingSelectionRef.current;
@@ -918,7 +912,7 @@ export function PendingDiscoveryQueue({
                   onClick={() => void trackSelected()}
                   type="button"
                 >
-                  {tracking ? "Tracking selected jobs" : `Track selected (${selectedCount}, free)`}
+                  {tracking ? "Tracking selected jobs" : `Track selected (${selectedCount})`}
                 </button>
                 <PublisherFactsRefresh
                   pendingDiscoveryIds={selectedList}
@@ -961,9 +955,9 @@ export function PendingDiscoveryQueue({
                   evaluation={{ workspaceId, selection: { pending_discovery_ids: selectedList } }}
                   count={selectedCount}
                   disabled={!evaluationSelectionAllowed || enqueue.isPending || !costs.loaded}
-                  label={`Full evaluation (${selectedCount}, paid)`}
+                  label={`Full evaluation (${selectedCount})`}
                   onAct={() => void evaluate(selectedList)}
-                  taskType="discovery.evaluate"
+                  taskType="discovery.evaluate_batch"
                 />
                 {screeningRefusedCount > 0 && (
                   <span className="field-note">
@@ -1012,14 +1006,6 @@ export function PendingDiscoveryQueue({
               </>
             )}
           </div>
-          {!hintDismissed && (
-            <p className="pending-kbd-hint" role="note">
-              Keyboard: j/k move, e evaluate, r review, x dismiss, u undo.
-              <button className="button button--quiet" onClick={dismissHint} type="button">
-                Dismiss hint
-              </button>
-            </p>
-          )}
           <p aria-live="polite" className="pending-kbd-status" role="status">
             {announce}
           </p>
@@ -1060,7 +1046,7 @@ export function PendingDiscoveryQueue({
           >
             {filters.constraint === "needs_clarification" ? <h3>Unconfirmed matches</h3> : null}
             {filters.constraint === "excluded_only" ? <h3>Screened out</h3> : null}
-            <table aria-label="Pending job discoveries">
+            <table aria-label="Pending job discoveries" data-tour="find-review">
               <thead>
                 <tr>
                   <th scope="col">
@@ -1112,13 +1098,12 @@ export function PendingDiscoveryQueue({
                   const isInFlight = evaluationInFlight(item.id);
                   return (
                     <PendingDiscoveryRow
-                      costsLoaded={costs.loaded}
+                      costs={costs}
                       keyboardFocused={index === keyboard.activeIndex}
                       detailsOpen={detailsRowId === item.id}
                       dismissalOpen={dismissalRowId === item.id}
                       dismissalPending={dismissalPendingId === item.id}
                       enqueuePending={enqueue.isPending}
-                      evaluationConfirmation={costs.confirmation("discovery.evaluate")}
                       evaluationTask={evaluationTask}
                       isInFlight={isInFlight}
                       isSelected={selectedIds.has(item.id)}
@@ -1154,7 +1139,7 @@ export function PendingDiscoveryQueue({
       ) : loaded ? (
         <EmptyState>
           <p>No openings are waiting. Scan your saved boards to find new postings.</p>
-          <a className="button button--primary" href="?tab=scans">
+          <a className="button button--primary" href="?tab=boards">
             Scan for openings
           </a>
         </EmptyState>

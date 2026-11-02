@@ -45,7 +45,7 @@ export function DocumentsPage() {
     <Page
       eyebrow="Apply"
       title="Documents"
-      description="Tailored CVs and cover letters, for every role that has them. Every version is immutable and hashed."
+      description="Tailored CVs and cover letters for each role."
     >
       {items.length ? (
         <div className="table-wrap">
@@ -118,10 +118,10 @@ function UnattachedFiles({ workspaceId }: { workspaceId: string }) {
   }
   if (!orphans.length) return null;
   return (
-    <section className="panel">
+    <details className="panel advanced-view">
+      <summary>Imported files not tied to a job ({orphans.length})</summary>
       <header>
         <div>
-          <h2>Imported files not tied to a job ({orphans.length})</h2>
           <p>
             Brought in from an earlier tool without a stored link to a job, so they appear nowhere
             else. They are grouped by the folder they were imported from, which is a record of how
@@ -174,6 +174,6 @@ function UnattachedFiles({ workspaceId }: { workspaceId: string }) {
           </div>
         </details>
       ))}
-    </section>
+    </details>
   );
 }

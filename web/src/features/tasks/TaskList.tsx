@@ -384,11 +384,6 @@ function TaskArticle({
         <div>
           <strong>{instanceName}</strong>
           <StatusBadge value={task.status} />
-          {costs.loaded && paid && (
-            <span className="task-cost" title={costs.cost(task.task_type)}>
-              May spend
-            </span>
-          )}
         </div>
         <p className="task-detail">{kind.detail}</p>
         <TaskProgress
@@ -428,7 +423,7 @@ function TaskArticle({
           !providerConfiguration.loaded &&
           !providerConfiguration.isError && (
             <p aria-label={`Provider status for ${taskLabel}`} className="field-note" role="status">
-              Reading the provider model and effort before payment.
+              Reading the provider model and effort.
             </p>
           )}
         {interrupted && sourceContinuation && (
@@ -469,7 +464,7 @@ function TaskArticle({
           options={{
             title: `Resume ${taskLabel}?`,
             description:
-              "Continues the retained source work and unread publisher links from this batch. Completed reads stay recorded. No provider charge.",
+              "Continues the retained source work and unread publisher links from this batch. Completed reads stay recorded.",
             confirmLabel: "Resume retained work",
           }}
         >
@@ -486,8 +481,8 @@ function TaskArticle({
             title: `Scan again ${taskLabel}?`,
             description:
               task.source_ids.length > 0
-                ? "Starts a fresh scan of the same selected boards with current search settings. Boards are read again. No provider charge."
-                : "Starts a fresh scan of all boards enabled now with current search settings. Boards are read again. No provider charge.",
+                ? "Starts a fresh scan of the same selected boards with current search settings. Boards are read again."
+                : "Starts a fresh scan of all boards enabled now with current search settings. Boards are read again.",
             confirmLabel: "Start fresh scan",
           }}
         >
@@ -521,26 +516,26 @@ function TaskArticle({
       )}
       {retryable && costs.loaded && !costs.isError && paid && !reviewingPaidRetry && (
         <button
-          aria-label={`Review paid ${taskLabel}`}
+          aria-label={`Review retry for ${taskLabel}`}
           className="button button--quiet"
           onClick={() => setReviewingPaidRetry(true)}
           type="button"
         >
-          Review paid retry
+          Review retry
         </button>
       )}
       {retryable && costs.loaded && !costs.isError && paid && reviewingPaidRetry && (
         <PaidAction
-          ariaLabel={`Retry paid ${taskLabel}`}
+          ariaLabel={`Retry ${taskLabel}`}
           compact
           confirmation={{
             title: `Retry ${taskLabel}?`,
             description: confirmationDescription,
-            confirmLabel: "Confirm paid retry",
+            confirmLabel: "Confirm retry",
           }}
           costs={costs}
           disabled={retry.isPending || billingPending || providerConfigurationUnavailable}
-          label="Retry paid task"
+          label="Retry task"
           onContinue={() => retry.mutate(task.id)}
           taskType={task.task_type}
         />
@@ -593,8 +588,9 @@ export function TasksPage() {
   return (
     <Page
       density="dense"
-      eyebrow="Activity"
-      title="Tasks"
+      eyebrow="Background work"
+      help="activity"
+      title="Activity"
       description="See what is queued, running, complete, or failed, including work that survived a restart."
     >
       {costs.isError && hasRetryableTask && (

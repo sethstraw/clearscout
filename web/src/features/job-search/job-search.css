@@ -20,10 +20,12 @@
 }
 
 .scan-options,
-.scan-schedule-editor {
+.scan-schedule-editor,
+.boards-history {
 	margin-block: 0.75rem;
 }
 
+.boards-history > summary,
 .scan-options > summary,
 .scan-schedule-editor > summary,
 .scan-schedule > details > summary {
@@ -388,10 +390,6 @@
 	grid-column: 1 / -1;
 }
 
-.pending-discoveries > .panel-body > .pending-kbd-hint {
-	grid-column: 2;
-}
-
 .pending-discoveries .pending-kbd-status:empty {
 	position: absolute;
 }
@@ -470,27 +468,20 @@
 	font-size: var(--text-2xs);
 }
 
-.discovery-toolbar__more,
-.discovery-toolbar__help {
+.discovery-toolbar__more {
 	font-size: var(--text-xs);
 	min-width: 0;
 	order: 3;
 }
 
-.discovery-toolbar__more > summary,
-.discovery-toolbar__help > summary {
+.discovery-toolbar__more > summary {
 	cursor: pointer;
 	min-height: 1.5rem;
 	overflow-wrap: break-word;
 }
 
-.discovery-toolbar__more[open],
-.discovery-toolbar__help[open] {
+.discovery-toolbar__more[open] {
 	flex-basis: 100%;
-}
-
-.discovery-toolbar__help .field-note {
-	margin-block: 0.35rem;
 }
 
 .discovery-toolbar__markers {
@@ -1088,21 +1079,6 @@ table[aria-label="Pending job discoveries"] > thead th:nth-child(6) {
 	box-shadow: inset 3px 0 0 0 var(--accent);
 }
 
-.pending-kbd-hint {
-	align-items: center;
-	color: var(--ink-soft);
-	display: flex;
-	font-size: var(--text-2xs);
-	gap: 0.4rem;
-	margin-block: 0.2rem;
-}
-
-.pending-kbd-hint .button {
-	font-size: var(--text-xs);
-	min-height: 1.5rem;
-	padding: 0.15rem 0.4rem;
-}
-
 .pending-kbd-status {
 	color: var(--ink-soft);
 	font-size: var(--text-xs);
@@ -1139,13 +1115,6 @@ table[aria-label="Pending job discoveries"] > thead th:nth-child(6) {
 	max-width: 100%;
 	overflow-wrap: anywhere;
 	padding: 0.45rem 0.7rem;
-}
-
-.discovery-action--queued:disabled {
-	background: var(--surface-muted);
-	border-color: var(--line);
-	color: var(--ink-soft);
-	opacity: 1;
 }
 
 .pending-provenance {
@@ -1391,8 +1360,7 @@ table[aria-label="Pending job discoveries"] input[type="checkbox"] {
 		grid-template-columns: minmax(0, 1fr);
 	}
 
-	.pending-discoveries > .panel-body > .discovery-batch-bar,
-	.pending-discoveries > .panel-body > .pending-kbd-hint {
+	.pending-discoveries > .panel-body > .discovery-batch-bar {
 		grid-column: 1;
 	}
 

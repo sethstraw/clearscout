@@ -1098,7 +1098,8 @@ describe("TasksPage", () => {
     );
     // The Command Center names the same count the same way.
     expect(screen.getByText(/^Created .*, 3 attempts, task failed-1$/)).toBeTruthy();
-    expect(screen.getByText("May spend").getAttribute("title")).toMatch(/scale with the number/);
+    expect(screen.getByRole("button", { name: "Help: Activity" })).toBeTruthy();
+    expect(screen.queryByText("May spend")).toBeNull();
     await waitFor(() =>
       expect(FakeEventSource.opened).toEqual([
         "/api/v1/tasks/running-1/events?workspace_id=workspace-tasks",
@@ -1130,7 +1131,7 @@ describe("TasksPage", () => {
     renderTasks();
 
     const review = await screen.findByRole("button", {
-      name: /^Review paid Search for new jobs created /,
+      name: /^Review retry for Search for new jobs created /,
     });
     expect(billed).toEqual([]);
     fireEvent.click(review);
@@ -1139,7 +1140,7 @@ describe("TasksPage", () => {
       name: /^Billing for Search for new jobs created /,
     });
     const retry = screen.getByRole("button", {
-      name: /^Retry paid Search for new jobs created /,
+      name: /^Retry Search for new jobs created /,
     });
     expect(billing.textContent).toBe("Checking recorded cost for this task.");
     expect((retry as HTMLButtonElement).disabled).toBe(true);
@@ -1175,7 +1176,7 @@ describe("TasksPage", () => {
     );
     expect(retried).toEqual([]);
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "Confirm paid retry" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirm retry" }));
     await waitFor(() => expect(retried).toEqual(["paid-failed-1"]));
     await screen.findByText("Task queued again.");
     expect(billed).toEqual(["paid-failed-1"]);
@@ -1199,7 +1200,7 @@ describe("TasksPage", () => {
     renderTasks();
 
     const review = await screen.findByRole("button", {
-      name: /^Review paid Search for new jobs created /,
+      name: /^Review retry for Search for new jobs created /,
     });
     fireEvent.click(review);
     const taskLabel = `Search for new jobs created ${new Date(
@@ -1208,8 +1209,8 @@ describe("TasksPage", () => {
     const article = screen.getByRole("article", { name: taskLabel });
     expect(
       await within(article).findByRole("status", { name: `Provider status for ${taskLabel}` }),
-    ).toHaveProperty("textContent", "Reading the provider model and effort before payment.");
-    expect(within(article).getByRole("button", { name: `Retry paid ${taskLabel}` })).toHaveProperty(
+    ).toHaveProperty("textContent", "Reading the provider model and effort.");
+    expect(within(article).getByRole("button", { name: `Retry ${taskLabel}` })).toHaveProperty(
       "disabled",
       true,
     );
@@ -1233,7 +1234,7 @@ describe("TasksPage", () => {
     renderTasks();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /^Review paid Search for new jobs created / }),
+      await screen.findByRole("button", { name: /^Review retry for Search for new jobs created / }),
     );
 
     const billing = await screen.findByRole("status", {
@@ -1301,10 +1302,10 @@ describe("TasksPage", () => {
     const currentArticle = await screen.findByRole("article", { name: currentLabel });
     const earlierArticle = screen.getByRole("article", { name: earlierLabel });
     const currentReview = within(currentArticle).getByRole("button", {
-      name: `Review paid ${currentLabel}`,
+      name: `Review retry for ${currentLabel}`,
     });
     const earlierReview = within(earlierArticle).getByRole("button", {
-      name: `Review paid ${earlierLabel}`,
+      name: `Review retry for ${earlierLabel}`,
     });
     expect(billed).toEqual([]);
 
@@ -1334,7 +1335,7 @@ describe("TasksPage", () => {
       "Recorded cost for this task is unavailable; review Spend before retrying.",
     );
     const earlierRetry = within(earlierArticle).getByRole("button", {
-      name: `Retry paid ${earlierLabel}`,
+      name: `Retry ${earlierLabel}`,
     });
     expect(earlierRetry).toHaveProperty("disabled", false);
 

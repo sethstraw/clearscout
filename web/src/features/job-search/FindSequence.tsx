@@ -1,4 +1,4 @@
-/** The order the Find page expects: scan free first, then pay to find or widen. */
+/** The order the Find page expects: scan saved boards first, then search wider. */
 export function FindSequence() {
   return (
     <section aria-label="Ways to find jobs" className="search-loop search-loop--choices">
@@ -7,7 +7,6 @@ export function FindSequence() {
         <li>
           <strong>Scan for openings</strong>
           <p>Scans the boards you already track and stages current openings for review.</p>
-          <span className="badge">Free</span>
         </li>
         <li>
           <strong>Search the web for new jobs</strong>
@@ -15,9 +14,6 @@ export function FindSequence() {
             Finds new postings and boards beyond your saved boards. You approve an estimate before
             it runs.
           </p>
-          <span className="badge badge--paid">
-            Paid; per-search content charges are provider-set
-          </span>
         </li>
         <li>
           <strong>Propose new search terms</strong>
@@ -25,7 +21,6 @@ export function FindSequence() {
             One CV-grounded call that finds no jobs; it widens what later scans and web searches
             look for.
           </p>
-          <span className="badge badge--paid">Paid; optional widener</span>
         </li>
       </ul>
     </section>

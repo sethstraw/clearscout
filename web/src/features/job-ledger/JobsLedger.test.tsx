@@ -109,6 +109,32 @@ const comparisonCostHistory = [
   },
 ] satisfies RunCostHistory[];
 
+/** One posting per unit for the batch, priced apart from a single evaluation. */
+const evaluationCostHistory = [
+  {
+    task_type: "discovery.evaluate",
+    currency: "USD",
+    unit: "posting",
+    measured_runs: 3,
+    unpriced_runs: 0,
+    replayed_runs: 0,
+    per_unit_low: "0.05",
+    per_unit_median: "0.10",
+    per_unit_high: "0.20",
+  },
+  {
+    task_type: "discovery.evaluate_batch",
+    currency: "USD",
+    unit: "posting",
+    measured_runs: 3,
+    unpriced_runs: 0,
+    replayed_runs: 0,
+    per_unit_low: "0.30",
+    per_unit_median: "0.40",
+    per_unit_high: "0.60",
+  },
+] satisfies RunCostHistory[];
+
 const ARCHIVED = {
   job_posting_ids: ["job-1", "job-2"],
   requested_count: 2,
@@ -712,6 +738,49 @@ describe("JobsPage", () => {
     ).toBeTruthy();
   });
 
+  it("prices a batch re-evaluation from the batch task's own history", async () => {
+    window.localStorage.setItem("tailorcv.workspace", "jobs-reevaluate-price-test");
+    installApi(jobs, [], jobs.length, evaluationCostHistory);
+
+    render(
+      <MemoryRouter>
+        <AppProviders>
+          <JobsPage />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("table");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Beta Director" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Alpha Manager" }));
+
+    const button = await screen.findByRole("button", { name: "Re-evaluate selected (2)" });
+    await waitFor(() => expect(button.textContent).toContain("Past runs: about $0.80 total"));
+    expect(button.textContent).toContain("Paid");
+  });
+
+  it("folds the rare filters under Advanced and keeps the page to one line of context", async () => {
+    window.localStorage.setItem("tailorcv.workspace", "jobs-advanced-test");
+    installApi(jobs, [savedView]);
+
+    render(
+      <MemoryRouter>
+        <AppProviders>
+          <JobsPage />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("table");
+
+    expect(screen.getByRole("heading", { level: 1, name: "Jobs" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Help: Jobs" })).toBeTruthy();
+    const advanced = screen.getByText("Advanced").closest("details");
+    expect(advanced?.open).toBe(false);
+    for (const label of ["Saved view", "Archived jobs", "Evidence integrity"]) {
+      expect(advanced?.contains(screen.getByLabelText(label))).toBe(true);
+    }
+    expect(advanced?.contains(screen.getByLabelText("Decision"))).toBe(false);
+  });
+
   it("forces an explicit selected-posting refresh", async () => {
     window.localStorage.setItem("tailorcv.workspace", "jobs-refresh-test");
     const recorded = installApi(jobs);
@@ -728,7 +797,9 @@ describe("JobsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Refresh selected (1)" }));
 
     const dialog = await screen.findByRole("dialog", { name: "Refresh this tracked posting?" });
-    expect(dialog.textContent).toContain("Nothing is spent.");
+    expect(dialog.textContent).toContain("Re-reads this posting from its publisher.");
+    expect(dialog.textContent).not.toContain("spent");
+    expect(screen.queryByText("No provider charge.")).toBeNull();
     expect(recorded.posts).toHaveLength(0);
     fireEvent.click(within(dialog).getByRole("button", { name: "Refresh" }));
 

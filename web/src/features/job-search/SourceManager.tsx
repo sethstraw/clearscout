@@ -12,6 +12,7 @@ import { safeHttpUrl } from "../../api/safeUrl";
 import { ApiError } from "../../api/http";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
+import { Toggletip } from "../../components/Toggletip";
 import type { Source, SourceEdit } from "../../api/client";
 import type { SourcePreview } from "../../api/client/types";
 import type { components } from "../../api/schema";
@@ -441,12 +442,7 @@ function SourceDraftFields({
       )}
       {draft.preview && (
         <fieldset className="source-add__details">
-          <legend>Step 2: Name and terms evidence</legend>
-          <p className="field-note source-add__evidence-note" id={`${id}-evidence-note`}>
-            Record any published condition on automated reading and the page where you found it.
-            Leave both blank if you have not checked. A stated condition must be confirmed before
-            the source is swept.
-          </p>
+          <legend>Step 2: Name the board</legend>
           <div className="source-add__details-grid">
             <div className="compact-field">
               <label htmlFor={`${id}-name`}>Name</label>
@@ -460,30 +456,38 @@ function SourceDraftFields({
                 onChange={(event) => change({ name: event.target.value })}
               />
             </div>
-            <div className="compact-field">
-              <label htmlFor={`${id}-condition`}>Condition on reading it</label>
-              <textarea
-                id={`${id}-condition`}
-                disabled={busy}
-                aria-describedby={`${id}-evidence-note ${resultDescription ?? ""}`}
-                rows={2}
-                value={draft.condition}
-                onChange={(event) => change({ condition: event.target.value })}
-              />
-            </div>
-            <div className="compact-field">
-              <label htmlFor={`${id}-terms`}>Published at</label>
-              <input
-                id={`${id}-terms`}
-                disabled={busy}
-                aria-describedby={`${id}-evidence-note ${resultDescription ?? ""}`}
-                inputMode="url"
-                type="url"
-                placeholder="robots.txt or terms page"
-                value={draft.termsUrl}
-                onChange={(event) => change({ termsUrl: event.target.value })}
-              />
-            </div>
+            <details className="scan-options source-add__terms">
+              <summary>Advanced: reading condition</summary>
+              <p className="field-note source-add__evidence-note" id={`${id}-evidence-note`}>
+                Record any published condition on automated reading and where you found it. Leave
+                both blank if you have not checked. You confirm a stated condition before the board
+                is swept.
+              </p>
+              <div className="compact-field">
+                <label htmlFor={`${id}-condition`}>Condition on reading it</label>
+                <textarea
+                  id={`${id}-condition`}
+                  disabled={busy}
+                  aria-describedby={`${id}-evidence-note ${resultDescription ?? ""}`}
+                  rows={2}
+                  value={draft.condition}
+                  onChange={(event) => change({ condition: event.target.value })}
+                />
+              </div>
+              <div className="compact-field">
+                <label htmlFor={`${id}-terms`}>Published at</label>
+                <input
+                  id={`${id}-terms`}
+                  disabled={busy}
+                  aria-describedby={`${id}-evidence-note ${resultDescription ?? ""}`}
+                  inputMode="url"
+                  type="url"
+                  placeholder="robots.txt or terms page"
+                  value={draft.termsUrl}
+                  onChange={(event) => change({ termsUrl: event.target.value })}
+                />
+              </div>
+            </details>
             <button
               className="button button--primary source-add__submit"
               disabled={!draft.name.trim() || saved || draft.outcome === "duplicate"}
@@ -644,25 +648,22 @@ export function SourceManager({ workspaceId }: { workspaceId: string }) {
     <section className="panel" aria-labelledby="source-manager-heading">
       <header>
         <div>
-          <h2 id="source-manager-heading">Board sources</h2>
+          <h2 id="source-manager-heading">Your boards</h2>
           <p>
-            Save boards for repeated free scans. Recognizing a hiring platform does not guarantee
-            permission or complete coverage. Check each source's actual read result and reading
-            condition. Sources that cannot be read stay visible; try an individual posting link or
-            published text where intake permits it. No model-provider charge applies here.
+            Each scan reads the boards you save here.{" "}
+            <Toggletip label="When a board cannot be read">
+              A recognized hiring platform does not promise permission or full coverage. Check each
+              board&apos;s last read and reading condition. A board that cannot be read stays
+              listed; add its postings one link at a time from Review instead.
+            </Toggletip>
           </p>
         </div>
       </header>
       <section aria-labelledby="source-add-heading" className="panel-body source-add">
-        <h3 id="source-add-heading">Add a source</h3>
-        <p className="field-note">
-          Add a row for each board. Validate addresses, then name the sources and add them together
-          or individually. Each result stays with its row; failed drafts keep their fields for
-          retry.
-        </p>
+        <h3 id="source-add-heading">Add a board</h3>
+        <p className="field-note">Validate the address, then name the board and add it.</p>
         <p className="field-note" id="source-ready-help">
           Only validated rows with a name are ready. Saved and duplicate rows are skipped.
-          Unfinished rows remain for correction.
         </p>
         {drafts.map((draft, index) => (
           <SourceDraftFields
@@ -724,7 +725,7 @@ export function SourceManager({ workspaceId }: { workspaceId: string }) {
           ))}
         </ul>
       ) : (
-        <EmptyState>No board source has been registered.</EmptyState>
+        <EmptyState>No boards yet.</EmptyState>
       )}
     </section>
   );

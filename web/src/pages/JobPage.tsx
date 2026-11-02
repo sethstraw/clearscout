@@ -110,6 +110,8 @@ const fitTabItems = fitTabs.map((label) => ({ id: tabSlugs[label], label }));
 const tailorTabItems = tailorTabs.map((label) => ({ id: tabSlugs[label], label }));
 const applicationTabItems = applicationTabs.map((label) => ({ id: tabSlugs[label], label }));
 const HISTORY_PAGE_SIZE = PAGE_SIZE;
+// The Studio links to the header evaluation control rather than repeating it.
+const EVALUATE_ACTION_ID = "job-evaluate-action";
 // Matches _REEVAL_FETCH_STALE_HOURS in the tailoring re-evaluation workflow.
 const REEVAL_STALE_HOURS = 24;
 
@@ -391,6 +393,12 @@ export function JobPage() {
   const disputeRefreshBilling = disputeRefresh
     ? taskBillingSummary(refreshBilling.data, refreshBilling.isError)
     : "";
+  const extractionDisputable =
+    !data.archived_at &&
+    data.enable_dispute_reextraction &&
+    data.disputed_extraction_ruling_count > 0;
+  const fitDisputable =
+    !data.archived_at && data.enable_dispute_rematch && data.disputed_fit_ruling_count > 0;
   const correction = data.application_events
     .slice()
     .reverse()
@@ -414,11 +422,10 @@ export function JobPage() {
   return (
     <Page
       eyebrow={data.employer}
+      help="job"
       title={data.title}
       description={
-        data.evaluation_id
-          ? "Evaluation and job history."
-          : "Tracked job and application history. Model evaluation is optional."
+        data.evaluation_id ? "Evaluation and job history." : "Tracked job and application history."
       }
       action={
         <div className="page-actions">
@@ -439,87 +446,58 @@ export function JobPage() {
             </button>
           )}
           {!data.archived_at && (
-            <PaidAction
-              evaluation={{ workspaceId, selection: { job_posting_ids: [jobId] } }}
-              confirmation={{
-                title: `${data.evaluation_id ? "Re-run" : "Run"} the full evaluation for ${data.title}?`,
-                description: costs.confirmation("discovery.evaluate"),
-                details: (() => {
-                  const freshness = reevaluationFreshness(data.latest_observation?.observed_at);
-                  if (!freshness) return null;
-                  return freshness.stale ? (
-                    <p className="field-note">
-                      Last verified {freshness.timestamp} (over {REEVAL_STALE_HOURS}h ago); a fresh
-                      fetch will run before evaluation.
-                    </p>
-                  ) : (
-                    <>
+            <div id={EVALUATE_ACTION_ID}>
+              <PaidAction
+                evaluation={{ workspaceId, selection: { job_posting_ids: [jobId] } }}
+                confirmation={{
+                  title: `${data.evaluation_id ? "Re-run" : "Run"} the full evaluation for ${data.title}?`,
+                  description: costs.confirmation("discovery.evaluate"),
+                  details: (() => {
+                    const freshness = reevaluationFreshness(data.latest_observation?.observed_at);
+                    if (!freshness) return null;
+                    return freshness.stale ? (
                       <p className="field-note">
-                        Last verified {freshness.timestamp} (within {REEVAL_STALE_HOURS}h).
+                        Last verified {freshness.timestamp} (over {REEVAL_STALE_HOURS}h ago); a
+                        fresh fetch will run before evaluation.
                       </p>
-                      <p className="field-note">
-                        Uses stored body; run Refresh posting first to re-fetch.
-                      </p>
-                    </>
-                  );
-                })(),
-                confirmLabel: data.evaluation_id ? "Confirm re-evaluation" : "Confirm evaluation",
-              }}
-              costs={costs}
-              disabled={
-                reevaluate.isPending ||
-                !costs.loaded ||
-                ["queued", "running"].includes(reevaluateTask.data?.status ?? "")
-              }
-              label={
-                reevaluate.isPending ||
-                ["queued", "running"].includes(reevaluateTask.data?.status ?? "")
-                  ? "Evaluating"
-                  : data.evaluation_id
-                    ? "Re-run evaluation"
-                    : "Full evaluation"
-              }
-              onAct={() =>
-                reevaluate.mutate({
-                  workspace_id: workspaceId,
-                  task_type: "discovery.evaluate",
-                  payload: { job_posting_id: jobId, fresh: true },
-                })
-              }
-              taskType="discovery.evaluate"
-            />
-          )}
-          {disputeRefreshBilling && (
-            <small aria-label="Dispute refresh billing" className="field-note" role="status">
-              {disputeRefreshBilling}
-            </small>
-          )}
-          {!data.archived_at &&
-            data.enable_dispute_reextraction &&
-            data.disputed_extraction_ruling_count > 0 && (
-              <DisputeRefreshAction
-                billingPending={awaitingRefreshBilling}
-                kind="extraction"
-                workspaceId={workspaceId}
-                jobId={jobId}
-                refresh={refresh}
-                refreshBusy={refreshBusy}
+                    ) : (
+                      <>
+                        <p className="field-note">
+                          Last verified {freshness.timestamp} (within {REEVAL_STALE_HOURS}h).
+                        </p>
+                        <p className="field-note">
+                          Uses stored body; run Refresh posting first to re-fetch.
+                        </p>
+                      </>
+                    );
+                  })(),
+                  confirmLabel: data.evaluation_id ? "Confirm re-evaluation" : "Confirm evaluation",
+                }}
                 costs={costs}
+                disabled={
+                  reevaluate.isPending ||
+                  !costs.loaded ||
+                  ["queued", "running"].includes(reevaluateTask.data?.status ?? "")
+                }
+                label={
+                  reevaluate.isPending ||
+                  ["queued", "running"].includes(reevaluateTask.data?.status ?? "")
+                    ? "Evaluating"
+                    : data.evaluation_id
+                      ? "Re-run evaluation"
+                      : "Full evaluation"
+                }
+                onAct={() =>
+                  reevaluate.mutate({
+                    workspace_id: workspaceId,
+                    task_type: "discovery.evaluate",
+                    payload: { job_posting_id: jobId, fresh: true },
+                  })
+                }
+                taskType="discovery.evaluate"
               />
-            )}
-          {!data.archived_at &&
-            data.enable_dispute_rematch &&
-            data.disputed_fit_ruling_count > 0 && (
-              <DisputeRefreshAction
-                billingPending={awaitingRefreshBilling}
-                kind="fit"
-                workspaceId={workspaceId}
-                jobId={jobId}
-                refresh={refresh}
-                refreshBusy={refreshBusy}
-                costs={costs}
-              />
-            )}
+            </div>
+          )}
           {refreshActive && <small className="field-note">Refresh in progress</small>}
           {awaitingRefreshStatus && (
             <small className="field-note" role="status">
@@ -528,17 +506,9 @@ export function JobPage() {
           )}
           {refresh.data?.id && refreshTask.isError && (
             <small className="field-error" role="alert">
-              Refresh status is unavailable. Reload or review Tasks before starting another refresh.
+              Refresh status is unavailable. Reload or open Activity before starting another
+              refresh.
             </small>
-          )}
-          {data.fit_report_available && !data.archived_at && (
-            <a
-              className="button button--quiet"
-              download
-              href={api.fitReportExportUrl(jobId, workspaceId)}
-            >
-              Download fit report
-            </a>
           )}
           <ConfirmedActionButton
             className="button button--quiet"
@@ -737,6 +707,44 @@ export function JobPage() {
                 />
               )}
             </TabPanel>
+            {(extractionDisputable || fitDisputable || disputeRefreshBilling) && (
+              <details className="advanced-view">
+                <summary>Advanced</summary>
+                <div className="page-actions">
+                  {disputeRefreshBilling && (
+                    <small
+                      aria-label="Dispute refresh billing"
+                      className="field-note"
+                      role="status"
+                    >
+                      {disputeRefreshBilling}
+                    </small>
+                  )}
+                  {extractionDisputable && (
+                    <DisputeRefreshAction
+                      billingPending={awaitingRefreshBilling}
+                      kind="extraction"
+                      workspaceId={workspaceId}
+                      jobId={jobId}
+                      refresh={refresh}
+                      refreshBusy={refreshBusy}
+                      costs={costs}
+                    />
+                  )}
+                  {fitDisputable && (
+                    <DisputeRefreshAction
+                      billingPending={awaitingRefreshBilling}
+                      kind="fit"
+                      workspaceId={workspaceId}
+                      jobId={jobId}
+                      refresh={refresh}
+                      refreshBusy={refreshBusy}
+                      costs={costs}
+                    />
+                  )}
+                </div>
+              </details>
+            )}
           </>
         )}
         {workspaceTab === "Tailor" && (
@@ -752,7 +760,13 @@ export function JobPage() {
               selected={tabSlugs[tab]}
             />
             <TabPanel id="job-tailor-tabs" selected={tabSlugs[tab]}>
-              {tab === "Studio" && <TailoringStudio jobId={jobId} workspaceId={workspaceId} />}
+              {tab === "Studio" && (
+                <TailoringStudio
+                  evaluateActionId={data.archived_at ? undefined : EVALUATE_ACTION_ID}
+                  jobId={jobId}
+                  workspaceId={workspaceId}
+                />
+              )}
               {tab === "Files" && (
                 <Suspense fallback={<LoadingState label="Opening files" />}>
                   <JobDocuments jobId={jobId} workspaceId={workspaceId} />

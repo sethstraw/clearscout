@@ -44,6 +44,7 @@ export type MasterCvContent = components["schemas"]["MasterCvContentResponse"];
 export type MasterCvImpact = components["schemas"]["MasterCvImpactResponse"];
 export type MasterCvCitationImpact = components["schemas"]["CitationImpactResponse"];
 export type MasterCvEdit = components["schemas"]["MasterCvEditResponse"];
+export type MasterCvRereadEstimate = components["schemas"]["MasterCvRereadEstimateResponse"];
 export type RequirementGaps = components["schemas"]["RequirementGapSummaryResponse"];
 export type RequirementImportance =
   components["schemas"]["RequirementGapSourceResponse"]["importance"];

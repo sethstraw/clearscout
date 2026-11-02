@@ -11,6 +11,7 @@ import type {
   PendingDiscoveryChanges,
   PendingDiscoveryPage,
   PendingDuplicateCandidate,
+  RefusalPatternProposal,
   RelevanceReviewConfiguration,
   Task,
 } from "../../api/client/types";
@@ -40,6 +41,7 @@ export interface PendingQueueReads {
   closedHistory?: PendingDiscovery[];
   masterCvVersions?: MasterCvVersion[];
   relevanceReviewConfiguration?: RelevanceReviewConfiguration;
+  refusalPatternProposals?: RefusalPatternProposal[];
   tasks?: Task[];
 }
 
@@ -133,6 +135,9 @@ export function pendingQueueHandlers(reads: PendingQueueReads = {}): HttpHandler
       HttpResponse.json(reads.relevanceReviewConfiguration ?? ANTHROPIC_REVIEW_CONFIGURATION),
     ),
     http.get(`${WORKSPACE}/pending-dispositions/dismissed`, () => HttpResponse.json([])),
+    http.get(`${WORKSPACE}/refusal-pattern-proposals`, () =>
+      HttpResponse.json(reads.refusalPatternProposals ?? []),
+    ),
     http.get(`${WORKSPACE}/pending-discoveries/changes`, (info) => {
       seen(info);
       return HttpResponse.json(resolve(reads.changes, pendingDiscoveryChanges()));

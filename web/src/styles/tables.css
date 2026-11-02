@@ -125,6 +125,26 @@ tbody th {
 	color: var(--ink);
 }
 
+.toolbar .jobs-ledger__advanced {
+	flex-basis: 100%;
+	margin-bottom: 0;
+}
+
+.jobs-ledger__advanced-fields {
+	align-items: end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem 0.8rem;
+	margin-top: 0.6rem;
+}
+
+.jobs-ledger__saved-view {
+	align-items: end;
+	display: flex;
+	flex: 1 1 12rem;
+	gap: 0.35rem;
+}
+
 .jobs-table__application-column {
 	width: 12%;
 }

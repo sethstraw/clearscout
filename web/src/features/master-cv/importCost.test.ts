@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { importCostNote } from "./importCost";
+import { needsModelRead } from "./importCost";
 
-describe("importCostNote", () => {
-  it("warns that a format the provider must standardize may be charged for", () => {
-    for (const name of ["CV.docx", "CV.pdf", "CV.txt", "scan.png", "CV"]) {
-      expect(importCostNote(name)).toContain("model-token charges");
-      expect(importCostNote(name)).toContain("standardized by the configured provider");
+describe("needsModelRead", () => {
+  it("sends every non-text format to the model", () => {
+    for (const name of ["CV.docx", "CV.pdf", "scan.png", "CV"]) {
+      expect(needsModelRead(name)).toBe(true);
     }
   });
 
-  it("does not promise Markdown is free, because only the server can parse it", () => {
-    const note = importCostNote("CV_Master.md");
-    expect(note).toContain("adopted without a provider call");
-    expect(note).toContain("model-token charges");
+  it("lets the server adopt Markdown and plain text without a model call", () => {
+    for (const name of ["CV_Master.md", "CV.markdown", "CV.txt"]) {
+      expect(needsModelRead(name)).toBe(false);
+    }
   });
 
   it("reads the suffix regardless of case", () => {
-    expect(importCostNote("CV.MD")).toEqual(importCostNote("cv.md"));
+    expect(needsModelRead("CV.MD")).toBe(false);
+    expect(needsModelRead("CV.TXT")).toBe(false);
   });
 });

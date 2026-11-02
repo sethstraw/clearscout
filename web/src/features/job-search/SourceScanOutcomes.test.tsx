@@ -636,7 +636,7 @@ describe("SourceScanOutcomes", () => {
     expect(within(table).queryByRole("link", { name: "Board page" })).toBeNull();
     expect(
       within(table).getByRole("link", { name: "Review source configuration" }).getAttribute("href"),
-    ).toBe("/settings?tab=search&section=sources");
+    ).toBe("/find?tab=boards");
   });
 
   it("offers the reason the funnel counted above, spelled the same way", async () => {
@@ -671,7 +671,7 @@ describe("SourceScanOutcomes", () => {
     expect(within(filter).queryByRole("option", { name: "seniority outside band" })).toBeNull();
   });
 
-  it("routes to settings in the app rather than reloading the filtered ledger", async () => {
+  it("routes to the board list in the app rather than reloading the filtered ledger", async () => {
     useOutcomes(() =>
       sourceScanOutcomePage({
         items: [
@@ -688,14 +688,14 @@ describe("SourceScanOutcomes", () => {
     );
 
     render(
-      <MemoryRouter initialEntries={["/find"]}>
+      <MemoryRouter initialEntries={["/ledger"]}>
         <AppProviders>
           <Routes>
             <Route
               element={<SourceScanOutcomes taskId="task-1" workspaceId="workspace-1" />}
-              path="/find"
+              path="/ledger"
             />
-            <Route element={<h1>Search settings</h1>} path="/settings" />
+            <Route element={<h1>Your boards</h1>} path="/find" />
           </Routes>
         </AppProviders>
       </MemoryRouter>,
@@ -703,7 +703,7 @@ describe("SourceScanOutcomes", () => {
 
     fireEvent.click(await screen.findByRole("link", { name: "Review source configuration" }));
 
-    expect(await screen.findByRole("heading", { name: "Search settings" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Your boards" })).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
   });
 

@@ -10,6 +10,7 @@ import { EvaluationInputs } from "../../components/EvaluationInputs";
 import { attemptCount, taskKindOf } from "../../api/taskNames";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
+import { Toggletip } from "../../components/Toggletip";
 import { useWorkspace } from "../../providers";
 import { DecidedWithoutOutcome } from "./DecidedWithoutOutcome";
 import { FirstRunChecklist } from "./FirstRunChecklist";
@@ -17,6 +18,7 @@ import { FirstRunChecklist } from "./FirstRunChecklist";
 function JobList({
   title,
   detail,
+  order,
   emptyMessage = "No jobs in this category yet.",
   jobs,
   scoreKey,
@@ -25,6 +27,7 @@ function JobList({
 }: {
   title: string;
   detail: string;
+  order?: string;
   emptyMessage?: string;
   jobs: Job[];
   scoreKey: "fit_score" | "overall_score";
@@ -36,7 +39,10 @@ function JobList({
       <header>
         <div>
           <h2>{title}</h2>
-          <p>{detail}</p>
+          <p>
+            {detail}{" "}
+            {order ? <Toggletip label={`How ${title} is ordered`}>{order}</Toggletip> : null}
+          </p>
         </div>
       </header>
       {jobs.length ? (
@@ -118,6 +124,7 @@ export function CommandCenterPage() {
       eyebrow="Today"
       title="Home"
       description="What needs you today."
+      help="home"
       action={
         <Link
           className="button button--primary"
@@ -169,7 +176,8 @@ export function CommandCenterPage() {
         />
         <JobList
           title="Best fit with your CV"
-          detail="Evaluated jobs with a fit score. Your fit review when entered; otherwise candidate evidence and role fit."
+          detail="Evaluated jobs, best fit first."
+          order="Your fit review when you entered one; otherwise candidate evidence and role fit."
           emptyMessage="No evaluated jobs with a fit score yet."
           jobs={(summary.data?.highest_intrinsic ?? []).filter(
             (job) => job.evaluation_id !== null && reviewScores(job).fit.value !== null,
@@ -179,55 +187,61 @@ export function CommandCenterPage() {
         />
         <JobList
           title="Promising jobs to revisit"
-          detail="Jobs marked investigate or monitor. Highest overall score first; jobs with no overall score come last, by employer then title."
+          detail="Jobs marked investigate or monitor."
+          order="Highest overall score first; jobs with no overall score come last, by employer then title."
           jobs={summary.data?.highest_upside ?? []}
           scoreKey="overall_score"
           scoreLabel="overall"
         />
-        <section className="panel chart-panel">
-          <header>
-            <div>
-              <h2>Application pipeline</h2>
-              <p>Each move appends history; nothing is overwritten.</p>
-            </div>
-          </header>
-          <div
-            className="chart"
-            role="img"
-            aria-label={`Application pipeline: ${funnel.map((item) => `${item.label} ${item.count}`).join(", ")}`}
-          >
-            <ResponsiveContainer height="100%" width="100%">
-              <BarChart data={funnel} margin={{ right: 12 }}>
-                <CartesianGrid strokeDasharray="4 4" vertical={false} />
-                <XAxis dataKey="label" fontSize={12} interval={0} />
-                <YAxis allowDecimals={false} fontSize={12} width={24} />
-                <Tooltip cursor={{ fill: "var(--surface-muted)" }} />
-                <Bar dataKey="count" fill="var(--accent)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-        <section className="panel task-panel">
-          <header>
-            <div>
-              <h2>Recent tasks</h2>
-              <p>Durable work survives a restart.</p>
-            </div>
-            <Link to="/tasks">View all</Link>
-          </header>
-          {(tasks.data ?? []).slice(0, 5).map((task) => (
-            <div className="task-row" key={task.id}>
-              <div>
-                <strong>{taskKindOf(task).name}</strong>
-                <span>{attemptCount(task.attempt_count)}</span>
-                {task.error_message ? <p className="task-error">{task.error_message}</p> : null}
-              </div>
-              <StatusBadge value={task.status} />
-            </div>
-          ))}
-          {!tasks.data?.length && <EmptyState>No background work has run yet.</EmptyState>}
-        </section>
       </section>
+      <details className="home-advanced">
+        <summary>Advanced</summary>
+        <section className="dashboard-grid">
+          <section className="panel chart-panel">
+            <header>
+              <div>
+                <h2>Application pipeline</h2>
+                <p>Applications by stage.</p>
+              </div>
+            </header>
+            <div
+              className="chart"
+              role="img"
+              aria-label={`Application pipeline: ${funnel.map((item) => `${item.label} ${item.count}`).join(", ")}`}
+            >
+              <ResponsiveContainer height="100%" width="100%">
+                <BarChart data={funnel} margin={{ right: 12 }}>
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} />
+                  <XAxis dataKey="label" fontSize={12} interval={0} />
+                  <YAxis allowDecimals={false} fontSize={12} width={24} />
+                  <Tooltip cursor={{ fill: "var(--surface-muted)" }} />
+                  <Bar dataKey="count" fill="var(--accent)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+          <section className="panel task-panel">
+            <header>
+              <div>
+                <h2>Recent tasks</h2>
+                <p>The latest background work.</p>
+              </div>
+              <Link to="/tasks">Open Activity</Link>
+            </header>
+            {(tasks.data ?? []).slice(0, 5).map((task) => (
+              <div className="task-row" key={task.id}>
+                <div>
+                  <strong>{taskKindOf(task).name}</strong>
+                  <span>{attemptCount(task.attempt_count)}</span>
+                  {task.error_message ? <p className="task-error">{task.error_message}</p> : null}
+                </div>
+                <StatusBadge value={task.status} />
+              </div>
+            ))}
+            {!tasks.data?.length && <EmptyState>No background work has run yet.</EmptyState>}
+          </section>
+        </section>
+      </details>
     </Page>
   );
 }

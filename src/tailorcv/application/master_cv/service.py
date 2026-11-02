@@ -15,6 +15,7 @@ from tailorcv.application.workspaces import (
     MasterCvEditResponse,
     MasterCvImpactResponse,
     MasterCvImportResponse,
+    MasterCvRereadEstimateResponse,
     MasterCvVersionResponse,
     WorkspaceSettingsService,
 )
@@ -61,11 +62,16 @@ class MasterCvService:
         """Report citation impact without writing."""
         return self.queries.impact(workspace_id, content)
 
+    def reread_estimate(self, workspace_id: str) -> MasterCvRereadEstimateResponse:
+        """Report what past model re-reads of a CV cost in this workspace."""
+        return self.queries.reread_estimate(workspace_id)
+
     def save_edit(
         self,
         workspace_id: str,
         content: str,
         *,
+        confirm_reread: bool = False,
         actor: str = "local_user",
         origin: str = "api",
         correlation_id: str | None = None,
@@ -74,6 +80,7 @@ class MasterCvService:
         return self.commands.save_edit(
             workspace_id,
             content,
+            confirm_reread=confirm_reread,
             actor=actor,
             origin=origin,
             correlation_id=correlation_id,
@@ -90,6 +97,7 @@ class MasterCvService:
         api_key: str | None = None,
         prompter: Prompter | None = None,
         replace: bool = False,
+        confirm_reread: bool = True,
         actor: str = "local_user",
         origin: str = "api",
         correlation_id: str | None = None,
@@ -104,6 +112,7 @@ class MasterCvService:
             api_key=api_key,
             prompter=prompter,
             replace=replace,
+            confirm_reread=confirm_reread,
             actor=actor,
             origin=origin,
             correlation_id=correlation_id,

@@ -6,16 +6,44 @@ import type { Source, Task } from "../../api/client/types";
 import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { taskTypesHandler } from "../../test/taskTypes";
+import { searchParametersState } from "../search-parameters/searchParameterFixtures";
 import { ScanPanel } from "./ScanPanel";
 import { boardSource, sourceList } from "./sourceScanFixtures";
 
 const NORTHWIND = boardSource();
+
+/** Serve the saved search parameters with these target titles. */
+function savedTitles(titles: string[]) {
+  server.use(
+    http.get("*/api/v1/job-search-parameters", () =>
+      HttpResponse.json(
+        searchParametersState({
+          configured: true,
+          parameters: {
+            opportunity_thesis: "",
+            score_weight_set: "",
+            working_day_shift_hours: 0,
+            locations: [],
+            seniority: {
+              minimum: "",
+              maximum: "",
+              title_matching: "guided",
+              target_titles: titles.map((title) => ({ title, lane: null })),
+            },
+          },
+        }),
+      ),
+    ),
+  );
+}
+
 beforeEach(() => {
   server.use(
     http.get("/api/v1/workspaces/workspace-1/scan-schedule", () =>
       HttpResponse.json({ workspace_id: "workspace-1", state: null, unavailable_source_ids: [] }),
     ),
   );
+  savedTitles(["Fleet Lead"]);
 });
 const INITECH = boardSource({
   id: "source-2",
@@ -64,7 +92,7 @@ function panel() {
 }
 
 describe("ScanPanel", () => {
-  it("keeps scan scope and progress visible while posting detail options stay optional", async () => {
+  it("keeps scan scope and progress visible while the fresh-details option stays under Advanced", async () => {
     const active = scanTask({
       status: "running",
       source_ids: [NORTHWIND.id],
@@ -73,15 +101,18 @@ describe("ScanPanel", () => {
     installOneBoard(active, [active]);
     panel();
 
-    const summary = await screen.findByText("Posting detail options");
+    const summary = await screen.findByText("Advanced");
     const disclosure = summary.closest("details")!;
     expect(disclosure.open).toBe(false);
     const progress = await screen.findByText("Reading posting content: 2/7");
     expect(progress.closest("details")).toBeNull();
-    expect(screen.getByRole("button", { name: "Scan for openings" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Scan now" })).toBeTruthy();
     expect(screen.getByText("All enabled sources").closest("details")).toBeNull();
-    expect(screen.getByText(/No CV or provider key/).closest("details")).toBeNull();
-    expect(screen.getByText(/Recognition does not guarantee/).closest("details")).toBeNull();
+    expect(
+      screen.getByText(/sends titles that match yours to Review/).closest("details"),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "What a scan can read" }));
+    expect(screen.getByText(/does not promise permission or full coverage/)).toBeTruthy();
     fireEvent.click(summary);
     expect(disclosure.open).toBe(true);
     const fresh = within(disclosure).getByRole("checkbox", {
@@ -90,7 +121,60 @@ describe("ScanPanel", () => {
     fireEvent.click(fresh);
     fireEvent.click(summary);
     expect(screen.getByText("Fresh posting details requested for this scan.")).toBeTruthy();
+    fireEvent.click(screen.getByText("Advanced"));
+    fireEvent.click(within(disclosure).getByRole("button", { name: "About fresh details" }));
     expect(screen.getByText(/failed fresh read leaves retained content/)).toBeTruthy();
+  });
+
+  it("explains a disabled bulk scan and points at the Add a board form", async () => {
+    installHandlers(scanTask(), []);
+    panel();
+
+    const button = await screen.findByRole<HTMLButtonElement>("button", { name: "Scan now" });
+    await screen.findByText("No boards yet.", { exact: false });
+    expect(button.disabled).toBe(true);
+    const reason = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(reason?.textContent).toBe("Add a board below to scan.");
+    expect(screen.getByRole("link", { name: "Add a board" }).getAttribute("href")).toBe(
+      "#source-add-heading",
+    );
+    expect(screen.queryByText(/Settings before scanning/)).toBeNull();
+  });
+
+  it("says to turn a board on when every saved board is off", async () => {
+    installHandlers(scanTask(), [CONTOSO]);
+    panel();
+
+    await screen.findByText("Sources (0 enabled of 1): scan all, selected, or one");
+    const button = screen.getByRole<HTMLButtonElement>("button", { name: "Scan now" });
+    expect(button.disabled).toBe(true);
+    expect(
+      document.getElementById(button.getAttribute("aria-describedby") ?? "")?.textContent,
+    ).toBe("Turn on sweeping for a board below to scan.");
+  });
+
+  it("links to Settings > Search only while no target title is saved", async () => {
+    savedTitles([]);
+    installOneBoard(scanTask());
+    const view = render(
+      <AppProviders>
+        <ScanPanel workspaceId="workspace-1" />
+      </AppProviders>,
+    );
+
+    const link = await screen.findByRole("link", {
+      name: "Add target titles in Settings > Search",
+    });
+    expect(link.getAttribute("href")).toBe("/settings?tab=search");
+    expect(screen.getByRole("link", { name: "add one posting link" }).getAttribute("href")).toBe(
+      "?tab=review",
+    );
+    view.unmount();
+
+    savedTitles(["Fleet Lead"]);
+    panel();
+    await screen.findByText("Sources (1 enabled of 1): scan all, selected, or one");
+    expect(screen.queryByText(/Scans need at least one target title/)).toBeNull();
   });
 
   it("keeps failed scan recovery available outside optional controls", async () => {
@@ -103,10 +187,10 @@ describe("ScanPanel", () => {
     expect(screen.getByRole("link", { name: "View scan tasks" }).getAttribute("href")).toBe(
       "/tasks",
     );
-    expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Scan for openings" }).disabled,
-    ).toBe(false);
-    expect(screen.getByText("Posting detail options").closest("details")!.open).toBe(false);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Scan now" }).disabled).toBe(
+      false,
+    );
+    expect(screen.getByText("Advanced").closest("details")!.open).toBe(false);
   });
 
   it.each(["all", "selected", "one"])(
@@ -115,7 +199,7 @@ describe("ScanPanel", () => {
       const submitted = installHandlers(scanTask());
       panel();
       await screen.findByText("Sources (2 enabled of 2): scan all, selected, or one");
-      fireEvent.click(screen.getByText("Posting detail options"));
+      fireEvent.click(screen.getByText("Advanced"));
       const fresh = screen.getByRole("checkbox", {
         name: "Read fresh posting details for this scan",
       });
@@ -128,7 +212,7 @@ describe("ScanPanel", () => {
         screen.getByRole("button", {
           name:
             scope === "all"
-              ? "Scan for openings"
+              ? "Scan now"
               : scope === "selected"
                 ? "Scan selected sources"
                 : "Scan Northwind",
@@ -163,19 +247,20 @@ describe("ScanPanel", () => {
     installOneBoard(queued, [queued]);
     panel();
     expect(await screen.findByText("Queued board scan: Northwind.")).not.toBeNull();
-    expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Scan for openings" }).disabled,
-    ).toBe(false);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Scan now" }).disabled).toBe(
+      false,
+    );
   });
-  it("reads as free and carries no paid mark", async () => {
+  it("carries no free or paid label", async () => {
     installOneBoard(scanTask());
     panel();
 
-    const control = screen.getByRole("button", { name: "Scan for openings" });
+    const control = screen.getByRole("button", { name: "Scan now" });
+    await screen.findByText("Sources (1 enabled of 1): scan all, selected, or one");
     expect(control.className).not.toContain("button--paid");
     expect(control.closest(".paid-action")).toBeNull();
-    expect(screen.queryByText("Spends money")).toBeNull();
-    expect((await screen.findAllByText("No provider charge.")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Paid")).toBeNull();
+    expect(screen.queryByText(/provider charge/i)).toBeNull();
   });
 
   it("says which openings the boards stopped listing", async () => {
@@ -192,7 +277,7 @@ describe("ScanPanel", () => {
 
     panel();
     await screen.findByText("Sources (1 enabled of 1): scan all, selected, or one");
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(screen.getByRole("button", { name: "Scan boards" }));
 
     const summary = await screen.findByText(/no longer listed/);
@@ -216,16 +301,20 @@ describe("ScanPanel", () => {
 
     panel();
     await screen.findByText("Sources (1 enabled of 1): scan all, selected, or one");
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(screen.getByRole("button", { name: "Scan boards" }));
 
     expect(await screen.findByText(/1 new posting/)).toBeTruthy();
     expect(screen.queryByText(/no longer listed/)).toBeNull();
     expect(screen.getByRole("heading", { name: "New candidate records" })).toBeTruthy();
     expect(screen.getByText(/ready, recovery, or screened-out view/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Go to Review" }).getAttribute("href")).toBe(
+      "?tab=review",
+    );
     expect(
-      screen.getByRole("link", { name: "Review pending discoveries" }).getAttribute("href"),
-    ).toBe("?tab=pending");
+      screen.getByRole("link", { name: "Open this scan in History" }).getAttribute("href"),
+    ).toBe("?tab=boards&scan=task-1#screened-candidates");
+    expect(screen.getByText("Scan audit").closest("details")!.open).toBe(false);
   });
 
   it("says how many rows the run's own content reads found closed", async () => {
@@ -243,7 +332,7 @@ describe("ScanPanel", () => {
 
     panel();
     await screen.findByText("Sources (1 enabled of 1): scan all, selected, or one");
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(screen.getByRole("button", { name: "Scan boards" }));
 
     expect(await screen.findByText(/found 1 posting closed by the publisher/)).toBeTruthy();
@@ -263,7 +352,7 @@ describe("ScanPanel", () => {
 
     panel();
     await screen.findByText("Sources (1 enabled of 1): scan all, selected, or one");
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(screen.getByRole("button", { name: "Scan boards" }));
 
     expect(
@@ -283,7 +372,7 @@ describe("ScanPanel", () => {
     panel();
 
     await screen.findByText("Sources (1 enabled of 1): scan all, selected, or one");
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(screen.getByRole("button", { name: "Scan boards" }));
     expect((await screen.findByText(/Reading posting content: 24\/53/)).getAttribute("role")).toBe(
       "status",
@@ -313,7 +402,7 @@ describe("ScanPanel", () => {
     ).toBeTruthy();
     expect(within(sourcesTable).getByText("Northwind")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(screen.getByRole("button", { name: "Scan boards" }));
 
     const withdrawnTable = await screen.findByRole("table", { name: "Openings no longer listed" });
@@ -506,7 +595,7 @@ describe("ScanPanel", () => {
     expect(
       screen.getByText(/current scan scope has 1 enabled source; this completed run attempted 0/),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     expect(screen.getByRole("dialog").textContent).toMatch(/mark linked openings no longer listed/);
     expect(screen.getByRole("table", { name: "Sources this scan will read" })).toBeTruthy();
   });
@@ -666,7 +755,7 @@ describe("ScanPanel board selection", () => {
     panel();
 
     await screen.findByText("Sources (2 enabled of 2): scan all, selected, or one");
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(await screen.findByRole("button", { name: "Scan boards" }));
 
     expect((await screen.findByText("Scanning Northwind: 1/2")).getAttribute("role")).toBe(
@@ -760,7 +849,7 @@ describe("ScanPanel board selection", () => {
     panel();
 
     await screen.findByText("Sources (2 enabled of 2): scan all, selected, or one");
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     fireEvent.click(await screen.findByRole("button", { name: "Scan boards" }));
 
     expect(await screen.findByText(/Attempted 2 sources/)).toBeTruthy();
@@ -867,7 +956,7 @@ describe("ScanPanel source subsets", () => {
       target: { value: "contoso" },
     });
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Contoso for scan" }));
-    fireEvent.click(screen.getByRole("button", { name: "Scan for openings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
     const dialog = screen.getByRole("dialog");
     const scope = within(dialog).getByRole("table", { name: "Sources this scan will read" });
     expect(within(scope).getByText("Northwind")).toBeTruthy();
@@ -1020,8 +1109,8 @@ describe("ScanPanel source subsets", () => {
       finishSubmission();
     }
     await screen.findByText(/No board read was recorded for Initech/);
-    expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Scan for openings" }).disabled,
-    ).toBe(false);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Scan now" }).disabled).toBe(
+      false,
+    );
   });
 });

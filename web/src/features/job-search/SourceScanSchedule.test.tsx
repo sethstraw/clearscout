@@ -93,7 +93,7 @@ describe("SourceScanSchedule", () => {
     const disclosure = summary.closest("details")!;
     expect(disclosure.open).toBe(false);
     expect(screen.getByText("No scan schedule is enabled.")).toBeTruthy();
-    expect(screen.getByText(/only runs while your local TailorCV worker is running/)).toBeTruthy();
+    expect(screen.getByText(/It runs only while TailorCV is running/)).toBeTruthy();
     fireEvent.click(summary);
     expect(disclosure.open).toBe(true);
     fireEvent.change(screen.getByLabelText("Local time"), { target: { value: "11:30" } });
@@ -198,18 +198,14 @@ describe("SourceScanSchedule", () => {
       Intl.DateTimeFormat().resolvedOptions().timeZone,
     );
     expect(screen.getByLabelText<HTMLInputElement>("Local time").value).toBe("09:00");
-    expect(screen.getByText(/only runs while your local TailorCV worker is running/)).toBeTruthy();
-    fireEvent.click(screen.getByText("How scheduled scans run"));
-    expect(screen.getByText(/one catch-up scan/)).toBeTruthy();
-    expect(screen.getByText(/does not queue every missed run/)).toBeTruthy();
-    expect(
-      screen.getByText(/Resuming does not catch up occurrences missed while paused/),
-    ).toBeTruthy();
-    expect(screen.getByText(/repeated local time runs at its first occurrence/)).toBeTruthy();
-    expect(screen.getByText(/shifts forward by the size of that gap/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Set up target titles" }).getAttribute("href")).toBe(
-      "/settings?tab=search",
-    );
+    expect(screen.getByText(/It runs only while TailorCV is running/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "How scheduled scans run" }));
+    const how = screen.getByRole("dialog", { name: "How scheduled scans run" });
+    expect(within(how).getByText(/one catch-up scan, not every missed run/)).toBeTruthy();
+    expect(within(how).getByText(/Resuming skips runs missed while paused/)).toBeTruthy();
+    expect(within(how).getByText(/a repeated time runs once/)).toBeTruthy();
+    expect(within(how).getByText(/shifts forward by the gap/)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /target titles/ })).toBeNull();
     expect(submitted).toEqual([]);
   });
 
@@ -319,7 +315,7 @@ describe("SourceScanSchedule", () => {
     expect(screen.getByText("No next occurrence while paused.")).toBeTruthy();
     expect(screen.getByLabelText<HTMLInputElement>("Local time").value).toBe("11:30");
     expect(submitted[0]).toEqual({ ...CONFIGURATION, paused: true, expected_revision: 1 });
-    expect(screen.getByText(/Active scans keep running; cancel them in Tasks/)).toBeTruthy();
+    expect(screen.getByText("Schedule paused. Active scans continue.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Resume schedule" }));
     await screen.findByText("Schedule resumed at its next future occurrence.");
     expect(submitted[1]).toEqual({ ...CONFIGURATION, expected_revision: 2 });
@@ -378,7 +374,11 @@ describe("SourceScanSchedule", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save schedule" }));
     await screen.findByText("Target titles must be saved before scheduling.");
     expect(screen.getByLabelText<HTMLInputElement>("Local time").value).toBe("11:30");
-    expect(screen.getByRole("link", { name: "Set up target titles" })).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: "Check target titles in Settings > Search" })
+        .getAttribute("href"),
+    ).toBe("/settings?tab=search");
   });
 
   it("retains a conflicting draft until the saved configuration is explicitly reloaded", async () => {

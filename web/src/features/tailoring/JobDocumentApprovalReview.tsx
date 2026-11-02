@@ -10,6 +10,7 @@ import {
 } from "../../api/hooks";
 import { PaidAction } from "../../components/PaidAction";
 import { StatusBadge } from "../../components/StatusBadge";
+import { Toggletip } from "../../components/Toggletip";
 import { formatUsd } from "../../components/text";
 import { UnifiedDiff } from "../../components/UnifiedDiff";
 import { unifiedDiff } from "../../components/diff";
@@ -165,10 +166,12 @@ export function JobDocumentApprovalReview({
       <header>
         <div>
           <h3>Approval review</h3>
-          <p>
-            {completed} of {review.data.proposals.length} lines explicitly decided. Decisions are
-            bound to each proposal digest.
-          </p>
+          <div>
+            {completed} of {review.data.proposals.length} lines explicitly decided.{" "}
+            <Toggletip label="About line decisions">
+              Each decision is bound to its proposal digest, so a changed line needs a new decision.
+            </Toggletip>
+          </div>
           <button
             disabled={batchAcceptable.length === 0 || batchPending || decide.isPending}
             onClick={() => void acceptRemainingSupported()}
@@ -185,12 +188,14 @@ export function JobDocumentApprovalReview({
             </p>
           )}
           {manualOnly.length > 0 && (
-            <p className="field-note">
+            <div className="field-note">
               {manualOnly.length} drafted line{manualOnly.length === 1 ? "" : "s"} cite no
-              resolvable master-CV evidence and still need a manual decision. Supported means a
-              line&apos;s cited evidence resolves to master-CV text; copied lines are the identity
-              fields the program carries verbatim.
-            </p>
+              resolvable master-CV evidence and still need a manual decision.{" "}
+              <Toggletip label="About supported and copied lines">
+                Supported means a line&apos;s cited evidence resolves to master-CV text. Copied
+                lines are the identity fields the program carries verbatim.
+              </Toggletip>
+            </div>
           )}
           {flagged.length > 0 && (
             <p className="field-note">
@@ -215,6 +220,11 @@ export function JobDocumentApprovalReview({
       </header>
       <div className="field-note">
         <h4>Before using this application</h4>
+        <Toggletip label="What to check before you apply">
+          Compare ownership, qualifications, dates, and metrics with the cited sources. Layout is
+          not confirmed here, so render the final resume and check its page count and legibility.
+          Lines needing evidence or a decision come first; copied identity fields follow.
+        </Toggletip>
         <p>
           Structural checks:{" "}
           {checks.length
@@ -222,14 +232,7 @@ export function JobDocumentApprovalReview({
               ? "failed; repair the reported issues"
               : "no recorded failures"
             : "unknown for this historical run"}
-          . Factual support: compare ownership, qualifications, dates, and metrics with the cited
-          sources. Human decisions: {completed} of {review.data.proposals.length} lines decided.{" "}
-          Layout: not confirmed here. Render the final resume externally and check its actual page
-          count and legibility.
-        </p>
-        <p>
-          Review missing evidence and undecided draft lines first. Copied identity fields follow
-          below.
+          . Human decisions: {completed} of {review.data.proposals.length} lines decided.
         </p>
         {priorities.length > 0 && (
           <ul>

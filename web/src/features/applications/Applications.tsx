@@ -28,11 +28,7 @@ export function ApplicationsPage() {
   if (jobs.isError) return <ErrorState error={jobs.error} />;
   const items = jobs.data?.items ?? [];
   return (
-    <Page
-      eyebrow="Apply"
-      title="Applications"
-      description="Prepared is not submitted. Every status change remains visible in history."
-    >
+    <Page eyebrow="Apply" title="Applications" description="Where each application stands.">
       <section className="toolbar application-sort" aria-label="Application sorting">
         <label>
           <span>Sort applications</span>

@@ -15,7 +15,6 @@ import {
   useSearchParameters,
   useSearchTitleProposals,
   useTaskCosts,
-  useWorkspaceSpend,
 } from "../../api/hooks";
 import type {
   GuidedCampaignPreview,
@@ -28,6 +27,7 @@ import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { safeHttpUrl } from "../../api/safeUrl";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
 import { PaidAction } from "../../components/PaidAction";
+import { Toggletip } from "../../components/Toggletip";
 import { formatUsd, UNKNOWN_AMOUNT } from "../../components/text";
 import { DiscoveryFunnelAudit } from "./DiscoveryFunnelAudit";
 import { SourceScanOutcomes } from "./SourceScanOutcomes";
@@ -399,179 +399,182 @@ function CampaignReportTables({
           })}
         </ul>
       )}
-      {report.findings.length > 0 && (
-        <details open>
-          <summary>Findings ({report.findings.length})</summary>
-          <p className="field-note">{CALL_WIDE_BRANCHES_NOTE}</p>
-          <div className="table-wrap guided-campaign-narrow-table">
-            <table aria-label="Campaign findings" className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">Posting</th>
-                  <th scope="col">Staged basis</th>
-                  <th scope="col">Branches</th>
-                  <th scope="col">Model rationale (not verified)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.findings.map((finding) => {
-                  const url = safeHttpUrl(finding.url);
-                  const label = `${finding.title} at ${finding.employer}`;
-                  return (
-                    <tr key={finding.captured_url_id}>
-                      <td>
-                        {url ? (
-                          <a href={url} rel="noreferrer" target="_blank">
-                            {label}
-                          </a>
-                        ) : (
-                          label
+      <details open={uncertainAttempts.length > 0}>
+        <summary>Report details</summary>
+        {report.findings.length > 0 && (
+          <details open>
+            <summary>Findings ({report.findings.length})</summary>
+            <p className="field-note">{CALL_WIDE_BRANCHES_NOTE}</p>
+            <div className="table-wrap guided-campaign-narrow-table">
+              <table aria-label="Campaign findings" className="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Posting</th>
+                    <th scope="col">Staged basis</th>
+                    <th scope="col">Branches</th>
+                    <th scope="col">Model rationale (not verified)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.findings.map((finding) => {
+                    const url = safeHttpUrl(finding.url);
+                    const label = `${finding.title} at ${finding.employer}`;
+                    return (
+                      <tr key={finding.captured_url_id}>
+                        <td>
+                          {url ? (
+                            <a href={url} rel="noreferrer" target="_blank">
+                              {label}
+                            </a>
+                          ) : (
+                            label
+                          )}
+                          {finding.location ? ` (${finding.location})` : ""}
+                        </td>
+                        <td>{STAGED_BASIS_LABELS[finding.staged_basis]}</td>
+                        <td>{finding.branch_labels.join(", ") || "-"}</td>
+                        <td className="field-note">{finding.model_rationale ?? "-"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
+        {report.boards_admitted.length > 0 && (
+          <details>
+            <summary>Boards admitted ({report.boards_admitted.length})</summary>
+            <p className="field-note">{CALL_WIDE_BRANCHES_NOTE}</p>
+            <div className="table-wrap guided-campaign-narrow-table">
+              <table aria-label="Campaign boards admitted" className="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Board</th>
+                    <th scope="col">Posting staged from its listings</th>
+                    <th scope="col">Branches</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.boards_admitted.flatMap((board) => {
+                    const url = safeHttpUrl(board.url);
+                    const boardCell = url ? (
+                      <a href={url} rel="noreferrer" target="_blank">
+                        {board.employer || board.url}
+                      </a>
+                    ) : (
+                      board.employer || board.url
+                    );
+                    const postings =
+                      board.admitted_postings.length > 0 ? board.admitted_postings : [null];
+                    return postings.map((posting, index) => (
+                      <tr
+                        key={`${board.source_id ?? board.url}-${posting?.pending_discovery_id ?? index}`}
+                      >
+                        {index === 0 && <td rowSpan={postings.length}>{boardCell}</td>}
+                        <td>
+                          {posting
+                            ? `${posting.title}${posting.location ? ` (${posting.location})` : ""}`
+                            : "-"}
+                        </td>
+                        {index === 0 && (
+                          <td rowSpan={postings.length}>{board.branch_labels.join(", ") || "-"}</td>
                         )}
-                        {finding.location ? ` (${finding.location})` : ""}
-                      </td>
-                      <td>{STAGED_BASIS_LABELS[finding.staged_basis]}</td>
-                      <td>{finding.branch_labels.join(", ") || "-"}</td>
-                      <td className="field-note">{finding.model_rationale ?? "-"}</td>
+                      </tr>
+                    ));
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
+        {report.not_staged.length > 0 && (
+          <details>
+            <summary>URLs not staged ({report.not_staged.length})</summary>
+            <div className="table-wrap guided-campaign-narrow-table">
+              <table aria-label="Campaign URLs not staged" className="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">URL</th>
+                    <th scope="col">Outcome</th>
+                    <th scope="col">Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.not_staged.map((item, index) => (
+                    <tr key={`${item.url}-${index}`}>
+                      <td className="path-value">{item.url}</td>
+                      <td>{vocabLabel(item.outcome)}</td>
+                      <td>{item.detail ?? "-"}</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      )}
-      {report.boards_admitted.length > 0 && (
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
         <details>
-          <summary>Boards admitted ({report.boards_admitted.length})</summary>
-          <p className="field-note">{CALL_WIDE_BRANCHES_NOTE}</p>
+          <summary>Branch coverage ({report.branches.length})</summary>
           <div className="table-wrap guided-campaign-narrow-table">
-            <table aria-label="Campaign boards admitted" className="data-table">
+            <table aria-label="Campaign branch coverage" className="data-table">
               <thead>
                 <tr>
-                  <th scope="col">Board</th>
-                  <th scope="col">Posting staged from its listings</th>
-                  <th scope="col">Branches</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.boards_admitted.flatMap((board) => {
-                  const url = safeHttpUrl(board.url);
-                  const boardCell = url ? (
-                    <a href={url} rel="noreferrer" target="_blank">
-                      {board.employer || board.url}
-                    </a>
-                  ) : (
-                    board.employer || board.url
-                  );
-                  const postings =
-                    board.admitted_postings.length > 0 ? board.admitted_postings : [null];
-                  return postings.map((posting, index) => (
-                    <tr
-                      key={`${board.source_id ?? board.url}-${posting?.pending_discovery_id ?? index}`}
-                    >
-                      {index === 0 && <td rowSpan={postings.length}>{boardCell}</td>}
-                      <td>
-                        {posting
-                          ? `${posting.title}${posting.location ? ` (${posting.location})` : ""}`
-                          : "-"}
-                      </td>
-                      {index === 0 && (
-                        <td rowSpan={postings.length}>{board.branch_labels.join(", ") || "-"}</td>
-                      )}
-                    </tr>
-                  ));
-                })}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      )}
-      {report.not_staged.length > 0 && (
-        <details>
-          <summary>URLs not staged ({report.not_staged.length})</summary>
-          <div className="table-wrap guided-campaign-narrow-table">
-            <table aria-label="Campaign URLs not staged" className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">URL</th>
+                  <th scope="col">Label</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Guaranteed coverage</th>
+                  <th scope="col">Attempt</th>
                   <th scope="col">Outcome</th>
-                  <th scope="col">Detail</th>
+                  <th scope="col">Matched queries</th>
                 </tr>
               </thead>
               <tbody>
-                {report.not_staged.map((item, index) => (
-                  <tr key={`${item.url}-${index}`}>
-                    <td className="path-value">{item.url}</td>
-                    <td>{vocabLabel(item.outcome)}</td>
-                    <td>{item.detail ?? "-"}</td>
+                {report.branches.map((branch) => (
+                  <tr key={branch.position}>
+                    <td>{branch.label}</td>
+                    <td>{branch.priority_family}</td>
+                    <td>{branch.protected ? "Yes" : "No"}</td>
+                    <td>{branch.attempt_position ?? "Deferred"}</td>
+                    <td>{vocabLabel(branch.outcome)}</td>
+                    <td>{branch.matched_queries.join(", ") || "None"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </details>
-      )}
-      <details>
-        <summary>Branch coverage ({report.branches.length})</summary>
-        <div className="table-wrap guided-campaign-narrow-table">
-          <table aria-label="Campaign branch coverage" className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">Label</th>
-                <th scope="col">Category</th>
-                <th scope="col">Guaranteed coverage</th>
-                <th scope="col">Attempt</th>
-                <th scope="col">Outcome</th>
-                <th scope="col">Matched queries</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.branches.map((branch) => (
-                <tr key={branch.position}>
-                  <td>{branch.label}</td>
-                  <td>{branch.priority_family}</td>
-                  <td>{branch.protected ? "Yes" : "No"}</td>
-                  <td>{branch.attempt_position ?? "Deferred"}</td>
-                  <td>{vocabLabel(branch.outcome)}</td>
-                  <td>{branch.matched_queries.join(", ") || "None"}</td>
+        <details open={uncertainAttempts.length > 0}>
+          <summary>Attempts ({report.attempts.length})</summary>
+          <div className="table-wrap guided-campaign-narrow-table">
+            <table aria-label="Campaign attempts" className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Action</th>
+                  <th scope="col">Attempt</th>
+                  <th scope="col">State</th>
+                  <th scope="col">Searches</th>
+                  <th scope="col">Pages opened</th>
+                  <th scope="col">How it ended</th>
+                  <th scope="col">Found, not selected</th>
+                  <th scope="col">Cost</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-      <details open={uncertainAttempts.length > 0}>
-        <summary>Attempts ({report.attempts.length})</summary>
-        <div className="table-wrap guided-campaign-narrow-table">
-          <table aria-label="Campaign attempts" className="data-table">
-            <thead>
-              <tr>
-                <th scope="col">Action</th>
-                <th scope="col">Attempt</th>
-                <th scope="col">State</th>
-                <th scope="col">Searches</th>
-                <th scope="col">Pages opened</th>
-                <th scope="col">How it ended</th>
-                <th scope="col">Found, not selected</th>
-                <th scope="col">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.attempts.map((attempt) => (
-                <tr key={attempt.position}>
-                  <td>{attempt.state === "uncertain" ? "See the action above." : "-"}</td>
-                  <td>{attempt.position}</td>
-                  <td>{vocabLabel(attempt.state)}</td>
-                  <td>{attempt.hosted_search_count}</td>
-                  <td>{attempt.page_action_count}</td>
-                  <td>{finishLabel(attempt.finish)}</td>
-                  <td>{attempt.captured_not_selected ?? "-"}</td>
-                  <td>{formatUsd(attempt.cost_cents, { cents: true, places: 2 })}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {report.attempts.map((attempt) => (
+                  <tr key={attempt.position}>
+                    <td>{attempt.state === "uncertain" ? "See the action above." : "-"}</td>
+                    <td>{attempt.position}</td>
+                    <td>{vocabLabel(attempt.state)}</td>
+                    <td>{attempt.hosted_search_count}</td>
+                    <td>{attempt.page_action_count}</td>
+                    <td>{finishLabel(attempt.finish)}</td>
+                    <td>{attempt.captured_not_selected ?? "-"}</td>
+                    <td>{formatUsd(attempt.cost_cents, { cents: true, places: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       </details>
     </>
   );
@@ -609,7 +612,6 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
   const latestReport = useLatestGuidedCampaignReport(workspaceId);
   const titleProposals = useSearchTitleProposals(workspaceId);
   const archetypeProposals = useSearchArchetypeProposals(workspaceId);
-  const workspaceSpend = useWorkspaceSpend(workspaceId);
   // Set during render so the drafts take the first loaded bounds and later fetches leave them.
   if (!draftsInitialized && preview.data) {
     if (!modelCallsEdited) setModelCallsDraft(String(preview.data.bounds.max_model_calls));
@@ -711,20 +713,11 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
     (item) => item.state === "accepted",
   );
   const stagedCount = latestReport.data?.findings.length ?? 0;
-  const campaignSpend = workspaceSpend.data?.by_stage.find(
-    (item) => item.name === "guided_campaign",
-  );
   const inFlightLabel = (idle: string) =>
-    queueing
-      ? "Queueing paid search"
-      : queued
-        ? "Paid search queued"
-        : running
-          ? "Paid search running"
-          : idle;
+    queueing ? "Queueing search" : queued ? "Search queued" : running ? "Search running" : idle;
   const webConfirmationDescription = lastGoodPreview
-    ? `Up to ${lastGoodPreview.bounds.max_model_calls} model calls and ${plannedSearches(lastGoodPreview)} hosted searches across ${assignedBranches(lastGoodPreview)} of ${pluralize(lastGoodPreview.branches.length, "branch", "branches")} in ${pluralize(lastGoodPreview.attempts.length, "attempt")}, via ${lastGoodPreview.provider} ${lastGoodPreview.model}. Every planned attempt runs; cost will not stop it. ${campaignConfiguration.description} The campaign uses the provider-hosted web_search tool. This paid search looks beyond your saved boards for new postings and employer boards. Provider-set content charges may exceed the estimate. ${costs.confirmation("search.guided_campaign", lastGoodPreview.attempts.length)}`
-    : `${campaignConfiguration.description} ${costs.confirmation("search.guided_campaign")}`;
+    ? `Runs up to ${lastGoodPreview.bounds.max_model_calls} model calls and ${plannedSearches(lastGoodPreview)} hosted searches over ${assignedBranches(lastGoodPreview)} of ${pluralize(lastGoodPreview.branches.length, "branch", "branches")} in ${pluralize(lastGoodPreview.attempts.length, "attempt")} on ${lastGoodPreview.provider} ${lastGoodPreview.model}. ${costs.confirmation("search.guided_campaign", lastGoodPreview.attempts.length)}`
+    : costs.confirmation("search.guided_campaign");
   const webAction = (
     <div>
       <PaidAction
@@ -732,6 +725,7 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
         confirmation={{
           title: "Search the web for new jobs?",
           description: webConfirmationDescription,
+          details: <p className="field-note">{campaignConfiguration.description}</p>,
           confirmLabel: "Search the web",
         }}
         costs={costs}
@@ -786,12 +780,6 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
           Reading the web search provider and models before payment.
         </p>
       ) : null}
-      {lastGoodPreview && (
-        <p className="field-note">
-          While this runs, other paid tasks in this workspace wait; a running campaign cannot be
-          stopped from here.
-        </p>
-      )}
       {lastGoodPreview?.supersedes_campaign_id && (
         <p className="field-note" aria-label="Unfinished campaign notice">
           An earlier campaign did not finish. Starting this one collects any response it already
@@ -806,7 +794,12 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
         <header>
           <div>
             <h2>Search the web</h2>
-            <p>Find postings beyond your saved boards. You approve spending before each new run.</p>
+            <div>
+              Find postings and boards beyond your saved boards.{" "}
+              <Toggletip label="About a running web search">
+                While a search runs, other paid tasks wait. You cannot stop it from here.
+              </Toggletip>
+            </div>
           </div>
           <div className="button-row">{webAction}</div>
         </header>
@@ -846,78 +839,102 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
               , then retry the preview.
             </p>
           )}
-          <div className="button-row">
-            <label className="compact-field">
-              <span>Model calls</span>
-              <input
-                aria-describedby={`${boundsId}-model-calls`}
-                aria-invalid={Boolean(modelCallsDraftError) || undefined}
-                aria-label="Model calls"
-                disabled={!boundsEditable}
-                min={1}
-                onChange={(event) => {
-                  setModelCallsEdited(true);
-                  setModelCallsDraft(event.target.value);
-                }}
-                type="number"
-                value={modelCallsDraft}
-              />
-              {modelCallsDraftError ? (
-                <p className="field-error" id={`${boundsId}-model-calls`} role="alert">
-                  {modelCallsDraftError}
-                </p>
-              ) : (
-                <small id={`${boundsId}-model-calls`}>
-                  {boundHint(defaultBounds?.maxModelCalls)}
-                </small>
-              )}
-            </label>
-            <label className="compact-field">
-              <span>Hosted searches</span>
-              <input
-                aria-describedby={`${boundsId}-hosted-searches`}
-                aria-invalid={Boolean(hostedSearchesDraftError) || undefined}
-                aria-label="Hosted searches"
-                disabled={!boundsEditable}
-                min={1}
-                onChange={(event) => {
-                  setHostedSearchesEdited(true);
-                  setHostedSearchesDraft(event.target.value);
-                }}
-                type="number"
-                value={hostedSearchesDraft}
-              />
-              {hostedSearchesDraftError ? (
-                <p className="field-error" id={`${boundsId}-hosted-searches`} role="alert">
-                  {hostedSearchesDraftError}
-                </p>
-              ) : (
-                <small id={`${boundsId}-hosted-searches`}>
-                  {boundHint(defaultBounds?.maxHostedSearches)}
-                </small>
-              )}
-            </label>
-            <button
-              className="button button--quiet"
-              disabled={!defaultBounds}
-              onClick={resetBoundsToDefault}
-              type="button"
-            >
-              Reset to defaults
-            </button>
-          </div>
-          {lastGoodPreview && (
-            <>
-              <CampaignCostOutlook preview={lastGoodPreview} />
+          {lastGoodPreview && <CampaignCostOutlook preview={lastGoodPreview} />}
+          <details>
+            <summary>Advanced</summary>
+            <div className="button-row">
+              <label className="compact-field">
+                <span>Model calls</span>
+                <input
+                  aria-describedby={`${boundsId}-model-calls`}
+                  aria-invalid={Boolean(modelCallsDraftError) || undefined}
+                  aria-label="Model calls"
+                  disabled={!boundsEditable}
+                  min={1}
+                  onChange={(event) => {
+                    setModelCallsEdited(true);
+                    setModelCallsDraft(event.target.value);
+                  }}
+                  type="number"
+                  value={modelCallsDraft}
+                />
+                {modelCallsDraftError ? (
+                  <p className="field-error" id={`${boundsId}-model-calls`} role="alert">
+                    {modelCallsDraftError}
+                  </p>
+                ) : (
+                  <small id={`${boundsId}-model-calls`}>
+                    {boundHint(defaultBounds?.maxModelCalls)}
+                  </small>
+                )}
+              </label>
+              <label className="compact-field">
+                <span>Hosted searches</span>
+                <input
+                  aria-describedby={`${boundsId}-hosted-searches`}
+                  aria-invalid={Boolean(hostedSearchesDraftError) || undefined}
+                  aria-label="Hosted searches"
+                  disabled={!boundsEditable}
+                  min={1}
+                  onChange={(event) => {
+                    setHostedSearchesEdited(true);
+                    setHostedSearchesDraft(event.target.value);
+                  }}
+                  type="number"
+                  value={hostedSearchesDraft}
+                />
+                {hostedSearchesDraftError ? (
+                  <p className="field-error" id={`${boundsId}-hosted-searches`} role="alert">
+                    {hostedSearchesDraftError}
+                  </p>
+                ) : (
+                  <small id={`${boundsId}-hosted-searches`}>
+                    {boundHint(defaultBounds?.maxHostedSearches)}
+                  </small>
+                )}
+              </label>
+              <button
+                className="button button--quiet"
+                disabled={!defaultBounds}
+                onClick={resetBoundsToDefault}
+                type="button"
+              >
+                Reset to defaults
+              </button>
+            </div>
+            {lastGoodPreview && (
               <details>
                 <summary>Review the campaign preview</summary>
                 <CampaignPreviewTables preview={lastGoodPreview} />
               </details>
-            </>
-          )}
+            )}
+            {scopeReady && (
+              <dl aria-label="Search scope">
+                <div>
+                  <dt>Target titles</dt>
+                  <dd>{savedTitles.map((item) => item.title).join(", ") || "None saved"}</dd>
+                </div>
+                <div>
+                  <dt>Accepted future titles</dt>
+                  <dd>{acceptedTitles.map((item) => item.title).join(", ") || "None accepted"}</dd>
+                </div>
+                <div>
+                  <dt>Places</dt>
+                  <dd>{places.map(placeLabel).join("; ") || "No places configured"}</dd>
+                </div>
+                <div>
+                  <dt>Accepted employer kinds</dt>
+                  <dd>
+                    {acceptedArchetypes.map((item) => item.name).join(", ") || "None accepted"}
+                  </dd>
+                </div>
+              </dl>
+            )}
+          </details>
           <p className="field-note">
-            Prefer a free scan? <a href="?tab=scans">Scan your saved boards</a>.{" "}
-            <a href="/settings?tab=search">Edit search preferences</a>.
+            <a href="/find?tab=boards">Scan your saved boards</a>.{" "}
+            <a href="/settings?tab=search">Edit search preferences</a>.{" "}
+            <a href="/settings?tab=costs">See spending in Settings</a>.
           </p>
           {!scopeReady &&
             ([parameters, titleProposals, archetypeProposals].some((query) => query.isError) ? (
@@ -987,11 +1004,10 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
                     </p>
                   ) : pendingDiscoveries.data.length > 0 ? (
                     <p>
-                      This run originally staged {pluralize(stagedCount, "posting")}. Review the
-                      work currently waiting in Pending discoveries before paying for another
-                      search.{" "}
-                      <a className="button button--primary" href="?tab=pending">
-                        Review pending discoveries
+                      This run originally staged {pluralize(stagedCount, "posting")}. Review what is
+                      waiting before you search again.{" "}
+                      <a className="button button--primary" href="/find?tab=review">
+                        Open Review
                       </a>
                     </p>
                   ) : (
@@ -1026,7 +1042,7 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
             )}
             {queueing ? (
               <p aria-label="Guided campaign queue status" role="status">
-                Queueing paid search.
+                Queueing search.
               </p>
             ) : retrying ? (
               <p aria-label="Guided campaign queue status" role="status">
@@ -1063,7 +1079,8 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
                       compact
                       confirmation={{
                         title: "Retry this guided search?",
-                        description: `${taskCost} This repeats the failed search payload and may reach the provider again. ${campaignConfiguration.description} Provider-set web-content charges may exceed the estimate. ${costs.confirmation("search.guided_campaign")}`,
+                        description: `${taskCost} This repeats the failed search. ${costs.confirmation("search.guided_campaign")}`,
+                        details: <p className="field-note">{campaignConfiguration.description}</p>,
                         confirmLabel: "Retry guided search",
                       }}
                       costs={costs}
@@ -1113,45 +1130,6 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
           </div>
         </section>
       )}
-      <details className="find-help">
-        <summary>Scope, cost, and how this run works</summary>
-        {scopeReady && (
-          <dl>
-            <div>
-              <dt>Target titles</dt>
-              <dd>{savedTitles.map((item) => item.title).join(", ") || "None saved"}</dd>
-            </div>
-            <div>
-              <dt>Accepted future titles</dt>
-              <dd>{acceptedTitles.map((item) => item.title).join(", ") || "None accepted"}</dd>
-            </div>
-            <div>
-              <dt>Places</dt>
-              <dd>{places.map(placeLabel).join("; ") || "No places configured"}</dd>
-            </div>
-            <div>
-              <dt>Accepted employer kinds</dt>
-              <dd>{acceptedArchetypes.map((item) => item.name).join(", ") || "None accepted"}</dd>
-            </div>
-          </dl>
-        )}
-        <p>
-          Web search finds postings and boards beyond your saved sources using your CV and search
-          preferences. Provider-set web-content charges may exceed the estimate.
-        </p>
-        {workspaceSpend.isError ? (
-          <p className="field-error">Recorded search-campaign spend could not be read.</p>
-        ) : workspaceSpend.data ? (
-          <p>
-            Spent on the search campaign:{" "}
-            {formatUsd(campaignSpend ? campaignSpend.amount_usd : 0, { unknown: UNKNOWN_AMOUNT })}{" "}
-            across {campaignSpend?.calls ?? 0} recorded provider calls.
-            {(campaignSpend?.unpriced_calls ?? 0) > 0
-              ? ` ${campaignSpend?.unpriced_calls} call${campaignSpend?.unpriced_calls === 1 ? " has" : "s have"} no configured price; a missing total is not zero.`
-              : ""}
-          </p>
-        ) : null}
-      </details>
     </div>
   );
 }

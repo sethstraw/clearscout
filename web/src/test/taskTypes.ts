@@ -34,6 +34,13 @@ export const TASK_TYPE_CATALOG: TaskTypeInfo[] = [
     cost: "Each evaluation may incur provider model-token charges.",
   },
   {
+    task_type: "discovery.evaluate_batch",
+    paid: true,
+    cost:
+      "Evaluates each selected discovery or tracked posting. Provider model-token " +
+      "charges apply; cost estimates do not stop the task.",
+  },
+  {
     task_type: "workflow.tailor",
     paid: true,
     cost:

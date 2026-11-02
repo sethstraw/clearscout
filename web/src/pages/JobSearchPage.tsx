@@ -7,7 +7,6 @@ import { FindSequence } from "../features/job-search/FindSequence";
 import { GuidedCampaignPanel } from "../features/job-search/GuidedCampaignPanel";
 import { SearchVocabularyPanel } from "../features/job-search/SearchVocabularyPanel";
 import { PendingDiscoveries } from "../features/job-search/PendingDiscoveries";
-import { RefusalPatternProposals } from "../features/job-search/RefusalPatternProposals";
 import { ScanPanel } from "../features/job-search/ScanPanel";
 import { ScreenedOutSummary } from "../features/job-search/ScreenedOutSummary";
 import { ScreenedOutTitles } from "../features/job-search/ScreenedOutTitles";
@@ -103,44 +102,47 @@ export function JobSearchPage() {
       eyebrow="Find"
       title="Find jobs"
       description="Scan your boards, then review what they found."
+      help={`find.${selected}`}
     >
-      <Tabs
-        id="find-tabs"
-        items={TAB_ITEMS}
-        label="Find jobs sections"
-        onSelect={setTab}
-        selected={selected}
-      />
+      <div data-tour="find-tabs">
+        <Tabs
+          id="find-tabs"
+          items={TAB_ITEMS}
+          label="Find jobs sections"
+          onSelect={setTab}
+          selected={selected}
+        />
+      </div>
       <TabPanel id="find-tabs" selected={selected}>
         {selected === "review" && (
-          <>
-            <PendingDiscoveries key={workspaceId} workspaceId={workspaceId} />
-            <RefusalPatternProposals workspaceId={workspaceId} />
-          </>
+          <PendingDiscoveries key={workspaceId} workspaceId={workspaceId} />
         )}
         {selected === "boards" && (
           <>
             <ScanPanel workspaceId={workspaceId} />
             <SourceManager workspaceId={workspaceId} />
-            <SourceScanHistory workspaceId={workspaceId} />
-            <ScreenedOutSummary workspaceId={workspaceId} />
-            <ScreenedOutTitles workspaceId={workspaceId} />
-            {scanTaskId && (
-              <SourceScanOutcomes
-                key={`${workspaceId}:${scanTaskId}`}
-                source={scanSource}
-                onSourceChange={(source) =>
-                  setSearchParams((current) => {
-                    const next = new URLSearchParams(current);
-                    if (source) next.set("source", source);
-                    else next.delete("source");
-                    return next;
-                  })
-                }
-                taskId={scanTaskId}
-                workspaceId={workspaceId}
-              />
-            )}
+            <details className="boards-history" open={Boolean(scanTaskId) || undefined}>
+              <summary>History</summary>
+              <SourceScanHistory workspaceId={workspaceId} />
+              <ScreenedOutSummary workspaceId={workspaceId} />
+              <ScreenedOutTitles workspaceId={workspaceId} />
+              {scanTaskId && (
+                <SourceScanOutcomes
+                  key={`${workspaceId}:${scanTaskId}`}
+                  source={scanSource}
+                  onSourceChange={(source) =>
+                    setSearchParams((current) => {
+                      const next = new URLSearchParams(current);
+                      if (source) next.set("source", source);
+                      else next.delete("source");
+                      return next;
+                    })
+                  }
+                  taskId={scanTaskId}
+                  workspaceId={workspaceId}
+                />
+              )}
+            </details>
           </>
         )}
         {selected === "web" && (

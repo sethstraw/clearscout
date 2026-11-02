@@ -56,13 +56,3 @@
 	color: var(--ink-soft);
 	max-width: 62ch;
 }
-
-.task-cost {
-	background: var(--surface-muted);
-	border: 1px solid var(--line);
-	border-radius: 0.5rem;
-	color: var(--ink-soft);
-	font-size: var(--text-2xs);
-	font-weight: 650;
-	padding: 0.05rem 0.4rem;
-}

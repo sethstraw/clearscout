@@ -17,6 +17,7 @@ import { evaluationReview } from "../../components/evaluationReview";
 import { MultiSelectFilter } from "../../components/MultiSelectFilter";
 import { PaidAction } from "../../components/PaidAction";
 import { Page } from "../../components/Page";
+import { Toggletip } from "../../components/Toggletip";
 import { SortableHeader } from "../../components/SortableHeader";
 import { StatusBadge } from "../../components/StatusBadge";
 import { reviewScores, reviewScoreSource } from "../../components/reviewScores";
@@ -210,10 +211,11 @@ export function JobsPage() {
           How jobs are scored
         </Link>
       }
-      description="Search tracked postings without turning scores into a single verdict."
+      description="Every posting you track, with its scores and application status."
       density="dense"
       eyebrow="Decide"
-      title="Tracked postings"
+      help="jobs"
+      title="Jobs"
     >
       <section className="toolbar" aria-label="Job filters">
         <label className="search-field">
@@ -225,23 +227,6 @@ export function JobsPage() {
             value={search}
           />
         </label>
-        {savedViews.data && savedViews.data.length > 0 && (
-          <label>
-            <span>Saved view</span>
-            <select
-              onChange={(event) => applyView(event.target.value)}
-              title={`Applies the filters and sort a view stores. Recognised keys: ${VIEW_KEYS}. A stored column list is ignored, because this table's columns are fixed.`}
-              value=""
-            >
-              <option value="">Apply a saved view</option>
-              {savedViews.data.map((view) => (
-                <option key={view.id} value={view.id}>
-                  {view.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
         <label>
           <span>Decision</span>
           <select onChange={(event) => updateDecision(event.target.value)} value={decision}>
@@ -304,24 +289,51 @@ export function JobsPage() {
             <option value="closed">Closed</option>
           </select>
         </label>
-        <label>
-          <span>Archived jobs</span>
-          <select
-            onChange={(event) => updateIncludeArchived(event.target.value === "include")}
-            value={includeArchived ? "include" : "exclude"}
-          >
-            <option value="exclude">Active only</option>
-            <option value="include">Include archived</option>
-          </select>
-        </label>
-        <label>
-          <span>Evidence integrity</span>
-          <select onChange={(event) => updateCompleteness(event.target.value)} value={completeness}>
-            <option value="">All jobs</option>
-            <option value="incomplete_only">Evidence gaps only</option>
-            <option value="complete">Evidence complete only</option>
-          </select>
-        </label>
+        <details className="advanced-view jobs-ledger__advanced">
+          <summary>Advanced</summary>
+          <div className="jobs-ledger__advanced-fields">
+            {savedViews.data && savedViews.data.length > 0 && (
+              <div className="jobs-ledger__saved-view">
+                <label>
+                  <span>Saved view</span>
+                  <select onChange={(event) => applyView(event.target.value)} value="">
+                    <option value="">Apply a saved view</option>
+                    {savedViews.data.map((view) => (
+                      <option key={view.id} value={view.id}>
+                        {view.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Toggletip label="About saved views">
+                  Applies the filters and sort a view stores. Recognised keys: {VIEW_KEYS}. A stored
+                  column list is ignored, because this table&apos;s columns are fixed.
+                </Toggletip>
+              </div>
+            )}
+            <label>
+              <span>Archived jobs</span>
+              <select
+                onChange={(event) => updateIncludeArchived(event.target.value === "include")}
+                value={includeArchived ? "include" : "exclude"}
+              >
+                <option value="exclude">Active only</option>
+                <option value="include">Include archived</option>
+              </select>
+            </label>
+            <label>
+              <span>Evidence integrity</span>
+              <select
+                onChange={(event) => updateCompleteness(event.target.value)}
+                value={completeness}
+              >
+                <option value="">All jobs</option>
+                <option value="incomplete_only">Evidence gaps only</option>
+                <option value="complete">Evidence complete only</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <div className="toolbar-actions">
           <ConfirmedActionButton
             className="button button--quiet"
@@ -358,19 +370,18 @@ export function JobsPage() {
                   ? {
                       title: "Refresh this tracked posting?",
                       description:
-                        "Re-reads this posting from its publisher. If the publisher no longer lists it, it is marked closed, and a later read that finds it active reopens it. Nothing is spent.",
+                        "Re-reads this posting from its publisher. If the publisher no longer lists it, it is marked closed, and a later read that finds it active reopens it.",
                       confirmLabel: "Refresh",
                     }
                   : {
                       title: `Refresh ${selected.size} tracked postings?`,
-                      description: `Re-reads all ${selected.size} from their publishers, which takes a few minutes and can be cancelled from Tasks. A posting its publisher no longer lists is marked closed, and a later read that finds it active reopens it. Nothing is spent.`,
+                      description: `Re-reads all ${selected.size} from their publishers, which takes a few minutes and can be cancelled from Activity. A posting its publisher no longer lists is marked closed, and a later read that finds it active reopens it.`,
                       confirmLabel: `Refresh ${selected.size}`,
                     }
               }
             >
               {refreshBusy ? "Refresh pending" : `Refresh selected (${selected.size})`}
             </ConfirmedActionButton>
-            <small className="free-action">{costs.cost("posting.refresh_batch")}</small>
             {refreshReason && <small className="field-note">{refreshReason}</small>}
           </div>
           <div className="action-with-reason">
@@ -400,7 +411,7 @@ export function JobsPage() {
           <div className="action-with-reason">
             <PaidAction
               costs={costs}
-              taskType="discovery.evaluate"
+              taskType="discovery.evaluate_batch"
               evaluation={{ workspaceId, selection: { job_posting_ids: [...selected] } }}
               count={selected.size}
               label={
@@ -830,7 +841,7 @@ export function JobsPage() {
                 ) : (
                   <>
                     No tracked postings yet. <Link to="/find">Find postings</Link> and select Track
-                    job to add one here for free.
+                    job to add one here.
                   </>
                 )}
               </EmptyState>

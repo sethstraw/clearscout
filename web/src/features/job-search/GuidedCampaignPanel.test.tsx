@@ -11,6 +11,7 @@ import type {
   RunCostHistory,
 } from "../../api/client";
 import type {
+  Health,
   SourceScanOutcomePage,
   SpendSummary,
   Task,
@@ -187,6 +188,7 @@ interface CampaignReads {
   spend?: SpendSummary;
   billing?: TaskBilling;
   outcomes?: SourceScanOutcomePage;
+  freeMode?: boolean;
 }
 
 /** Answer the campaign reads, and accept the enqueue, through MSW. */
@@ -194,6 +196,19 @@ function installCampaign(reads: CampaignReads = {}) {
   const log = requestLog();
   const report = reads.report === undefined ? defaultReport : reads.report;
   server.use(
+    http.get(`${API}/health`, () =>
+      HttpResponse.json({
+        status: "ok",
+        version: "0.1.0",
+        database_reachable: true,
+        schema_current: true,
+        current_revision: "0001",
+        head_revision: "0001",
+        database_exists: true,
+        worker_available: true,
+        free_mode: reads.freeMode ?? false,
+      } satisfies Health),
+    ),
     http.post(`${API}/guided-campaigns/:campaignId/attempts/:position/abandon`, ({ params }) => {
       const refused = reads.onAbandon?.();
       if (refused) return refused;
@@ -565,13 +580,13 @@ describe("GuidedCampaignPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Search the web for new jobs" }));
     const dialog = await screen.findByRole("dialog");
-    expect(dialog.textContent).toContain("Up to 8 model calls and 5 hosted searches");
+    expect(dialog.textContent).toContain("Runs up to 8 model calls and 5 hosted searches");
     expect(dialog.textContent).toContain("1 branch");
     expect(dialog.textContent).toContain("1 attempt");
     expect(dialog.textContent).toContain("openai gpt-5.6-terra");
     expect(dialog.textContent).toContain("Flex tier");
-    expect(dialog.textContent).toContain("provider-hosted web_search");
-    expect(dialog.textContent).toContain("Every planned attempt runs; cost will not stop it.");
+    expect(dialog.textContent).toContain("nothing stops the task once you confirm");
+    expect(dialog.textContent).not.toContain("provider-hosted web_search");
   });
 
   it("pluralizes branches in the confirmation", async () => {
@@ -618,7 +633,7 @@ describe("GuidedCampaignPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Search the web for new jobs" }));
     expect((await screen.findByRole("dialog")).textContent).toContain(
-      "Up to 8 model calls and 5 hosted searches across 1 of 2 branches in 1 attempt",
+      "Runs up to 8 model calls and 5 hosted searches over 1 of 2 branches in 1 attempt",
     );
   });
 
@@ -840,7 +855,13 @@ describe("GuidedCampaignPanel", () => {
     const findings = screen.getByRole("table", { name: "Campaign findings" });
     expect(within(findings).getByText("Clinical Data Director at Example Health")).toBeTruthy();
     expect(within(findings).getByText("Matches the branch's floor query.")).toBeTruthy();
-    expect(screen.getAllByRole("link", { name: "Review pending discoveries" })).toHaveLength(1);
+    const reviewLinks = screen.getAllByRole("link", { name: "Open Review" });
+    expect(reviewLinks).toHaveLength(1);
+    expect(reviewLinks[0]!.getAttribute("href")).toBe("/find?tab=review");
+    const reportDetails = screen.getByText("Report details").closest("details");
+    expect(reportDetails?.open).toBe(false);
+    expect(reportDetails?.contains(findings)).toBe(true);
+    expect(reportDetails?.contains(reviewLinks[0]!)).toBe(false);
 
     fireEvent.click(screen.getByText("Branch coverage (1)"));
     const branchCoverage = screen.getByRole("table", { name: "Campaign branch coverage" });
@@ -1279,7 +1300,7 @@ describe("GuidedCampaignPanel", () => {
     ).toBe("/settings?tab=search");
   });
 
-  it("shows cumulative recorded search-campaign spend from the workspace ledger", async () => {
+  it("points spending totals at Settings > Costs instead of repeating them", async () => {
     installCampaign({
       spend: {
         currency: "USD",
@@ -1297,9 +1318,39 @@ describe("GuidedCampaignPanel", () => {
     panel();
     await waitUntilWebReady();
 
-    expect(screen.getByText(/Spent on the search campaign/).textContent).toContain(
-      "$0.7500 across 4 recorded provider calls",
+    expect(
+      screen.getByRole("link", { name: "See spending in Settings" }).getAttribute("href"),
+    ).toBe("/settings?tab=costs");
+    expect(screen.queryByText(/\$0\.7500/)).toBeNull();
+  });
+
+  it("holds the web search in free mode and says how to turn it on", async () => {
+    installCampaign({ freeMode: true });
+    panel();
+
+    const link = await screen.findByRole("link", { name: "Open provider settings" });
+    expect(link.getAttribute("href")).toBe("/settings?tab=provider");
+    expect(screen.getByRole("button", { name: "Search the web for new jobs" })).toHaveProperty(
+      "disabled",
+      true,
     );
+    expect(screen.getByText("Add a provider key to use paid actions.")).toBeTruthy();
+  });
+
+  it("keeps the search button and estimate up front and folds bounds and preview", async () => {
+    installCampaign();
+    panel();
+    await waitUntilWebReady();
+
+    const start = screen.getByRole("region", { name: "Start a new web search" });
+    expect(within(start).getByLabelText("Campaign cost estimate")).toBeTruthy();
+    const advanced = within(start).getByText("Advanced").closest("details");
+    expect(advanced?.open).toBe(false);
+    expect(advanced?.contains(screen.getByLabelText("Model calls"))).toBe(true);
+    expect(advanced?.contains(screen.getByText("Review the campaign preview"))).toBe(true);
+    expect(
+      within(start).getByRole("link", { name: "Scan your saved boards" }).getAttribute("href"),
+    ).toBe("/find?tab=boards");
   });
 
   it("shows recorded billing for a cancelled task", async () => {

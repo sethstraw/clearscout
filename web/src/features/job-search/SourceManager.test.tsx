@@ -184,7 +184,7 @@ describe("SourceManager", () => {
       </AppProviders>,
     );
 
-    const form = within(await screen.findByRole("region", { name: "Add a source" }));
+    const form = within(await screen.findByRole("region", { name: "Add a board" }));
     expect(form.getByText("Step 1: Validate the board address")).toBeTruthy();
     expect(form.queryByRole("button", { name: "Add source" })).toBeNull();
     expect(form.queryByLabelText("Name")).toBeNull();
@@ -195,8 +195,13 @@ describe("SourceManager", () => {
     fireEvent.click(form.getByRole("button", { name: "Validate" }));
 
     await waitFor(() => expect(form.getByLabelText("Name")).toBeTruthy());
-    expect(form.getByRole("group", { name: "Step 2: Name and terms evidence" })).toBeTruthy();
+    expect(form.getByRole("group", { name: "Step 2: Name the board" })).toBeTruthy();
     expect(form.getByRole("button", { name: "Add source" }).hasAttribute("disabled")).toBe(true);
+    const terms = form.getByText("Advanced: reading condition").closest("details")!;
+    expect(terms.open).toBe(false);
+    expect(within(terms).getByLabelText("Condition on reading it")).toBeTruthy();
+    expect(within(terms).getByLabelText("Published at")).toBeTruthy();
+    expect(form.getByLabelText("Name").closest("details")).toBeNull();
 
     fireEvent.change(form.getByLabelText("Name"), { target: { value: "Openings Digest" } });
     expect(form.getByRole("button", { name: "Add source" }).hasAttribute("disabled")).toBe(false);
@@ -211,16 +216,16 @@ describe("SourceManager", () => {
       </AppProviders>,
     );
 
-    const form = within(await screen.findByRole("region", { name: "Add a source" }));
+    const form = within(await screen.findByRole("region", { name: "Add a board" }));
     fireEvent.change(form.getByLabelText("Board or careers address"), {
       target: { value: "https://digest.test/jobs" },
     });
     fireEvent.click(form.getByRole("button", { name: "Validate" }));
-    await form.findByRole("group", { name: "Step 2: Name and terms evidence" });
+    await form.findByRole("group", { name: "Step 2: Name the board" });
 
     fireEvent.change(form.getByLabelText("Kind"), { target: { value: "aggregator" } });
 
-    expect(form.queryByRole("group", { name: "Step 2: Name and terms evidence" })).toBeNull();
+    expect(form.queryByRole("group", { name: "Step 2: Name the board" })).toBeNull();
     expect(form.queryByRole("button", { name: "Add source" })).toBeNull();
   });
 
@@ -239,7 +244,7 @@ describe("SourceManager", () => {
       </AppProviders>,
     );
 
-    const form = within(await screen.findByRole("region", { name: "Add a source" }));
+    const form = within(await screen.findByRole("region", { name: "Add a board" }));
     fireEvent.change(form.getByLabelText("Board or careers address"), {
       target: { value: "https://job-boards.greenhouse.io/acme" },
     });
@@ -257,7 +262,7 @@ describe("SourceManager", () => {
       </AppProviders>,
     );
 
-    const form = within(await screen.findByRole("region", { name: "Add a source" }));
+    const form = within(await screen.findByRole("region", { name: "Add a board" }));
     fireEvent.change(form.getByLabelText("Kind"), { target: { value: "aggregator" } });
     fireEvent.change(form.getByLabelText("Board or careers address"), {
       target: { value: "https://digest.test/jobs" },
@@ -599,7 +604,7 @@ describe("SourceManager", () => {
         <SourceManager workspaceId="workspace-sources" />
       </AppProviders>,
     );
-    const form = within(await screen.findByRole("region", { name: "Add a source" }));
+    const form = within(await screen.findByRole("region", { name: "Add a board" }));
     for (let index = 1; index < 4; index++)
       fireEvent.click(form.getByRole("button", { name: "Add another source" }));
     const urls = [
@@ -699,7 +704,7 @@ describe("SourceManager", () => {
         <SourceManager workspaceId="workspace-sources" />
       </AppProviders>,
     );
-    const form = within(await screen.findByRole("region", { name: "Add a source" }));
+    const form = within(await screen.findByRole("region", { name: "Add a board" }));
     fireEvent.click(form.getByRole("button", { name: "Add another source" }));
     const failed = within(form.getByRole("group", { name: "Source 1" }));
     const second = within(form.getByRole("group", { name: "Source 2" }));
@@ -743,7 +748,7 @@ describe("SourceManager", () => {
         <SourceManager workspaceId="workspace-sources" />
       </AppProviders>,
     );
-    const form = within(await screen.findByRole("region", { name: "Add a source" }));
+    const form = within(await screen.findByRole("region", { name: "Add a board" }));
     for (let index = 1; index < 4; index++)
       fireEvent.click(form.getByRole("button", { name: "Add another source" }));
     const rows = [1, 2, 3, 4].map((number) =>
@@ -771,7 +776,7 @@ describe("SourceManager", () => {
 
     expect(
       form.getByText(
-        /Only validated rows with a name are ready.*Unfinished rows remain for correction/,
+        /Only validated rows with a name are ready. Saved and duplicate rows are skipped./,
       ),
     ).toBeTruthy();
     const add = form.getByRole("button", { name: "Add ready sources (1)" });
@@ -833,7 +838,7 @@ describe("SourceManager", () => {
           <SourceManager workspaceId="workspace-sources" />
         </AppProviders>,
       );
-      const form = within(await screen.findByRole("region", { name: "Add a source" }));
+      const form = within(await screen.findByRole("region", { name: "Add a board" }));
       if (batch) fireEvent.click(form.getByRole("button", { name: "Add another source" }));
       const row = within(form.getByRole("group", { name: "Source 1" }));
       const address = row.getByLabelText<HTMLInputElement>("Board or careers address");
@@ -902,7 +907,7 @@ describe("SourceManager", () => {
           <SourceManager workspaceId="workspace-sources" />
         </AppProviders>,
       );
-      const form = within(await screen.findByRole("region", { name: "Add a source" }));
+      const form = within(await screen.findByRole("region", { name: "Add a board" }));
       const row = within(form.getByRole("group", { name: "Source 1" }));
       const address = row.getByLabelText<HTMLInputElement>("Board or careers address");
       fireEvent.change(address, { target: { value: "https://boards.test/acme" } });

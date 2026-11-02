@@ -8,13 +8,14 @@ import type {
   Task,
 } from "../../api/client";
 import {
+  type TaskCosts,
   useArtifactText,
   useSetPendingClosingDate,
   useTrackPendingDiscovery,
 } from "../../api/hooks";
 import { safeHttpUrl } from "../../api/safeUrl";
-import { useConfirmation } from "../../confirmations";
 import { AggregatorCreditLink } from "../../components/AggregatorCredit";
+import { PaidAction } from "../../components/PaidAction";
 import { aggregatorCredit, postingAddress } from "../../components/aggregatorHosts";
 import { CountryToken } from "../../components/CountryToken";
 import { ClosingDates } from "../../components/ClosingDates";
@@ -48,7 +49,7 @@ import {
 } from "./pendingDiscoveryFilterModel";
 import { PendingDiscoveryProvenance } from "./PendingDiscoveryProvenance";
 import { PendingDuplicateSuggestions } from "./PendingDuplicateSuggestions";
-import { copiesWorthKeepingInstead, sharesPostingText } from "./pendingDuplicateSuggestionModel";
+import { sharesPostingText } from "./pendingDuplicateSuggestionModel";
 import { PendingPostingRemediation } from "./PendingPostingRemediation";
 import { PendingRowKeepNote, PendingRowMarkerToggles } from "./PendingRowMarkers";
 import { PendingRowTitle } from "./PendingRowTitle";
@@ -452,12 +453,11 @@ function CapturedListing({
 // A queue page holds hundreds of these, so the row only re-renders when one of
 // its own props changes; the queue keeps every callback prop stable for that.
 export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
-  costsLoaded,
+  costs,
   detailsOpen,
   dismissalOpen,
   dismissalPending,
   enqueuePending,
-  evaluationConfirmation,
   evaluationTask,
   isInFlight,
   isSelected,
@@ -476,12 +476,11 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
   relevanceReview,
   workspaceId,
 }: {
-  costsLoaded: boolean;
+  costs: TaskCosts;
   detailsOpen: boolean;
   dismissalOpen: boolean;
   dismissalPending: boolean;
   enqueuePending: boolean;
-  evaluationConfirmation: string;
   evaluationTask: Task | undefined;
   isInFlight: boolean;
   isSelected: boolean;
@@ -492,7 +491,8 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
   onDismissalClose: (id: string) => void;
   onDismissalPendingChange: (id: string, pending: boolean) => void;
   onDismissalToggle: (id: string) => void;
-  onEvaluate: (id: string) => void;
+  /** Prices and confirms one evaluation, the same path the e key takes. */
+  onEvaluate: (item: PendingDiscovery) => void;
   onListingToggle: (id: string, kind: ListingKind) => void;
   onSelect: (item: PendingDiscovery) => void;
   registerCheckbox: (id: string, node: HTMLInputElement | null) => void;
@@ -500,7 +500,6 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
   relevanceReview: RelevanceReview | undefined;
   workspaceId: string;
 }) {
-  const confirm = useConfirmation();
   const navigate = useNavigate();
   const track = useTrackPendingDiscovery(workspaceId);
   const closingDate = useSetPendingClosingDate(workspaceId);
@@ -508,11 +507,6 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
   const [detailsRetained, setDetailsRetained] = useState(detailsOpen);
   if (detailsOpen && !detailsRetained) setDetailsRetained(true);
   const duplicateSuggestions = item.duplicate_suggestions ?? [];
-  const betterCopies = copiesWorthKeepingInstead(item.id, duplicateSuggestions);
-  const duplicateWarning =
-    betterCopies > 0
-      ? `This may be the same opening as ${betterCopies} other found ${betterCopies === 1 ? "job" : "jobs"} suggested to keep instead; evaluating this one may pay for the same opening twice.`
-      : "";
   const rowRef = useRef<HTMLTableRowElement | null>(null);
   useEffect(() => {
     if (keyboardFocused) rowRef.current?.scrollIntoView?.({ block: "nearest" });
@@ -800,7 +794,7 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
                   })
                 }
               >
-                {track.isPending ? "Tracking" : "Track job (free)"}
+                {track.isPending ? "Tracking" : "Track job"}
               </button>
             )}
             {alreadyEvaluated ? (
@@ -821,30 +815,21 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
                 {closed ? "Closure recorded" : "No longer listed"}; evaluation disabled
               </span>
             ) : evaluationAllowed ? (
-              <button
-                type="button"
-                className={`button button--paid${!failed && isInFlight ? " discovery-action--queued" : ""}`}
-                disabled={(!failed && isInFlight) || enqueuePending || !costsLoaded}
-                onClick={() =>
-                  void confirm({
-                    title: `${failed ? "Retry evaluation for" : "Fully evaluate"} ${displayTitle}?`,
-                    description: duplicateWarning
-                      ? `${duplicateWarning} ${evaluationConfirmation}`
-                      : evaluationConfirmation,
-                    confirmLabel: failed ? "Retry evaluation" : "Run full evaluation",
-                  }).then((approved) => {
-                    if (approved) onEvaluate(item.id);
-                  })
+              <PaidAction
+                costs={costs}
+                disabled={(!failed && isInFlight) || enqueuePending}
+                label={
+                  failed
+                    ? "Retry evaluation"
+                    : isRunning
+                      ? "Running"
+                      : isInFlight
+                        ? "Queued"
+                        : "Full evaluation"
                 }
-              >
-                {failed
-                  ? "Retry evaluation"
-                  : isRunning
-                    ? "Running"
-                    : isInFlight
-                      ? "Queued"
-                      : "Full evaluation (paid)"}
-              </button>
+                onPrepare={() => onEvaluate(item)}
+                taskType="discovery.evaluate_batch"
+              />
             ) : readiness === "screening_refused" ? (
               <span className="field-note">Review your search rules or dismiss this posting.</span>
             ) : (

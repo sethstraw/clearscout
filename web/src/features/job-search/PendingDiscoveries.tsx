@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 
 import type { PendingDiscoveryChanges } from "../../api/client";
 import {
@@ -21,6 +22,7 @@ import {
 } from "./pendingDiscoveryFilterModel";
 import { relevanceReviewsByPending } from "./relevanceReviewModel";
 import { PendingDiscoveryQueue } from "./PendingDiscoveryQueue";
+import { RefusalPatternProposals } from "./RefusalPatternProposals";
 
 // Default page size, and the bound on the closed-posting history below.
 export const PENDING_DISCOVERIES_LIMIT = 50;
@@ -28,6 +30,8 @@ export const PENDING_DISCOVERIES_LIMIT = 50;
 // mounts every row's remediation controls at once.
 const PENDING_DISCOVERIES_ALL_LIMIT = 2000;
 const PAGE_SIZE_KEY = "tailorcv.pendingPageSize";
+// A link to /find?tab=review&constraint=excluded_only opens the queue on Screened out.
+const SCREENED_OUT_PARAM = "constraint";
 const STRICT_UNCERTAINTY_KEY = "tailorcv.pendingStrictUncertainty.";
 
 function readStrictUncertainty(workspaceId: string): boolean {
@@ -101,9 +105,15 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
   const [strictUncertainty, setStrictUncertainty] = useState(() =>
     readStrictUncertainty(workspaceId),
   );
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState<PendingQueueFilters>(() => ({
     ...DEFAULT_QUEUE_FILTERS,
-    constraint: strictUncertainty ? "pursue_only" : DEFAULT_QUEUE_FILTERS.constraint,
+    constraint:
+      searchParams.get(SCREENED_OUT_PARAM) === "excluded_only"
+        ? "excluded_only"
+        : strictUncertainty
+          ? "pursue_only"
+          : DEFAULT_QUEUE_FILTERS.constraint,
   }));
   const [searchText, setSearchText] = useState("");
   const debouncedSearch = useDebouncedValue(searchText, 250);
@@ -441,6 +451,11 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
             </button>
           </nav>
         )}
+        {filters.constraint === "excluded_only" ? (
+          <div className="callout">
+            <RefusalPatternProposals workspaceId={workspaceId} />
+          </div>
+        ) : null}
         <details
           className="field-note"
           onToggle={(event) => {
@@ -453,10 +468,6 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
           </summary>
           {historyRequested ? (
             <>
-              <p>
-                These postings left active triage after a closure was recorded. A later active read
-                restores a posting to the queue.
-              </p>
               {discoveryHistory.data?.length === PENDING_DISCOVERIES_LIMIT ? (
                 <p className="field-note" role="status">
                   Showing at most {PENDING_DISCOVERIES_LIMIT} recent records. Older closed postings

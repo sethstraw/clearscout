@@ -1,5 +1,6 @@
 import type { PendingDiscoveryFacets, PendingDiscoveryPage } from "../../api/client";
 import { MultiSelectFilter } from "../../components/MultiSelectFilter";
+import { Toggletip } from "../../components/Toggletip";
 import {
   discoveryRecommendationLabel,
   relevanceLabel,
@@ -116,7 +117,6 @@ export function PendingDiscoveryFilters({
       ) : null}
       <div
         aria-label="Uncertainty groups"
-        aria-describedby="discovery-uncertainty-help"
         className="button-row discovery-toolbar__groups"
         role="group"
       >
@@ -128,6 +128,11 @@ export function PendingDiscoveryFilters({
           />{" "}
           Separate uncertain postings
         </label>
+        <Toggletip label="About uncertain postings">
+          {strictUncertainty
+            ? "Unconfirmed matches holds postings with missing or unconfirmed facts, such as location or pay."
+            : "Postings with missing or unconfirmed facts, such as location or pay, stay in Main queue. Turn this on to move them to Unconfirmed matches."}
+        </Toggletip>
         <button
           aria-busy={groupsPending}
           aria-disabled={groupsPending}
@@ -168,15 +173,6 @@ export function PendingDiscoveryFilters({
           Screened out ({facets ? countOf(facets.constraint, "excluded_only") : "loading"})
         </button>
       </div>
-      <p className="field-note" id="discovery-uncertainty-help">
-        {strictUncertainty
-          ? "Unconfirmed matches holds postings with missing or unconfirmed search facts, such as location or pay."
-          : "Postings with missing or unconfirmed search facts, such as location or pay, remain in Main queue. Use More filters > Constraint route > Unconfirmed matches to view these postings."}
-      </p>
-      <p className="field-note">
-        Track saves a job for free. Full evaluation is optional and paid; it compares the posting
-        with your CV. Open the posting or Details to check uncertain facts yourself.
-      </p>
       <div className="discovery-toolbar__filters">
         <div className="discovery-toolbar__field">
           <label htmlFor="discovery-search">Search</label>
@@ -374,33 +370,6 @@ export function PendingDiscoveryFilters({
             selected={filters.employers}
           />
         </div>
-      </details>
-      <details className="discovery-toolbar__help">
-        <summary>About this view</summary>
-        <p className="field-note">
-          Openings found by search or a board scan. Content readiness shows which postings can be
-          evaluated now and which need recovery first.
-        </p>
-        <p className="field-note">
-          {strictUncertainty
-            ? "The main queue shows postings with clear answers to your constraints. Uncertain postings remain in Unconfirmed matches."
-            : "The main queue includes uncertain postings. Use Screened out to review postings that conflict with your rules."}{" "}
-          This changes visibility only; your search parameters and screening rules stay the same.
-        </p>
-        <p className="field-note">
-          {filters.readiness === "all"
-            ? "Clarification counts include all content states under your other filters."
-            : "Clarification counts use the selected content state and your other filters."}
-        </p>
-
-        <p className="field-note">
-          Favorites mark your best matches. Kept marks rows the program misjudged. Both stay through
-          bulk and program dismissals.
-        </p>
-        <p className="field-note">
-          Queued links are those found so far; pages can reveal more links. Refresh list reads new
-          postings from the beginning, so the order may change.
-        </p>
       </details>
       <div aria-label="Your markers" className="chip-row discovery-toolbar__markers" role="group">
         {MARKER_CHIPS.map(({ marker, label, legend }) => (

@@ -13,6 +13,8 @@ import { useToast } from "../../providers/useToast";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { TabPanel, Tabs } from "../../components/Tabs";
+import { Toggletip } from "../../components/Toggletip";
+import { PRODUCT_NAME } from "../../productName";
 
 type SuggestionKind = "title" | "capability" | "domain" | "employer_archetype";
 type SuggestionView = "proposed" | "accepted" | "rejected";
@@ -166,7 +168,7 @@ function effectFor(kind: SuggestionKind): string {
 }
 
 function originLabel(origin: string): string {
-  return origin === "search.vocabulary" ? "search vocabulary" : "TailorCV";
+  return origin === "search.vocabulary" ? "search vocabulary" : PRODUCT_NAME;
 }
 
 function decisionStatus(item: Suggestion): string {
@@ -255,32 +257,28 @@ export function SearchSuggestions({ workspaceId }: { workspaceId: string }) {
       <header>
         <div>
           <h2 id="search-suggestions-heading">Suggestions from search vocabulary</h2>
-          <p>
-            Approve useful terms for future searches. Decisions save immediately and cost nothing.
-          </p>
+          <div>
+            Approve useful terms for later searches. Decisions save at once.{" "}
+            <Toggletip label="How suggestions and review limits work">
+              <p>
+                A suggestion widens later searches only after you approve it. A search never uses a
+                suggestion from its own run. Save for later keeps one without using it. Not using
+                frees its review slot, and the same suggestion is not offered again. Duplicate is a
+                Not using decision and merges or deletes nothing. Withdrawing an approval moves it
+                to Not using. Approvals do not count against the review limit. Decisions change no
+                existing jobs.
+              </p>
+              {capacitySummary ? (
+                <p className="search-suggestion-capacity-summary">
+                  Review inbox - {capacitySummary}. Approving or declining a suggestion frees its
+                  review slot.
+                </p>
+              ) : null}
+            </Toggletip>
+          </div>
         </div>
       </header>
       <div className="panel-body search-suggestions__body">
-        <details>
-          <summary>How suggestions and review limits work</summary>
-          <p>
-            Pending suggestions only widen future searches after approval. This is a bounded
-            shortlist of saved suggestions, not a complete map of your career. Existing approvals do
-            not consume review capacity. Decisions do not change existing jobs or start a paid
-            search. A web-search plan never uses a same-run suggestion; later searches use it only
-            after you approve it. "Save for later" keeps a suggestion available but unused. Any Not
-            using decision frees its slot and prevents that exact suggestion from being offered
-            again. "Duplicate" records a Not using decision; it does not merge or delete anything.
-            You can approve anything in Not using later. Withdrawing an approval moves it to Not
-            using, not back to Needs review.
-          </p>
-          {capacitySummary ? (
-            <p className="search-suggestion-capacity-summary">
-              Review inbox - {capacitySummary}. Approving or declining a suggestion frees its review
-              slot.
-            </p>
-          ) : null}
-        </details>
         {loading ? <LoadingState label="Reading search suggestions" /> : null}
         {!loading ? (
           <>
@@ -338,8 +336,8 @@ export function SearchSuggestions({ workspaceId }: { workspaceId: string }) {
                 </EmptyState>
               ) : null}
               {view === "proposed" && counts.proposed === 0 ? (
-                <a className="button button--quiet" href="/find?tab=campaign">
-                  Find new jobs
+                <a className="button button--quiet" href="/find?tab=web">
+                  Search the web
                 </a>
               ) : null}
             </TabPanel>
@@ -472,8 +470,8 @@ function SuggestionCard({
           </p>
         ) : null}
         <details className="proposal-rationale">
-          <summary aria-label={`Why TailorCV suggested ${item.name}`}>
-            Why TailorCV suggested this
+          <summary aria-label={`Why ${PRODUCT_NAME} suggested ${item.name}`}>
+            Why {PRODUCT_NAME} suggested this
           </summary>
           <p>{item.because}</p>
         </details>

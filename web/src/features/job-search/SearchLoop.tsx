@@ -16,20 +16,16 @@ export function SearchLoop() {
         </li>
         <li>
           <strong>
-            <Link to="/find?tab=scans">My search</Link>
+            <Link to="/find?tab=boards">My search</Link>
           </strong>
           <p>
             <Link to="/settings?tab=search">Review search preferences</Link>, then scan the boards
-            you already track for free. Search the web to find new jobs beyond those boards when you
-            are ready to pay.
+            you already track. Search the web to find new jobs beyond those boards.
           </p>
-          <span>
-            Scanning is free; web search and proposing terms require an explicit spend approval.
-          </span>
         </li>
         <li>
           <strong>
-            <Link to="/find?tab=pending">My shortlist</Link>
+            <Link to="/find?tab=review">My shortlist</Link>
           </strong>
           <p>
             Review promising discoveries, their evidence, and unanswered constraints before

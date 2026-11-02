@@ -1,12 +1,15 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import type {
+  Health,
   MasterCvContent,
   MasterCvEdit,
   MasterCvImpact,
+  MasterCvImport,
+  MasterCvRereadEstimate,
   MasterCvVersion,
   RequirementGaps,
 } from "../api/client/types";
@@ -133,22 +136,71 @@ function gapSource(
   };
 }
 
+const ESTIMATE = { past_rereads: 2, average_usd: 0.04 } satisfies MasterCvRereadEstimate;
+
+const IMPORTED = {
+  workspace_id: "workspace-cv",
+  artifact_id: "artifact-2",
+  canonical_path: "/tmp/CV_Master.md",
+  content_sha256: "cccccccccccccccc",
+  entry_count: 7,
+  master_cv_version_id: "version-2",
+  method: "standardized",
+  report_path: null,
+  source_path: "/tmp/Resume.docx",
+} satisfies MasterCvImport;
+
+function health(freeMode: boolean): Health {
+  return {
+    status: "ok",
+    version: "0.1.0",
+    database_reachable: true,
+    schema_current: true,
+    current_revision: "0001",
+    head_revision: "0001",
+    database_exists: true,
+    worker_available: true,
+    free_mode: freeMode,
+  } satisfies Health;
+}
+
+type Sent = { saves: unknown[]; imports: URLSearchParams[] };
+
 function installHandlers(
   overrides: {
     impact?: Partial<MasterCvImpact>;
     save?: Partial<MasterCvEdit>;
     gaps?: RequirementGaps;
+    versions?: MasterCvVersion[];
+    freeMode?: boolean;
+    importStatus?: (query: URLSearchParams) => number;
   } = {},
-) {
+): Sent {
   const impact = { ...IMPACT, ...overrides.impact };
   const saved = { ...SAVED, ...overrides.save };
+  const sent: Sent = { saves: [], imports: [] };
   server.use(
-    http.get(`${WORKSPACE}/master-cv/versions`, () => HttpResponse.json([VERSION])),
+    http.get("*/api/v1/health", () => HttpResponse.json(health(overrides.freeMode ?? false))),
+    http.get(`${WORKSPACE}/master-cv/reread-estimate`, () => HttpResponse.json(ESTIMATE)),
+    http.post(`${WORKSPACE}/master-cv/import`, ({ request }) => {
+      const query = new URL(request.url).searchParams;
+      sent.imports.push(query);
+      const status = overrides.importStatus?.(query) ?? 201;
+      return status === 201
+        ? HttpResponse.json(IMPORTED, { status })
+        : HttpResponse.json({ detail: "This CV needs a paid re-read." }, { status });
+    }),
+    http.get(`${WORKSPACE}/master-cv/versions`, () =>
+      HttpResponse.json(overrides.versions ?? [VERSION]),
+    ),
     http.get(`${WORKSPACE}/master-cv/requirement-gaps`, () =>
       HttpResponse.json(overrides.gaps ?? NO_GAPS),
     ),
     http.post(`${WORKSPACE}/master-cv/impact`, () => HttpResponse.json(impact)),
-    http.post(`${WORKSPACE}/master-cv`, () => HttpResponse.json(saved)),
+    http.post(`${WORKSPACE}/master-cv`, async ({ request }) => {
+      sent.saves.push(await request.json());
+      return HttpResponse.json(saved);
+    }),
     http.get(`${WORKSPACE}/master-cv`, () => HttpResponse.json(CONTENT)),
     http.get(`${WORKSPACE}/master-cv-proposals`, () => HttpResponse.json([])),
     http.post(`${WORKSPACE}/master-cv-proposals/refresh`, () =>
@@ -156,6 +208,12 @@ function installHandlers(
     ),
     http.get(`${WORKSPACE}/requirement-rulings`, () => HttpResponse.json({ rulings: [] })),
   );
+  return sent;
+}
+
+function chooseFile(container: HTMLElement, name: string) {
+  const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+  fireEvent.change(input, { target: { files: [new File(["synthetic"], name)] } });
 }
 
 function renderPage() {
@@ -183,6 +241,131 @@ describe("MasterCvPage", () => {
     const button = await screen.findByRole("button", { name: "Import as new version" });
     expect(button.hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("Choose a CV file first")).toBeTruthy();
+  });
+
+  it("puts a file the model must re-read behind the paid mark and a confirm", async () => {
+    const sent = installHandlers();
+    const { container } = renderPage();
+    await screen.findByRole("button", { name: "Edit this CV" });
+
+    chooseFile(container, "Resume.docx");
+    const button = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Import as new version",
+    });
+    expect(within(button).getByText("Paid")).toBeTruthy();
+    await waitFor(() => expect(within(button).getByText("about $0.04 per re-read")).toBeTruthy());
+    await waitFor(() => expect(button.disabled).toBe(false));
+    fireEvent.click(button);
+
+    const dialog = await screen.findByRole("dialog", { name: "Re-read this CV with the model?" });
+    expect(dialog.textContent).toContain("About $0.04 per re-read, from 2 past re-reads.");
+    expect(sent.imports).toHaveLength(0);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Re-read and import" }));
+
+    await waitFor(() => expect(sent.imports).toHaveLength(1));
+    expect(sent.imports[0]?.get("confirm_reread")).toBe("true");
+    expect(await screen.findByText(/Ready: 7 citable entries/)).toBeTruthy();
+  });
+
+  it("imports Markdown and plain text with a plain button", async () => {
+    const sent = installHandlers();
+    const { container } = renderPage();
+    await screen.findByRole("button", { name: "Edit this CV" });
+
+    chooseFile(container, "CV.txt");
+    const button = await screen.findByRole("button", { name: "Import as new version" });
+    expect(within(button).queryByText("Paid")).toBeNull();
+    fireEvent.click(button);
+
+    await waitFor(() => expect(sent.imports).toHaveLength(1));
+    expect(sent.imports[0]?.get("confirm_reread")).toBe("false");
+  });
+
+  it("offers a confirmed re-read when the server refuses a text file", async () => {
+    const sent = installHandlers({
+      importStatus: (query) => (query.get("confirm_reread") === "true" ? 201 : 409),
+    });
+    const { container } = renderPage();
+    await screen.findByRole("button", { name: "Edit this CV" });
+
+    chooseFile(container, "notes.txt");
+    fireEvent.click(await screen.findByRole("button", { name: "Import as new version" }));
+
+    const paid = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Import as new version",
+      description: /Paid/,
+    });
+    await waitFor(() => expect(paid.disabled).toBe(false));
+    fireEvent.click(paid);
+    const dialog = await screen.findByRole("dialog", { name: "Re-read this CV with the model?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Re-read and import" }));
+
+    await waitFor(() => expect(sent.imports).toHaveLength(2));
+    expect(sent.imports.map((query) => query.get("confirm_reread"))).toEqual(["false", "true"]);
+  });
+
+  it("keeps a paid import off in free mode and says why", async () => {
+    installHandlers({ freeMode: true });
+    const { container } = renderPage();
+    await screen.findByRole("button", { name: "Edit this CV" });
+
+    chooseFile(container, "Resume.pdf");
+
+    expect(await screen.findByText("Add a provider key to use paid actions.")).toBeTruthy();
+    const button = screen.getByRole<HTMLButtonElement>("button", { name: "Import as new version" });
+    expect(button.disabled).toBe(true);
+  });
+
+  it("opens the import form when there is no CV yet", async () => {
+    installHandlers({ versions: [] });
+    const { container } = renderPage();
+
+    await screen.findByText("Nothing imported yet.");
+    expect(container.querySelector("details.cv-import")?.hasAttribute("open")).toBe(true);
+  });
+
+  it("saves an edit the parser rejects only through a confirmed paid re-read", async () => {
+    const sent = installHandlers({ impact: { reread_reason: "it has no dated role" } });
+    renderPage();
+    await openEditor();
+
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    const button = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Re-read and save",
+    });
+    expect(screen.queryByRole("button", { name: "Save as new version" })).toBeNull();
+    expect(within(button).getByText("Paid")).toBeTruthy();
+    await waitFor(() => expect(button.disabled).toBe(false));
+    fireEvent.click(button);
+
+    const dialog = await screen.findByRole("dialog", { name: "Re-read this CV with the model?" });
+    expect(dialog.textContent).toContain("because it has no dated role");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(sent.saves).toHaveLength(0);
+
+    fireEvent.click(button);
+    const again = await screen.findByRole("dialog", { name: "Re-read this CV with the model?" });
+    fireEvent.click(within(again).getByRole("button", { name: "Re-read and save" }));
+
+    await waitFor(() => expect(sent.saves).toHaveLength(1));
+    expect(sent.saves[0]).toEqual({ content: CV, confirm_reread: true });
+  });
+
+  it("keeps the paid re-read save off in free mode", async () => {
+    installHandlers({ impact: { reread_reason: "it has no dated role" }, freeMode: true });
+    renderPage();
+    await openEditor();
+
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+
+    expect(await screen.findByText("Add a provider key to use paid actions.")).toBeTruthy();
+    const button = screen.getByRole<HTMLButtonElement>("button", { name: "Re-read and save" });
+    expect(button.disabled).toBe(true);
+    expect(
+      screen.getByText(
+        "This draft needs a model re-read because it has no dated role. Fix that in the draft to save it without a charge, or re-read it.",
+      ),
+    ).toBeTruthy();
   });
 
   it("opens the stored CV read-only", async () => {
@@ -222,7 +405,7 @@ describe("MasterCvPage", () => {
   });
 
   it("says plainly when a save appended nothing", async () => {
-    installHandlers({
+    const sent = installHandlers({
       impact: { identical: true },
       save: {
         created: false,
@@ -238,6 +421,7 @@ describe("MasterCvPage", () => {
     fireEvent.click(save);
 
     await waitFor(() => expect(document.body.textContent).toContain("Nothing was appended."));
+    expect(sent.saves).toEqual([{ content: CV, confirm_reread: false }]);
   });
 
   it("diffs the stored version against the draft before any save", async () => {

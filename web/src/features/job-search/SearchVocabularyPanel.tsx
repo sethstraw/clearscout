@@ -11,10 +11,8 @@ import {
   useSearchTitleProposals,
   useSearchVocabularyProviderConfiguration,
   useTaskCosts,
-  useWorkspaceSpend,
 } from "../../api/hooks";
 import { PaidAction } from "../../components/PaidAction";
-import { formatUsd, UNKNOWN_AMOUNT } from "../../components/text";
 import { SearchSuggestions } from "../search-parameters/SearchSuggestions";
 import { SLOW_RUN_NOTICE, useSearchPanelTask, useSlowNotice } from "./useSearchPanelTask";
 
@@ -68,7 +66,6 @@ function VocabularyRunStatus({
  */
 export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) {
   const [selectedTaskId, setSelectedTaskId] = useState("");
-  const [termsOpen, setTermsOpen] = useState(false);
   const costs = useTaskCosts(workspaceId);
   const vocabularyConfiguration = useSearchVocabularyProviderConfiguration(workspaceId, true);
   const search = useEnqueueTask(workspaceId);
@@ -78,7 +75,6 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
   const titleProposals = useSearchTitleProposals(workspaceId);
   const archetypeProposals = useSearchArchetypeProposals(workspaceId);
   const clusterProposals = useSearchClusterProposals(workspaceId);
-  const workspaceSpend = useWorkspaceSpend(workspaceId);
   const taskRows = tasks.data ?? [];
   const vocabularyRows = taskRows.filter((item) => item.task_type === "search.vocabulary");
   const latestVocabulary = vocabularyRows
@@ -108,26 +104,16 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
   const proposalCountsReady = [titleProposals, archetypeProposals, clusterProposals].every(
     (query) => query.data !== undefined && !query.isError,
   );
-  const fanOutLine =
-    "One paid text-only call proposes CV-grounded search vocabulary. No postings or new employer boards are discovered. Review suggestions, then scan registered sources for free.";
-  const vocabularySpend = workspaceSpend.data?.by_stage.find(
-    (item) => item.name === "search_vocabulary",
-  );
   const busy = queueing || retrying || queued || running;
   const inFlightLabel = (idle: string) =>
-    queueing
-      ? "Queueing paid search"
-      : queued
-        ? "Paid search queued"
-        : running
-          ? "Paid search running"
-          : idle;
+    queueing ? "Queueing search" : queued ? "Search queued" : running ? "Search running" : idle;
   const vocabularyAction = (
     <PaidAction
       compact
       confirmation={{
         title: "Propose new search terms?",
-        description: `${vocabularyConfiguration.description} ${fanOutLine} ${costs.confirmation("search.vocabulary")}`,
+        description: `Runs one call that reads your CV and proposes search terms, and it finds no jobs. ${costs.confirmation("search.vocabulary")}`,
+        details: <p className="field-note">{vocabularyConfiguration.description}</p>,
         confirmLabel: "Propose search terms",
       }}
       costs={costs}
@@ -158,24 +144,24 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
   );
   return (
     <div className="search-vocabulary-layout">
-      <details
-        className="panel search-vocabulary-terms"
-        open={termsOpen}
-        onToggle={(event) => setTermsOpen(event.currentTarget.open)}
-      >
-        <summary>
-          Search terms and suggestions
-          {proposalCountsReady
-            ? ` (${proposedTitleCount + proposedArchetypeCount + proposedClusterCount} to review)`
-            : ""}
-        </summary>
+      <section aria-labelledby="search-terms-heading" className="panel search-vocabulary-terms">
+        <header>
+          <div>
+            <h2 id="search-terms-heading">
+              Search terms
+              {proposalCountsReady
+                ? ` (${proposedTitleCount + proposedArchetypeCount + proposedClusterCount} to review)`
+                : ""}
+            </h2>
+            <p>Widen later searches with terms from your CV.</p>
+          </div>
+        </header>
         <div className="panel-body">
-          <p>Optional: widen future searches with CV-backed terms. This action finds no jobs.</p>
           {vocabularyAction}
           {vocabularyConfiguration.isError && (
             <p className="field-error" role="alert">
-              The configured provider, extraction model, and effort could not be read, so
-              search-term proposals cannot start. Check Settings, then reload.
+              The provider, model, and effort could not be read, so search terms cannot start. Check
+              Settings, then reload.
             </p>
           )}
           {!vocabularyConfiguration.loaded && !vocabularyConfiguration.isError && (
@@ -187,7 +173,7 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
           {retry.isError && <p className="field-error">{retry.error.message}</p>}
           {queueing ? (
             <p aria-label="Search vocabulary queue status" role="status">
-              Queueing paid search.
+              Queueing search.
             </p>
           ) : retrying ? (
             <p aria-label="Search vocabulary queue status" role="status">
@@ -244,10 +230,7 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
               {task.data?.status === "completed" && (
                 <p aria-label="Search vocabulary result" role="status">
                   Search vocabulary suggested. No postings or new employer boards were discovered.{" "}
-                  <a href="#search-suggestions-heading" onClick={() => setTermsOpen(true)}>
-                    Review search proposals
-                  </a>{" "}
-                  below.
+                  <a href="#search-suggestions-heading">Review search proposals</a> below.
                 </p>
               )}
             </>
@@ -259,22 +242,11 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
             </p>
           )}
           <SearchSuggestions workspaceId={workspaceId} />
-          {workspaceSpend.isError ? (
-            <p className="field-error">Recorded search-vocabulary spend could not be read.</p>
-          ) : workspaceSpend.data ? (
-            <p>
-              Spent on search vocabulary:{" "}
-              {formatUsd(vocabularySpend ? vocabularySpend.amount_usd : 0, {
-                unknown: UNKNOWN_AMOUNT,
-              })}{" "}
-              across {vocabularySpend?.calls ?? 0} recorded provider calls.
-              {(vocabularySpend?.unpriced_calls ?? 0) > 0
-                ? ` ${vocabularySpend?.unpriced_calls} call${vocabularySpend?.unpriced_calls === 1 ? " has" : "s have"} no configured price; a missing total is not zero.`
-                : ""}
-            </p>
-          ) : null}
+          <p className="field-note">
+            <a href="/settings?tab=costs">See spending in Settings</a>.
+          </p>
         </div>
-      </details>
+      </section>
     </div>
   );
 }

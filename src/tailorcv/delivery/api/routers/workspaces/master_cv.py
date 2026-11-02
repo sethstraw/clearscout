@@ -21,6 +21,7 @@ from tailorcv.application.workspaces import (
     MasterCvEditResponse,
     MasterCvImpactResponse,
     MasterCvImportResponse,
+    MasterCvRereadEstimateResponse,
     MasterCvVersionResponse,
 )
 from tailorcv.delivery.api.constants import API_PREFIX
@@ -59,8 +60,9 @@ async def import_master_cv(
     service: MasterCvServiceDep,
     filename: Annotated[str, Query(min_length=1, max_length=240)],
     replace: bool = False,
+    confirm_reread: bool = False,
 ) -> MasterCvImportResponse:
-    """Upload, standardize when necessary, and version one master CV."""
+    """Upload, standardize when confirmed, and version one master CV."""
     content = await bounded_body(request, MAX_CV_BYTES)
     return await run_in_threadpool(
         service.import_source,
@@ -69,6 +71,7 @@ async def import_master_cv(
         content=content,
         mime_type=request.headers.get("Content-Type", "application/octet-stream").split(";", 1)[0],
         replace=replace,
+        confirm_reread=confirm_reread,
         correlation_id=correlation_id,
     )
 
@@ -150,10 +153,24 @@ def master_cv_impact(
     return service.impact(workspace_id, body.content)
 
 
+@router.get(
+    f"{API_PREFIX}/workspaces/{{workspace_id}}/master-cv/reread-estimate",
+    response_model=MasterCvRereadEstimateResponse,
+    tags=["workspaces"],
+    summary="Report what past model re-reads of a CV cost",
+)
+def master_cv_reread_estimate(
+    workspace_id: str, service: MasterCvServiceDep
+) -> MasterCvRereadEstimateResponse:
+    """Average the recorded cost of past model re-reads of a CV."""
+    return service.reread_estimate(workspace_id)
+
+
 @router.post(
     f"{API_PREFIX}/workspaces/{{workspace_id}}/master-cv",
     response_model=MasterCvEditResponse,
     status_code=201,
+    responses=FREE_MODE_RESPONSES,
     tags=["workspaces"],
     summary="Save an edited master CV as a new version",
 )
@@ -164,7 +181,12 @@ def save_master_cv(
     service: MasterCvServiceDep,
 ) -> MasterCvEditResponse:
     """Save a validated master-CV edit as a new version."""
-    return service.save_edit(workspace_id, body.content, correlation_id=correlation_id)
+    return service.save_edit(
+        workspace_id,
+        body.content,
+        confirm_reread=body.confirm_reread,
+        correlation_id=correlation_id,
+    )
 
 
 @router.get(

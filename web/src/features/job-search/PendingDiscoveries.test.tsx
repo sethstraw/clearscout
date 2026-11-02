@@ -12,6 +12,7 @@ type ScreeningFinding = PendingDiscovery["screening_findings"][number];
 import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { requestLog } from "../../test/requestLog";
+import { evaluationPreflightHandler } from "../../test/taskTypes";
 import {
   taskRecord,
   foundPostingCheck,
@@ -315,7 +316,7 @@ describe("PendingDiscoveries", () => {
     const groups = screen.getByRole("group", { name: "Uncertainty groups" });
     expect(within(groups).queryByRole("button", { name: "Unconfirmed matches (10)" })).toBeNull();
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Role 1 at Globex" }));
-    expect(screen.getByRole("button", { name: "Track selected (1, free)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Track selected (1)" })).toBeTruthy();
     fireEvent.click(screen.getByRole("checkbox", { name: "Separate uncertain postings" }));
 
     await waitFor(() => expect(screen.queryByText("Role 1")).toBeNull());
@@ -337,8 +338,6 @@ describe("PendingDiscoveries", () => {
       expect(screen.getByRole("button", { name: "Unconfirmed matches (8)" })).toBeTruthy(),
     );
     expect(screen.queryByText("Role 9")).toBeNull();
-    fireEvent.click(screen.getByText("About this view"));
-    expect(screen.getByText(/Clarification counts use the selected content state/)).toBeTruthy();
     openMoreFilters();
     fireEvent.change(screen.getByLabelText("Constraint route"), { target: { value: "excluded" } });
     await screen.findByText("Role 11");
@@ -349,6 +348,53 @@ describe("PendingDiscoveries", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Separate uncertain postings" }));
     await screen.findByText("Role 1");
     expect(reads.at(-1)?.searchParams.get("constraint")).toBe("not_excluded");
+  });
+
+  it("opens on Screened out from the address and shows the refusal patterns there", async () => {
+    window.localStorage.setItem("tailorcv.pendingStrictUncertainty.workspace-1", "true");
+    const reads: URL[] = [];
+    const refused = pendingDiscoveryRow({
+      ...pendingDiscoveryRows(2)[1],
+      constraint_confidence: "excluded",
+    });
+    installQueue({
+      onRequest: (url) => reads.push(url),
+      page: [pendingDiscoveryRow({ constraint_confidence: "pursue" }), refused],
+      refusalPatternProposals: [
+        {
+          id: "proposal-1",
+          condition: "work_authorization",
+          normalized_reason: "work authorization required",
+          reason_examples: [],
+          refusal_count: 3,
+          refused_postings: [],
+          first_seen_at: "2026-08-20T12:00:00Z",
+          last_seen_at: "2026-08-22T12:00:00Z",
+          state: "proposed",
+          proposed_at: "2026-08-22T12:00:00Z",
+          decided_at: null,
+        },
+      ],
+    });
+    render(
+      <MemoryRouter initialEntries={["/find?tab=review&constraint=excluded_only"]}>
+        <AppProviders>
+          <PendingDiscoveries workspaceId="workspace-1" />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Role 1");
+    expect(screen.queryByText("Role 0")).toBeNull();
+    const pageReads = reads.filter((url) => url.pathname.endsWith("/pending-discoveries/page"));
+    expect(pageReads[0]?.searchParams.get("constraint")).toBe("excluded_only");
+    expect(screen.getByRole("button", { name: /^Screened out/ }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(await screen.findByText("work authorization required")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^Main queue/ }));
+    await screen.findByText("Role 0");
+    expect(screen.queryByText("Recurring refusal patterns")).toBeNull();
   });
 
   it("saves strict uncertainty visibility per workspace and restores it on reopening", async () => {
@@ -1032,7 +1078,7 @@ describe("PendingDiscoveries", () => {
     const main = screen.getByRole("button", { name: "Main queue (0)" });
     expect(main.getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(checkbox);
-    expect(screen.getByRole("button", { name: "Track selected (1, free)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Track selected (1)" })).toBeTruthy();
     fireEvent.click(main);
     await waitFor(() =>
       expect(screen.queryByLabelText("Select Product Manager at Example Health")).toBeNull(),
@@ -1352,7 +1398,6 @@ describe("PendingDiscoveries", () => {
     expect(running).toHaveLength(2);
     for (const button of running) {
       expect(button.disabled).toBe(true);
-      expect(button.classList).toContain("discovery-action--queued");
     }
     expect(screen.getByLabelText<HTMLInputElement>("Select Running role at Globex").disabled).toBe(
       true,
@@ -1361,6 +1406,50 @@ describe("PendingDiscoveries", () => {
     expect(
       screen.getByLabelText<HTMLInputElement>("Select Later batch role at Globex").disabled,
     ).toBe(true);
+  });
+
+  it("prices a row's full evaluation before confirming it, like the batch button and e key", async () => {
+    const log = requestLog();
+    const row = pendingDiscoveryRow({ id: "pending-1", title: "Product Manager" });
+    installRows([row]);
+    server.use(
+      evaluationPreflightHandler((request) => void log.record(request)),
+      http.post("*/api/v1/tasks", async ({ request }) => {
+        await log.record(request);
+        return HttpResponse.json(taskRecord({ id: "task-1", status: "queued" }));
+      }),
+    );
+    render(
+      <MemoryRouter>
+        <AppProviders>
+          <PendingDiscoveries workspaceId="workspace-1" />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+
+    const button = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Full evaluation",
+    });
+    await waitFor(() => expect(button.disabled).toBe(false));
+    fireEvent.click(button);
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.getByText("Fully evaluate Product Manager at Globex?")).toBeTruthy();
+    expect(dialog.getByText(/Estimated total at configured rates: \$0\.2000 USD\./)).toBeTruthy();
+    const preflight = log.requests.find((request) =>
+      request.url.pathname.endsWith("/evaluation-preflight"),
+    );
+    expect(preflight?.body).toEqual({ pending_discovery_ids: ["pending-1"] });
+    expect(log.requests.some((request) => request.url.pathname.endsWith("/tasks"))).toBe(false);
+    fireEvent.click(dialog.getByRole("button", { name: "Run full evaluation" }));
+    await waitFor(() =>
+      expect(log.requests.find((request) => request.url.pathname.endsWith("/tasks"))?.body).toEqual(
+        {
+          workspace_id: "workspace-1",
+          task_type: "discovery.evaluate_batch",
+          payload: { pending_discovery_ids: ["pending-1"] },
+        },
+      ),
+    );
   });
 
   it("blocks re-evaluation when the durable identity already maps to an evaluated job", async () => {
@@ -1482,7 +1571,7 @@ describe("PendingDiscoveries", () => {
     expect(screen.getByText(/already has an evaluation with the Apply now decision/)).toBeTruthy();
     const link = screen.getByRole("link", { name: "View existing evaluation" });
     expect(link.getAttribute("href")).toBe("/jobs/job-existing?tab=evaluation");
-    expect(screen.queryByRole("button", { name: "Full evaluation (paid)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Full evaluation" })).toBeNull();
 
     const duplicateCheckbox = screen.getByLabelText<HTMLInputElement>(
       "Select Raced Role at Globex (already evaluated)",
@@ -1719,12 +1808,12 @@ describe("PendingDiscoveries", () => {
     fireEvent.click(within(readRow).getByRole("button", { name: "Details" }));
     expect(screen.getByText("Verified publisher content.")).toBeTruthy();
     expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation (2, paid)" }).disabled,
+      screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation (2)" }).disabled,
     ).toBe(true);
     expect(
       screen.getByText(/1 selected row needs\s+a refresh before either paid action/),
     ).toBeTruthy();
-    expect(within(unreadRow).queryByRole("button", { name: "Full evaluation (paid)" })).toBeNull();
+    expect(within(unreadRow).queryByRole("button", { name: "Full evaluation" })).toBeNull();
     expect(within(unreadRow).getByRole("button", { name: /Refresh postings/ })).toBeTruthy();
   });
 
@@ -3087,13 +3176,13 @@ describe("PendingDiscoveries", () => {
     );
 
     const checkbox = await screen.findByLabelText("Select Closed role at Globex");
-    expect(screen.queryByRole("button", { name: "Full evaluation (paid)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Full evaluation" })).toBeNull();
     fireEvent.click(checkbox);
     expect(
       screen.getByRole<HTMLButtonElement>("button", { name: "Review relevance (1)" }).disabled,
     ).toBe(true);
     expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation (1, paid)" }).disabled,
+      screen.getByRole<HTMLButtonElement>("button", { name: "Full evaluation (1)" }).disabled,
     ).toBe(true);
     expect(
       screen.getByRole("button", { name: "Mark closed from saved evidence (1)" }),

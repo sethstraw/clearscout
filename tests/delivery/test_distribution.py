@@ -436,7 +436,7 @@ def test_post_checkout_prepares_only_a_new_worktree(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
     git(repo, "init", "-q", "-b", "main")
-    git(repo, "config", "user.email", "fixture@example.invalid")
+    git(repo, "config", "user.email", "fixture@example.test")
     git(repo, "config", "user.name", "Fixture")
     git(repo, "config", "core.hooksPath", str(ROOT / ".githooks"))
     (repo / "uv.lock").write_text("version = 1\n", encoding="utf-8")

@@ -130,6 +130,8 @@ class MasterCvEdit(StrictModel):
     """Proposed master CV Markdown, for an impact check or for an in-place edit."""
 
     content: str = Field(min_length=1, max_length=MAX_CV_BYTES)
+    # Only a save reads this; the impact check ignores it.
+    confirm_reread: bool = False
 
 
 __all__ = [

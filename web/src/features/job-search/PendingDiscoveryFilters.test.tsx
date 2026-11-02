@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { PendingDiscoveryFacets } from "../../api/client";
+import { HELP } from "../../help/content";
 import { PendingDiscoveryFilters } from "./PendingDiscoveryFilters";
 import { pendingDiscoveryRow, pendingDiscoveryRows, queueFacets } from "./pendingDiscoveryFixtures";
 import { DEFAULT_QUEUE_FILTERS, type PendingQueueFilters } from "./pendingDiscoveryFilterModel";
@@ -63,13 +64,12 @@ describe("PendingDiscoveryFilters", () => {
     expect(screen.getByRole("checkbox", { name: "Separate uncertain postings" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Main queue (3)" }).ariaPressed).toBe("true");
     expect(screen.queryByRole("button", { name: /Unconfirmed matches/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "About uncertain postings" }));
     expect(
-      screen
-        .getByText(/Use More filters > Constraint route > Unconfirmed matches/)
-        .closest("details"),
-    ).toBeNull();
-    expect(screen.getByText(/location or pay/)).toBeTruthy();
-    expect(screen.getByText(/Track saves a job for free/)).toBeTruthy();
+      within(screen.getByRole("dialog", { name: "About uncertain postings" })).getByText(
+        /location or pay, stay in Main queue/,
+      ),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Screened out (1)" }));
     expect(changes).toEqual([{ ...DEFAULT_QUEUE_FILTERS, constraint: "excluded_only" }]);
     view.rerender(
@@ -135,11 +135,10 @@ describe("PendingDiscoveryFilters", () => {
 
   it("explains that separating uncertainty keeps unconfirmed postings in their own group", () => {
     render(filtersView({ ...DEFAULT_QUEUE_FILTERS, constraint: "pursue_only" }));
+    fireEvent.click(screen.getByRole("button", { name: "About uncertain postings" }));
     expect(
-      screen
-        .getByText(/Unconfirmed matches holds postings with missing or unconfirmed search facts/)
-        .closest("details"),
-    ).toBeNull();
+      screen.getByText(/Unconfirmed matches holds postings with missing or unconfirmed facts/),
+    ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Main queue (1)" }).ariaPressed).toBe("true");
     expect(screen.getByRole("button", { name: "Unconfirmed matches (7)" }).ariaPressed).toBe(
       "false",
@@ -191,17 +190,15 @@ describe("PendingDiscoveryFilters", () => {
     expect(changes).toHaveLength(1);
   });
 
-  it("makes view explanations available through About this view", () => {
+  it("leaves view explanations to the Review help panel rather than the toolbar", () => {
     render(filtersView({ ...DEFAULT_QUEUE_FILTERS, constraint: "pursue_only" }));
-    const summary = screen.getByText("About this view");
-    expect(summary.tagName).toBe("SUMMARY");
-    expect(summary.closest("details")?.open).toBe(false);
-    fireEvent.click(summary);
-    expect(summary.closest("details")?.open).toBe(true);
-    expect(screen.getByText(/The main queue shows postings with clear answers/)).toBeTruthy();
-    expect(screen.getByText(/Clarification counts include all content states/)).toBeTruthy();
-    expect(screen.getByText(/pages can reveal more links/)).toBeTruthy();
-    expect(screen.getByText(/Refresh list reads new postings from the beginning/)).toBeTruthy();
+    expect(screen.queryByText("About this view")).toBeNull();
+    expect(screen.queryByText(/Track saves a job/)).toBeNull();
+    const help = HELP["find.review"].body;
+    expect(help).toMatch(/Separate uncertain postings/);
+    expect(help).toMatch(/Screened out filter lists postings that conflict with your search rules/);
+    expect(help).toMatch(/Refresh list reads from the top/);
+    expect(help).toMatch(/Keys: j and k move, e evaluates, r reviews, x dismisses, u undoes/);
   });
 
   it("shows full clarification counts beyond 50 rows across content states", () => {
@@ -237,8 +234,6 @@ describe("PendingDiscoveryFilters", () => {
     );
     expect(screen.getByRole("button", { name: "Unconfirmed matches (70)" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Main queue (1)" })).toBeTruthy();
-    fireEvent.click(screen.getByText("About this view"));
-    expect(screen.getByText(/Clarification counts include all content states/)).toBeTruthy();
     view.rerender(
       filtersView(
         { ...filters, readiness: "ready" },
@@ -248,7 +243,6 @@ describe("PendingDiscoveryFilters", () => {
       ),
     );
     expect(screen.getByRole("button", { name: "Unconfirmed matches (23)" })).toBeTruthy();
-    expect(screen.getByText(/Clarification counts use the selected content state/)).toBeTruthy();
   });
 
   it("uses the clarification group count and preserves an explicit content scope", () => {
@@ -262,8 +256,6 @@ describe("PendingDiscoveryFilters", () => {
     const groups = screen.getByRole("group", { name: "Uncertainty groups" });
     fireEvent.click(within(groups).getByRole("button", { name: "Unconfirmed matches (7)" }));
     expect(changes).toEqual([{ ...filters, constraint: "needs_clarification" }]);
-    fireEvent.click(screen.getByText("About this view"));
-    expect(screen.getByText(/Clarification counts use the selected content state/)).toBeTruthy();
     fireEvent.click(screen.getByText(/^More filters/));
     const route = screen.getByRole("combobox", { name: "Constraint route" });
     expect(
@@ -287,7 +279,5 @@ describe("PendingDiscoveryFilters", () => {
     expect(
       screen.getByRole("button", { name: "Main queue (1)" }).getAttribute("aria-pressed"),
     ).toBe("false");
-    fireEvent.click(screen.getByText("About this view"));
-    expect(screen.getByText(/Clarification counts include all content states/)).toBeTruthy();
   });
 });

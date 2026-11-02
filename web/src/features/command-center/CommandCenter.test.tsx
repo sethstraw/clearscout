@@ -240,14 +240,28 @@ describe("CommandCenterPage", () => {
   it("states the ordering the revisit list actually uses", async () => {
     renderPage();
 
+    expect(await screen.findByText("Jobs marked investigate or monitor.")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "How Promising jobs to revisit is ordered" }),
+    );
     expect(
       await screen.findByText(
-        "Jobs marked investigate or monitor. Highest overall score first; jobs with no overall " +
-          "score come last, by employer then title.",
+        "Highest overall score first; jobs with no overall score come last, by employer then title.",
       ),
     ).toBeTruthy();
     expect(screen.getByText("62")).toBeTruthy();
     expect(screen.getByText("Integration Engineer")).toBeTruthy();
+  });
+
+  it("folds the pipeline chart and recent tasks into a closed Advanced section", async () => {
+    renderPage();
+
+    const heading = await screen.findByRole("heading", { name: "Recent tasks" });
+    const advanced = heading.closest("details")!;
+    expect(advanced.querySelector("summary")?.textContent).toBe("Advanced");
+    expect(advanced.hasAttribute("open")).toBe(false);
+    expect(within(advanced).getByRole("heading", { name: "Application pipeline" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Help: Home" })).toBeTruthy();
   });
 
   it("names the unit the first metric counts and what it leaves out", async () => {

@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 
+import { formatUsd } from "../../components/text";
 import { api } from "../client";
 import type { RequirementImportance, RequirementRulingBody } from "../client/types";
 import { useWorkspaceMutation } from "./records";
+import type { TaskCosts } from "./tasks";
 
 export function useMasterCv(workspaceId: string, versionId = "") {
   return useQuery({
@@ -58,14 +61,56 @@ export function useMasterCvImpact(workspaceId: string) {
 }
 
 export function useSaveMasterCv(workspaceId: string) {
-  return useWorkspaceMutation(workspaceId, (content: string) =>
-    api.saveMasterCv(workspaceId, content),
+  return useWorkspaceMutation(
+    workspaceId,
+    ({ content, confirmReread = false }: { content: string; confirmReread?: boolean }) =>
+      api.saveMasterCv(workspaceId, content, confirmReread),
   );
 }
 
+/** The key PaidAction prices a model re-read of a CV under. */
+export const MASTER_CV_REREAD = "master_cv.reread";
+
+/**
+ * A model re-read of a CV is not a background task, so its estimate comes from
+ * the master-CV route and is shaped the way PaidAction reads task costs.
+ */
+export function useMasterCvRereadCosts(workspaceId: string): TaskCosts {
+  const estimate = useQuery({
+    queryKey: ["master-cv-reread-estimate", workspaceId] as const,
+    queryFn: () => api.masterCvRereadEstimate(workspaceId),
+    enabled: Boolean(workspaceId),
+  });
+  return useMemo(() => {
+    const data = estimate.data;
+    const average = data?.average_usd;
+    const runs = data?.past_rereads ?? 0;
+    const each =
+      average === null || average === undefined
+        ? "no past re-read to estimate from"
+        : `about ${formatUsd(average, { places: 2 })} per re-read`;
+    const measured =
+      average === null || average === undefined
+        ? "No past re-read in this workspace to estimate from."
+        : `About ${formatUsd(average, { places: 2 })} per re-read, from ${runs} past re-read${runs === 1 ? "" : "s"}.`;
+    const cost = "One model re-read of the CV.";
+    return {
+      loaded: data !== undefined,
+      isError: estimate.isError,
+      isPaid: () => true,
+      cost: () => cost,
+      inline: () => each,
+      summary: () => `${cost} ${measured}`,
+      confirmation: () => `${measured} Charges may be higher.`,
+    };
+  }, [estimate.data, estimate.isError]);
+}
+
 export function useImportMasterCv(workspaceId: string) {
-  return useWorkspaceMutation(workspaceId, (file: File) =>
-    api.importMasterCv(workspaceId, file, true),
+  return useWorkspaceMutation(
+    workspaceId,
+    ({ file, confirmReread }: { file: File; confirmReread: boolean }) =>
+      api.importMasterCv(workspaceId, file, true, confirmReread),
   );
 }
 

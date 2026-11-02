@@ -166,11 +166,14 @@ export function useTaskCosts(workspaceId = ""): TaskCosts {
           ? `about ${formatUsd(each * count, { places: 2 })} total`
           : `about ${formatUsd(each, { places: 2 })} per ${row.unit}`;
       },
+      // The compact face sits beside the Paid pill, so it carries only the figure.
       summary: (taskType: string, count = 1) => {
-        const charge = byType.get(taskType)?.paid
-          ? "May incur provider charges."
-          : (byType.get(taskType)?.cost ?? "");
-        return [charge, priced(taskType, count)].filter(Boolean).join(" ");
+        if (!byType.get(taskType)?.paid) return byType.get(taskType)?.cost ?? "";
+        const row = rows.find((item) => item.task_type === taskType);
+        if (!row || row.per_unit_median === null || row.per_unit_median === undefined) {
+          return "cost shown before you run";
+        }
+        return `about ${formatUsd(Number(row.per_unit_median) * count, { places: 2 })}`;
       },
       confirmation: (taskType: string, count = 1) =>
         `${priced(taskType, count)} Charges may be higher and nothing stops the task once you confirm.`,

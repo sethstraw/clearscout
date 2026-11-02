@@ -1630,7 +1630,7 @@ export interface paths {
         put?: never;
         /**
          * Import Master Cv
-         * @description Upload, standardize when necessary, and version one master CV.
+         * @description Upload, standardize when confirmed, and version one master CV.
          */
         post: operations["import_master_cv_api_v1_workspaces__workspace_id__master_cv_import_post"];
         delete?: never;
@@ -1651,6 +1651,26 @@ export interface paths {
          * @description Group unanswered requirements across every posting's current evaluation.
          */
         get: operations["master_cv_requirement_gaps_api_v1_workspaces__workspace_id__master_cv_requirement_gaps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/master-cv/reread-estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report what past model re-reads of a CV cost
+         * @description Average the recorded cost of past model re-reads of a CV.
+         */
+        get: operations["master_cv_reread_estimate_api_v1_workspaces__workspace_id__master_cv_reread_estimate_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5513,6 +5533,11 @@ export interface components {
          * @description Proposed master CV Markdown, for an impact check or for an in-place edit.
          */
         MasterCvEdit: {
+            /**
+             * Confirm Reread
+             * @default false
+             */
+            confirm_reread: boolean;
             /** Content */
             content: string;
         };
@@ -5572,6 +5597,8 @@ export interface components {
             omitted_count: number;
             /** Orphaned Count */
             orphaned_count: number;
+            /** Reread Reason */
+            reread_reason?: string | null;
             /** Returned Count */
             returned_count: number;
             /** Unchanged Count */
@@ -5646,6 +5673,16 @@ export interface components {
             /** Requirement Text */
             requirement_text: string;
             state: components["schemas"]["SearchProposalState"];
+        };
+        /**
+         * MasterCvRereadEstimateResponse
+         * @description What re-reading a CV with the model has cost in this workspace.
+         */
+        MasterCvRereadEstimateResponse: {
+            /** Average Usd */
+            average_usd: number | null;
+            /** Past Rereads */
+            past_rereads: number;
         };
         /**
          * MasterCvVersionResponse
@@ -12383,6 +12420,15 @@ export interface operations {
                     "application/json": components["schemas"]["MasterCvEditResponse"];
                 };
             };
+            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -12594,6 +12640,7 @@ export interface operations {
             query: {
                 filename: string;
                 replace?: boolean;
+                confirm_reread?: boolean;
             };
             header?: never;
             path: {
@@ -12657,6 +12704,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequirementGapSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    master_cv_reread_estimate_api_v1_workspaces__workspace_id__master_cv_reread_estimate_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterCvRereadEstimateResponse"];
                 };
             };
             /** @description Validation Error */

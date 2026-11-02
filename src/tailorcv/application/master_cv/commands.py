@@ -12,12 +12,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from tailorcv.application.config import Settings
-from tailorcv.application.failures import NotFoundError, ValidationError
+from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
 from tailorcv.application.master_cv.cv import CvInventory, Entry, parse_cv
 from tailorcv.application.master_cv.intake import (
     CANONICAL_FILENAME,
+    SUPPORTED_SUFFIXES,
     MasterCvIntake,
     canonical_problem,
+    parse_canonical_source,
     publish_canonical_master_cv,
 )
 from tailorcv.application.master_cv.queries import MasterCvQueries
@@ -245,12 +247,26 @@ class MasterCvVersionCommands:
         api_key: str | None = None,
         prompter: Prompter | None = None,
         replace: bool = False,
+        confirm_reread: bool = True,
         actor: str = "local_user",
         origin: str = "api",
         correlation_id: str | None = None,
     ) -> MasterCvImportResponse:
-        """Prepare a source, register its immutable version, then publish its convenience copy."""
+        """Prepare a source, register its immutable version, then publish its convenience copy.
+
+        Without ``confirm_reread``, a source the model would have to re-read is refused.
+        """
         del mime_type
+        if (
+            not confirm_reread
+            and content
+            and Path(filename).suffix.lower() in SUPPORTED_SUFFIXES
+            and parse_canonical_source(Path(filename), content) is None
+        ):
+            raise ConflictError(
+                "This CV needs a paid re-read by the model before it can be imported. "
+                "Confirm the re-read and retry."
+            )
         prepared = self.intake.prepare(
             workspace_id=workspace_id,
             filename=filename,
@@ -306,18 +322,25 @@ class MasterCvVersionCommands:
         workspace_id: str,
         content: str,
         *,
+        confirm_reread: bool = False,
         actor: str = "local_user",
         origin: str = "api",
         correlation_id: str | None = None,
     ) -> MasterCvEditResponse:
-        """Validate edited Markdown and append it through the import command."""
+        """Validate edited Markdown and append it through the import command.
+
+        Text the canonical parser rejects reaches the model only with ``confirm_reread``.
+        """
         try:
             inventory = parse_cv(Path(CANONICAL_FILENAME), text=content)
         except CvParseError as error:
             raise ValidationError(f"The edited master CV no longer parses: {error}") from error
         problem = canonical_problem(inventory)
-        if problem:
-            raise ValidationError(f"The edited master CV cannot be saved: {problem}.")
+        if problem and not confirm_reread:
+            raise ConflictError(
+                f"The edited master CV needs a paid re-read, because {problem}. "
+                "Confirm the re-read and retry."
+            )
         existing = self.queries.versions(workspace_id)
         known = {item.id for item in existing}
         previous = existing[0].id if existing else None

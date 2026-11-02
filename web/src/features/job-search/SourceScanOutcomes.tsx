@@ -21,7 +21,7 @@ type OutcomeSort = SourceScanOutcomeOptions["sort"];
 type CandidateKind = components["schemas"]["FunnelCandidateKind"];
 type ScanOutcome = components["schemas"]["SourceScanOutcomeResponse"];
 
-const SOURCE_CONFIGURATION_PATH = "/settings?tab=search&section=sources";
+const SOURCE_CONFIGURATION_PATH = "/find?tab=boards";
 
 // A board lead records an input address; its URL may be a board or one posting.
 const LINK_LABEL = {

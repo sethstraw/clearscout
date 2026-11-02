@@ -88,7 +88,7 @@ export function markerRank(item: Pick<PendingDiscovery, "favorite" | "kept">): n
 }
 
 export const STAGING_PROVENANCE_LABELS: Record<StagingProvenance, string> = {
-  guided_campaign: "Guided campaign (paid)",
+  guided_campaign: "Web search",
   board_scan: "Board scan",
   person_added: "Added by you",
   unrecorded: "Origin not recorded",

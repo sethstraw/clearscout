@@ -2,13 +2,16 @@ import { useMemo, useState } from "react";
 
 import type { MasterCvCitationImpact, MasterCvImpact, MasterCvProposal } from "../../api/client";
 import {
+  MASTER_CV_REREAD,
   useMasterCv,
   useMasterCvDiff,
   useMasterCvImpact,
+  useMasterCvRereadCosts,
   useMasterCvVersions,
   useSaveMasterCv,
 } from "../../api/hooks";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
+import { PaidAction } from "../../components/PaidAction";
 import { unifiedDiff } from "../../components/diff";
 import { MarkdownView } from "../../components/MarkdownView";
 import { MarkdownWorkspace } from "../../components/MarkdownWorkspace";
@@ -112,6 +115,7 @@ export function MasterCvViewer({
   const [reviewed, setReviewed] = useState<string | null>(null);
   const impact = useMasterCvImpact(workspaceId);
   const save = useSaveMasterCv(workspaceId);
+  const rereadCosts = useMasterCvRereadCosts(workspaceId);
   const all = useMemo(() => versions.data ?? [], [versions.data]);
   const currentId = all.find((item) => item.is_current)?.id ?? all[0]?.id ?? "";
   const viewing = selected || currentId;
@@ -161,6 +165,19 @@ export function MasterCvViewer({
     setReviewed(null);
     impact.reset();
   };
+  const saveDraft = (content: string, confirmReread: boolean) =>
+    save.mutate(
+      { content, confirmReread },
+      {
+        onSuccess: (result) => {
+          if (!result.created) return;
+          // Back to whatever is current, or the viewer would sit
+          // on the version this save just superseded.
+          setSelected("");
+          closeEditor();
+        },
+      },
+    );
 
   return (
     <article className="panel master-cv-viewer">
@@ -301,25 +318,36 @@ export function MasterCvViewer({
                     This draft is identical to the current version, so saving would append nothing.
                   </p>
                 )}
+                {impact.data.reread_reason && (
+                  <p className="field-note">
+                    This draft needs a model re-read because {impact.data.reread_reason}. Fix that
+                    in the draft to save it without a charge, or re-read it.
+                  </p>
+                )}
                 <div className="button-row">
-                  <button
-                    className="button button--primary"
-                    disabled={save.isPending}
-                    onClick={() =>
-                      save.mutate(edit.draft, {
-                        onSuccess: (result) => {
-                          if (!result.created) return;
-                          // Back to whatever is current, or the viewer would sit
-                          // on the version this save just superseded.
-                          setSelected("");
-                          closeEditor();
-                        },
-                      })
-                    }
-                    type="button"
-                  >
-                    {save.isPending ? "Saving" : "Save as new version"}
-                  </button>
+                  {impact.data.reread_reason ? (
+                    <PaidAction
+                      confirmation={{
+                        title: "Re-read this CV with the model?",
+                        description: `This draft cannot be saved as written, because ${impact.data.reread_reason}. The model re-reads it into the canonical form, and the result is saved as a new version. ${rereadCosts.confirmation(MASTER_CV_REREAD)}`,
+                        confirmLabel: "Re-read and save",
+                      }}
+                      costs={rereadCosts}
+                      disabled={save.isPending}
+                      label={save.isPending ? "Re-reading" : "Re-read and save"}
+                      onAct={() => saveDraft(edit.draft, true)}
+                      taskType={MASTER_CV_REREAD}
+                    />
+                  ) : (
+                    <button
+                      className="button button--primary"
+                      disabled={save.isPending}
+                      onClick={() => saveDraft(edit.draft, false)}
+                      type="button"
+                    >
+                      {save.isPending ? "Saving" : "Save as new version"}
+                    </button>
+                  )}
                 </div>
                 {save.isError && <p className="field-error">{save.error.message}</p>}
               </>

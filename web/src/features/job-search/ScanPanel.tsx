@@ -1,8 +1,15 @@
 import { useId, useState } from "react";
 
-import { useEnqueueTask, useSources, useTask, useTaskCosts, useTasks } from "../../api/hooks";
+import {
+  useEnqueueTask,
+  useSearchParameters,
+  useSources,
+  useTask,
+  useTasks,
+} from "../../api/hooks";
 import { text } from "../../api/json";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
+import { Toggletip } from "../../components/Toggletip";
 import { DiscoveryTable, type Discovery } from "./DiscoveryTable";
 import { DiscoveryFunnelAudit } from "./DiscoveryFunnelAudit";
 import { SourceScanSchedule } from "./SourceScanSchedule";
@@ -43,16 +50,19 @@ function listingLapse(source: Source) {
 
 /** Scan saved boards and report their recorded outcomes. */
 export function ScanPanel({ workspaceId }: { workspaceId: string }) {
-  // The registry states the charge, so a free button does not assert its own.
-  const costs = useTaskCosts();
   const [sourceFilter, setSourceFilter] = useState("");
   const [sourceSelection, setSourceSelection] = useState<string[]>([]);
   const [selectionNotice, setSelectionNotice] = useState("");
   const [freshDetails, setFreshDetails] = useState(false);
   const detailHelpId = useId();
+  const bulkReasonId = useId();
   const scan = useEnqueueTask(workspaceId);
   const tasks = useTasks(workspaceId);
   const sources = useSources(workspaceId);
+  const parameters = useSearchParameters(workspaceId);
+  const titlesMissing =
+    parameters.isSuccess &&
+    !(parameters.data.parameters?.seniority?.target_titles ?? []).some((item) => item.title.trim());
   const latestScan = (tasks.data ?? [])
     .filter((item) => item.task_type === "source.scan")
     .slice()
@@ -105,6 +115,12 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
         : "Scanning sources";
   const scanDisabled = scan.isPending || sources.isLoading || sources.isError;
   const bulkScanDisabled = scanDisabled || enabledSources.length === 0;
+  const bulkScanReason =
+    sources.isSuccess && enabledSources.length === 0
+      ? sourceItems.length === 0
+        ? "Add a board below to scan."
+        : "Turn on sweeping for a board below to scan."
+      : "";
   const filteredSources = sourceItems.filter((item) =>
     item.name.toLowerCase().includes(sourceFilter.trim().toLowerCase()),
   );
@@ -152,22 +168,26 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
     <section className="panel scan-panel">
       <header>
         <div>
-          <h2>Scan for openings</h2>
+          <h2>Scan your boards</h2>
           <p>
-            Free scans read saved sources through board APIs or readable publisher pages.
-            Recognition does not guarantee permission or complete coverage; check each source's
-            outcome.
+            A scan reads your boards and sends titles that match yours to Review.{" "}
+            <Toggletip label="What a scan can read">
+              Scans read board APIs or readable publisher pages. A recognized board does not promise
+              permission or full coverage, so check each board&apos;s last read.
+            </Toggletip>
           </p>
-          <p>
-            Save at least one target title before scanning boards.{" "}
-            <a href="/settings?tab=search">Set up target titles</a>, or{" "}
-            <a href="?tab=pending">add an individual posting link</a> without target titles. No CV
-            or provider key is needed for either free route.
-          </p>
+          {titlesMissing && (
+            <p>
+              Scans need at least one target title.{" "}
+              <a href="/settings?tab=search">Add target titles in Settings &gt; Search</a>, or{" "}
+              <a href="?tab=review">add one posting link</a> instead.
+            </p>
+          )}
         </div>
         <div className="button-row">
-          <div>
+          <div data-tour="find-scan">
             <ConfirmedActionButton
+              ariaDescribedBy={bulkScanReason ? bulkReasonId : undefined}
               className="button button--primary"
               disabled={bulkScanDisabled}
               onConfirm={() => start()}
@@ -178,16 +198,21 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
                 details: scopeDetails(enabledSources),
               }}
             >
-              {scan.isPending ? "Submitting scan" : "Scan for openings"}
+              {scan.isPending ? "Submitting scan" : "Scan now"}
             </ConfirmedActionButton>
-            <small className="field-note">All enabled sources</small>
-            <small className="free-action">{costs.cost("source.scan")}</small>
+            {bulkScanReason ? (
+              <small className="field-note" id={bulkReasonId}>
+                {bulkScanReason}
+              </small>
+            ) : (
+              <small className="field-note">All enabled sources</small>
+            )}
           </div>
         </div>
       </header>
       <div className="panel-body">
         <details className="scan-options">
-          <summary>Posting detail options</summary>
+          <summary>Advanced</summary>
           <label>
             <input
               aria-describedby={detailHelpId}
@@ -198,11 +223,12 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
             Read fresh posting details for this scan
           </label>
           <p className="field-note" id={detailHelpId}>
-            Normally, recent continuation details can be reused for up to seven days. This option
-            reads eligible details again, including follow-up reads for this batch. Dismissed and
-            retired postings stay unread. Policy and pacing still apply. Detail timestamps show the
-            last successful read; a failed fresh read leaves retained content and its timestamp
-            unchanged. This option does not change your schedule.
+            Reads posting details again instead of reusing ones up to seven days old.{" "}
+            <Toggletip label="About fresh details">
+              Dismissed and retired postings stay unread. Policy and pacing still apply. A failed
+              fresh read leaves retained content and its timestamp unchanged. This option does not
+              change your schedule.
+            </Toggletip>
           </p>
         </details>
         {freshDetails && (
@@ -264,146 +290,142 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
             {progressLabel}: {progressCurrent}/{progressTotal}
           </p>
         )}
-        {!sources.isLoading && !sources.isError && (
+        {sources.isSuccess && sourceItems.length === 0 && (
+          <p>
+            No boards yet. <a href="#source-add-heading">Add a board</a> below, then scan it.
+          </p>
+        )}
+        {sources.isSuccess && sourceItems.length > 0 && (
           <details>
             <summary>
               Sources ({enabledSources.length} enabled of {sourceItems.length}): scan all, selected,
               or one
             </summary>
-            {sourceItems.length > 0 ? (
-              <>
-                <small className="free-action">{costs.cost("source.scan")}</small>
-                <section className="toolbar" aria-label="Scan source filters">
-                  <label className="search-field">
-                    <span>Search sources</span>
-                    <input
-                      onChange={(event) => {
-                        setSourceFilter(event.target.value);
-                        if (sourceSelection.length > 0) {
-                          setSourceSelection([]);
-                          setSelectionNotice(
-                            "Selection cleared because the source filter changed.",
-                          );
-                        }
-                      }}
-                      placeholder="Source name"
-                      type="search"
-                      value={sourceFilter}
-                    />
-                  </label>
-                </section>
-                <div className="button-row" aria-label="Scan source selection">
-                  <button
-                    className="button button--quiet"
-                    disabled={filteredSources.length === 0}
-                    onClick={() => {
-                      setSourceSelection(filteredSources.map((source) => source.id));
-                      setSelectionNotice("");
-                    }}
-                    type="button"
-                  >
-                    Select displayed sources
-                  </button>
-                  <button
-                    className="button button--quiet"
-                    disabled={selectedSources.length === 0}
-                    onClick={() => {
+            <section className="toolbar" aria-label="Scan source filters">
+              <label className="search-field">
+                <span>Search sources</span>
+                <input
+                  onChange={(event) => {
+                    setSourceFilter(event.target.value);
+                    if (sourceSelection.length > 0) {
                       setSourceSelection([]);
-                      setSelectionNotice("");
-                    }}
-                    type="button"
-                  >
-                    Clear selection
-                  </button>
-                  <ConfirmedActionButton
-                    className="button button--primary"
-                    disabled={scanDisabled || selectedSources.length === 0}
-                    onConfirm={() => start(selectedSources.map((source) => source.id))}
-                    options={{
-                      title: "Scan the selected sources?",
-                      description: `Reads exactly ${selectedSources.length} selected source${selectedSources.length === 1 ? "" : "s"}, including any excluded from bulk scans. Complete board reads can mark linked openings no longer listed; bounded aggregator reads cannot. Boards already being read are skipped.`,
-                      confirmLabel: "Scan selected boards",
-                      details: scopeDetails(selectedSources),
-                    }}
-                  >
-                    Scan selected sources
-                  </ConfirmedActionButton>
-                </div>
-                <p id="scan-source-selection" className="field-note" aria-live="polite">
-                  {selectedSources.length} source{selectedSources.length === 1 ? "" : "s"} selected.
-                </p>
-                <p className="field-note">
-                  Selection applies to this scan only; it does not change which sources are enabled.
-                </p>
-                {selectionNotice && <p role="status">{selectionNotice}</p>}
-                {filteredSources.length > 0 ? (
-                  <div className="table-wrap">
-                    <table aria-label="Scan sources" className="data-table">
-                      <thead>
-                        <tr>
-                          <th scope="col">Select</th>
-                          <th scope="col">Source</th>
-                          <th scope="col">Included in bulk scans</th>
-                          <th scope="col">What it has produced</th>
-                          <th scope="col">Reading condition</th>
-                          <th scope="col">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredSources.map((source) => (
-                          <tr key={source.id}>
-                            <td>
-                              <input
-                                aria-label={`Select ${source.name} for scan`}
-                                aria-describedby="scan-source-selection"
-                                checked={sourceSelection.includes(source.id)}
-                                onChange={(event) => {
-                                  setSourceSelection((current) =>
-                                    event.target.checked
-                                      ? [...current, source.id]
-                                      : current.filter((id) => id !== source.id),
-                                  );
-                                  setSelectionNotice("");
-                                }}
-                                type="checkbox"
-                              />
-                            </td>
-                            <th scope="row">{source.name}</th>
-                            <td>{source.enabled ? "Yes" : "No"}</td>
-                            <td>
-                              <span>{yieldNote(source)}</span>
-                              {listingLapse(source)}
-                            </td>
-                            <td>{source.terms.condition || "No reading condition recorded"}</td>
-                            <td>
-                              <ConfirmedActionButton
-                                ariaLabel={`Scan ${source.name}`}
-                                className="button button--quiet"
-                                disabled={scanDisabled}
-                                onConfirm={() => start([source.id])}
-                                options={{
-                                  title: `Scan ${source.name}?`,
-                                  description: source.terms.condition
-                                    ? `Reads ${source.name} alone, under its reading condition: ${source.terms.condition.replace(/\.+$/, "")}. A complete board read can mark linked openings no longer listed; a bounded aggregator read cannot. Boards already being read are skipped.`
-                                    : `Reads ${source.name} alone. No reading condition is recorded. Boards already being read are skipped.`,
-                                  confirmLabel: "Scan board",
-                                  details: scopeDetails([source]),
-                                }}
-                              >
-                                Scan
-                              </ConfirmedActionButton>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p>No source matches that name.</p>
-                )}
-              </>
+                      setSelectionNotice("Selection cleared because the source filter changed.");
+                    }
+                  }}
+                  placeholder="Source name"
+                  type="search"
+                  value={sourceFilter}
+                />
+              </label>
+            </section>
+            <div className="button-row" aria-label="Scan source selection">
+              <button
+                className="button button--quiet"
+                disabled={filteredSources.length === 0}
+                onClick={() => {
+                  setSourceSelection(filteredSources.map((source) => source.id));
+                  setSelectionNotice("");
+                }}
+                type="button"
+              >
+                Select displayed sources
+              </button>
+              <button
+                className="button button--quiet"
+                disabled={selectedSources.length === 0}
+                onClick={() => {
+                  setSourceSelection([]);
+                  setSelectionNotice("");
+                }}
+                type="button"
+              >
+                Clear selection
+              </button>
+              <ConfirmedActionButton
+                className="button button--primary"
+                disabled={scanDisabled || selectedSources.length === 0}
+                onConfirm={() => start(selectedSources.map((source) => source.id))}
+                options={{
+                  title: "Scan the selected sources?",
+                  description: `Reads exactly ${selectedSources.length} selected source${selectedSources.length === 1 ? "" : "s"}, including any excluded from bulk scans. Complete board reads can mark linked openings no longer listed; bounded aggregator reads cannot. Boards already being read are skipped.`,
+                  confirmLabel: "Scan selected boards",
+                  details: scopeDetails(selectedSources),
+                }}
+              >
+                Scan selected sources
+              </ConfirmedActionButton>
+            </div>
+            <p id="scan-source-selection" className="field-note" aria-live="polite">
+              {selectedSources.length} source{selectedSources.length === 1 ? "" : "s"} selected.
+            </p>
+            <p className="field-note">
+              Selection applies to this scan only; it does not change which sources are enabled.
+            </p>
+            {selectionNotice && <p role="status">{selectionNotice}</p>}
+            {filteredSources.length > 0 ? (
+              <div className="table-wrap">
+                <table aria-label="Scan sources" className="data-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Select</th>
+                      <th scope="col">Source</th>
+                      <th scope="col">Included in bulk scans</th>
+                      <th scope="col">What it has produced</th>
+                      <th scope="col">Reading condition</th>
+                      <th scope="col">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSources.map((source) => (
+                      <tr key={source.id}>
+                        <td>
+                          <input
+                            aria-label={`Select ${source.name} for scan`}
+                            aria-describedby="scan-source-selection"
+                            checked={sourceSelection.includes(source.id)}
+                            onChange={(event) => {
+                              setSourceSelection((current) =>
+                                event.target.checked
+                                  ? [...current, source.id]
+                                  : current.filter((id) => id !== source.id),
+                              );
+                              setSelectionNotice("");
+                            }}
+                            type="checkbox"
+                          />
+                        </td>
+                        <th scope="row">{source.name}</th>
+                        <td>{source.enabled ? "Yes" : "No"}</td>
+                        <td>
+                          <span>{yieldNote(source)}</span>
+                          {listingLapse(source)}
+                        </td>
+                        <td>{source.terms.condition || "No reading condition recorded"}</td>
+                        <td>
+                          <ConfirmedActionButton
+                            ariaLabel={`Scan ${source.name}`}
+                            className="button button--quiet"
+                            disabled={scanDisabled}
+                            onConfirm={() => start([source.id])}
+                            options={{
+                              title: `Scan ${source.name}?`,
+                              description: source.terms.condition
+                                ? `Reads ${source.name} alone, under its reading condition: ${source.terms.condition.replace(/\.+$/, "")}. A complete board read can mark linked openings no longer listed; a bounded aggregator read cannot. Boards already being read are skipped.`
+                                : `Reads ${source.name} alone. No reading condition is recorded. Boards already being read are skipped.`,
+                              confirmLabel: "Scan board",
+                              details: scopeDetails([source]),
+                            }}
+                          >
+                            Scan
+                          </ConfirmedActionButton>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
-              <p>No sources. Add one in Settings before scanning.</p>
+              <p>No source matches that name.</p>
             )}
           </details>
         )}
@@ -463,40 +485,6 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
                 retired between runs.
               </p>
             )}
-            {withdrawn.length > 0 && (
-              <details className="scan-withdrawn">
-                <summary>
-                  {withdrawn.length} opening{withdrawn.length === 1 ? " is" : "s are"} no longer
-                  listed and stayed in the queue marked withdrawn
-                </summary>
-                <div className="table-wrap">
-                  <table aria-label="Openings no longer listed" className="data-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Role</th>
-                        <th scope="col">Employer</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {withdrawn.map((item, index) => (
-                        <tr key={`${item.employer}-${item.title}-${index}`}>
-                          <th scope="row">{item.title}</th>
-                          <td>{item.employer}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
-            )}
-            {withdrawnOnRead > 0 && (
-              <p className="field-note">
-                Reading posting content during this run found {withdrawnOnRead} posting
-                {withdrawnOnRead === 1 ? "" : "s"} closed by the publisher;{" "}
-                {withdrawnOnRead === 1 ? "that row is" : "those rows are"} marked withdrawn in the
-                queue.
-              </p>
-            )}
             {stagedCount > 0 && (
               <section aria-labelledby="scan-next-decision">
                 <h3 id="scan-next-decision">New candidate records</h3>
@@ -505,8 +493,8 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
                   or screened-out view.
                 </p>
                 <p>
-                  <a className="button button--primary" href="?tab=pending">
-                    Review pending discoveries
+                  <a className="button button--primary" href="?tab=review">
+                    Go to Review
                   </a>
                 </p>
                 {discoveries.length > 0 && (
@@ -518,24 +506,59 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
                         : ` (${discoveries.length} of ${stagedCount} shown)`}
                     </summary>
                     <p className="field-note">
-                      These are durable publisher outcomes, including rows routed to the
-                      screened-out view by deterministic settings. No row is silently dismissed or
-                      aged out.
+                      Includes rows your settings screened out. No row is dismissed silently.
                     </p>
                     <DiscoveryTable discoveries={discoveries} />
                   </details>
                 )}
               </section>
             )}
-            <DiscoveryFunnelAudit value={progress.funnel} />
-            <p>
-              <a
-                className="button button--quiet"
-                href={`?tab=refusals&scan=${encodeURIComponent(scanTask.data.id)}#screened-candidates`}
-              >
-                Review the screening outcome ledger
-              </a>
-            </p>
+            <details className="scan-options">
+              <summary>Scan audit</summary>
+              {withdrawn.length > 0 && (
+                <details className="scan-withdrawn">
+                  <summary>
+                    {withdrawn.length} opening{withdrawn.length === 1 ? " is" : "s are"} no longer
+                    listed and stayed in the queue marked withdrawn
+                  </summary>
+                  <div className="table-wrap">
+                    <table aria-label="Openings no longer listed" className="data-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Role</th>
+                          <th scope="col">Employer</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {withdrawn.map((item, index) => (
+                          <tr key={`${item.employer}-${item.title}-${index}`}>
+                            <th scope="row">{item.title}</th>
+                            <td>{item.employer}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
+              {withdrawnOnRead > 0 && (
+                <p className="field-note">
+                  Reading posting content during this run found {withdrawnOnRead} posting
+                  {withdrawnOnRead === 1 ? "" : "s"} closed by the publisher;{" "}
+                  {withdrawnOnRead === 1 ? "that row is" : "those rows are"} marked withdrawn in the
+                  queue.
+                </p>
+              )}
+              <DiscoveryFunnelAudit value={progress.funnel} />
+              <p>
+                <a
+                  className="button button--quiet"
+                  href={`?tab=boards&scan=${encodeURIComponent(scanTask.data.id)}#screened-candidates`}
+                >
+                  Open this scan in History
+                </a>
+              </p>
+            </details>
           </>
         )}
       </div>

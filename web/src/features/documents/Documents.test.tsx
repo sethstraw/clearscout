@@ -48,4 +48,21 @@ describe("DocumentsPage", () => {
     expect(await screen.findByText(/No tailored documents yet/)).toBeTruthy();
     expect(screen.queryByText("Staff Data Platform Lead")).toBeNull();
   });
+
+  it("keeps imported files with no job reachable in a closed fold", async () => {
+    renderPage([
+      RESUME,
+      documentArtifact({
+        id: "artifact-orphan",
+        related_entity_type: null,
+        related_entity_id: null,
+        provenance: { stored_path: "earlier-tool/cover-letter.md" },
+      }),
+    ]);
+
+    const summary = await screen.findByText(/Imported files not tied to a job \(1\)/);
+    const fold = summary.closest("details");
+    expect(fold?.open).toBe(false);
+    expect(fold?.contains(screen.getByRole("table", { name: /^Imported files from / }))).toBe(true);
+  });
 });
