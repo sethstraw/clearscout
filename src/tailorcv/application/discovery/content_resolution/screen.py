@@ -26,7 +26,7 @@ from tailorcv.application.discovery.screening import (
     stated_places,
 )
 from tailorcv.application.tailoring import fit
-from tailorcv.application.workspaces import SearchParametersService
+from tailorcv.application.workspaces.parameters import SearchParametersService
 from tailorcv.domain.arrangement_grammar import remote_perk_or_culture
 from tailorcv.domain.artifacts import PostingSource
 from tailorcv.domain.identity import mentions, normalize_text

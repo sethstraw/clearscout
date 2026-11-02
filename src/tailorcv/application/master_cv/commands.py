@@ -17,6 +17,7 @@ from tailorcv.application.master_cv.cv import CvInventory, Entry, parse_cv
 from tailorcv.application.master_cv.intake import (
     CANONICAL_FILENAME,
     MasterCvIntake,
+    canonical_problem,
     publish_canonical_master_cv,
 )
 from tailorcv.application.master_cv.queries import MasterCvQueries
@@ -311,9 +312,12 @@ class MasterCvVersionCommands:
     ) -> MasterCvEditResponse:
         """Validate edited Markdown and append it through the import command."""
         try:
-            parse_cv(Path(CANONICAL_FILENAME), text=content)
+            inventory = parse_cv(Path(CANONICAL_FILENAME), text=content)
         except CvParseError as error:
             raise ValidationError(f"The edited master CV no longer parses: {error}") from error
+        problem = canonical_problem(inventory)
+        if problem:
+            raise ValidationError(f"The edited master CV cannot be saved: {problem}.")
         existing = self.queries.versions(workspace_id)
         known = {item.id for item in existing}
         previous = existing[0].id if existing else None

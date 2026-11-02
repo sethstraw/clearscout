@@ -40,11 +40,16 @@ def parse_canonical_source(source: Path, content: bytes) -> CvInventory | None:
         inventory = parse_cv(source, text=content.decode("utf-8"))
     except (UnicodeDecodeError, CvParseError):
         return None
+    return None if canonical_problem(inventory) else inventory
+
+
+def canonical_problem(inventory: CvInventory) -> str | None:
+    """Return why a parsed CV falls short of the canonical contract, or None."""
     if not any(role.dates for role in inventory.roles):
-        return None
+        return "it has no dated role"
     if any(LIST_MARKER.match(entry.text) for entry in inventory.entries):
-        return None
-    return inventory
+        return "an entry starts with a list marker, so list items ran together"
+    return None
 
 
 def publish_canonical_master_cv(

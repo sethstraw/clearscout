@@ -26,12 +26,16 @@ from tailorcv.application.discovery.scan_staging import (
 from tailorcv.application.discovery.scan_sweep.listing_audit import record_source
 from tailorcv.application.discovery.scan_sweep.models import BoardReadOutcome, SweepBoard
 from tailorcv.application.discovery.scan_sweep.outcome import failed_read_reason
-from tailorcv.application.discovery.source_continuation import (
+from tailorcv.application.discovery.source_continuation.commands import (
     FrontierPersistResult,
-    ListedPostingCredit,
     SourceContinuationCommands,
-    completed_frontier_urls,
+)
+from tailorcv.application.discovery.source_continuation.publisher import (
     drained_publisher_listing_coverage,
+)
+from tailorcv.application.discovery.source_continuation.targets import (
+    ListedPostingCredit,
+    completed_frontier_urls,
 )
 from tailorcv.application.discovery.source_lifecycle import source_read_address
 from tailorcv.application.discovery.source_reading import (

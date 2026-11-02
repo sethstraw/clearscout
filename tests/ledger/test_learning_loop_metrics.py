@@ -9,7 +9,8 @@ from sqlalchemy import select
 
 from tailorcv.application.discovery.scan_queries import SourceScanQueries
 from tailorcv.application.failures import NotFoundError
-from tailorcv.application.workspaces import LearningLoopMetricsService, WorkspaceService
+from tailorcv.application.workspaces import WorkspaceService
+from tailorcv.application.workspaces.metrics import LearningLoopMetricsService
 from tailorcv.domain import SearchProposalState, new_id, utc_now
 from tailorcv.domain.identity import normalize_text
 from tailorcv.domain.statements import derived_proposal_identity

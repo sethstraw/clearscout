@@ -14,7 +14,7 @@ from tailorcv.application.discovery.funnel_audit import (
     FunnelStage,
 )
 from tailorcv.application.discovery.scan_queries.workspace import require_workspace_in
-from tailorcv.application.discovery.source_continuation import continuation_task_ids
+from tailorcv.application.discovery.source_continuation.family import continuation_task_ids
 from tailorcv.application.failures import NotFoundError, ValidationError
 from tailorcv.application.job_search.models import (
     FunnelScreeningFindingResponse,

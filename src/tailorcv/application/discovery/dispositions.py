@@ -19,7 +19,7 @@ from tailorcv.application.discovery.pending import (
     source_employer_names,
     transfer_pending_closing_date,
 )
-from tailorcv.application.discovery.scan_staging import staged_by_person
+from tailorcv.application.discovery.scan_staging.reasons import staged_by_person
 from tailorcv.application.discovery.screening import ScreeningStanding, screen_discovery
 from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
 from tailorcv.application.job_search.models import (

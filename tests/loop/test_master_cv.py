@@ -601,6 +601,28 @@ def test_an_edit_appends_a_version_and_leaves_the_earlier_one_readable(
         service.save_edit(str(workspace.id), "not a CV any more\n")
 
 
+def test_an_edit_the_canonical_parser_rejects_is_refused_without_a_model(
+    durable_database: Database, tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = _workspace(durable_database, tmp_path)
+    service = MasterCvService(
+        durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
+    )
+    service.import_source(
+        workspace_id=str(workspace.id), filename="CV.md", content=master_cv.read_bytes()
+    )
+    monkeypatch.setattr(
+        "tailorcv.application.tailoring.pipeline.import_cv",
+        lambda *args, **kwargs: pytest.fail("saving an edit must not call a provider"),
+    )
+    undated = "# JANE Q. EXAMPLE\n\n## Summary\n\nJane Example builds data platforms.\n"
+
+    with pytest.raises(ValidationError, match="no dated role"):
+        service.save_edit(str(workspace.id), undated)
+
+    assert len(service.versions(str(workspace.id))) == 1
+
+
 def test_saving_identical_content_writes_no_new_version(
     durable_database: Database, tmp_path: Path, master_cv: Path
 ) -> None:

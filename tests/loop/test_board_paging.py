@@ -90,6 +90,37 @@ def test_workday_listings_are_read_and_paged_without_a_network(locale: str) -> N
     assert requests[0][0] == ("https://example.wd1.myworkdayjobs.com/wday/cxs/example/Careers/jobs")
 
 
+def test_a_workday_read_ending_on_an_empty_page_records_one_listing_page() -> None:
+    offsets: list[int] = []
+
+    class ScriptedWorkday(BoardApiFetcher):
+        def post_json(self, url: str, body: dict[str, Any]) -> Any:
+            offset = int(body["offset"])
+            offsets.append(offset)
+            if offset:
+                return {"total": 0, "jobPostings": []}
+            return {
+                "total": 20,
+                "jobPostings": [
+                    {
+                        "title": f"Role {index}",
+                        "externalPath": f"/job/Remote/Role-{index}_R-{index}",
+                        "locationsText": "Remote, Canada",
+                        "bulletFields": [f"R-{index}"],
+                    }
+                    for index in range(20)
+                ],
+            }
+
+    read = ScriptedWorkday().listings("Example", "https://example.wd1.myworkdayjobs.com/Careers")
+
+    assert read is not None
+    assert offsets == [0, 20]
+    assert read.complete is True
+    assert len(read.listings) == 20
+    assert read.listing_pages == 1
+
+
 @pytest.mark.parametrize(
     ("root", "endpoint", "shared_host"),
     [
@@ -3253,6 +3284,28 @@ def test_teamtailor_pages_until_the_complete_full_body_feed(host: str) -> None:
     assert read.complete is True
     assert read.raw_count == teamtailor.TEAMTAILOR_PAGE + 1
     assert read.listings[-1].published_description == "Own clinical workflows 0."
+
+
+def test_a_teamtailor_read_ending_on_an_empty_page_records_one_listing_page() -> None:
+    host = "alpha.teamtailor.com"
+
+    class ScriptedTeamtailor(BoardApiFetcher):
+        def __init__(self) -> None:
+            pass
+
+        def get_feed(self, url: str) -> str:
+            if "offset=0" in url:
+                return _teamtailor_feed(url, host)
+            return (
+                '<?xml version="1.0"?><rss xmlns:tt="https://teamtailor.com/locations">'
+                "<channel></channel></rss>"
+            )
+
+    read = ScriptedTeamtailor().listings("Alpha", f"https://{host}/jobs")
+
+    assert read.complete is True
+    assert read.raw_count == teamtailor.TEAMTAILOR_PAGE
+    assert read.listing_pages == 1
 
 
 _TEAMTAILOR_FOOTER = '<a href="https://www.teamtailor.com/en?utm_source=career_site">Teamtailor</a>'

@@ -36,7 +36,7 @@ from tailorcv.application.discovery.content_resolution.targets import (
 from tailorcv.application.discovery.dispositions import BODY_REFUSAL_CATEGORIES
 from tailorcv.application.discovery.pending import corrected_title_ids, latest_disposition_statement
 from tailorcv.application.discovery.posting_text import lists_many_postings
-from tailorcv.application.discovery.scan_staging import staged_by_person
+from tailorcv.application.discovery.scan_staging.reasons import staged_by_person
 from tailorcv.application.discovery.source_lifecycle import source_read_address
 from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
 from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError

@@ -14,7 +14,7 @@ from tailorcv.application.discovery.pending import (
     visible_pending_discovery_filters,
 )
 from tailorcv.application.discovery.scan_queries.workspace import require_workspace_in
-from tailorcv.application.discovery.source_continuation import (
+from tailorcv.application.discovery.source_continuation.family import (
     LATEST_SCAN_FIRST,
     continuation_task_ids,
 )

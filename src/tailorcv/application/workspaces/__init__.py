@@ -17,7 +17,6 @@ from tailorcv.application.workspaces.layout import (
     prepare_layout,
     stage_layout,
 )
-from tailorcv.application.workspaces.metrics import LearningLoopMetricsService
 from tailorcv.application.workspaces.metrics_models import (
     LearningLoopMetricsResponse,
     LearningLoopSignal,
@@ -60,7 +59,6 @@ __all__ = [
     "GuardrailVersionResponse",
     "GuidedCampaignConfigurationResponse",
     "LearningLoopMetricsResponse",
-    "LearningLoopMetricsService",
     "LearningLoopPolicySavedResponse",
     "LearningLoopPolicyService",
     "LearningLoopPolicyStateResponse",

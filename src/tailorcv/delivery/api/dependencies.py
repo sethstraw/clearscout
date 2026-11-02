@@ -30,11 +30,11 @@ from tailorcv.application.tailoring.workflows.evaluations import EvaluationWorkf
 from tailorcv.application.tasks import TaskQueueService
 from tailorcv.application.workspaces import (
     GuardrailService,
-    LearningLoopMetricsService,
     LearningLoopPolicyService,
     SearchParametersService,
     WorkspaceService,
 )
+from tailorcv.application.workspaces.metrics import LearningLoopMetricsService
 from tailorcv.application.workspaces.prompt_library import PromptLibraryService
 from tailorcv.application.workspaces.records import WorkspaceRecords
 from tailorcv.application.workspaces.scan_schedule import ScanScheduleService

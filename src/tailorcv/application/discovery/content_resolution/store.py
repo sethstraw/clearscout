@@ -55,7 +55,7 @@ from tailorcv.application.discovery.screening import ScreeningCode
 from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
 from tailorcv.application.failures import ConflictError, ValidationError
 from tailorcv.application.tasks import TaskContext
-from tailorcv.application.workspaces import SearchParametersService
+from tailorcv.application.workspaces.parameters import SearchParametersService
 from tailorcv.application.workspaces.records.access import audit_columns
 from tailorcv.domain import ArtifactLogicalType, PostingIdentityStatus, PostingStatus, new_id
 from tailorcv.domain.identity import normalize_text

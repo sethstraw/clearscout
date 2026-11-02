@@ -559,14 +559,6 @@ name = "content resolution imports flow from the service down to read results"
 type = "layers"
 containers = ["tailorcv.application.discovery.content_resolution"]
 layers = ["service", "store | reads", "retained", "targets | screen | current", "results"]
-# The facade re-exports these layers; cross-capability chains re-enter through it.
-ignore_imports = [
-    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.current",
-    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.results",
-    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.screen",
-    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.service",
-    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.targets",
-]
 
 [[tool.importlinter.contracts]]
 name = "scan queries package imports flow from the service down to wording"
@@ -580,17 +572,6 @@ layers = [
     "projection",
     "wording | workspace | board_holders",
 ]
-# The facade re-exports these layers; cross-capability chains re-enter through it.
-ignore_imports = [
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.board_holders",
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.history",
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.outcomes",
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.projection",
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.queue",
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.service",
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.wording",
-    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.workspace",
-]
 
 [[tool.importlinter.contracts]]
 name = "scan staging imports flow from the service down to matching and reasons"
@@ -603,14 +584,6 @@ layers = [
     "families | publisher_facts",
     "matching | reasons",
 ]
-# The facade re-exports these layers; cross-capability chains re-enter through it.
-ignore_imports = [
-    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.absence",
-    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.found",
-    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.publisher_facts",
-    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.reasons",
-    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.service",
-]
 
 [[tool.importlinter.contracts]]
 name = "scan sweep package imports flow from the sweep down to board models"
@@ -621,13 +594,6 @@ layers = [
     "recording | rescreen",
     "content_evidence | listing_audit | listing_screen | outcome | workday",
     "models",
-]
-# The facade re-exports these layers; cross-capability chains re-enter through it.
-ignore_imports = [
-    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.models",
-    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.recording",
-    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.rescreen",
-    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.sweep",
 ]
 
 [[tool.importlinter.contracts]]
@@ -642,17 +608,6 @@ layers = [
     "alignerr | frontier_refresh | publisher_targets | workday",
     "chunk | detail_checkpoints | phenom | rescreen | targets",
     "family | limits",
-]
-# The facade re-exports these layers; cross-capability chains re-enter through it.
-ignore_imports = [
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.commands",
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.coverage",
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.family",
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.handler",
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.limits",
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.publisher",
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.rescreen",
-    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.targets",
 ]
 
 [tool.deptry]

@@ -908,6 +908,31 @@ def test_a_one_listing_page_alignerr_read_withdraws_on_its_first_miss(
     assert _withdrawn_urls(durable_database) == {stale}
 
 
+def test_a_one_page_search_closed_by_a_continuation_counts_one_listing_page(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    site = _SearchSite("alignerr")
+    site.pages, site.totals = [[1, 2], []], [2, 2]
+    site.stop_after_pages = 1
+    source_id = _source(durable_database, workspace_id, "Acme", site.root)
+    state_target_titles(durable_database, workspace_id, "Data Analyst")
+    stale = site.detail_url(9)
+    _stage_known_rows(durable_database, workspace_id, source_id, (stale,))
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    with durable_database.session() as session:
+        assert not session.scalars(select(SourceScan)).one().complete
+    site.stopped = False
+    while worker.run_once():
+        pass
+    with durable_database.session() as session:
+        scan = session.scalars(select(SourceScan)).one()
+        assert scan.complete
+        assert scan.listing_pages == 1
+    assert _withdrawn_urls(durable_database) == {stale}
+
+
 @pytest.mark.parametrize("failed_detail", [False, True])
 def test_alignerr_body_results_advance_the_retained_metadata_outcome(
     durable_database: Database,

@@ -92,3 +92,10 @@ def test_master_cv_is_checked_for_impact_and_then_edited_in_place(
         )
         assert again.json()["created"] is False
         assert len(client.get(f"/api/v1/workspaces/{workspace_id}/master-cv/versions").json()) == 2
+
+        refused = client.post(
+            f"/api/v1/workspaces/{workspace_id}/master-cv",
+            json={"content": "# JANE Q. EXAMPLE\n\n## Summary\n\nBuilds data platforms.\n"},
+        )
+        assert refused.status_code == 422
+        assert "no dated role" in refused.text
