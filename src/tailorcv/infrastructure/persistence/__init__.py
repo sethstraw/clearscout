@@ -1,0 +1,1 @@
+"""Replaceable relational persistence adapters."""
