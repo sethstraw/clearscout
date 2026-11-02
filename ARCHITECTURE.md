@@ -7,9 +7,71 @@ model. This file explains how the components hold those rules together: package
 direction, durable state, generated contracts, provider calls, prompts, and
 artifacts.
 
+## Why it is shaped this way
+
+Anti-fabrication is the product. A tailored resume is only useful if every line
+in it is true, so the program makes that checkable. The model may cite only the
+evidence identifiers that exist for the run. Titles, employers, dates,
+education, and publication citations are copied verbatim by the program, never
+written by the model. The model drafts and critiques. Selection, stage order,
+and every check stay in application code.
+
+It runs on one computer. The database, the files, and the queue are local, and
+the only things that leave are the provider calls a person starts and the reads
+published policy allows. Published policy decides reads: a board's API terms
+and robots.txt, with one exemption for a posting URL a person enters.
+
 There is no autonomous agent here. The workflows are fixed. Python decides which
 stage runs next, and the model is used for bounded interpretation and writing.
-Assembly, checks, reporting, and writing files are all ordinary code.
+Assembly, checks, reporting, and writing files are all ordinary code. That is
+the right default for any tool whose output someone signs their name to. An
+agent that chooses its own path also chooses what it can skip.
+
+The interesting parts, if you only read a few sections:
+
+- [Two readings of one posting, reported apart](#two-readings-of-one-posting-reported-apart):
+  a deterministic reader runs beside the model and disagreements are shown, not
+  resolved.
+- [The truth boundary](#the-truth-boundary) and
+  [Review does not widen the boundary](#review-does-not-widen-the-boundary):
+  how a claim is tied to evidence and kept there through approval.
+- [Identifying a board is not scraping a page](#identifying-a-board-is-not-scraping-a-page):
+  platform adapters, the fetch policy, and the robots exemption.
+- [What reaches the queue, and what leaves it](#what-reaches-the-queue-and-what-leaves-it):
+  admission on published facts only, and withdrawal only after a complete read.
+- [Hosted search proposes; local policy decides](#hosted-search-proposes-local-policy-decides):
+  paid search whose bounds size the plan but never stop approved work.
+- [Untrusted input](#untrusted-input) and
+  [Why the prompt suite is shaped this way](#why-the-prompt-suite-is-shaped-this-way):
+  prompts as versioned files, one declared data boundary, and invariant regions
+  an override cannot drop.
+
+## The pipeline
+
+In a workspace, each step of the loop is a queued task. A task marked paid can
+reach a billing provider; every other step is code and policy-permitted reads.
+
+```mermaid
+flowchart TD
+    vocab["search.vocabulary (paid)"] --> scan["source.scan and source.continue"]
+    scan --> screen{"deterministic screening at staging"}
+    campaign["search.guided_campaign (paid)"] --> screen
+    screen -->|"held out on a published fact"| heldout["dismissed by rule, restorable"]
+    screen -->|admitted| pending["pending queue"]
+    pending <--> review["discovery.relevance_review (paid)"]
+    pending --> evaluate["discovery.evaluate (paid): extract, read by rule, match"]
+    evaluate --> job["job ledger: posting and evaluation"]
+    job --> tailor["workflow.tailor (paid): select, draft, verify, critic"]
+    tailor --> package["review package"]
+    package --> approve["workflow.approve (paid unless reused)"]
+```
+
+_Task names and the paid flag are `TASK_SPECS` in `application/tasks/registry.py`;
+staging and screening are `application/discovery/scan_staging/` and
+`application/discovery/screening/`._
+
+The file-based `screen` and `run` commands run the evaluation and tailoring
+steps directly, without the queue.
 
 | Step    | Main code                                  | Purpose                                                     |
 | ------- | ------------------------------------------ | ----------------------------------------------------------- |
@@ -101,17 +163,25 @@ document that model judges favor output like their own.
 
 ## Durable application architecture
 
-The bounded pipeline sits inside a layered package map:
+The bounded pipeline sits inside a layered package map. An arrow is an import
+a layer may make. Every layer may import `shared`, which imports no other layer.
 
-```text
-bootstrap     --> {delivery, application, infrastructure, domain, shared}
-delivery      --> {application, infrastructure, domain, shared}
-application   <-> infrastructure
-application   --> {domain, shared}
-infrastructure --> {domain, shared}
-domain        --> shared
-delivery.cli  --> bootstrap (entry point, setup, and composed processes only)
+```mermaid
+flowchart TD
+    bootstrap --> delivery
+    bootstrap --> application
+    bootstrap --> infrastructure
+    delivery --> application
+    delivery --> infrastructure
+    application <--> infrastructure
+    application --> domain
+    infrastructure --> domain
+    domain --> shared
+    delivery -. "three CLI modules only" .-> bootstrap
 ```
+
+_Traced from the `forbidden` contracts in `pyproject.toml` `[tool.importlinter]`;
+`infrastructure.persistence` is further forbidden from importing `application`._
 
 Application services coordinate concrete local infrastructure. Infrastructure
 adapters use application-owned configuration and contracts. Neither side may
@@ -133,7 +203,10 @@ modules each of the three may import, and no others.
   primitives, and text normalization.
 
 Import Linter holds these directions. It also keeps deterministic tailoring
-stages from reaching services, persistence, or delivery. The task package owns
+stages from reaching services, persistence, or delivery. Inside the larger
+packages, such as `fit/`, `stages/verify/`, the discovery scan packages, and
+the board read and adapter packages, a layers contract orders the modules from
+the entry point down to the leaves. The task package owns
 its models, payloads, execution protocols, registry, and durable queue.
 `bootstrap/worker.py` binds task types to handlers.
 
@@ -170,10 +243,37 @@ every result from the scanning thread, so one writer faces SQLite. Politeness is
 not the caller's to keep. `PoliteHttpClient` holds a lock per host, so boards
 sharing a host still take their turns while different hosts overlap.
 
-Board continuations run across tasks. The worker runs other tasks one at a time,
-and runs `source.continue` tasks on up to `TAILORCV_CONTINUATION_SLOTS` slots,
-four by default. The claim skips a continuation whose board host a slot is
-already reading, and a slot that finishes claims the next one itself. That guard
+Board continuations run across tasks.
+
+```mermaid
+flowchart TD
+    poll["poll"] --> stopq{"stop requested?"}
+    stopq -->|yes| drain["drain running slots, withdraw presence"]
+    stopq -->|no| presence["renew worker presence"]
+    presence --> tick["scan schedule queues a due source.scan"]
+    tick --> claim{"claim_lane"}
+    claim -->|nothing claimable| sleep["sleep, then poll"]
+    claim -->|"source.continue, free slot, host not busy"| slot["run on a continuation slot"]
+    claim -->|any other task type| inline["run inline"]
+    slot --> execute["handler on its own thread, lease renewed"]
+    inline --> execute
+    execute --> outcome{"handler outcome"}
+    outcome -->|returned| completed["completed"]
+    outcome -->|"cancellation point reached"| cancelled["cancelled"]
+    outcome -->|"error, time limit, or lost lease"| failed["failed"]
+    completed --> finish["terminal state written"]
+    cancelled --> finish
+    failed --> finish
+    finish -->|"slot claims its next continuation"| slot
+    finish --> poll
+```
+
+_Traced from `Worker.run_forever`, `dispatch`, `_run_slot`, and
+`_handler_outcome` in `bootstrap/worker.py`, and `ScanScheduleService.tick` in
+`application/workspaces/scan_schedule.py`._
+
+The worker runs other tasks one at a time, and runs `source.continue` tasks on
+up to `TAILORCV_CONTINUATION_SLOTS` slots, four by default. The busy-host guard
 keys only on the board source's host, not on the handoff hosts a chunk may also
 read, so per-host politeness rests on `PoliteHttpClient`'s per-host lock, which
 every slot shares because they run in one process with one fetch client.
@@ -357,6 +457,39 @@ goes to its structured API before any rendered page is considered.
 The shared fetch policy still applies robots checks, a bounded delay, and
 per-host serialization to those API calls. A published interface is not an
 invitation to send unmetered traffic.
+
+robots.txt decides every read but one. A single posting URL a person enters
+may be read past a disallow aimed at all crawlers, because a person asked for
+that page. A robots group that names TailorCV still refuses it
+(`_robots_basis_locked` in `infrastructure/web_fetch/policy.py`). Board sweeps,
+continuations, and refreshes never get the exemption.
+
+```mermaid
+flowchart TD
+    request["request with an intent: crawl or single_posting"] --> url{"HTTP(S), hostname, no credentials?"}
+    url -->|no| badurl["refused: InvalidFetchUrlError"]
+    url -->|yes| lock["wait for the per-host lock"]
+    lock --> public{"resolves to a public address?"}
+    public -->|no| unresolved["refused: DestinationUnresolvableError"]
+    public -->|yes| robots{"robots.txt answer, cached per host"}
+    robots -->|"5xx, 429, or no answer"| unavailable["refused: RobotsUnavailableError"]
+    robots -->|"2xx, or another 4xx read as no policy"| allowed{"allowed for this agent?"}
+    allowed -->|yes| heldq{"host held past the read's deadline?"}
+    allowed -->|no| single{"single_posting intent?"}
+    single -->|no| denied["refused: RobotsDeniedError"]
+    single -->|yes| group{"applying group is the * group?"}
+    group -->|"no, it names TailorCV"| denied
+    group -->|yes| heldq
+    heldq -->|yes| held["refused: HostHeldError"]
+    heldq -->|no| wait["wait the jittered interval or Crawl-delay, then send"]
+    wait --> hold["record when the host may be read next"]
+```
+
+_Traced from `PoliteHttpClient._request_once`, `_destination`,
+`_public_addresses`, `_load_robots`, and `_robots_basis_locked` in
+`infrastructure/web_fetch/policy.py`. Every redirect hop runs the same path with
+the caller's intent. Choosing an API over a rendered page happens earlier, in
+the board adapters._
 
 Each platform is declared once, as a `BoardPlatform` in its own module under
 `infrastructure/web_fetch/platforms/`. A declaration carries the platform's
@@ -687,7 +820,9 @@ subdivision resolves; for a bare country or region, any saved location in that
 country. A named site whose country does not resolve keeps the listing in front
 of a person, since the reader cannot place it. A listing held out stays in the
 screening ledger, where it can be promoted. A bare "in office" counts only beside a day
-count in a sentence that requires it.
+count in a sentence that requires it. A title carrying a publisher's own test
+marker, such as "test requisition" or "do not apply", is refused before any
+title rule runs (`publisher_test_marker` in `discovery/screening/titles.py`).
 
 A guided campaign also holds out a page it fetched from the publisher when a
 must-have statement in the body states a condition the person saved as
@@ -743,6 +878,36 @@ reorders between page fetches can drop an opening from every page it served.
 So a miss on a multi-page read only marks the row and queues a content read of
 its own page. The next complete read that also lacks it withdraws it, unless
 that check found the page live. A single-page read withdraws on the first miss.
+
+```mermaid
+stateDiagram-v2
+    state "Dismissed by rule" as RuleDismissed
+    state "Dismissed by a person" as PersonDismissed
+    state "Marked absent" as Absent
+    state "Evaluated into the job ledger" as Evaluated
+    state Pending {
+        state "Needs recovery" as Recovery
+        [*] --> Ready
+        [*] --> Recovery
+        Recovery --> Ready: content resolution reads a usable body
+    }
+    [*] --> Pending: a read stages the listing
+    Pending --> RuleDismissed: screening holds it out
+    RuleDismissed --> Pending: a re-screen no longer refuses it, or a person restores it
+    Pending --> PersonDismissed: a person dismisses it
+    PersonDismissed --> Pending: a person restores it
+    Pending --> Absent: a complete multi-page read misses it
+    Absent --> Pending: the content check finds it live, or a read lists it
+    Absent --> Withdrawn: the next complete read also misses it
+    Pending --> Withdrawn: a complete single-page read misses it
+    Ready --> Evaluated: discovery.evaluate commits the job and archives the row
+    Evaluated --> [*]
+```
+
+_Needs recovery stands for the non-ready values of `PendingDiscoveryReadiness`
+in `domain/records.py`, such as `partial_text` and `no_body`. Dispositions are
+`DiscoveryDispositionService` in `application/discovery/dispositions.py`; absence
+is `withdraw_absent_in_session` in `application/discovery/scan_staging/absence.py`._
 
 ### Sources that are not one employer
 
@@ -969,12 +1134,15 @@ off`, and the arrangement with it.
 
 ### A verdict follows weighted fit
 
-An evaluation's verdict, set in `tailoring/workflows/evaluation_policy.py` and
-not by the rule reading, comes from the weighted share of the posting's
-requirements the record answers: above an upper bound it pursues, below a lower one it refuses, and
-between them it reports being unsure. A stated absolute condition the record
-fails refuses outright, ahead of any score. An unmet essential is reported and
-stops a pursue, but it does not decide the verdict alone. A posting stating
+An evaluation's verdict comes from the weighted share of the posting's
+requirements the record answers, not from the rule reading. `recommend` in
+`tailoring/batch/analysis.py` pursues at `PURSUE_FIT`, 60 per cent, skips at
+`SKIP_FIT`, 50, and is cautious between them. A stated absolute condition the
+record fails skips outright, ahead of any score. An unmet essential is reported
+and caps the verdict at cautious, but it does not decide it alone.
+`decision` in `tailoring/workflows/evaluation_policy.py` then maps that verdict
+to the ledger decision, and a closed posting, an ineligible place, or a missing
+credential the posting states as absolute wins first. A posting stating
 twenty to forty requirements almost always has one, so a rule keyed on it would
 send most postings to the middle. A run that could not settle a must-have, or
 answered more than one stated condition weakly, commits in neither direction.
@@ -1064,7 +1232,7 @@ the exception. It adds a sentence to the file every other stage treats as true.
 So it is built the way the rest of the program is built. The failure is made
 unrepresentable. Nobody is merely instructed not to cause it.
 
-**It calls no model.** A question is one of eight templates and a subject. The
+**It calls no model.** A question is one of five templates and a subject. The
 subject is a gap the matching stage already found or a phrase the person typed.
 There is no prompt file, no new call, and no new prompt-suite fingerprint. A
 model would write a better question. It would also become a second author of the
@@ -1176,10 +1344,15 @@ A gap's leverage is how many of the postings state it. That is a count of
 documents. The recommendation is three words: pursue, cautious pursue, or skip.
 Stated rules over the evidence map reach it:
 
-- A stated absolute condition with no evidence at all is a skip.
-- A condition answered by something weaker than direct evidence is a cautious
-  pursue. So is an essential requirement the record does not answer.
-- Anything else is a pursue.
+- A stated absolute condition with no evidence at all is a skip, and so is a
+  core occupation the search rules out.
+- With no requirement answered by direct evidence, it is a cautious pursue.
+- An unsettled run, an essential requirement the record does not answer, a rung
+  above the search's seniority band, a weakly answered years minimum, or two or
+  more core must-haves answered only weakly cap it at cautious pursue. A
+  settled run with a weak fit still skips.
+- Otherwise a weighted fit of 60 per cent or more pursues, 50 or less skips, and
+  anything between is a cautious pursue.
 
 Every recommendation carries the reasons it rests on. Each reason quotes the
 posting or the record. There is no percentage, no grade, and no ranking
@@ -1256,14 +1429,14 @@ vendor's continuation blob.
 A stage states its image detail and verbosity the way it states its effort. Only
 the OpenAI adapter renders either, because Anthropic publishes neither control,
 and ingest ships `high`. The image measurement reports a ceiling where the vendor
-publishes a rule and nothing where it does not. Anthropic's is bounded: a
-28-pixel patch, with downscaling past 2576 pixels on the long edge or 4784
-visual tokens. OpenAI's is a 32-pixel patch whose fitting edge, patch budget,
+publishes a rule and nothing where it does not. Anthropic's is a 28-pixel patch,
+capped at the 4784 visual tokens an image is downscaled to. OpenAI's is a 32-pixel patch whose fitting edge, patch budget,
 and token multiplier depend on the model and the detail level; the measurement
 applies the rules OpenAI's vision guide publishes for `gpt-6-astra` and the
 `gpt-5.6` family, and reports nothing for a model the guide does not cover. An
 image past a limit a vendor documents as an error is refused locally, since that
-request could not have been answered.
+request could not have been answered: for Anthropic an edge over 8000 pixels or
+a base64 payload over 10 MB, and for OpenAI more than 30,000 patches.
 
 Matching's `requirement_id` field is a closed vocabulary of one fixed
 `VOCABULARY_SIZE`, which grows only for a posting with more requirements than
@@ -1275,6 +1448,13 @@ set. A row naming a requirement that does not exist is discarded by
 falls through as a missing row: weak output can hide a match and cannot hide a
 gap. CV entry identifiers, which carry the citation guarantee, stay exact.
 
+Repeated enums are emitted once and referenced. The guard counts a shared enum
+once, but OpenAI does not document whether it counts one per reference. A
+schema past OpenAI's strict-mode caps, 1,000 enum values in total or 15,000
+characters in a string enum over 250 values, is refused before it is sent. The
+refusal is marked as never created (`infrastructure/providers/base.py`). If
+OpenAI counts per reference, the guard undercounts and OpenAI's own 400 decides.
+
 ## What a model call reports
 
 Every paid call goes through one method on `Client`. The live narration, the
@@ -1282,6 +1462,42 @@ cost ledger, and the cache all see the same facts. Adapters return a
 `CallRecord` describing the call: token usage, the model actually served, the
 response identifier, the service tier, why generation stopped, and the full
 request and response envelopes as the provider SDK serializes them.
+
+```mermaid
+sequenceDiagram
+    participant Stage
+    participant Client
+    participant Cache as ResponseCache
+    participant Adapter as Provider adapter
+    participant Ledger
+    Stage->>Stage: render prompts/ templates, invariant regions checked, build RequestPlan
+    Stage->>Client: complete(plan, schema)
+    Client->>Client: model choice for the stage, wire schema, with the OpenAI enum-limit guard
+    Client->>Client: refuse an image past a documented limit, derive the cache key
+    Client->>Cache: get_entry(key)
+    alt cached and the stage is not redrawn
+        Cache-->>Client: validated JSON
+        Client->>Ledger: record the manifest as cached, no charge
+    else not cached
+        Client->>Adapter: complete(plan, schema, choice)
+        Note over Client,Adapter: a flex capacity refusal backs off 5, 10, and 20 seconds, then resends on standard
+        alt usable response
+            Adapter-->>Client: value and CallRecord
+            Client->>Ledger: record the priced manifest, validated
+            Client->>Cache: set(key, value)
+        else truncated, refused, filtered, failed, cancelled, or unknown
+            Adapter-->>Client: UnusableResponseError carrying the CallRecord
+            Client->>Ledger: record the priced manifest, not validated
+        end
+    end
+    Client-->>Stage: validated value, or the error
+```
+
+_Traced from `Client.complete`, `_complete_paid`, and `_send_on_flex_first` in
+`infrastructure/providers/client.py`, `wire_schema` and `json_schema` in
+`infrastructure/providers/base.py`, and `refuse_unanswerable` in
+`infrastructure/providers/images.py`. A workflow then writes the ledger to
+`model_calls` through `record_calls` in `application/workspaces/spend.py`._
 
 `Client` joins that record to the plan and the resolved model. The result is
 one `CallManifest` per call. The ledger keeps them in call order, so a run's
@@ -1322,15 +1538,16 @@ them look identical.
   larger ceiling or less effort.
 - `refused` and `filtered` will not improve on retry. The prompt must change.
 - `failed` is the provider's own error and is worth retrying.
+- `cancelled` means the provider cancelled the response before it finished.
 - `unknown` means the vendor gave a reason this version does not know, or
-  paused or canceled part-way.
+  paused part-way.
 
 `unknown` is refused, not parsed. Without that branch it would reach schema
 validation and be reported as a mismatch. That confusion is the one the whole
 vocabulary exists to prevent.
 
-Normalized is not symmetric. `filtered` and `failed` are Responses API states
-with no Anthropic equivalent. A value this enum can express is not a value both
+Normalized is not symmetric. `filtered`, `failed`, and `cancelled` are
+Responses API states with no Anthropic equivalent. A value this enum can express is not a value both
 vendors can send, and the enum says so instead of implying parity.
 
 Neither is the evidence behind the two adapters. Both are built from one schema
@@ -1380,8 +1597,10 @@ never finish admits it.
 A discount tier is asked for per call and priced from the tier the provider
 says served it. OpenAI serves `flex` at half the standard rate, more slowly, as
 a `service_tier` value on the Responses call the adapter already makes. It
-refuses flex when it has no spare capacity, and a refusal bills nothing, so the
-call is retried once at the standard tier and billed at the standard rate.
+refuses flex when it has no spare capacity, and a refusal bills nothing. The
+call backs off and asks flex again after 5, 10, and 20 seconds, then resends at
+the standard tier and is billed at the standard rate. A stalled flex call
+resends on standard at once.
 Anthropic publishes no equivalent, and asking it for one is refused before the
 run starts. The tier is an argument, not a setting, so no configuration can put
 interactive drafting or market search on a slower tier.
@@ -1489,12 +1708,14 @@ Without the record it would be visible only in the narration of a verbose run.
 
 Everything a paid call depends on is in the cache key:
 
-- the provider, the model, and the effort,
+- the provider, the model, the effort, and any stated verbosity or image detail,
 - the stage name and the output ceiling,
-- the rendered system and user text and the cached prefix,
-- the master CV's hash,
+- the rendered instructions, task, and evidence text,
+- whether hosted search was on, and the draw name for a stage that asks twice,
 - a digest of any image payload, and
 - the JSON Schema actually sent on the wire, not the Pydantic model's own.
+
+The master CV reaches the key through the evidence text it is rendered into.
 
 The wire schema matters because it is the contract the provider enforces.
 Editing how it is built has to move the key with it. The prompt-suite and
@@ -1515,6 +1736,12 @@ Deciding that a package is an application is a person's job, not this tool's.
 [prompts/README.md](prompts/README.md) is the working guidance. This is the
 reasoning behind it, which is a maintainer's question more than a prompt
 author's.
+
+A prompt can be rewritten from the web client, so a rule that lives only in
+prompt text could be deleted. The text between `<!--invariant-->` markers must
+come back word for word in an override. `check_template` in
+`application/prompts.py` refuses one that drops them when it is saved, and
+`load` checks again before any run uses it.
 
 The suite follows a few durable practices. It does not imitate one provider's
 favorite format.

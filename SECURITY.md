@@ -29,11 +29,12 @@ from an imported CV, job-description text, CV evidence, personal rules, and
 previous stage output. Importing a screenshot also sends the image to the
 provider for transcription. When the source is a URL, TailorCV attempts the read
 only through its shared address, robots.txt, redirect, and rate-limit policy.
-robots.txt decides every read except a posting URL you enter: a URL argument at
-the CLI, or a link you add in the add-a-posting action, whose check while adding
-and first content read proceed unless robots.txt names TailorCV. Board and
-listing reads, refreshes after that first read, and every other read of a
-stored URL honor a robots disallow.
+robots.txt decides every read except a posting URL you enter. That is a URL
+argument at the CLI, or a link you add with the add-a-posting action. Its check
+while adding and its first content read proceed past a disallow aimed at all
+crawlers. A robots group that names TailorCV still refuses them. Board and
+listing reads, later refreshes, and every other read of a stored URL honor a
+robots disallow.
 The URL may still be stored as the posting's identifier when that policy refuses
 the read. Text supplied by paste, image, or PDF remains marked as user supplied
 rather than being recorded with a fabricated fetch time or HTTP status.

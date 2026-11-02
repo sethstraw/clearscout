@@ -36,7 +36,6 @@ import tempfile
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from types import MappingProxyType
 from typing import Any
 
 from pydantic import BaseModel
@@ -45,16 +44,20 @@ from evals.inspect.labeling import bytes_sha256
 from evals.inspect.outcomes import BatchOutcome, FailedCall
 from evals.inspect.runner import SPLITS, dataset_samples
 from evals.inspect.solvers.tailorcv_live import (
+    PromptArm,
+    arms_metadata,
     bill_sample,
     billing_target,
     credential_for,
     inside_repository,
     paid_stage_metadata,
     prompt_snapshot_fingerprint,
+    requested_arm,
     run_settings,
     sample_provenance,
     stage_identity,
 )
+from evals.inspect.solvers.tailorcv_live import declared_arms as shared_declared_arms
 from evals.support.client import build_live_client
 from evals.support.inventory import synthetic_inventory
 from evals.support.relevance import (
@@ -69,7 +72,7 @@ from tailorcv.application.discovery.relevance_review import review_plan
 from tailorcv.application.job_search.models import RelevanceReviewBatchResponse
 from tailorcv.application.master_cv.cv import CvInventory, parse_cv
 from tailorcv.application.master_cv.service import MasterCvService
-from tailorcv.application.prompts import check_template, load, overriding
+from tailorcv.application.prompts import overriding
 from tailorcv.application.tailoring.stages.context import record_block
 from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
 from tailorcv.infrastructure.persistence.database import Database
@@ -85,94 +88,12 @@ RELEVANCE_PROMPTS = (
     "relevance_review_user",
 )
 BILLING_ORIGIN = "eval.relevance_review_live"
-PROMPT_ARMS_ENV = "TAILORCV_EVAL_PROMPT_ARMS"
 CV_VERSION_ENV = "TAILORCV_EVAL_CV_VERSION"
 
 
-@dataclass(frozen=True)
-class PromptArm:
-    """One prompt version a run alternates onto, and the bytes it was declared as."""
-
-    name: str | None
-    source: Path | None
-    snapshot: Mapping[str, str]
-    fingerprint: str
-
-    def current(self) -> dict[str, str]:
-        """Re-read this arm's prompt bytes from where it was declared."""
-        if self.source is None:
-            return {name: load(name) for name in RELEVANCE_PROMPTS}
-        return _arm_snapshot(self.source)
-
-    def as_metadata(self) -> dict[str, Any]:
-        """Return the bytes identity a reader checks this arm's rows against."""
-        return {
-            "arm": self.name,
-            "source": str(self.source),
-            "prompt_suite_fingerprint": self.fingerprint,
-            "prompts": {
-                name: bytes_sha256(text.encode("utf-8")) for name, text in self.snapshot.items()
-            },
-        }
-
-
-def _arm_snapshot(directory: Path) -> dict[str, str]:
-    snapshot: dict[str, str] = {}
-    for name in RELEVANCE_PROMPTS:
-        path = directory / f"{name}.md"
-        try:
-            snapshot[name] = path.read_text(encoding="utf-8")
-        except OSError as error:
-            raise RuntimeError(
-                f"Live evaluation refused: prompt arm cannot read {path}."
-            ) from error
-    return snapshot
-
-
-def _arm(name: str | None, directory: Path | None) -> PromptArm:
-    snapshot = (
-        {prompt: load(prompt) for prompt in RELEVANCE_PROMPTS}
-        if directory is None
-        else _arm_snapshot(directory)
-    )
-    for prompt, text in snapshot.items():
-        try:
-            check_template(prompt, text)
-        except TailorcvError as error:
-            named = "the working tree" if name is None else f"prompt arm {name}"
-            raise RuntimeError(f"Live evaluation refused: {named}: {error}") from error
-    return PromptArm(
-        name=name,
-        source=directory,
-        snapshot=MappingProxyType(snapshot),
-        fingerprint=prompt_snapshot_fingerprint(RELEVANCE_PROMPTS, snapshot),
-    )
-
-
 def declared_arms() -> tuple[PromptArm, ...]:
-    """Return the prompt versions this run declared, or the working tree alone."""
-    declaration = os.environ.get(PROMPT_ARMS_ENV, "").strip()
-    if not declaration:
-        return (_arm(None, None),)
-    arms: list[PromptArm] = []
-    for entry in declaration.split(","):
-        name, separator, directory = entry.partition("=")
-        if not separator or not name.strip() or not directory.strip():
-            raise RuntimeError(
-                f"Live evaluation refused: prompt arm {entry!r} is not name=directory."
-            )
-        arms.append(_arm(name.strip(), Path(directory.strip()).expanduser().resolve()))
-    names = [arm.name for arm in arms]
-    if len(set(names)) != len(names):
-        raise RuntimeError("Live evaluation refused: prompt arm names must be distinct.")
-    return tuple(arms)
-
-
-def arms_metadata(arms: Sequence[PromptArm]) -> dict[str, Any]:
-    """Return the declared-arm identity a run records, empty when none was declared."""
-    if all(arm.name is None for arm in arms):
-        return {}
-    return {"arms": len(arms), "prompt_arms": [arm.as_metadata() for arm in arms]}
+    """Return the relevance prompt versions this run declared, or the working tree alone."""
+    return shared_declared_arms(RELEVANCE_PROMPTS)
 
 
 def _dataset_rows(dataset: Path) -> list[dict[str, Any]]:
@@ -273,10 +194,7 @@ class _RelevanceLiveSolver:
 
     def _requested_arm(self, requested: object) -> PromptArm:
         """Return the declared arm this trial claims, refusing any other name."""
-        for arm in self.arms:
-            if arm.name == requested:
-                return arm
-        raise RuntimeError(f"Live evaluation refused: undeclared prompt arm {requested!r}.")
+        return requested_arm(self.arms, requested)
 
     def requests(self, samples: Sequence[Mapping[str, Any]]) -> list[BatchRequest]:
         """Return every batch request one repeat sends, in the order a paid run sends them."""

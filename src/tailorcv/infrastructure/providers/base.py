@@ -292,8 +292,8 @@ def _strict(node: Any) -> Any:
 class Finish(StrEnum):
     """Why a response stopped, normalized across two vendors.
 
-    Normalized does not mean symmetric: ``filtered`` and ``failed`` are OpenAI
-    Responses API states with no Anthropic equivalent.
+    Normalized does not mean symmetric: ``filtered``, ``failed``, and
+    ``cancelled`` are OpenAI Responses API states with no Anthropic equivalent.
     """
 
     COMPLETE = "complete"

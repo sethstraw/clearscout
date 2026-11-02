@@ -422,6 +422,28 @@ def _axes_that_did_not_decide(rows: list[dict[str, Any]]) -> dict[str, int]:
     return {name: count for name, count in counts.items() if count}
 
 
+def _boundary_errors(score: dict[str, Any]) -> Iterable[str]:
+    metadata = score.get("metadata")
+    error = metadata.get("boundary_error") if isinstance(metadata, dict) else None
+    return [error] if isinstance(error, str) else []
+
+
+def _boundary_cases(rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    """Count trials, fired boundaries, and correct answers per case and arm."""
+    cases: dict[str, dict[str, int]] = {}
+    for row in rows:
+        score = row.get("score")
+        metadata = score.get("metadata") if isinstance(score, dict) else None
+        if not isinstance(metadata, dict) or "observed_boundary" not in metadata:
+            continue
+        key = str(row.get("id")) if row.get("arm") is None else f"{row['id']}@{row['arm']}"
+        case = cases.setdefault(key, {"trials": 0, "boundary_hits": 0, "correct": 0})
+        case["trials"] += 1
+        case["boundary_hits"] += metadata["observed_boundary"] is not None
+        case["correct"] += metadata.get("boundary_error") is None
+    return cases
+
+
 def _agreement(
     rows: list[dict[str, Any]],
     flag: str,
@@ -456,6 +478,10 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         summary["critic_outcomes"] = outcomes
     if failures := _tally(rows, _failures):
         summary["failures"] = failures
+    if errors := _tally(rows, _boundary_errors):
+        summary["boundary_errors"] = errors
+    if cases := _boundary_cases(rows):
+        summary["boundary_cases"] = cases
     summary.update(_axes_that_did_not_decide(rows))
     summary.update(_agreement(rows, "strength_matches", "strength"))
     summary.update(_agreement(rows, "outcome_matches", "critic_outcome"))

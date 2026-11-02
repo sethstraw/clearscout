@@ -117,6 +117,18 @@ task's own stage only, alone or together. An effort the model does not accept
 is refused before any call, the estimate reads only history at that model and
 effort, and the run's settings hash changes with either.
 
+## The jobspec boundary task
+
+`tasks/jobspec_boundary_live_task.py` checks which stated boundary jobspec
+extraction fires, since any fired boundary skips the posting. It sends eight
+synthetic postings from `evals/fixtures/jobspec_boundary_cases.jsonl` against
+the synthetic list in `evals/fixtures/jobspec_boundaries.json`. Each row names
+the expected boundary number, or null, and why. The log header counts false
+positives, false negatives, and wrong boundaries, and gives trials, hits, and
+correct answers per case and arm. It has no scripted task. It takes `--trials`
+and `--prompt-arm`, where each arm directory holds `jobspec_system.md` and
+`jobspec_user.md`. Eight cases find defects; they do not measure a rate.
+
 ## Calibration workflow
 
 ```bash

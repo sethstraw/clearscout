@@ -6,7 +6,7 @@ Discovery and manual tracking need no CV or provider key.
 For model assistance, import a master CV, evaluate one posting, and read the
 cited evidence and unanswered requirements before asking for a draft. Approve
 only a document proposal you have read. Checking what it says takes attention.
-TailorCV records that work; it does not submit anything.
+TailorCV records that work. It does not submit anything.
 
 The [synthetic product tour](product-tour.md) shows the complete evidence path
 without requiring an installation. Exact flags and less common commands belong
@@ -61,8 +61,8 @@ are extracted, sent to the configured provider for restructuring, then checked
 for provenance and lost content. Read both the resulting master CV and the
 import report. A successful import does not prove that a model assigned every
 line correctly. A section the parser does not recognize, such as `## Projects`,
-stays in the master CV, but its lines are never cited or printed; put project
-work under the role it belongs to.
+stays in the master CV. Its lines are never cited or printed. Put project work
+under the role it belongs to.
 
 `tailorcv init --help` shows the data-root, workspace-root, provider, and
 configuration overrides. Keep the database and its artifact root together
@@ -82,20 +82,47 @@ machine. Paid stages send their selected input to your configured provider.
 | Task                                                       | Provider charge | What to expect                                                |
 | ---------------------------------------------------------- | --------------- | ------------------------------------------------------------- |
 | Open the synthetic demo                                    | None            | Invented records, without any external request                |
-| Adopt a canonical Markdown CV                              | None            | Existing TailorCV structure is retained                       |
-| Import ordinary Word, PDF, text, or images                 | Paid            | Extraction and restructuring, followed by an import report    |
+| Adopt a canonical Markdown or text CV                      | None            | Existing TailorCV structure is retained                       |
+| Import Word, PDF, images, or non-canonical text            | Paid            | STRUCTURE and INGEST calls, then an import report             |
+| Save a master CV edit the canonical parser accepts         | None            | A new version with your text                                  |
+| Save a master CV edit the canonical parser rejects         | Paid            | A STRUCTURE call with no dialog; fails with no key set        |
 | Edit search settings or register a source                  | None            | Local settings; validation may read the source website        |
-| Scan boards, schedule scans, or add posting URLs           | None            | External reads under the source policy                        |
+| Preview, revalidate, schedule, scan, or continue a source  | None            | External reads under the source policy                        |
+| Add posting URLs, refresh postings, or rescreen the queue  | None            | Deterministic reads and screening                             |
+| Retry a guided campaign's board reads                      | None            | Local reads of addresses already found                        |
 | Track a found job and record your priority, fit, and note  | None            | Saved discovery and your own judgment                         |
 | Read reports, edit notes, or record events on tracked jobs | None            | Existing local records and history                            |
+| Edit prompts, rule on requirements, view spend, preflight  | None            | Local records and estimates                                   |
+| Refresh the price table                                    | None            | A web read of published prices                                |
+| Verify an artifact or render a document                    | None            | Local checks, or your external render command                 |
 | Upload files actually submitted with an application        | None            | Exact local bytes, labeled separately from drafts             |
 | Suggest search vocabulary                                  | Paid            | CV-grounded search terms; no web search                       |
-| Find new jobs with a guided campaign                       | Paid            | Hosted search, then local reads of surfaced addresses         |
-| Review relevance on selected postings                      | Paid            | Compare readable discoveries with your CV and preferences     |
-| Evaluate a posting                                         | Paid            | Inspect requirements, cited evidence, and fit                 |
-| Recover posting content with model assistance              | Paid            | Approved hosted search and policy-gated recovery              |
-| Tailor a resume and cover letter                           | Paid            | Drafts, checks, and bounded rewrites                          |
+| Find new jobs with a guided campaign                       | Paid            | OpenAI hosted search, then local reads                        |
+| Review relevance on selected postings                      | Paid            | RELEVANCE_REVIEW, up to 20 postings per call                  |
+| Evaluate a posting                                         | Paid            | JOBSPEC and MATCH; free when a rule refuses first             |
+| Recover posting content with model assistance              | Paid            | POSTING_RECOVERY and up to two hosted searches                |
+| Re-check disputed requirements                             | Paid            | One JOBSPEC or MATCH call; see the section below              |
+| Compare postings in a batch                                | Paid            | JOBSPEC and MATCH per posting                                 |
+| Tailor a resume and cover letter                           | Paid            | JOBSPEC, MATCH, DRAFT up to 3 tries, COVER, CRITIC            |
+| Build an approved derivative                               | Paid            | The tailoring stages; an exact reused package is free         |
+| Retry a failed paid task                                   | Paid            | The same stages again                                         |
 | Record review decisions or download stored Markdown        | None            | An existing draft; this does not build an approved derivative |
+
+The CLI follows the same line. `tailorcv discover`, `template`, `doctor`,
+`report`, `search show`, `db`, `auth`, `start`, `stop`, `status`, `serve`, and
+`worker` are free. `tailorcv run`, `screen`, and `batch` call models and are
+paid. Background tasks run on the OpenAI flex tier and the Anthropic standard
+tier. The CLI and master CV import run on the standard tier.
+
+A paid task with no key set is accepted into the queue and fails when it runs.
+Evaluation and `tailorcv run` need a key even when the response cache would
+answer.
+
+Nothing the program schedules by itself is paid. Scheduled scans, catch-up
+scans, and screening are free. Every paid task starts with a person.
+
+[Re-check disputed requirements](#re-check-disputed-requirements) covers the
+paid re-check buttons.
 
 To explore seeded records without a provider account, use the synthetic workspace in the
 [README](../README.md#try-the-synthetic-workspace). Read the seeded evaluations
@@ -163,7 +190,7 @@ root, waits for local health, and prints the URL to open. Use `tailorcv status`
 to check both processes and `tailorcv stop` to stop only the processes started
 by this command. `stop` allows up to 60 seconds for active worker tasks to finish,
 with the API still available. A worker still busy after that with only source
-scans or artifact checks is killed; the interrupted task resumes on the next
+scans or artifact checks is killed. The interrupted task resumes on the next
 `start` once its lease expires, about a minute later. A worker running any other
 task, such as a paid model call, is left running and `stop` names that task;
 retry after it settles. It then stops the API and waits up to 60 seconds for it
@@ -206,7 +233,7 @@ done:
 1. Workspace: create a local search record.
 2. Search setup: enter preferences, review them, and confirm one saved version.
    You can skip this step and reopen it from Welcome or Settings.
-3. Free discovery: inspect sources and found postings.
+3. Posting links: add individual postings to inspect.
 
 Manual search setup walks through Role preferences, Places and residence,
 Working arrangements, Optional pay preferences, and a final review. In each
@@ -246,11 +273,11 @@ compare the local ledger with the provider account.
 ## Read the learning-loop signals
 
 The Activity & signals tab shows three readings of whether the workspace's
-own history is improving future runs, along with a link to the Model spend
-report and links to Tasks and the API Playground. Each signal returns a
-numerator and a denominator; the panel shows a percentage when the denominator
-is non-zero and reads "no data yet" otherwise, so a workspace with no history
-does not read as a bad number. Opening the tab reads durable rows on demand;
+own history is improving future runs. It also links to the Model spend report,
+Tasks, and the API Playground. Each signal returns a numerator and a
+denominator. The panel shows a percentage when the denominator is non-zero and
+reads "no data yet" otherwise. A workspace with no history does not read as a
+bad number. Opening the tab reads durable rows on demand;
 these signals do not schedule work.
 
 The three signals are:
@@ -270,9 +297,9 @@ posting URL, or several with one link per line. The optional title and
 **Check posting** apply to one link at a time.
 
 Each added link gets a free content read under the source policy. The publisher
-check made while adding, and the first content read that follows it, read the
-link you entered even where robots.txt disallows crawling, unless robots.txt
-names TailorCV; every later refresh honors a robots disallow. Results name
+check made while adding, and the first content read after it, read the link you
+entered even where robots.txt disallows crawling. They stop only when robots.txt
+names TailorCV. Every later refresh honors a robots disallow. Results name
 added, duplicate, invalid or unsupported, and failed links separately. Invalid
 and failed links stay editable for correction or retry. A saved link whose read
 could not be queued stays saved; use its free refresh action to retry the read.
@@ -320,8 +347,8 @@ Find jobs has four task tabs:
   and result. It shows retained dated source and query records; same-day rescans
   can replace a record. Optional scheduling uses a saved scope.
 - Find new jobs runs a guided campaign that searches the web for new postings
-  and employer boards, and separately offers a search-vocabulary action that
-  proposes search terms from cited CV evidence without fetching anything. Each
+  and employer boards. It also offers a separate search-vocabulary action. That
+  action proposes search terms from cited CV evidence and fetches nothing. Each
   is its own paid task with its own approval and cost.
 - Review found jobs is the pending queue. Add an individual posting link, inspect
   its retained content, and track or dismiss it for free. Optional relevance
@@ -402,7 +429,7 @@ browser; it changes visibility, not search parameters or screening rules.
 Adding a posting temporarily reveals all constraint routes so its result stays
 visible. The page explains this; choose **Main queue** to return to strict view.
 
-A posting whose retained text appears cut off shows **Needs recovery** (Only
+A posting whose retained text reads as cut off shows **Needs recovery** (Only
 part of the posting was read). Short text that ends mid-sentence, or text the
 latest relevance review found too short to judge, is read this way, and a full
 evaluation skips it at no cost. Attach the full posting text or find the
@@ -445,13 +472,47 @@ reviewer reads it as the posting's defining work. That reading is the model's
 and no program check confirms it; an incidental mention is not meant to count.
 The review retains the posting citations behind that reading.
 
-A guided campaign and a board scan each also report a funnel audit: which
-candidates were proposed, which boards were read, which candidates reached
-screening and staging, and the typed reason for each refusal or omission. A
+A guided campaign and a board scan each also report a funnel audit. It names
+the candidates proposed, the boards read, and the candidates that reached
+screening and staging. Each refusal or omission carries a typed reason. A
 staged direct link does not count as fetched or read. Detailed outcomes are
 bounded for display while the complete counts and omitted count remain
 visible. A search-vocabulary run proposes no postings or boards, so its funnel
 audit is always empty.
+
+## Add boards and scan them on a schedule
+
+Every step here is free. It reads boards under their published policy and
+calls no model.
+
+1. Save at least one target title under **Settings > Search > Settings**.
+2. Open **Settings > Search > Sources**. Under **Add a source**, paste the
+   **Board or careers address**. A posting link from the board also works as a
+   starting point; [How to choose a link](#how-to-choose-a-link) shows the
+   shapes.
+3. Choose **Validate** to preview what TailorCV can read there.
+4. Enter the employer name. Record any published **Condition on reading it**.
+   Then choose **Add source**.
+5. Switch on **Swept**. A source that states a condition shows it first and
+   waits for you to accept it.
+6. Open **Find jobs > Scan for openings > Schedule free scans**. Choose daily
+   or weekly, a local time, and a named time zone such as `Europe/London`.
+7. Keep the local worker running. Scheduled scans run only while it runs.
+   After a shutdown, one catch-up scan runs on the next start.
+8. Review new postings under **Find jobs > Review found jobs**.
+
+```mermaid
+flowchart LR
+    A[Add source] --> B[Validate]
+    B --> C{Condition stated?}
+    C -- yes --> D[Accept condition]
+    C -- no --> E[Swept on]
+    D --> E
+    E --> F[Scheduled scan]
+    F --> G[Review found jobs]
+```
+
+The sections below give each step in full.
 
 ## Schedule free board scans
 
@@ -538,9 +599,9 @@ support.
    Switch on **Swept** for those you want future free scans to read.
 
 The campaign's board read and a later scan are separate operations. A board is
-registered only when at least one of its listings reaches the queue; a board
+registered only when at least one of its listings reaches the queue. A board
 that lists nothing, or whose listings all screen out, is reported as unresolved
-and not registered. Guided search does not enable every discovered employer
+and is not registered. Guided search does not enable every discovered employer
 automatically.
 
 ## Read the evidence, not only the score
@@ -591,8 +652,8 @@ disputed requirements.
 Each paid action opens the standard spend-confirmation dialog. Re-extraction
 runs one extraction call against the newly fetched body and reverses only when
 the cited quote is present under the normalized-substring check. Fit re-match
-runs one match call against the current master CV and reverses only when it
-cites a durable CV entry key not cited by the prior match for that requirement.
+runs one match call against the current master CV. It reverses only when it
+cites a durable CV entry key that the prior match for that requirement did not.
 Otherwise the ruling keeps its dispute kind and no reversal event is written.
 Every reversal writes an audit event. The free Refresh never spends money.
 
@@ -606,8 +667,13 @@ The proposal can contain only claims supported by the selected entries. Fixed
 facts such as titles, employers, dates, education, and publication citations
 are copied by the program rather than rewritten by a model. If the posting asks
 for something the CV does not establish, use the discovery prompt to amend the
-master CV first or leave the gap visible. Discovery calls no model. Editing or
-re-importing the master CV also appends a new version with your text.
+master CV first or leave the gap visible. The discovery prompt calls no model.
+
+Saving an edit to the master CV depends on the text. An edit the canonical
+parser accepts appends a new version with your text and calls no model. An
+edit it rejects, such as one with no dated role or with list markers run
+together, goes through ordinary import. That makes a paid STRUCTURE call with
+no cost dialog. With no key set, the save fails validation instead.
 
 ## Walk through a synthetic application
 
@@ -656,9 +722,27 @@ and verify the returned artifact, but TailorCV does not bundle or depend on
 Read the estimated cost history beside each paid action. Past costs help plan
 a run; they do not authorize it. A missing price is not a free call.
 
-Paid background tasks ask first. CLI initialization with an ordinary CV begins
-paid intake when invoked, as explained above. Check provider billing before
-running it.
+In the web client, paid background tasks ask first. Other paths do not.
+`tailorcv tasks tailor`, a direct `POST /api/v1/tasks`, and an API retry of a
+failed paid task enqueue paid work with no confirmation. CLI initialization
+with an ordinary CV begins paid intake when invoked, as explained above. Check
+provider billing before running any of them.
+
+The browser CV import treats only `.md` and `.markdown` files as free in its
+note. The server also adopts a canonical `.txt` CV without a model call. The
+import shows a note, not a confirmation dialog.
+
+### Typical costs
+
+The eval findings measured these numbers on specific models and dates. They
+vary with the model, the tier, and the posting.
+
+Screening cost about USD 0.09 per posting warm on the first full baseline. A
+complete application cost a mean of about USD 0.29. The flex tier ran at half
+the standard rate, and unattended work runs on flex. Relevance review batches
+up to 20 postings per call, with the CV evidence sent once.
+[What live runs cost and taught](../evals/FINDINGS.md#cost-economics) gives
+the detail. The web client shows an estimate and asks before each paid task.
 
 Full evaluation and re-evaluation prepare an advisory estimate before
 confirmation. The dialog shows costs at the configured model rates, a modeled
@@ -734,9 +818,9 @@ postings one per request cost about four times as much.
 A relevance review's cached prefix holds its instructions, response schema,
 search parameters, and CV evidence, and none of them name a posting. A later
 review with the same CV, search parameters, prompts, and model can read that
-prefix from the provider's cache. In one measured pair a minute apart, each run
-reviewing four openings the other run did not include, the second read its
-whole prefix from cache and cost about 40 percent of the first. The provider can still miss, and changing any of those inputs
+prefix from the provider's cache. One measured pair ran a minute apart. Each run
+reviewed four openings the other did not include. The second read its whole
+prefix from cache and cost about 40 percent of the first. The provider can still miss, and changing any of those inputs
 starts a new prefix.
 
 The estimate beside a paid action averages earlier calls of the same stage. A

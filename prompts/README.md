@@ -18,7 +18,7 @@ not a promise that pasting one into a chat reproduces the workflow below.
 | --------------------- | --------------------------------------------------------------------------------------------------------- |
 | `vision_*`            | Extract visible posting text from an image                                                                |
 | `structure_*`         | Restructure an existing CV while citing its numbered source lines                                         |
-| `jobspec_*`           | Turn a posting into structured responsibilities, qualifications, gates, and terminology                   |
+| `jobspec_*`           | Turn a posting into requirements, gates, and terminology, and name its core occupation and any stated boundary it falls under |
 | `match_*`             | Link requirements to CV evidence or report a gap                                                          |
 | `draft_*`             | Draft resume prose from selected evidence                                                                 |
 | `critic_*`            | Review preservation and hiring quality on separate axes                                                   |
@@ -87,7 +87,7 @@ that changes the constant and reads the prompt back:
 | `critic_system`            | preservation and quality floors     | `stages/verify/critic.MINIMUM_PRESERVATION`, `MINIMUM_QUALITY` |
 | `jobspec_system`           | longest keyword phrase              | `stages/jobspec.MAX_KEYWORD_LENGTH`                     |
 | `cover_letter_system`      | longest letter                      | `stages/draft.MAXIMUM_LETTER_WORDS`                     |
-| `search_vocabulary_system` | most terms per cluster              | `domain/search_parameters.MAX_CLUSTER_TERMS`            |
+| `search_vocabulary_system` | most terms per cluster              | `domain/search_parameters/focus.MAX_CLUSTER_TERMS`      |
 | `guided_campaign_user`     | branches assigned and search budget | the attempt's `guided_campaign.CampaignAttemptPlan`     |
 
 `guided_campaign_system` states no number at all. Every attempt of a campaign
@@ -190,12 +190,18 @@ change ships without an evaluation case demonstrating it is better. Run
 suite fingerprint it was produced under, so a run whose prompts have moved is
 reported as incomparable to the baseline rather than quietly compared to it.
 
-The harness states exactly what that measures, and so does this file. The default cases are scripted, so they measure whether the
-program still enforces its guarantees when a model misbehaves. They do not
-measure whether a prompt makes a model misbehave less often. That question uses
-the separately approved live mode documented in
-[`evals/inspect/METHODOLOGY.md`](../evals/inspect/METHODOLOGY.md); it requires an
-independently reviewed private scoring set and spends money.
+The harness states exactly what that measures, and so does this file. The
+default cases are scripted, so they measure whether the program still enforces
+its guarantees when a model misbehaves. They do not measure whether a prompt
+makes a model misbehave less often. That question uses the separately approved
+live mode documented in
+[`evals/inspect/METHODOLOGY.md`](../evals/inspect/METHODOLOGY.md). It needs an
+independently reviewed scoring set and spends money. A live run repeats each case several times, because one draw cannot
+show a defect that appears in three of five.
+
+What the paid runs found, prompt by prompt, with costs and the changes they
+justified, is in [evals/FINDINGS.md](../evals/FINDINGS.md). The tables behind it
+are in [evals/RESULTS.md](../evals/RESULTS.md).
 
 1. Save a realistic case that demonstrates a concrete failure.
 2. Label the failure before deciding that the prompt is the cause.

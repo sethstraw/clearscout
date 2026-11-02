@@ -20,9 +20,9 @@ from evals.inspect.scorers.relevance_verdict import recommendation_match
 from evals.inspect.solvers import relevance_live, tailorcv_live
 from evals.inspect.solvers.relevance_live import (
     RELEVANCE_PROMPTS,
-    PromptArm,
     relevance_live_solver,
 )
+from evals.inspect.solvers.tailorcv_live import PromptArm
 from evals.support.relevance import (
     AXES,
     RelevanceSampleError,
@@ -445,7 +445,7 @@ def _armed_solver(
         lambda *args, **kwargs: _RecordingClient(seen, schemas, plans),
     )
     return relevance_live._RelevanceLiveSolver(
-        run_metadata={"provider": "openai", **relevance_live.arms_metadata(arms)},
+        run_metadata={"provider": "openai", **tailorcv_live.arms_metadata(arms)},
         arms=arms,
         provider_name=None,  # type: ignore[arg-type]
         settings=Settings(provider=ProviderName.OPENAI),
@@ -459,7 +459,7 @@ def test_a_task_sends_the_schema_production_builds_for_that_task(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Two postings under one search context share one call and production's task schema."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     other = _sample(id="rrp-901")
     other["input"] = {
         **other["input"],
@@ -487,7 +487,7 @@ def test_two_declared_arms_each_send_their_own_prompt_bytes(
 ) -> None:
     """One run holds both prompt versions, and the arm the runner names picks the bytes."""
     monkeypatch.setenv(
-        relevance_live.PROMPT_ARMS_ENV,
+        tailorcv_live.PROMPT_ARMS_ENV,
         f"baseline={_arm_directory(tmp_path / 'baseline', 'Arm A.')},"
         f"candidate={_arm_directory(tmp_path / 'candidate', 'Arm B.')}",
     )
@@ -501,7 +501,7 @@ def test_two_declared_arms_each_send_their_own_prompt_bytes(
     assert [text.splitlines()[-1] for text in seen] == ["Arm A.", "Arm B."]
     assert first["metadata"]["arm"] == "baseline"
     assert second["metadata"]["arm"] == "candidate"
-    metadata = relevance_live.arms_metadata(arms)
+    metadata = tailorcv_live.arms_metadata(arms)
     assert [entry["arm"] for entry in metadata["prompt_arms"]] == ["baseline", "candidate"]
     assert (
         metadata["prompt_arms"][0]["prompt_suite_fingerprint"]
@@ -515,7 +515,7 @@ def test_an_undeclared_change_to_an_arm_is_refused_before_the_call(
 ) -> None:
     """The fingerprint check still stands between an approved run and other bytes."""
     directory = _arm_directory(tmp_path / "baseline", "Arm A.")
-    monkeypatch.setenv(relevance_live.PROMPT_ARMS_ENV, f"baseline={directory}")
+    monkeypatch.setenv(tailorcv_live.PROMPT_ARMS_ENV, f"baseline={directory}")
     seen: list[str] = []
     solver = _armed_solver(relevance_live.declared_arms(), monkeypatch, seen)
     solver({**_sample(), "arm": "baseline"})
@@ -534,7 +534,7 @@ def test_a_trial_naming_an_arm_the_run_never_declared_is_refused(
 ) -> None:
     """A row can only be billed to a prompt version the run bound itself to."""
     monkeypatch.setenv(
-        relevance_live.PROMPT_ARMS_ENV,
+        tailorcv_live.PROMPT_ARMS_ENV,
         f"baseline={_arm_directory(tmp_path / 'baseline', 'Arm A.')}",
     )
     seen: list[str] = []
@@ -549,12 +549,12 @@ def test_an_undeclared_working_tree_change_still_refuses_a_single_version_run(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A run declaring no arm keeps the check that binds it to the shipped prompts."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     seen: list[str] = []
     solver = _armed_solver(relevance_live.declared_arms(), monkeypatch, seen)
     solver(_sample())
     edited = {name: f"{packaged(name)}\nEdited under the run.\n" for name in RELEVANCE_PROMPTS}
-    monkeypatch.setattr(relevance_live, "load", lambda name: edited[name])
+    monkeypatch.setattr(tailorcv_live, "load", lambda name: edited[name])
 
     with pytest.raises(RuntimeError, match="prompt bytes changed after run preflight"):
         solver(_sample())
@@ -563,13 +563,13 @@ def test_an_undeclared_working_tree_change_still_refuses_a_single_version_run(
 
 def test_a_run_declaring_no_arm_records_no_arm(monkeypatch: pytest.MonkeyPatch) -> None:
     """The default run's rows and metadata carry nothing about arms."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     arms = relevance_live.declared_arms()
     solver = _armed_solver(arms, monkeypatch, [])
 
     result = solver(_sample())
 
-    assert relevance_live.arms_metadata(arms) == {}
+    assert tailorcv_live.arms_metadata(arms) == {}
     assert "arm" not in result["metadata"]
 
 
@@ -592,7 +592,7 @@ def test_a_kept_posting_note_reaches_the_task_as_production_renders_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A row with a note sends the notes block production sends, and a row without one none."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     noted = _sample()
     noted["input"] = {**noted["input"], "posting": {**noted["input"]["posting"], "note": NOTE}}
     plans: list[RequestPlan] = []
@@ -698,7 +698,7 @@ def _batch_solver(
     monkeypatch.setattr(relevance_live, "bill_sample", bill)
     declared = arms if arms is not None else relevance_live.declared_arms()
     return relevance_live._RelevanceLiveSolver(
-        run_metadata={"provider": "openai", **relevance_live.arms_metadata(declared)},
+        run_metadata={"provider": "openai", **tailorcv_live.arms_metadata(declared)},
         arms=declared,
         provider_name=ProviderName.OPENAI,
         settings=Settings(provider=ProviderName.OPENAI),
@@ -719,7 +719,7 @@ def test_a_repeat_sends_the_batches_production_cuts_at_both_caps(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Twenty-five rows under one search context are three calls, cut where production cuts."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     samples = _capped_samples()
     plans: list[RequestPlan] = []
     solver = _batch_solver(monkeypatch, samples, plans)
@@ -738,7 +738,7 @@ def test_each_search_context_is_its_own_task_with_its_own_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """One request carries one search context, so each context's evidence is its own prefix."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     samples = [_posting(1), _posting(2, context=SECOND_CONTEXT), _posting(3)]
     plans: list[RequestPlan] = []
     solver = _batch_solver(monkeypatch, samples, plans)
@@ -754,7 +754,7 @@ def test_the_estimated_call_count_is_the_calls_a_run_makes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Every trial sends production's batches again, and the estimate prices each one."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     samples = _capped_samples()
     plans: list[RequestPlan] = []
     solver = _batch_solver(monkeypatch, samples, plans)
@@ -773,7 +773,7 @@ def test_every_task_sends_one_schema_that_names_no_posting(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The schema sits in the cached prefix, so tasks over different postings send the same one."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     samples = [_posting(1), _posting(2, context=SECOND_CONTEXT), _posting(3)]
     solver = _batch_solver(monkeypatch, samples, [])
 
@@ -792,7 +792,7 @@ def test_a_batch_call_is_billed_once_and_each_member_records_its_share(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Spend summed over the rows equals the one call, and every row names that call."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     samples = [_posting(1), _posting(2), _posting(3)]
     billed: list[int] = []
     solver = _batch_solver(monkeypatch, samples, [], billed=billed)
@@ -821,7 +821,7 @@ def test_every_trial_and_arm_sends_the_batch_production_would(
 ) -> None:
     """Repeats and arms compare the same batch, so only the prompt or chance differs."""
     monkeypatch.setenv(
-        relevance_live.PROMPT_ARMS_ENV,
+        tailorcv_live.PROMPT_ARMS_ENV,
         f"baseline={_arm_directory(tmp_path / 'baseline', 'Arm A.')},"
         f"candidate={_arm_directory(tmp_path / 'candidate', 'Arm B.')}",
     )
@@ -858,7 +858,7 @@ def test_one_truncated_batch_call_fails_every_member_and_nothing_else(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The call that spent its budget decides both its rows; the other task still answers."""
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     samples = [_posting(1), _posting(2), _posting(3, context=SECOND_CONTEXT)]
     solver = _batch_solver(monkeypatch, samples, [], stops={1: Finish.TRUNCATED})
     dataset = "\n".join(json.dumps(sample) for sample in samples).encode()
@@ -891,7 +891,7 @@ def test_one_truncated_batch_call_fails_every_member_and_nothing_else(
 def test_a_batch_call_refused_for_another_reason_stops_the_run(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv(relevance_live.PROMPT_ARMS_ENV, raising=False)
+    monkeypatch.delenv(tailorcv_live.PROMPT_ARMS_ENV, raising=False)
     samples = [_posting(1), _posting(2)]
     solver = _batch_solver(monkeypatch, samples, [], stops={1: Finish.REFUSED})
     dataset = "\n".join(json.dumps(sample) for sample in samples).encode()
@@ -906,7 +906,7 @@ def test_an_arm_whose_prompt_fails_its_placeholder_check_is_refused_when_declare
     """A broken arm stops the run before any row is rendered or billed."""
     directory = _arm_directory(tmp_path / "broken", "Arm A.")
     (directory / "relevance_review_user.md").write_text("Review these.\n", encoding="utf-8")
-    monkeypatch.setenv(relevance_live.PROMPT_ARMS_ENV, f"broken={directory}")
+    monkeypatch.setenv(tailorcv_live.PROMPT_ARMS_ENV, f"broken={directory}")
 
     with pytest.raises(RuntimeError, match="prompt arm broken: Prompt relevance_review_user"):
         relevance_live.declared_arms()
@@ -959,7 +959,7 @@ def _live_environment(
     }.items():
         monkeypatch.setenv(name, value)
     for name in (
-        relevance_live.PROMPT_ARMS_ENV,
+        tailorcv_live.PROMPT_ARMS_ENV,
         "TAILORCV_EVAL_ESTIMATED_CENTS",
         "TAILORCV_EVAL_LIVE_MODEL",
         "TAILORCV_EVAL_LIVE_EFFORT",
@@ -1090,7 +1090,7 @@ def test_a_render_writes_what_the_paid_run_sends_without_reaching_a_provider(
     version_id, _ = _stored_cv_version(durable_database_url, tmp_path)
     _live_environment(monkeypatch, tmp_path, durable_database_url, version_id)
     monkeypatch.setenv(
-        relevance_live.PROMPT_ARMS_ENV,
+        tailorcv_live.PROMPT_ARMS_ENV,
         f"baseline={_arm_directory(tmp_path / 'baseline', 'Arm A.')},"
         f"candidate={_arm_directory(tmp_path / 'candidate', 'Arm B.')}",
     )

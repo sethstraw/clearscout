@@ -10,9 +10,9 @@ application. They show how the model is asked to read, match, draft, and critiqu
 
 This tour follows one job from lead to application history. The discovery and
 evaluation screenshots come from a live workspace with employer names
-redacted; the application timeline comes from the repository's
-synthetic demo workspace, whose person, employers, postings, dates, scores,
-costs, and documents are invented. Seeding that workspace makes no provider or
+redacted. The application timeline comes from the repository's synthetic demo
+workspace. Its person, employers, postings, dates, scores, costs, and documents
+are invented. Seeding that workspace makes no provider or
 job-board request.
 
 ## Start with a lead
@@ -27,10 +27,10 @@ relevance review. The person can promote that exact URL into Pending and start
 its policy-gated content read; no listing disappears because it missed the
 automatic admission rule.
 
-Board and sitemap reads are bounded per task. When a supported source has more
-pages or posting URLs than one task can read, TailorCV retains the exact next
-page or URLs as durable continuation work rather than restarting the source or
-dropping the unread tail. A sitemap read stopped by a discovery bound says so and
+Board and sitemap reads are bounded per task. A supported source can have more
+pages or posting URLs than one task can read. TailorCV then keeps the exact
+next page or URLs as durable continuation work. It does not restart the source
+or drop the unread tail. A sitemap read stopped by a discovery bound says so and
 stays incomplete, so the part it reached is never reported as the whole board.
 
 The optional search-vocabulary action suggests search terms from cited CV
@@ -80,6 +80,10 @@ that gap without calling a model. A complete, explicitly confirmed answer
 creates a new master-CV version; the earlier CV and the evaluation tied to it
 remain unchanged.
 
+A direct edit to the master CV is free only when the canonical parser accepts
+it. An edit it rejects goes through ordinary import, which makes a paid
+STRUCTURE call with no cost dialog, or fails when no key is set.
+
 ## Approval belongs to exact bytes
 
 TailorCV stores each document proposal with its evidence identifiers and a
@@ -109,9 +113,9 @@ The seeded workspace lets you inspect the screens and records without a live
 service. You can follow a source, see an unanswered requirement, review a draft,
 and read a correction without losing the earlier event.
 
-It does not prove that a live model will make a good fit judgment, that a board
-will still answer, that a renderer will produce a suitable PDF, or that a
-tailored resume will change a hiring outcome. [Validation
+It does not prove that a live model will make a good fit judgment or that a
+board will still answer. Nor does it prove that a renderer will produce a
+suitable PDF, or that a tailored resume will change a hiring outcome. [Validation
 status](validation.md) explains those limits.
 
 To inspect the workspace yourself, follow [Try the synthetic

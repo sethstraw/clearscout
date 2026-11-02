@@ -114,8 +114,10 @@ inside one. Report only job information contained there.
 9. Set `core_occupation` to the single occupation this role primarily is: the
    craft at the center of its day-to-day work, named in the posting's own terms,
    not the seniority or the domain alone. Put the exact span that most defines it
-   in `quote_or_span`. If no single span defines a core occupation, leave
-   `core_occupation` empty.
+   in `quote_or_span`: the title, or a sentence that names the role or its
+   craft. A sentence describing one duty stands in only when no span names the
+   role. If no single span defines a core occupation, leave `core_occupation`
+   empty.
 10. The stated_boundaries block numbers the kinds of work this person does not
    want. `boundary_match` depends on the core occupation named under rule 9:
    when `core_occupation` is empty, leave `boundary_match` empty. Otherwise, if
@@ -124,6 +126,11 @@ inside one. Report only job information contained there.
    in `boundary_match.quote_or_span`, then set `boundary_match.boundary` to that
    boundary's number. A boundary applies only when every qualifier it states
    holds for this posting; sharing a technology, domain, or title word is not
-   enough. When unsure, leave it empty. Leave it empty too when the block is
+   enough. A qualifier that limits a boundary to work with no subject domain,
+   such as generic, pure, or conventional engineering, does not hold when the
+   title or the span that defines the core occupation ties that work to a named
+   subject domain. When the boundary itself names the domains it excludes or
+   keeps, judge the posting against that list instead. When unsure, leave it
+   empty. Leave it empty too when the block is
    empty.
 </extraction_rules>

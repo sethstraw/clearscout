@@ -1,6 +1,6 @@
 {
   "case": "relevance_review_ungrounded_positive_is_rejected",
-  "prompt_suite": "5dd388ce0a0d",
+  "prompt_suite": "7149879130ab",
   "schemas": "8f90ddf665d3",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -33,7 +33,7 @@
     "relevance_review_missing_rules": 0,
     "relevance_review_undefined_basis_values": 0,
     "relevance_review_valid": 0,
-    "request.jobspec": "601495c0bf28",
+    "request.jobspec": "1a2c57e2db55",
     "request.match": "1d3adadc5edb",
     "request.relevance_review": "1a0729dd1ecc",
     "stage_failure": "",

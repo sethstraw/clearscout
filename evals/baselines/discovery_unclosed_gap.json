@@ -1,6 +1,6 @@
 {
   "case": "discovery_unclosed_gap",
-  "prompt_suite": "4961daf47b0c",
+  "prompt_suite": "baff5cd07446",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -36,7 +36,7 @@
     "gaps_preserved": 1.0,
     "model_calls": 2,
     "model_rule_disagreements": 0,
-    "request.jobspec": "2d2695ac57f1",
+    "request.jobspec": "6aecac00ae19",
     "request.match": "8bbdb067e46a",
     "stage_failure": "",
     "structured_output": "valid",

@@ -17,6 +17,32 @@ keeps the artifact hash plus the locator or character anchors needed to point
 back at the original text. Titles, employers, dates, degrees, and publication
 citations are copied out of the parsed record, never written by a model.
 
+```mermaid
+flowchart TD
+    cv["master CV"] --> parse["parser: one content-derived identifier per entry"]
+    parse --> matchschema["match schema: entry identifiers as a closed enum"]
+    matchschema --> match["match, by model"]
+    match --> select["select, by code, within the length budget"]
+    select --> draftschema["draft schema: only the selected identifiers"]
+    draftschema --> draft["draft, by model"]
+    draft --> assemble["assemble: titles, employers, dates, degrees, citations copied"]
+    assemble --> checks{"deterministic checks pass?"}
+    checks -->|no| rewrite["rewrite, within the attempt budget"]
+    rewrite --> draft
+    checks -->|"yes, draft is risky"| critic{"critic, by model, passes?"}
+    critic -->|no| rewrite
+    checks -->|"yes, not risky"| unreviewed["reported as unreviewed"]
+    critic -->|yes| package["review package: lines, sources, digest"]
+    unreviewed --> package
+    rewrite -->|"budget spent or a failure repeats"| package
+    package --> approval["approval: replacement text rechecked by check_supplied"]
+```
+
+_Traced from `_entry_id` in `application/master_cv/cv.py`, `response_schema` in
+`stages/match.py`, `draft_schema` in `stages/draft.py`, the rewrite loop in
+`tailoring/pipeline/rewrite.py`, and `check_supplied` in
+`stages/verify/resume.py`._
+
 After that, deterministic checks look for missing citations, numbers that are not
 in the cited evidence, required and forbidden wording, approval digests, and
 structural problems. The model critic handles the things code judges badly:

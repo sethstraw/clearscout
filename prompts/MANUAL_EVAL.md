@@ -30,14 +30,16 @@ Do not do these by hand. Run `uv run python -m evals` and read the diff.
 | Collaboration | `ownership_inflation` | Every deterministic check passes on an inflated claim, which is the finding: only the critic and human review answer it |
 | Poisoned posting | `prompt_injection` | The title is flattened and bounded, the over-long injected keyword is dropped, and an obeyed instruction produces an uncited line that fails the run |
 | Similar postings | `similar_posting_ingestion`, `similar_posting_governance`, `similar_posting_warehouse` | Selection reaches a different answer for three postings that differ only in emphasis |
-| Long record | `strong_direct_fit` | Selection fits a twelve-year record to a two-page budget and keeps the evidence that answers the posting |
+| Long record | `long_record_fit` | A record far longer than two pages is fitted to the page by dropping its weakest bullets, and the fit never drops the last printed answer to a must-have |
 
 Three more failures the harness covers that this sheet never listed:
 `invented_figure` and `uncited_line`, which are the two fabrications the shipped
 checks catch outright, and `out_of_vocabulary_citation`, which exercises the
 closed vocabulary from the other side. `ambiguous_requirement`, `poor_fit`,
 `ai_assisted_development`, `posting_language_echo`, and `fluent_but_unsupported`
-have no entry here because they were never on this sheet.
+have no entry here because they were never on this sheet. `strong_direct_fit`
+is the baseline: every requirement is answered and nothing goes wrong, so a
+check that fails everywhere has one case that says whether the harness broke.
 
 ## Cases the harness does not cover
 

@@ -36,7 +36,7 @@ It streams newline-delimited JSON; each line follows `SourceScanOutcomeResponse`
 in OpenAPI. It accepts the list route's filters and ordering without pagination,
 counts, or facets. A scan includes its continuations; a continuation task exports
 only its own rows. The export is body-free and does not read publisher sites.
-Use the paginated list for interactive views instead of collecting every page
+Use the paginated list for interactive views instead of collecting every page.
 for an audit.
 
 ## Where things belong
@@ -61,7 +61,7 @@ One boundary does not fit a contract and stays in
 another's underscore-prefixed names, which import-linter cannot see because it
 graphs modules rather than the names imported from them. The same test checks
 the contracts themselves, failing on a module a layers contract leaves out, a
-redundant forbidden entry, a wildcard ignore, or a name that is not short ASCII.
+redundant forbidden entry, a one-sided exclusion between peers, a wildcard ignore, or a name that is not short ASCII.
 
 The package root is not a placement option. Runtime composition belongs in
 `bootstrap/`, HTTP and CLI adapters in `delivery/`, business policy in an

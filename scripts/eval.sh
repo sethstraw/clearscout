@@ -43,7 +43,7 @@
 #     <prompt>.md per prompt the stage uses. Repeat it to interleave arms in one
 #     run: each sample then runs --trials times per arm, every call is checked
 #     against the bytes its arm declared, and every row names its arm. Only the
-#     relevance_review stage takes prompt arms.
+#     relevance_review and jobspec stages take prompt arms.
 #     --cv-version reviews against that master-CV version from the --data-root
 #     workspace instead of the synthetic CV, and the run metadata records it. The
 #     task's dataset must then sit outside the repository, and every row's cv_hash
@@ -83,8 +83,8 @@ Subcommands:
     [--limit N | --ids <id,id,...>] [--split <split>] [--prompt-arm <name>=<private-dir> ...]
 
 The selection-manifest triple is required for the match stage and refused for
-every other stage. Prompt arms, --cv-version, and --render-only are taken only
-by the relevance_review stage.
+every other stage. Prompt arms are taken by the relevance_review and jobspec
+stages; --cv-version and --render-only only by relevance_review.
 EOF
 }
 
@@ -199,7 +199,7 @@ live_run() {
   # The task file owns its stage, so the estimate and the run cannot disagree.
   stage="$(sed -n 's/^STAGE = "\([a-z_]*\)"$/\1/p' "$task_file" | head -1)"
   case "$stage" in
-    match|relevance_review|draft|cover|critic) ;;
+    match|relevance_review|jobspec|draft|cover|critic) ;;
     "")
       printf 'Refused: %s declares no STAGE.\n' "$task_file" >&2
       exit 64
@@ -229,10 +229,10 @@ live_run() {
     printf 'Refused: only the match stage takes a selection manifest.\n' >&2
     exit 64
   fi
-  # Only the relevance solver reads the arm declaration, so another stage would
-  # label rows with arms every call shared.
-  if [[ -n "$prompt_arms" && "$stage" != relevance_review ]]; then
-    printf 'Refused: only the relevance_review stage takes prompt arms.\n' >&2
+  # Only these solvers read the arm declaration, so another stage would label
+  # rows with arms every call shared.
+  if [[ -n "$prompt_arms" && "$stage" != relevance_review && "$stage" != jobspec ]]; then
+    printf 'Refused: only the relevance_review and jobspec stages take prompt arms.\n' >&2
     exit 64
   fi
   if [[ -n "$cv_version$render_dir" && "$stage" != relevance_review ]]; then

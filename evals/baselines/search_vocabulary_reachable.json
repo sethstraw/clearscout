@@ -1,6 +1,6 @@
 {
   "case": "search_vocabulary_reachable",
-  "prompt_suite": "b73a89a38069",
+  "prompt_suite": "5ebc55b28c57",
   "schemas": "80dd5769ea4f",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -27,7 +27,7 @@
     "deterministic_work_requested": 0,
     "model_calls": 3,
     "model_rule_disagreements": 0,
-    "request.jobspec": "9ed52df7acc8",
+    "request.jobspec": "4e3cb3a74bf4",
     "request.match": "dbc3c471aae5",
     "request.search_vocabulary": "695999d15673",
     "search_vocabulary_titles_accepted": 1,

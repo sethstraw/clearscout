@@ -1,6 +1,6 @@
 {
   "case": "posting_language_echo",
-  "prompt_suite": "3af256e7b5db",
+  "prompt_suite": "a0b6c9a19f47",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
@@ -50,7 +50,7 @@
     "posting_language_echoed": 4,
     "request.critic": "dbaa487bc3a6",
     "request.draft": "812f4c58ff62",
-    "request.jobspec": "07926f3859fb",
+    "request.jobspec": "0b00eb4d782a",
     "request.match": "442d43a5e646",
     "stage_failure": "",
     "structured_output": "valid",

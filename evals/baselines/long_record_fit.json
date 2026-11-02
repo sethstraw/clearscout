@@ -1,6 +1,6 @@
 {
   "case": "long_record_fit",
-  "prompt_suite": "c13474b79878",
+  "prompt_suite": "e64b2173a1af",
   "schemas": "ab32398ba3e6",
   "scores": {
     "blocking_gates_found": 1.0,
@@ -50,7 +50,7 @@
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
     "request.draft": "db1ec47bd7b3",
-    "request.jobspec": "ad97b39ba95b",
+    "request.jobspec": "4911a7b9af9b",
     "request.match": "d55d8c7a8ec6",
     "requirement_precision": 1.0,
     "requirement_recall": 1.0,

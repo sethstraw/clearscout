@@ -32,7 +32,7 @@ from evals.support.jobspec import (
 )
 from tailorcv.application.config import Effort, ProviderName, Settings, Stage
 from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.prompts import load, overriding, suite_fingerprint
+from tailorcv.application.prompts import check_template, load, overriding, suite_fingerprint
 from tailorcv.application.tailoring.guardrails import Guardrails
 from tailorcv.application.tailoring.runs import settings_hash as run_settings_hash
 from tailorcv.application.tailoring.stages.match import Strength, match
@@ -42,7 +42,7 @@ from tailorcv.infrastructure.persistence.models import Workspace
 from tailorcv.infrastructure.providers.credentials import find as find_credential
 from tailorcv.shared.costs import Ledger
 from tailorcv.shared.costs.prices import table as price_table
-from tailorcv.shared.errors import AuthError
+from tailorcv.shared.errors import AuthError, TailorcvError
 
 _APPROVAL_ENV = "TAILORCV_EVAL_LIVE_APPROVED_CENTS"
 _ESTIMATE_ENV = "TAILORCV_EVAL_ESTIMATED_CENTS"
@@ -58,6 +58,7 @@ _SELECTION_MANIFEST_ENV = "TAILORCV_EVAL_SELECTION_MANIFEST"
 _SELECTION_MANIFEST_SHA_ENV = "TAILORCV_EVAL_SELECTION_MANIFEST_SHA256"
 _SELECTION_MANIFEST_BYTES_SHA_ENV = "TAILORCV_EVAL_SELECTION_MANIFEST_BYTES_SHA256"
 _DATABASE_URL_ENV = "TAILORCV_EVAL_DATABASE_URL"
+PROMPT_ARMS_ENV = "TAILORCV_EVAL_PROMPT_ARMS"
 _BILLING_ORIGIN = "eval.match_live"
 _SPLITS = {"development", "regression", "holdout"}
 _MATCH_PROMPTS = ("match_system", "match_user")
@@ -311,6 +312,103 @@ def prompt_snapshot_fingerprint(names: Sequence[str], snapshot: Mapping[str, str
     """Return the suite fingerprint for one complete prompt snapshot."""
     with overriding(snapshot):
         return suite_fingerprint(tuple(names))
+
+
+@dataclass(frozen=True)
+class PromptArm:
+    """One prompt version a run alternates onto, and the bytes it was declared as."""
+
+    name: str | None
+    source: Path | None
+    prompt_names: tuple[str, ...]
+    snapshot: Mapping[str, str]
+    fingerprint: str
+
+    def current(self) -> dict[str, str]:
+        """Re-read this arm's prompt bytes from where it was declared."""
+        if self.source is None:
+            return {name: load(name) for name in self.prompt_names}
+        return _arm_snapshot(self.prompt_names, self.source)
+
+    def as_metadata(self) -> dict[str, Any]:
+        """Return the bytes identity a reader checks this arm's rows against."""
+        return {
+            "arm": self.name,
+            "source": str(self.source),
+            "prompt_suite_fingerprint": self.fingerprint,
+            "prompts": {
+                name: bytes_sha256(text.encode("utf-8")) for name, text in self.snapshot.items()
+            },
+        }
+
+
+def _arm_snapshot(prompt_names: Sequence[str], directory: Path) -> dict[str, str]:
+    snapshot: dict[str, str] = {}
+    for name in prompt_names:
+        path = directory / f"{name}.md"
+        try:
+            snapshot[name] = path.read_text(encoding="utf-8")
+        except OSError as error:
+            raise RuntimeError(
+                f"Live evaluation refused: prompt arm cannot read {path}."
+            ) from error
+    return snapshot
+
+
+def _arm(prompt_names: tuple[str, ...], name: str | None, directory: Path | None) -> PromptArm:
+    snapshot = (
+        {prompt: load(prompt) for prompt in prompt_names}
+        if directory is None
+        else _arm_snapshot(prompt_names, directory)
+    )
+    for prompt, text in snapshot.items():
+        try:
+            check_template(prompt, text)
+        except TailorcvError as error:
+            named = "the working tree" if name is None else f"prompt arm {name}"
+            raise RuntimeError(f"Live evaluation refused: {named}: {error}") from error
+    return PromptArm(
+        name=name,
+        source=directory,
+        prompt_names=prompt_names,
+        snapshot=MappingProxyType(snapshot),
+        fingerprint=prompt_snapshot_fingerprint(prompt_names, snapshot),
+    )
+
+
+def declared_arms(prompt_names: Sequence[str]) -> tuple[PromptArm, ...]:
+    """Return the prompt versions this run declared, or the working tree alone."""
+    names_tuple = tuple(prompt_names)
+    declaration = os.environ.get(PROMPT_ARMS_ENV, "").strip()
+    if not declaration:
+        return (_arm(names_tuple, None, None),)
+    arms: list[PromptArm] = []
+    for entry in declaration.split(","):
+        name, separator, directory = entry.partition("=")
+        if not separator or not name.strip() or not directory.strip():
+            raise RuntimeError(
+                f"Live evaluation refused: prompt arm {entry!r} is not name=directory."
+            )
+        arms.append(_arm(names_tuple, name.strip(), Path(directory.strip()).expanduser().resolve()))
+    names = [arm.name for arm in arms]
+    if len(set(names)) != len(names):
+        raise RuntimeError("Live evaluation refused: prompt arm names must be distinct.")
+    return tuple(arms)
+
+
+def arms_metadata(arms: Sequence[PromptArm]) -> dict[str, Any]:
+    """Return the declared-arm identity a run records, empty when none was declared."""
+    if all(arm.name is None for arm in arms):
+        return {}
+    return {"arms": len(arms), "prompt_arms": [arm.as_metadata() for arm in arms]}
+
+
+def requested_arm(arms: Sequence[PromptArm], requested: object) -> PromptArm:
+    """Return the declared arm a call claims, refusing any other name."""
+    for arm in arms:
+        if arm.name == requested:
+            return arm
+    raise RuntimeError(f"Live evaluation refused: undeclared prompt arm {requested!r}.")
 
 
 def paid_stage_metadata(stage: Stage, prompt_names: Sequence[str], dataset: Path) -> dict[str, Any]:

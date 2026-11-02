@@ -1,6 +1,6 @@
 {
   "case": "structure_reachable",
-  "prompt_suite": "247706a75000",
+  "prompt_suite": "9b461f8ac64b",
   "schemas": "e5c921733908",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -27,7 +27,7 @@
     "deterministic_work_requested": 0,
     "model_calls": 3,
     "model_rule_disagreements": 0,
-    "request.jobspec": "9ed52df7acc8",
+    "request.jobspec": "4e3cb3a74bf4",
     "request.match": "dbc3c471aae5",
     "request.structure": "e094d00f3bdd",
     "stage_failure": "",

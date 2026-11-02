@@ -4,6 +4,14 @@ TailorCV is a local, open-source workspace for finding and tracking jobs,
 comparing postings with one master CV, and drafting resumes and cover letters.
 The source behind each drafted claim stays close enough to check.
 
+Anti-fabrication is the point. A model may select and reorder CV evidence, but
+it may cite only evidence identifiers that exist in the CV selected for that
+run. The program copies titles, employers, dates, education, and publication
+citations verbatim. A deterministic reader reports its own reading of each
+posting beside the model's, and where they disagree, both are shown. Everything
+is stored locally, and discovery reads published job feeds under the policy
+each site publishes.
+
 Start with free discovery: create a workspace, enter search preferences, add
 posting links or employer boards, and track jobs with your own notes. No CV or
 provider key is needed. Optional daily or weekly scans run while the local
@@ -22,8 +30,53 @@ environment, not an installed product. To look before installing, read the
 [product tour](docs/product-tour.md), whose screenshots come from a redacted
 working workspace, or [run the synthetic workspace](#try-the-synthetic-workspace).
 
-TailorCV honors robots.txt and identifies itself with its own user agent. Each
-user is responsible for following the terms of the sites they read with it.
+TailorCV identifies itself with its own user agent and honors robots.txt for
+board reads, refreshes, and every later read of a stored URL. The one exception
+is the first read of a posting link you enter yourself, which proceeds unless
+robots.txt names TailorCV. Each user is responsible for following the terms of
+the sites they read with it.
+
+## Free and paid
+
+TailorCV works fully free as a board scanner and screener. No provider key is
+needed to add boards, scan them on a schedule, screen postings with
+deterministic rules, and track jobs. Paid steps are opt-in. Each one sends a
+bounded input to the OpenAI or Anthropic account you configure. Nothing the
+program schedules by itself is paid; every paid task starts with a person.
+
+| Operation                                   | Cost | Model stages                         |
+| ------------------------------------------- | ---- | ------------------------------------ |
+| Add, preview, schedule, and scan boards     | Free | None                                 |
+| Add a posting link, refresh, track, dismiss | Free | None                                 |
+| Adopt a canonical Markdown or text CV       | Free | None                                 |
+| Import a Word, PDF, image, or other CV      | Paid | STRUCTURE, INGEST                    |
+| Relevance review of selected postings       | Paid | RELEVANCE_REVIEW, up to 20 per call  |
+| Evaluate a posting                          | Paid | JOBSPEC, MATCH                       |
+| Tailor a resume and cover letter            | Paid | JOBSPEC, MATCH, DRAFT, COVER, CRITIC |
+| Search vocabulary or a guided campaign      | Paid | Vocabulary, hosted web search        |
+
+The [full table](docs/user-guide.md#choose-the-free-or-paid-path) lists every
+operation, and [typical costs](docs/user-guide.md#typical-costs) gives measured
+numbers. [What live runs cost and taught](evals/FINDINGS.md) explains the
+model lessons, and [evaluation results](evals/RESULTS.md) holds the tables.
+
+```mermaid
+flowchart LR
+    A[Add sources] --> B[Scheduled scan]
+    B --> C[Deterministic screening]
+    C --> D[Pending queue]
+    D --> E[Relevance review]
+    D --> F[Evaluation]
+    E --> F
+    F --> G[Tailoring]
+    G --> H[Your review and approval]
+    classDef paid fill:#fde2c8,stroke:#b35c00,color:#000
+    classDef free fill:#d9f2e3,stroke:#1d7a46,color:#000
+    class A,B,C,D,H free
+    class E,F,G paid
+```
+
+Green steps are free. Orange steps are paid and optional.
 
 ## Install a tagged release
 
@@ -205,7 +258,7 @@ CV evidence and reviewed drafts to that record:
 4. Draft from the evidence selected for that job.
 5. Approve the exact result and retain what happened next.
 
-It drafts; it does not submit applications, contact employers, look up people,
+It drafts. It does not submit applications, contact employers, look up people,
 or decide whether you should apply.
 
 Discovery, posting observations, fit evaluations, tailored documents,
@@ -226,6 +279,39 @@ TailorCV says `not stated` instead of filling the gap.
 [Truth, evidence, abstention, and approval](docs/truth-and-provenance.md) owns
 the complete rule.
 
+## How the rule is enforced
+
+The rule is enforced by construction, not by asking the model nicely. The CV
+parser gives every usable entry a content-derived identifier. Each response
+schema is built at runtime as a closed list of those identifiers. Matching can
+cite only identifiers that exist. Drafting can cite only the ones selection kept
+for that run. A citation to an entry outside the run cannot be expressed, so
+nothing has to catch it.
+
+The same habit runs through the rest of the program:
+
+- Every requirement and hard gate quotes the posting. The quote is placed in the
+  fetched body before the run continues. One that cannot be placed is held for a
+  person.
+- A deterministic reader works from the raw posting, not from the model's
+  summary of it. Its reading is printed beside the model's. There is no merge
+  and no tiebreak, because the disagreement is the useful row.
+- Each prompt file marks regions as fixed. An edited prompt that changes one is
+  refused at save and again before sending.
+- Cost estimates advise. They never stop a task you confirmed.
+- Postings are identified by URL. Robots.txt and each source's published
+  condition decide what may be read. A model may propose a URL, and local policy
+  decides whether to open it.
+- The server binds to loopback only, and a provider key never reaches the
+  browser.
+- The live OpenAI run is committed as a cassette and replayed through the real
+  SDK in the offline suite.
+
+Abstention is the feature. An analyzer that says "not stated" three times in
+ten is a better instrument than one that always answers. Those three rows are
+the ones worth a person's time. [Architecture](ARCHITECTURE.md#the-truth-boundary) explains the
+design in full.
+
 ## Local policy decides
 
 The model interprets, searches, drafts, and critiques. Application code owns the
@@ -238,8 +324,10 @@ stage to the provider you configured and may cost money.
 [Security](SECURITY.md#what-leaves-your-computer) lists every request that
 leaves the machine. Reading local reports and records makes none.
 
-Every paid background task requires explicit consent. Read its scope and
-available cost information before confirming. The Model spend report records
+In the web client, every paid background task shows its scope and cost
+information and asks before it is queued. The CLI and the raw API do not ask:
+`tailorcv tasks tailor`, a direct `POST /api/v1/tasks`, and an API retry of a
+failed paid task enqueue paid work with no confirmation. The Model spend report records
 usage and costs from calls that ran. Missing prices remain unknown, and
 provider invoices may differ.
 

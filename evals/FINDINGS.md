@@ -1,0 +1,126 @@
+# What live validation found
+
+TailorCV calls paid models at five stages: requirement extraction (jobspec), evidence matching (match), relevance review, drafting, and critique. Between August and November 2026 the maintainer ran about 170 dated paid runs against those stages and kept a private ledger of each. This file publishes what those runs taught, because a claim like "the model never cites evidence it was not given" is only worth what the evidence behind it is worth.
+
+Read these as defect discovery on small samples, not as accuracy claims. Most runs cover 4 to 19 synthetic cases or a handful of real postings, with 1 to 5 draws each. A number here says a behavior happened at least that often under one prompt and one model. It does not carry to real postings in general. [inspect/METHODOLOGY.md](inspect/METHODOLOGY.md) explains what each eval family measures and what it cannot. [RESULTS.md](RESULTS.md) holds the tables; this file is the narrative.
+
+Runs on the maintainer's real job search appear here only as counts, costs, and neutral descriptions. Synthetic cases are named. Costs are in USD as the ledger priced them.
+
+## Model choice per stage
+
+**What was tried.** Every stage started on gpt-5.6-terra: extraction at low effort, drafting at high. On 2026-08-15 gpt-5.6-luna drafted one posting. On 2026-09-23 gpt-6-sol and gpt-6-luna were screened on match and relevance. On 2026-10-04 gpt-6.1-sol was screened against gpt-6-sol on match. The product has an Anthropic adapter, but the ledger records no paid Anthropic run, so nothing here compares vendors.
+
+**What the numbers showed.**
+
+- Drafting, 2026-08-15, one posting: luna's drafting tier cost USD 0.0182 against terra's USD 0.1036, 82 per cent less. The critic scored luna a full point lower on specificity, readability, and ATS clarity (3 against 4). Both verified, which only means nothing was invented.
+- Match, 2026-09-23, 10 cases x 3: sol 22 of 30 for USD 0.031106, luna 19 of 30 for USD 0.002155. Luna dropped one case to 1 of 3 where sol held 3 of 3.
+- Relevance, same day, 16 cases x 3: sol 38 of 48 for USD 0.097379, luna 34 of 48 for USD 0.006198. Sol gave one answer across all three trials on 15 of 16 cases. See [RESULTS.md, Match](RESULTS.md#match) and [Relevance review](RESULTS.md#relevance-review).
+- Match, 2026-10-04, 19 cases x 3: gpt-6-sol 57 of 57 for USD 0.101493, gpt-6.1-sol 54 of 57 for USD 0.075995. All three misses were one case, answered GAP on every trial, against the rule that counts a related tool as transferable. gpt-6.1-sol reasoned about a third as much (2,779 against 7,925 tokens).
+- After the switch, one real posting re-evaluated with prompts unchanged moved from 92 to 86 per cent on one re-sampled requirement (2026-10-05).
+
+**What we concluded.** Luna costs about a tenth of sol's price and is not at parity with sol on either extraction stage. Sol stays. gpt-6.1-sol replaced gpt-6-sol on 2026-10-04 on cost, by the maintainer's call, against a reviewer who read the Helm miss as a regression. The cost of that choice is one known related-tool case.
+
+**Open.** Only match at medium was screened for gpt-6.1-sol. Extraction at low and the drafting stages were never compared on it.
+
+## Reasoning effort as a lever
+
+**What we did.** Paired runs that changed only the effort setting.
+
+**What the numbers showed.**
+
+- Extraction, 2026-08-14, 22 cases on terra: `none` cost USD 1.0806 against `low` at USD 0.9692, 11.5 per cent more. Output barely moved (90,704 against 92,687 tokens). The difference was caching: the `none` arm wrote 329,476 cache tokens and read 123,516, against 226,361 and 226,385. Agreement moved 6 to 7 of 22, which is one case.
+- Drafting, 2026-08-15, two postings: terra at medium cost 35 per cent less than at high and scored identically on all six critic axes.
+- Match, 2026-09-23, 13 cases x 3, same prompt and manifest: low 36 of 39 for USD 0.041343, medium 39 of 39 for USD 0.057228, 38 per cent more. All nine low-effort trials on the hardest case, across three runs, spent zero reasoning tokens. At medium the same case reasoned 90 to 180 tokens and passed.
+- Critic, 2026-09-23, 10 cases: low caught all 10 plants for USD 0.092364 against USD 0.158845 at medium. Per draw, low caught 13 of 15 plant-draws and medium 15 of 15. One plant survived at low only because the merge keeps any single draw's doubt.
+
+**What we concluded.** Effort is not the cost lever on short extraction calls. Reasoning is a small share of their output, and changing effort disturbs caching more than it saves. It is an accuracy lever where a judgment hinges on reading a qualifier. Match ships at medium. The critic stays at medium because its low-effort catch rested on one draw. Drafting at medium matched high on two postings, which is a price, not a verdict.
+
+**Open.** On terra, `minimal` was rejected with a 400 mid-run (2026-08-14). The accepted effort set is a property of the model, not the provider.
+
+## Cost economics
+
+**Per unit.** The first full baseline (2026-08-13, terra, standard tier) priced screening at USD 0.0888 per posting warm and USD 0.1285 cold. Three of four complete applications cost a mean of USD 0.2874. The fourth hit the redraft loop three times, cost USD 0.5693, and still failed verification. The most expensive outcome was the one that could not be sent.
+
+**Flex tier.** The first flex run (2026-08-14) served all three flex applications at half the standard rate. Unattended work has run on flex since. Two failure modes surfaced later. A flex refusal delivered inside the stream skipped the standard-tier fallback (2026-10-05, nothing billed). One call in the 2026-10-04 screen ran 609 seconds and fell back to standard, 17 per cent of that arm's cost. After the stream fix, 77 flex calls ran with 0 resent on standard.
+
+**Prompt caching.** A cache read costs a tenth of input and a write 1.25 times, so a prefix that is written and never read loses money. An audit of 257 calls on 2026-08-31 found five of seven stages below a 1.0 read-to-write ratio, and 50 calls that wrote a cache entry nobody read. Match read 2.02 tokens per token written because the CV evidence block sat at a stable prefix. On 2026-08-14, cutting an 81,235-character duplicate block to 1,030 moved a warm application only 7.8 per cent, because the block was already cached.
+
+The relevance stage taught the subtler lesson. Under explicit caching the response schema precedes the cached prefix. A schema closed over per-run posting ids made every run's prefix unique, and 15 tasks wrote 576,180 tokens a stable prefix would have read. Opening those ids to strings, and checking them in code, fixed it. On 2026-09-28 a second task with different postings read the whole 28,647-token prefix the first wrote, for USD 0.0196 against USD 0.0519 ([RESULTS.md, stage experiments](RESULTS.md#stage-experiments-outside-evalsh)).
+
+**Batching.** Production relevance review sends up to 20 postings per call with the CV evidence once. An eval harness that sent one posting per call cost about four times as much per posting (2026-09-28, USD 0.9223 for 31 calls). Its estimator was six times off (2026-09-20) because it averaged batched production calls.
+
+**Billed but unusable.** Six calls on archived postings were paid and then refused at commit (2026-09-26, USD 0.1117). Two rows that were dismissed variants failed after spend (2026-10-15, USD 0.0963). A retry after a timeout re-reviewed 36 unchanged rows (2026-10-01, USD 0.179 spent twice). Archived postings are now refused before the paid stages.
+
+**Totals, with their limit.** Of the ledger's 172 entries, the 113 whose headings carry a USD figure sum to about USD 45. That is not a full total. The August entries priced in another format, earlier totals omit the hosted-search fee of USD 10 per thousand calls, and six early rows are estimates rebuilt from a model-written report (2026-08-16 audit).
+
+## Prompt engineering, with before and after
+
+**Match rules.** The frozen 10-case baseline (2026-08-26, prompt `2cb005427148`) scored 7 of 10, with one anti-fabrication hard failure: generic participation upgraded to DIRECT delivery. The corrective prompt `d204058a7e84` scored 9 of 10 the next day, each run about two cents. On 2026-09-23 a rule-5 rewrite fixed its target case (0 of 3 to 3 of 3) and broke two others, one systematically. A narrower rewrite recovered most of it (34 to 36 of 39), and medium effort closed the rest. Strength agreement moved from 20 of 26 to 27 of 27 at prompt `93253db7d4ab` once rule 6 graded an unmet stated qualifier `weak` ([RESULTS.md, Match](RESULTS.md#match)).
+
+**Relevance rounds.** Six rounds on real postings, recorded in [RESULTS.md](RESULTS.md#a-prompt-ab-on-a-real-workspace), mostly taught how not to measure:
+
+- Round 1 credited nothing. Prompt, CV, parameters, batch composition, and notes all changed together.
+- Round 2 measured nothing. The harness sent one posting per call, so the old arm could not reproduce the batch-mode refusals. A citation contradiction between prompt and validator landed on its merits.
+- Round 3 told the model to decide before summarizing. Unlikely draws rose from 5 to 8 of 27. The response schema puts the summary first on purpose (`tests/durability/test_reasoning_before_label.py`), and wording that fights the schema order loses.
+- Round 4 gained one trial on its target and lost one gold trial. Blocked.
+- Round 5 cut the target failure from 24 to 11 of 39 trials and moved six controls. Not landed: wording could not enforce the class.
+- Rules (a) to (d), 2026-11-01: private 36 to 38 of 45, gold unchanged, absent verdicts with no cited id 14 to 0. Landed, with one target recorded as a limit.
+
+**Jobspec example cues.** On 2026-09-27, three real postings re-read under a rule that keeps "such as" lists with their items. Requirements that lost their cue fell from 15 to 4, all four legitimate trailing splits. The fix exposed a match-stage reading that calls listed examples unshown.
+
+**Jobspec degree ladders.** On 2026-10-19, two branch draws read a degree ladder as one blocking gate holding every option. The control repeated it as a non-blocking years gate (7 calls, USD 0.1343).
+
+**Jobspec boundaries.** The product lets a person list kinds of work they do not want. Jobspec names the one that applies, and a named boundary skips the posting. On the shipped prompt, a live posting for a research AI lead role at a pharmaceutical company was routed to a generic-engineering boundary in 3 of 5 draws. Every hit used a duty sentence as the occupation, and the boundary's "generic" qualifier did not stop it. A synthetic domain-tied lead fired 5 of 5. The fix edits rules 9 and 10 of [`prompts/jobspec_system.md`](../prompts/jobspec_system.md). A duty sentence no longer defines the occupation when a span names the role. A no-domain qualifier fails when the role is tied to a named subject domain. Over 50 draws in round 1 (USD 0.8712) the candidate went 0 of 5 and 0 of 5 on those two. The generic ML platform case still fired 5 of 5, and two earlier true positives 5 of 5 each.
+
+Review then flagged that the round-1 clause could suppress a pure-software boundary on a generic title with a business suffix. Round 2 (60 calls, USD 0.9312) added one sentence to rule 10: when the boundary itself names the domains it excludes or keeps, judge the posting against that list. Both arms read identically, and a new synthetic Software Engineer, Payments case fired 5 of 5. An offline check on 110 recorded occupation texts found 0 hits on the fallback path.
+
+One limit came out of the review. Round 1 never reproduced the duty-sentence span on the live posting: all ten draws used the role sentence. So the fix is shown on the synthetic pair, and the live posting's 0 of 5 is consistent with it but does not prove it.
+
+The cases became a permanent eval of eight synthetic postings. Its first run (81 calls, USD 0.5537) scored the old prompt 40 of 40 and the shipped prompt 39 of 40, one missed draw on the generic ML platform. Neither misfired on its domain-tied cases. That is the variance lesson again: a defect seen 3 of 5 times on one live posting did not appear on new synthetic postings, so the set is a regression guard, not proof of the fix.
+
+**Critic.** The 2026-09-22 reseal failed on content preservation. All six draws reported no unsupported claim, and every below-floor draw named a line the program copies verbatim from the CV, not model text. The fix declared those lines and stopped a single minority draw from forcing a rejection. On 2026-09-23 three clean fixtures drew doubts on all three draws. Reading the synthetic CV showed the fixtures were wrong, not the critic.
+
+## Variance and measurement
+
+- One document, 18 critic trials (2026-09-20 and 09-21): 7 fails, 11 passes, all on a genuine unsupported claim. That is a 61.1 per cent miss rate, with a Wilson 95 per cent interval on the catch rate of 0.20 to 0.61. Each draw either saw the distortion or did not; none wavered at the floor.
+- One match case read DIRECT on 2, 0, 0, and 2 of 3 trials across four runs of an unchanged prompt. A fix that "moves" it in one run moved nothing.
+- The boundary defect was 3 of 5 on one posting. One draw or a cached replay cannot see a 3-in-5 effect, so the lane used five draws per case. Even five draws did not reproduce the original span on the live posting.
+- Labels come from two blind reviewers and an adjudicator, frozen before a run. A relabel gets a new manifest digest, and rows compare only at the same digest. Rulings are calibration data, not gold.
+- A wrong score is not always a wrong answer. On 2026-09-20 two relevance misses were the scorer reading a field the product deliberately empties. It was fixed from the stored logs, with no rerun bought.
+- `scripts/eval.sh run` replays recorded answers and measures ledger consistency only. Only `--live` tests a prompt. The cassette replay in `tests/delivery/test_recorded.py` runs the real SDK against a recording. Any change to a prompt, schema, or schema docstring changes the request and invalidates it. Reseals on 2026-09-18, 09-22, and 11-02 cost USD 0.12 to 0.31 each.
+
+## Structured outputs
+
+- OpenAI strict mode allows 1000 enum values per schema, and 15,000 characters across string enums over 250 values. Match closes cited ids over the CV's entries, so a CV past about 870 entries would fail every call. `src/tailorcv/infrastructure/providers/base.py` now refuses such a schema before any request. Whether a shared `$defs` enum counts once is undocumented.
+- A Pydantic docstring on a response model reaches the wire schema, the request digest, and the cassette. A docstring edit is a request change.
+- A closed enum is a grounding tool and a caching hazard at once. Closing over per-run ids broke the cache prefix (above). Close over stable sets and check per-run ids in code.
+
+## Grounding and anti-fabrication
+
+- Every cited id is checked against the CV evidence selected for that run, and every quote against the stored posting body. On the 2026-09-27 queue review, 493 of 493 cited CV ids and 587 of 587 posting citations held at their offsets. On 2026-10-06, 88 of 88 jobspec quotes matched the body after whitespace normalization.
+- The guard is code, not the reader. Guided search intersects the model's cited ids with known entry ids and drops a proposal left with none (2026-08-18). A relevance answer that cites no evidence for an established qualification is rejected as `invalid_cv_evidence`, and a contradictory class set as `inconsistent_verdict`.
+- What models invented, and what caught it. The match baseline upgraded participation to delivery (2026-08-26). A draft bullet credited the model's own "reasoning" in a career break, which the critic caught (2026-09-18). One relevance answer invented a posting id, recorded as a missing result (2026-09-28).
+- `verified` means nothing was invented and every line is cited. It is the floor, not quality: luna passed it while scoring a point lower on three critic axes.
+
+## Failure modes in production
+
+- A non-streaming request waits for headers until the whole answer is ready, and the connection dropped at 60 seconds. Long drafting calls were lost, not slow. Streaming fixed it (2026-08-15).
+- A raw stream `ReadTimeout` escaped error translation and the flex fallback, hung about 1,903 seconds, and the retry re-reviewed 36 rows (2026-10-01).
+- A flex refusal inside the stream skipped the fallback (2026-10-05). Both stream error shapes are now classified, with no resend after output.
+- A request for `gpt-5.4` was served as `gpt-5.4-2026-03-05`, and 46 of 138 listed models carry a date (2026-09-20). A dated served name now resolves to the shipped model it names, so its spend is priced.
+- On 2026-08-16 four paid paths spent without writing a ledger row. Every paid entry point now files one. A cache write failure no longer erases a billed response, because usage is recorded before the cache.
+- A jobspec on a 9,600-character posting hit a 6,000-token output ceiling on all four calls. The ceiling is now 16,000, and the proof finished at 7,026.
+
+## If you build something similar
+
+These are opinions, each backed by a run above.
+
+- Put a deterministic check behind every citation. The model will cite plausible ids it was not given, and a reviewer will not catch every one.
+- Treat "verified" and "good" as two measures, and report both.
+- Screen a cheaper model on your hardest cases, not your average ones. Luna and gpt-6.1-sol both looked fine until one case failed on every trial.
+- Raise effort where the task hinges on a qualifier. Do not expect lower effort to save money on short calls.
+- Design the cache prefix first. Put stable evidence and a stable schema ahead of per-request content, and measure reads against writes per stage.
+- Batch rows per call in production, and make your eval send the same shape. An eval with a different request shape measures something else.
+- Use enough draws to see your effect size, and check that the defect actually reproduced before you credit a fix. Two draws could not separate a 3-in-5 defect from sampling, and a synthetic pair was what showed the fix.
+- Change one thing per round. Declare the pass and stop rules before the run, and run a gold set beside it as a regression control.
+- Stream long calls, classify every provider error shape, and refuse work before the paid stages when its result cannot be stored.

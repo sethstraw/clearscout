@@ -239,6 +239,24 @@ def test_live_shell_accepts_the_relevance_review_stage(tmp_path: Path) -> None:
     assert "relevance_live_task.py" in result.stdout
 
 
+def test_live_shell_estimates_the_jobspec_stage_with_prompt_arms(tmp_path: Path) -> None:
+    """The boundary task's stage runs, is estimated, and passes its arms to the run."""
+    result = _run_eval(
+        [
+            *_document_live_args(tmp_path, "jobspec_boundary_live_task.py"),
+            "--prompt-arm",
+            f"baseline={_arm_directory(tmp_path, 'baseline')}",
+            "--prompt-arm",
+            f"candidate={_arm_directory(tmp_path, 'candidate')}",
+        ],
+        environment=_stub_uv(tmp_path),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert _estimated_stage(result.stdout) == "jobspec"
+    assert "--arms 2" in result.stdout
+
+
 def test_live_shell_propagates_exact_manifest_identity(tmp_path: Path) -> None:
     result = _run_eval(
         _live_args(tmp_path),
@@ -395,7 +413,7 @@ def test_live_shell_refuses_prompt_arms_for_a_stage_that_ignores_them(tmp_path: 
     )
 
     assert result.returncode == 64
-    assert "only the relevance_review stage takes prompt arms" in result.stderr
+    assert "only the relevance_review and jobspec stages take prompt arms" in result.stderr
 
 
 def test_live_shell_runs_with_consent_when_estimate_is_unavailable(tmp_path: Path) -> None:

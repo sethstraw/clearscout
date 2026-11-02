@@ -1,6 +1,6 @@
 {
   "case": "relevance_review_cross_posting_span_is_rejected",
-  "prompt_suite": "5dd388ce0a0d",
+  "prompt_suite": "7149879130ab",
   "schemas": "8f90ddf665d3",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -33,7 +33,7 @@
     "relevance_review_missing_rules": 0,
     "relevance_review_undefined_basis_values": 0,
     "relevance_review_valid": 1,
-    "request.jobspec": "22e3d54a9bbf",
+    "request.jobspec": "1ce5e88df72b",
     "request.match": "dd9b0c5348c3",
     "request.relevance_review": "d89d579bb8a4",
     "stage_failure": "",

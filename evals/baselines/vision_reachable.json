@@ -1,6 +1,6 @@
 {
   "case": "vision_reachable",
-  "prompt_suite": "4f29a46ea4de",
+  "prompt_suite": "f9e421b24ac3",
   "schemas": "76912751594f",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -28,7 +28,7 @@
     "model_calls": 3,
     "model_rule_disagreements": 0,
     "request.ingest": "9c3169cd91c7",
-    "request.jobspec": "9ed52df7acc8",
+    "request.jobspec": "4e3cb3a74bf4",
     "request.match": "dbc3c471aae5",
     "stage_failure": "",
     "structured_output": "valid",

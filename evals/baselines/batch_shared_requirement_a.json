@@ -1,6 +1,6 @@
 {
   "case": "batch_shared_requirement_a",
-  "prompt_suite": "4961daf47b0c",
+  "prompt_suite": "baff5cd07446",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "batch_cache_collisions": 0,
@@ -32,7 +32,7 @@
     "gaps_preserved": 1.0,
     "model_calls": 2,
     "model_rule_disagreements": 0,
-    "request.jobspec": "b71287a130de",
+    "request.jobspec": "92d3f9be29c5",
     "request.match": "5aebb7f863a0",
     "stage_failure": "",
     "structured_output": "valid",

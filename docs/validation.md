@@ -48,8 +48,8 @@ here. No public claim should compress those two evidence levels into a single
 word such as "supported." The public gate does not stand in for live evidence.
 
 The critic puts the same question `critic_trials` times on one draft, once by
-default, and fails it on any unsupported claim any trial named, so the critic
-stage bills that many calls for each draft attempt.
+default. It fails the draft on any unsupported claim any trial named. The
+critic stage bills that many calls for each draft attempt.
 
 The critic names, for each claim it doubts, the boundary that claim crosses,
 from the closed set in `ClaimBoundary`. The response schema enforces the set, so
@@ -136,9 +136,9 @@ line yourself before you send it.
   must-haves, treat a home-office condition as a gate, miss hourly pay, or read
   a truncated teaser as a requirement. Short retained text that ends
   mid-sentence, or that a current relevance review found too short, is held as
-  partial text and skips evaluation; a longer teaser still reaches extraction. Some residence-only wording, such as a
-  clause naming residents of one country or a time zone you must be based in,
-  is not read as a residence requirement by the deterministic reader.
+  partial text and skips evaluation; a longer teaser still reaches extraction. The deterministic reader misses some
+  residence-only wording. A clause naming residents of one country, or a time
+  zone you must be based in, is not read as a residence requirement.
 - Deterministic discovery uses English wording and role context to read explicit
   constraints. Ambiguous arrangement or location stays unknown and can need
   clarification. A street address, a city name shared by several countries, or
@@ -150,8 +150,8 @@ line yourself before you send it.
 - Board recognition and a readable posting do not establish complete board
   coverage. The [reader limits above](#board-readers-are-policy-and-parser-claims)
   describe the unresolved platform and enumeration boundaries.
-- Tailoring keeps the evidence its role scoring rates relevant, and the critic
-  sees only what was selected, so a strong item from the master CV, such as a
+- Tailoring keeps the evidence its role scoring rates relevant. The critic sees
+  only what was selected. So a strong item from the master CV, such as a
   publication, can be left out without a warning.
 - A match batch can write more prompt caches than it needs, which adds cost to
   that batch. Chained publisher reads report their own read counts. The final
@@ -167,16 +167,16 @@ The page budget is an estimate from the line model in
 theme at balanced density on US Letter. Selection buys more than the page holds,
 and the drafted Markdown is estimated with the same model and trimmed in drop
 order until it fits. A trim never removes the last printed answer to a
-must-have, an entry a prose line cites, or a role's last bullets; when those
-are all that is left and the estimate still runs over, the run warns with the
-lines over rather than fitting silently. TailorCV asks pressume for that theme
+must-have, an entry a prose line cites, or a role's last bullets. When only
+those are left and the estimate still runs over, the run warns with the lines
+over. It does not fit silently. TailorCV asks pressume for that theme
 and density on every render; another renderer, paper size, or body size can run
 long or short.
 
 `max_bullets_per_role` is each role's share before breadth runs out, not a hard
-ceiling. Every role fills to it before any role passes it, so a full page drawn
-from a record with few rich roles can print a role past it, and the report names
-that role and its count. Bullets past the cap are the first a trim removes,
+ceiling. Every role fills to it before any role passes it. A full page drawn from
+a record with few rich roles can print a role past it. The report names that
+role and its count. Bullets past the cap are the first a trim removes,
 taken from whichever role holds the most.
 
 ## Evaluation measures the rule, not human agreement
@@ -199,8 +199,8 @@ system will interpret them the same way.
 
 ## What a release gate can claim
 
-A passing release gate says the locked source tree built, the declared packages
-were audited under repository policy, generated artifacts matched their owners,
-and the offline suites passed on the tested platforms. It does not prove the
+A passing release gate says the locked source tree built. The declared packages
+were audited under repository policy, and generated artifacts matched their
+owners. The offline suites passed on the tested platforms. It does not prove the
 software is secure, that later dependency resolutions are unchanged, or that a
 live service still behaves as observed.
