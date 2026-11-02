@@ -346,8 +346,11 @@ describe("SourceScanSchedule", () => {
     expect(within(scope).getByText("retired-source (unavailable)")).toBeTruthy();
     expect(screen.getByText("Manually saved target titles are required.")).toBeTruthy();
     expect(
-      screen.getByRole("link", { name: "View last scheduled scan in Tasks" }).getAttribute("href"),
+      screen
+        .getByRole("link", { name: "View last scheduled scan in Activity" })
+        .getAttribute("href"),
     ).toBe("/tasks");
+    expect(screen.queryByText(/Scheduled scans need a saved target title/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Pause schedule" }));
     await screen.findByRole("button", { name: "Resume schedule" });
     expect(submitted[0]).toMatchObject({
@@ -374,11 +377,7 @@ describe("SourceScanSchedule", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save schedule" }));
     await screen.findByText("Target titles must be saved before scheduling.");
     expect(screen.getByLabelText<HTMLInputElement>("Local time").value).toBe("11:30");
-    expect(
-      screen
-        .getByRole("link", { name: "Check target titles in Settings > Search" })
-        .getAttribute("href"),
-    ).toBe("/settings?tab=search");
+    expect(screen.queryByRole("link", { name: /Check target titles/ })).toBeNull();
   });
 
   it("retains a conflicting draft until the saved configuration is explicitly reloaded", async () => {

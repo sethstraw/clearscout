@@ -222,6 +222,7 @@ describe("TailoringStudio", () => {
         .getByRole("link", { name: "evaluation button in the page header" })
         .getAttribute("href"),
     ).toBe("#job-evaluate-action");
+    expect(screen.getByText(/To evaluate or re-evaluate this job/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /evaluat/i })).toBeNull();
   });
 

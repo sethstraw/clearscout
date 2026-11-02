@@ -876,10 +876,11 @@ is never withdrawn.
 A read across several listing pages is complete but not atomic: a board that
 reorders between page fetches can drop an opening from every page it served.
 So a miss on a multi-page read only marks the row and queues a content read of
-its own page. The next complete read that also lacks it withdraws it once that
-check has completed, unless the check found the page live. A miss while the
-check is still queued or running keeps the mark, and a miss after the check was
-cancelled or failed marks the row again and queues a new check. A single-page
+its own page, and a miss while that check is active keeps the mark. The next
+complete read that also lacks it withdraws it once a completed check read the
+row or found it gone (HTTP 404 or 410), unless the check found the page live. A
+dismissed row withdraws on its next miss without a check, and any other failed
+or cancelled check marks the row again and queues a new one. A single-page
 read withdraws on the first miss.
 
 ```mermaid

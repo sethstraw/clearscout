@@ -3,7 +3,11 @@ import { HttpResponse, http } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { PendingDiscovery, RelevanceReviewConfiguration } from "../../api/client/types";
+import type {
+  Health,
+  PendingDiscovery,
+  RelevanceReviewConfiguration,
+} from "../../api/client/types";
 import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { dispositionHandlers, pendingQueueHandlers } from "../../test/msw/pendingDiscoveryHandlers";
@@ -149,6 +153,43 @@ describe("pending queue keyboard triage", () => {
       task_type: "discovery.evaluate_batch",
       payload: { pending_discovery_ids: ["pending-0"] },
     });
+  });
+
+  it("refuses e and r in free mode with the paid buttons' reason and no estimate", async () => {
+    const log = installQueue();
+    let preflights = 0;
+    server.use(
+      evaluationPreflightHandler(() => {
+        preflights += 1;
+      }),
+      http.get("*/api/v1/health", () =>
+        HttpResponse.json({
+          status: "ok",
+          version: "0.1.0",
+          database_exists: true,
+          database_reachable: true,
+          schema_current: true,
+          current_revision: "0001",
+          head_revision: "0001",
+          worker_available: true,
+          free_mode: true,
+        } satisfies Health),
+      ),
+    );
+    renderQueue();
+    await screen.findByText("Role 0");
+    const reason = "Add a provider key to use paid actions.";
+    await waitFor(() => expect(screen.getAllByText(reason).length).toBeGreaterThan(0));
+    const region = await focusedRegion();
+    const status = document.querySelector(".pending-kbd-status");
+
+    for (const key of ["e", "r"]) {
+      fireEvent.keyDown(region, { key });
+      await waitFor(() => expect(status?.textContent).toBe(reason));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    }
+    expect(preflights).toBe(0);
+    expect(writes(log)).toEqual([]);
   });
 
   it("does not open or enqueue evaluation for an unread cursor row", async () => {

@@ -1317,6 +1317,39 @@ def test_a_refresh_of_a_job_never_observed_writes_its_first_observation(
     assert _body(durable_database, root, workspace_id, first.body_artifact_id) == body.encode()
 
 
+def test_a_posting_body_names_the_aggregator_it_was_discovered_on(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    root = tmp_path / "artifacts"
+    workspace_id, job_id = _job(durable_database, root)
+    discovery = "https://himalayas.app/companies/northwind/jobs/data-lead"
+    later = "https://www.arbeitnow.com/jobs/companies/northwind/data-lead-7"
+    with durable_database.session() as session:
+        for url, seen in (
+            (later, datetime(2026, 9, 2, tzinfo=UTC)),
+            (discovery, datetime(2026, 9, 1, tzinfo=UTC)),
+        ):
+            session.add(
+                PostingUrl(
+                    job_posting_id=job_id,
+                    url_type="discovery",
+                    url=url,
+                    normalized_url=normalize_url(url),
+                    is_primary=False,
+                    created_at=seen,
+                    **audit_columns("local_user", "test", None),
+                )
+            )
+    (observation,) = _observations(durable_database, job_id)
+
+    read = job_search.posting_observation(
+        durable_database, artifact_service(durable_database, root), observation.id, workspace_id
+    )
+
+    assert read.discovery_url == discovery
+    assert read.source_url != discovery
+
+
 def test_a_refresh_whose_words_change_reports_the_changed_body(
     durable_database: Database, tmp_path: Path
 ) -> None:

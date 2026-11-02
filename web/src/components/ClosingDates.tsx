@@ -149,7 +149,7 @@ export function ClosingDates({
       )}
       {onSave && (
         <details ref={details}>
-          <summary ref={summary}>Edit closing date (free)</summary>
+          <summary ref={summary}>Edit closing date</summary>
           <p className="field-note">
             Your date only helps tracking. It never closes or reopens a posting.
           </p>

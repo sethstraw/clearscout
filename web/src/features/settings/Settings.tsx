@@ -13,10 +13,10 @@ import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
 import { Page } from "../../components/Page";
 import { ErrorState, LoadingState } from "../../components/States";
 import { TabPanel, Tabs } from "../../components/Tabs";
-import { ApiPlaygroundPage } from "../../pages/ApiPlaygroundPage";
-import { PromptsPage } from "../../pages/PromptsPage";
-import { SpendPage } from "../../pages/SpendPage";
-import { WorkspacePage } from "../../pages/WorkspacePage";
+import { ApiPlaygroundPage } from "../api-playground/ApiPlayground";
+import { PromptsPage } from "../prompts/PromptWorkspace";
+import { SpendPage } from "./SpendPage";
+import { WorkspacePage } from "./WorkspacePage";
 import { PRODUCT_NAME } from "../../productName";
 import { PostingRefusals } from "../job-search/PostingRefusals";
 import { SearchParameterSetup } from "../search-parameters/SearchParameterSetup";
@@ -82,6 +82,7 @@ export function SettingsPage() {
   return (
     <Page
       eyebrow="Settings"
+      help="settings"
       title="Settings"
       description="Set up your search, your provider key, and what runs may cost."
     >

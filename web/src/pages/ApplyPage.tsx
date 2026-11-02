@@ -30,6 +30,7 @@ export function ApplyPage() {
       eyebrow="Apply"
       title="Apply"
       description="Track each application and the documents made for it."
+      help={`apply.${tab}`}
     >
       <Tabs
         id="apply-tabs"

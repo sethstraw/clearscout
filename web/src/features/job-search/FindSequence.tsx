@@ -5,7 +5,7 @@ export function FindSequence() {
       <h2>Ways to find jobs</h2>
       <ul>
         <li>
-          <strong>Scan for openings</strong>
+          <strong>Scan your boards</strong>
           <p>Scans the boards you already track and stages current openings for review.</p>
         </li>
         <li>

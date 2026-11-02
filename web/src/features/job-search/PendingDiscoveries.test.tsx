@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, delay, http } from "msw";
 import { createElement } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import type { PendingDiscoveryChanges, RelevanceReview } from "../../api/client";
@@ -395,6 +395,47 @@ describe("PendingDiscoveries", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Main queue/ }));
     await screen.findByText("Role 0");
     expect(screen.queryByText("Recurring refusal patterns")).toBeNull();
+  });
+
+  it("keeps the Screened out filter and the address in step both ways", async () => {
+    installQueue({
+      page: [
+        pendingDiscoveryRow({ ...pendingDiscoveryRows(2)[0], constraint_confidence: "pursue" }),
+        pendingDiscoveryRow({ ...pendingDiscoveryRows(2)[1], constraint_confidence: "excluded" }),
+      ],
+    });
+    function Address() {
+      return <output aria-label="Address">{useLocation().search}</output>;
+    }
+    render(
+      <MemoryRouter initialEntries={["/find?tab=review"]}>
+        <AppProviders>
+          <Link to="/find?tab=review&constraint=excluded_only">Screened out link</Link>
+          <Address />
+          <PendingDiscoveries workspaceId="workspace-1" />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    const screenedOut = () => screen.getByRole("button", { name: /^Screened out/ });
+    await screen.findByText("Role 0");
+    expect(screenedOut().getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(screen.getByRole("link", { name: "Screened out link" }));
+    await waitFor(() => expect(screenedOut().getAttribute("aria-pressed")).toBe("true"));
+    const mainQueue = screen.getByRole("button", { name: /^Main queue/ });
+    await waitFor(() => expect(mainQueue.getAttribute("aria-busy")).toBe("false"));
+
+    fireEvent.click(mainQueue);
+    await waitFor(() =>
+      expect(screen.getByRole("status", { name: "Address" }).textContent).toBe("?tab=review"),
+    );
+    await waitFor(() => expect(screenedOut().getAttribute("aria-busy")).toBe("false"));
+    fireEvent.click(screenedOut());
+    await waitFor(() =>
+      expect(screen.getByRole("status", { name: "Address" }).textContent).toBe(
+        "?tab=review&constraint=excluded_only",
+      ),
+    );
   });
 
   it("saves strict uncertainty visibility per workspace and restores it on reopening", async () => {
@@ -920,7 +961,11 @@ describe("PendingDiscoveries", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText(/No openings are waiting/)).toBeTruthy();
+    const empty = await screen.findByText(/No openings are waiting/);
+    expect(empty.closest('[data-tour="find-review"]')).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Scan your boards" }).getAttribute("href")).toBe(
+      "?tab=boards",
+    );
     expect(screen.getByText("Pending-list dispositions")).toBeTruthy();
     expect(screen.getByText("Dismissed discoveries (0)")).toBeTruthy();
     expect(screen.queryByText("Dismiss the current filtered cohort")).toBeNull();
@@ -972,7 +1017,7 @@ describe("PendingDiscoveries", () => {
       ),
     ).toBeTruthy();
     expect(
-      await screen.findByText("Free posting read queued. Check the pending queue for the result."),
+      await screen.findByText("Posting read queued. Check the pending queue for the result."),
     ).toBeTruthy();
     await waitFor(() =>
       expect(document.activeElement).toBe(
@@ -1007,7 +1052,7 @@ describe("PendingDiscoveries", () => {
       ),
     ).toBeTruthy();
     expect(
-      await screen.findByText("Free posting read queued. Check the pending queue for the result."),
+      await screen.findByText("Posting read queued. Check the pending queue for the result."),
     ).toBeTruthy();
   });
 
@@ -1112,7 +1157,7 @@ describe("PendingDiscoveries", () => {
       await screen.findByText("Staged Product Manager at Example Health with unverified hints."),
     ).toBeTruthy();
     expect(
-      await screen.findByText("Free posting read queued. Check the pending queue for the result."),
+      await screen.findByText("Posting read queued. Check the pending queue for the result."),
     ).toBeTruthy();
   });
 
@@ -1840,13 +1885,13 @@ describe("PendingDiscoveries", () => {
     const rowElement = refresh.closest("tr");
     if (!rowElement) throw new Error("Expected the row.");
     expect(
-      within(rowElement).getByText("Free. Re-reads facts, liveness, and posting text."),
+      within(rowElement).getByText("Re-reads facts, liveness, and posting text."),
     ).toBeTruthy();
     expect(within(rowElement).queryByText("Spends money")).toBeNull();
     fireEvent.click(within(rowElement).getByRole("button", { name: "Details" }));
     expect(
       screen.getByText(
-        "The publisher blocked the read. Refresh postings retries free; if it fails again, paste the posting text below.",
+        "The publisher blocked the read. Refresh postings retries; if it fails again, paste the posting text below.",
       ),
     ).toBeTruthy();
   });

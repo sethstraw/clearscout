@@ -24,7 +24,7 @@ describe("ClosingDates", () => {
     );
     expect(screen.getByText("Publisher closing date: 2026-10-19")).toBeTruthy();
     expect(screen.queryByText("Publisher date evidence")).toBeNull();
-    expect(screen.queryByText("Edit closing date (free)")).toBeNull();
+    expect(screen.queryByText("Edit closing date")).toBeNull();
     view.rerender(
       <ClosingDates
         compact
@@ -122,7 +122,7 @@ describe("ClosingDates", () => {
     const save = vi.fn().mockRejectedValueOnce(new Error("Synthetic save failed; retry."));
     save.mockResolvedValue(undefined);
     const view = render(<ClosingDates publisher={publisher} onSave={save} />);
-    const editor = screen.getByText("Edit closing date (free)");
+    const editor = screen.getByText("Edit closing date");
     fireEvent.click(editor);
     const input = screen.getByLabelText("Your closing date", { selector: "input" });
     fireEvent.change(input, { target: { value: "2026-10-21" } });
@@ -145,7 +145,7 @@ describe("ClosingDates", () => {
   it("associates validation with the input and does not save an unanswered date", async () => {
     const save = vi.fn();
     render(<ClosingDates onSave={save} />);
-    fireEvent.click(screen.getByText("Edit closing date (free)"));
+    fireEvent.click(screen.getByText("Edit closing date"));
     fireEvent.click(screen.getByRole("button", { name: "Save date" }));
     const error = await screen.findByRole("alert");
     const input = screen.getByLabelText("Your closing date", { selector: "input" });

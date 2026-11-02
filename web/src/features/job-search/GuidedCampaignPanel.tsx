@@ -768,6 +768,9 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
         }}
         taskType="search.guided_campaign"
       />
+      {(modelCallsDraftError || hostedSearchesDraftError) && (
+        <p className="field-error">Fix the search limits under Advanced to search.</p>
+      )}
       {campaignConfiguration.isError ? (
         <p className="field-error" aria-label="Web search provider status" role="status">
           {campaignConfiguration.heldBecause === "undescribable"
@@ -794,12 +797,12 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
         <header>
           <div>
             <h2>Search the web</h2>
-            <div>
+            <p>
               Find postings and boards beyond your saved boards.{" "}
               <Toggletip label="About a running web search">
                 While a search runs, other paid tasks wait. You cannot stop it from here.
               </Toggletip>
-            </div>
+            </p>
           </div>
           <div className="button-row">{webAction}</div>
         </header>

@@ -1,9 +1,9 @@
 import { useState } from "react";
 
-import { Page } from "../components/Page";
-import { Tabs } from "../components/Tabs";
-import { WorkspaceRecords } from "../features/workspace-records/WorkspaceRecords";
-import { useWorkspace } from "../providers";
+import { Page } from "../../components/Page";
+import { Tabs } from "../../components/Tabs";
+import { WorkspaceRecords } from "../workspace-records/WorkspaceRecords";
+import { useWorkspace } from "../../providers";
 
 const tabs = [
   { id: "notes", label: "Notes" },

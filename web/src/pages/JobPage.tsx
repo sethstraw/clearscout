@@ -446,7 +446,7 @@ export function JobPage() {
             </button>
           )}
           {!data.archived_at && (
-            <div id={EVALUATE_ACTION_ID}>
+            <div aria-label="Evaluation" id={EVALUATE_ACTION_ID} role="group" tabIndex={-1}>
               <PaidAction
                 evaluation={{ workspaceId, selection: { job_posting_ids: [jobId] } }}
                 confirmation={{
@@ -693,7 +693,11 @@ export function JobPage() {
               {tab === "Fit report" && (
                 <FitReport
                   error={fitReport.error}
-                  exportUrl={api.fitReportExportUrl(jobId, workspaceId)}
+                  exportUrl={
+                    data.fit_report_available && !data.archived_at
+                      ? api.fitReportExportUrl(jobId, workspaceId)
+                      : undefined
+                  }
                   isError={fitReport.isError}
                   isLoading={fitReport.isLoading}
                   onShowEvidence={showEvidence}
@@ -707,19 +711,15 @@ export function JobPage() {
                 />
               )}
             </TabPanel>
-            {(extractionDisputable || fitDisputable || disputeRefreshBilling) && (
+            {disputeRefreshBilling && (
+              <p aria-label="Dispute refresh billing" className="field-note" role="status">
+                {disputeRefreshBilling}
+              </p>
+            )}
+            {(extractionDisputable || fitDisputable) && (
               <details className="advanced-view">
                 <summary>Advanced</summary>
                 <div className="page-actions">
-                  {disputeRefreshBilling && (
-                    <small
-                      aria-label="Dispute refresh billing"
-                      className="field-note"
-                      role="status"
-                    >
-                      {disputeRefreshBilling}
-                    </small>
-                  )}
                   {extractionDisputable && (
                     <DisputeRefreshAction
                       billingPending={awaitingRefreshBilling}

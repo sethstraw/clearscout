@@ -57,7 +57,7 @@ export function WelcomePage() {
       <section className="welcome-card welcome-card--onboarding">
         <BrandMark size="large" />
         <p className="eyebrow">Private by default</p>
-        <h1>Start your free job search.</h1>
+        <h1>Start your job search.</h1>
         <p>
           Create a local workspace, save your search preferences, and add posting links. Free
           discovery needs no provider key or CV.
@@ -92,7 +92,7 @@ export function WelcomePage() {
             <SearchParameterSetup
               mode="walkthrough"
               onSkip={() => {
-                void navigate("/find?tab=pending");
+                void navigate("/find?tab=review");
               }}
               onSaved={() => setCompletedWorkspaceId(workspace.id)}
               workspaceId={workspace.id}
@@ -102,7 +102,7 @@ export function WelcomePage() {
         {currentStep === 2 && workspace && <ReadyStep workspaceName={workspace.name} />}
         {workspace && (
           <section aria-labelledby="optional-paid-heading" className="onboarding-step">
-            <h2 id="optional-paid-heading">Paid features (optional)</h2>
+            <h2 id="optional-paid-heading">Provider key and CV (optional)</h2>
             <p>
               Search-vocabulary suggestions, guided search, evaluation, and drafting need a provider
               key and master CV. They are optional paid actions. Manual search setup, posting-link
@@ -199,7 +199,10 @@ function WorkspaceStep({ onCreated }: { onCreated: (id: string) => void }) {
           <summary>Use a different workspace folder</summary>
           <label>
             Workspace folder <span>(optional)</span>
-            <input {...register("root_path")} placeholder="Defaults to Documents/TailorCV" />
+            <input {...register("root_path")} aria-describedby="workspace-folder-note" />
+            <small className="field-note" id="workspace-folder-note">
+              Leave blank to use Documents/TailorCV.
+            </small>
           </label>
         </details>
         {formState.errors.name && (
@@ -230,7 +233,7 @@ function ReadyStep({ workspaceName }: { workspaceName: string }) {
         before starting a scan.
       </p>
       <div className="button-row">
-        <Link className="button button--primary" to="/find?tab=pending">
+        <Link className="button button--primary" to="/find?tab=review">
           Find jobs
         </Link>
         <Link className="button button--quiet" to="/settings?tab=search">

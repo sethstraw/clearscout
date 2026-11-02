@@ -3,9 +3,9 @@ import { HttpResponse, http } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import type { SpendSummary } from "../api/client/types";
-import { AppProviders } from "../providers";
-import { server } from "../test/msw/server";
+import type { SpendSummary } from "../../api/client/types";
+import { AppProviders } from "../../providers";
+import { server } from "../../test/msw/server";
 import { SpendPage } from "./SpendPage";
 
 const summary = {

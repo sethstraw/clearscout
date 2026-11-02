@@ -237,7 +237,7 @@ export function SourceScanSchedule({
           )}
           {state.last_task_id && (
             <p>
-              <a href="/tasks">View last scheduled scan in Tasks</a>
+              <a href="/tasks">View last scheduled scan in Activity</a>
             </p>
           )}
           <button
@@ -258,12 +258,6 @@ export function SourceScanSchedule({
       {save.isError && (
         <p className="field-error" role="alert">
           {save.error.message}
-        </p>
-      )}
-      {(save.isError || state?.last_error) && (
-        <p>
-          Scheduled scans need a saved target title.{" "}
-          <a href="/settings?tab=search">Check target titles in Settings &gt; Search</a>
         </p>
       )}
       {conflict && (

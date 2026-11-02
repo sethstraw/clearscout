@@ -114,21 +114,6 @@
 	content: none;
 }
 
-.search-loop--choices .badge {
-	align-self: flex-start;
-	border: 1px solid var(--line);
-	border-radius: 0.4rem;
-	color: var(--ink);
-	font-size: var(--text-xs);
-	font-weight: 700;
-	padding: 0.25rem 0.5rem;
-}
-
-.search-loop--choices .badge--paid {
-	background: color-mix(in srgb, var(--amber) 15%, var(--surface));
-	border-color: var(--amber);
-}
-
 .place-arrangement {
 	border-top: 1px solid var(--line);
 	padding-top: 0.7rem;
@@ -1527,11 +1512,6 @@ table[aria-label="Pending job discoveries"] input[type="checkbox"] {
 
 .guided-campaign-result .field-error p + p {
 	margin-top: 0.5rem;
-}
-
-.search-vocabulary-terms > summary {
-	padding: 1rem 1.35rem;
-	font-weight: 650;
 }
 
 .find-help {

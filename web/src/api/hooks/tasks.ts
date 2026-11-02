@@ -175,8 +175,12 @@ export function useTaskCosts(workspaceId = ""): TaskCosts {
         }
         return `about ${formatUsd(Number(row.per_unit_median) * count, { places: 2 })}`;
       },
-      confirmation: (taskType: string, count = 1) =>
-        `${priced(taskType, count)} Charges may be higher and nothing stops the task once you confirm.`,
+      confirmation: (taskType: string, count = 1) => {
+        const estimate = priced(taskType, count);
+        return estimate === historyAbsent
+          ? `${historyAbsent} The cost is unknown until the first run, and nothing stops the task once you confirm.`
+          : `${estimate} Charges may be higher and nothing stops the task once you confirm.`;
+      },
     };
   }, [history.data, history.isError, taskTypes.data, taskTypes.isError, workspaceId]);
 }

@@ -77,6 +77,10 @@ export function PostingReader({
   const text = mode === "raw" ? posting.data.body : posting.data.rendered_text;
   const evidenceSpan = mode === "raw" ? span : null;
   const sourceUrl = safeHttpUrl(posting.data.source_url);
+  const creditUrl =
+    [posting.data.source_url, posting.data.discovery_url]
+      .map((url) => (url ? safeHttpUrl(url) : null))
+      .find((url) => url && aggregatorCredit(url)) ?? null;
 
   return (
     <section className="posting-layout">
@@ -92,9 +96,9 @@ export function PostingReader({
                   <a href={sourceUrl} rel="noreferrer" target="_blank">
                     Source
                   </a>
-                  {aggregatorCredit(sourceUrl) ? (
+                  {creditUrl ? (
                     <>
-                      , <AggregatorCreditLink url={sourceUrl} />
+                      , <AggregatorCreditLink url={creditUrl} />
                     </>
                   ) : null}
                 </>

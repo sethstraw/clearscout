@@ -185,7 +185,7 @@ describe("TasksPage", () => {
       }),
     );
     renderTasks();
-    const article = await screen.findByRole("article", { name: /^Scan for openings created/ });
+    const article = await screen.findByRole("article", { name: /^Scan your boards created/ });
     expect(within(article).getByRole("button", { name: /^Scan again / })).toBeTruthy();
     const resume = within(article).getByRole("button", { name: /^Resume / });
     resume.focus();
@@ -228,7 +228,7 @@ describe("TasksPage", () => {
       ),
     );
     renderTasks();
-    const article = await screen.findByRole("article", { name: /^Scan for openings created/ });
+    const article = await screen.findByRole("article", { name: /^Scan your boards created/ });
     const resume = within(article).getByRole("button", { name: /^Resume / });
     expect(resume).toHaveProperty("disabled", false);
     expect(within(article).queryByRole("button", { name: /^Scan again / })).toBeNull();
@@ -247,7 +247,7 @@ describe("TasksPage", () => {
       within(continued)
         .getByRole("link", { name: "Open board scan history to read its deferred links" })
         .getAttribute("href"),
-    ).toBe("/find?tab=scans#source-scan-history-heading");
+    ).toBe("/find?tab=boards#source-scan-history-heading");
     expect(continued.textContent).toContain(
       "This read stays incomplete at least until its deferred links are read, and board scan history keeps it only while no newer read of the same kind exists for this source.",
     );
@@ -587,7 +587,7 @@ describe("TasksPage", () => {
     useTaskPage({ tasks: [scan] });
     renderTasks();
 
-    const article = await screen.findByRole("article", { name: /^Scan for openings created / });
+    const article = await screen.findByRole("article", { name: /^Scan your boards created / });
     expect(
       within(article).getByText(
         "Frontier capped 7, Continuation budget reached 331, Cancelled: yes, " +
@@ -614,7 +614,7 @@ describe("TasksPage", () => {
     useTaskPage({ tasks: [sweep] });
     renderTasks();
 
-    const article = await screen.findByRole("article", { name: /^Scan for openings created / });
+    const article = await screen.findByRole("article", { name: /^Scan your boards created / });
     expect(
       within(article).getByText("Sources considered 3, Sources scanned 2, Failed 1"),
     ).toBeTruthy();
@@ -703,7 +703,7 @@ describe("TasksPage", () => {
     useTaskPage({ tasks: [scan] });
     renderTasks();
 
-    const article = await screen.findByRole("article", { name: /^Scan for openings created / });
+    const article = await screen.findByRole("article", { name: /^Scan your boards created / });
     const counts = within(article).getByRole("table", { name: "Funnel counts" });
     expect(within(counts).getByRole("rowheader", { name: "Proposed" })).toBeTruthy();
     expect(counts.textContent).toContain("12");
@@ -734,7 +734,7 @@ describe("TasksPage", () => {
     useTaskPage({ tasks: [scan] });
     renderTasks();
 
-    const article = await screen.findByRole("article", { name: /^Scan for openings created / });
+    const article = await screen.findByRole("article", { name: /^Scan your boards created / });
     const top = within(article).getByRole("table", { name: "Funnel counts (funnel_counts)" });
     const nested = within(article).getByRole("table", { name: "Funnel counts (funnel.counts)" });
     expect(top.textContent).toContain("3");
@@ -1139,8 +1139,9 @@ describe("TasksPage", () => {
     const billing = await screen.findByRole("status", {
       name: /^Billing for Search for new jobs created /,
     });
+    // The accessible name starts with the visible label, Retry task.
     const retry = screen.getByRole("button", {
-      name: /^Retry Search for new jobs created /,
+      name: /^Retry task: Search for new jobs created /,
     });
     expect(billing.textContent).toBe("Checking recorded cost for this task.");
     expect((retry as HTMLButtonElement).disabled).toBe(true);
@@ -1210,10 +1211,9 @@ describe("TasksPage", () => {
     expect(
       await within(article).findByRole("status", { name: `Provider status for ${taskLabel}` }),
     ).toHaveProperty("textContent", "Reading the provider model and effort.");
-    expect(within(article).getByRole("button", { name: `Retry ${taskLabel}` })).toHaveProperty(
-      "disabled",
-      true,
-    );
+    expect(
+      within(article).getByRole("button", { name: `Retry task: ${taskLabel}` }),
+    ).toHaveProperty("disabled", true);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -1335,7 +1335,7 @@ describe("TasksPage", () => {
       "Recorded cost for this task is unavailable; review Spend before retrying.",
     );
     const earlierRetry = within(earlierArticle).getByRole("button", {
-      name: `Retry ${earlierLabel}`,
+      name: `Retry task: ${earlierLabel}`,
     });
     expect(earlierRetry).toHaveProperty("disabled", false);
 

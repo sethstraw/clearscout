@@ -38,7 +38,7 @@ describe("PublisherFactsRefresh", () => {
 
     const confirmation = await screen.findByRole("dialog");
     expect(confirmation.textContent).toContain("keeps its stored facts and your corrected title");
-    expect(confirmation.textContent).toContain("Nothing is spent.");
+    expect(confirmation.textContent).not.toContain("Nothing is spent");
     fireEvent.click(await screen.findByRole("button", { name: "Refresh 2" }));
 
     await screen.findByRole("status");

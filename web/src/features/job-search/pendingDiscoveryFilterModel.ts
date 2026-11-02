@@ -214,9 +214,9 @@ export function neverReadDiscoveryIds(discoveries: PendingDiscovery[]): Set<stri
   );
 }
 
-// The fragment is the section id SourceScanOutcomes renders on the Screened out tab.
+// The fragment is the section id SourceScanOutcomes renders under Boards > History.
 export function screenedCandidatesHref(taskId: string, sourceName: string): string {
-  return `?tab=refusals&scan=${encodeURIComponent(taskId)}&source=${encodeURIComponent(sourceName)}#screened-candidates`;
+  return `?tab=boards&scan=${encodeURIComponent(taskId)}&source=${encodeURIComponent(sourceName)}#screened-candidates`;
 }
 
 const ARRANGEMENT_LABELS: Record<ArrangementCategory, string> = {

@@ -185,7 +185,7 @@ export function Level({
               <span>Employer types and named associations</span>
               {(draft.employers.archetypes ?? []).length === 0 && (
                 <small className="field-note">
-                  None saved yet. Add one here for free or accept a search suggestion.
+                  None saved yet. Add one here or accept a search suggestion.
                 </small>
               )}
               {(draft.employers.archetypes ?? []).map((item, index) => (
@@ -257,7 +257,7 @@ export function Level({
                   })
                 }
               >
-                Add employer type (free)
+                Add employer type
               </button>
             </div>
           </>

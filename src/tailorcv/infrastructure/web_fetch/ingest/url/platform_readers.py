@@ -299,6 +299,7 @@ def _greenhouse_hosted_board(
             status="unreadable",
             note=f"Greenhouse hosted careers page returned HTTP {response.status_code}",
             platform="greenhouse",
+            http_status=response.status_code,
             robots_basis=read_basis(response),
         )
     token = GREENHOUSE_BOARD_TOKEN.search(response.text) or GREENHOUSE_BOARD_EMBED.search(

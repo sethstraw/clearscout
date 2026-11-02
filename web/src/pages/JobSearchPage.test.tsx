@@ -311,6 +311,8 @@ describe("JobSearchPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Help: Boards" }));
     expect(screen.getByRole("heading", { name: "Boards" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Take the tour" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "Web search" }));
+    expect(await screen.findByRole("button", { name: "Help: Web search" })).toBeTruthy();
   });
 
   it("renders the Find new jobs panels without a duplicate-key warning", async () => {

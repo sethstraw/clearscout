@@ -30,6 +30,7 @@ from tailorcv.application.discovery.content_resolution import (
 )
 from tailorcv.application.discovery.source_reading import PostingCheck
 from tailorcv.application.failures import (
+    DeadLinkRefreshError,
     PublisherUnverifiedRefreshError,
     UnsupportedPublisherRefreshError,
     ValidationError,
@@ -524,8 +525,10 @@ class _RefreshService:
         withdrawn: set[str] | None = None,
         unsupported: set[str] | None = None,
         unverified: set[str] | None = None,
+        dead: set[str] | None = None,
     ) -> None:
         self.failures = failures
+        self.dead = dead or set()
         self.withdrawn = withdrawn or set()
         self.unsupported = unsupported or set()
         self.unverified = unverified or set()
@@ -545,6 +548,8 @@ class _RefreshService:
             raise UnsupportedPublisherRefreshError("no free reader covers this publisher")
         if pending_id in self.unverified:
             raise PublisherUnverifiedRefreshError("Workday returned HTTP 403 (S22).")
+        if pending_id in self.dead:
+            raise DeadLinkRefreshError("Acme returned HTTP 404. This link is dead.")
         if pending_id in self.failures:
             raise ValidationError("cannot refresh")
         return _Refreshed(withdrawn=pending_id in self.withdrawn)
@@ -568,6 +573,19 @@ def test_refresh_batch_reads_withdraws_and_records_a_failure() -> None:
     assert service.seen == ["a", "b", "c"]
     # A row whose publisher check failed or withdrew it is not a content target.
     assert content.seen == ["a"]
+
+
+def test_refresh_batch_marks_only_a_dead_link_failure_conclusive() -> None:
+    service = _RefreshService(failures={"b"}, dead={"a"})
+    handler = DiscoveryRefreshBatchHandler(service, _ContentResolution())  # type: ignore[arg-type]
+
+    result = handler(_Context(), {"pending_discovery_ids": ["a", "b"]})  # type: ignore[arg-type]
+
+    assert result["failed"] == 2
+    assert {f["pending_discovery_id"]: f["conclusive"] for f in result["failures"]} == {
+        "a": True,
+        "b": False,
+    }
 
 
 def test_refresh_batch_counts_an_unsupported_publisher_apart_from_a_failure() -> None:

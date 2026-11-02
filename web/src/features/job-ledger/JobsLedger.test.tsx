@@ -243,7 +243,7 @@ describe("JobsPage", () => {
     const roleCell = role.closest("td")!;
     expect(within(roleCell).queryByRole("group", { name: /Closing dates/ })).toBeNull();
     expect(within(roleCell).queryByText("Not stated")).toBeNull();
-    expect(within(roleCell).queryByText("Edit closing date (free)")).toBeNull();
+    expect(within(roleCell).queryByText("Edit closing date")).toBeNull();
   });
 
   it("shows a compact publisher closing date without evidence or an editor in the role cell", async () => {
@@ -280,7 +280,7 @@ describe("JobsPage", () => {
     expect(roleCell.contains(dates)).toBe(true);
     expect(within(dates).getByText("Publisher closing date: 2999-11-12")).toBeTruthy();
     expect(within(dates).queryByText("Publisher date evidence")).toBeNull();
-    expect(within(dates).queryByText("Edit closing date (free)")).toBeNull();
+    expect(within(dates).queryByText("Edit closing date")).toBeNull();
     expect(within(dates).queryByLabelText("Your closing date")).toBeNull();
     expect(within(dates).queryByText("Closing date passed; verify availability.")).toBeNull();
     expect(items[0]!.posting_status).toBe("active");
@@ -322,7 +322,7 @@ describe("JobsPage", () => {
     expect(
       within(dates).getByText("Your closing date has passed. It is a tracking reminder."),
     ).toBeTruthy();
-    expect(within(dates).queryByText("Edit closing date (free)")).toBeNull();
+    expect(within(dates).queryByText("Edit closing date")).toBeNull();
   });
 
   it("shows comparison fields and sorts on the server", async () => {
@@ -779,6 +779,35 @@ describe("JobsPage", () => {
       expect(advanced?.contains(screen.getByLabelText(label))).toBe(true);
     }
     expect(advanced?.contains(screen.getByLabelText("Decision"))).toBe(false);
+  });
+
+  it("names an Advanced filter outside the closed fold and clears it", async () => {
+    window.localStorage.setItem("tailorcv.workspace", "jobs-advanced-active-test");
+    installApi(jobs, [savedView]);
+
+    render(
+      <MemoryRouter>
+        <AppProviders>
+          <JobsPage />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("table");
+    expect(screen.queryByText(/Advanced filter on/)).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Evidence integrity"), {
+      target: { value: "incomplete_only" },
+    });
+    fireEvent.change(screen.getByLabelText("Archived jobs"), { target: { value: "include" } });
+
+    const note = await screen.findByText(/Advanced filter on/);
+    expect(note.textContent).toContain("archived jobs included, evidence gaps only");
+    expect(screen.getByText("Advanced").closest("details")?.contains(note)).toBe(false);
+    fireEvent.click(within(note).getByRole("button", { name: "Clear advanced filters" }));
+
+    await waitFor(() => expect(screen.queryByText(/Advanced filter on/)).toBeNull());
+    expect(screen.getByLabelText<HTMLSelectElement>("Evidence integrity").value).toBe("");
+    expect(screen.getByLabelText<HTMLSelectElement>("Archived jobs").value).toBe("exclude");
   });
 
   it("forces an explicit selected-posting refresh", async () => {

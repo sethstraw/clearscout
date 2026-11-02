@@ -1,6 +1,6 @@
-import { Page } from "../components/Page";
-import { SpendReport } from "../features/spend/SpendReport";
-import { useWorkspace } from "../providers";
+import { Page } from "../../components/Page";
+import { SpendReport } from "../spend/SpendReport";
+import { useWorkspace } from "../../providers";
 
 export function SpendPage() {
   const { workspaceId } = useWorkspace();

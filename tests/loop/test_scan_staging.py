@@ -12,7 +12,10 @@ from typing import Any
 import pytest
 from sqlalchemy import event, select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
+from tailorcv.application.discovery.board_scan import (
+    DiscoveryRefreshBatchHandler,
+    SourceScanService,
+)
 from tailorcv.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
@@ -3577,6 +3580,155 @@ def test_a_second_miss_after_an_unfinished_check_marks_the_row_again_and_queues_
     assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == [
         "Operations Lead"
     ]
+
+
+@pytest.mark.parametrize("bucket", ["failures", "content_failures"])
+def test_a_completed_check_whose_read_of_the_row_failed_marks_the_row_again(
+    durable_database: Database, tmp_path: Path, bucket: str
+) -> None:
+    workspace_id, source_id, pending_id = _paged_absence(durable_database, tmp_path)
+    with durable_database.session() as session:
+        for task in session.scalars(
+            select(BackgroundTask).where(BackgroundTask.task_type == "discovery.refresh_batch")
+        ):
+            task.status = "completed"
+            task.progress = {
+                bucket: [
+                    {
+                        "pending_discovery_id": pending_id,
+                        "error_category": "ConnectError",
+                        "error_message": "The publisher did not answer.",
+                    }
+                ]
+            }
+
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
+    assert _withdrawn_at(durable_database, pending_id) is None
+    assert _queued_checks(durable_database) == [[pending_id], [pending_id]]
+
+
+@pytest.mark.parametrize("unsettled", ["needs_review", "committing"])
+def test_a_second_miss_keeps_the_mark_while_its_check_is_still_active(
+    durable_database: Database, tmp_path: Path, unsettled: str
+) -> None:
+    workspace_id, source_id, pending_id = _paged_absence(durable_database, tmp_path)
+    _end_checks(durable_database, unsettled)
+
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
+    assert _withdrawn_at(durable_database, pending_id) is None
+    assert _queued_checks(durable_database) == [[pending_id]]
+
+
+class _CheckContext:
+    """Run one queued absence check against its stored task."""
+
+    def __init__(self, task: BackgroundTask) -> None:
+        self.task_id = task.id
+        self.task = task
+        self.queue = self
+
+    def get(self, task_id: str) -> BackgroundTask:
+        assert task_id == self.task_id
+        return self.task
+
+    def progress(self, stage: str, payload: dict[str, Any]) -> None:
+        del stage, payload
+
+    def raise_if_cancelled(self) -> None:
+        return None
+
+
+def _run_queued_checks(database: Database, service: SourceScanService) -> None:
+    handler = DiscoveryRefreshBatchHandler(service, content=None)  # type: ignore[arg-type]
+    with database.session() as session:
+        queued = session.scalars(
+            select(BackgroundTask).where(
+                BackgroundTask.task_type == "discovery.refresh_batch",
+                BackgroundTask.status == "queued",
+            )
+        ).all()
+        session.expunge_all()
+    for task in queued:
+        result = handler(_CheckContext(task), task.payload)  # type: ignore[arg-type]
+        with database.session() as session:
+            stored = session.get(BackgroundTask, task.id)
+            assert stored is not None
+            stored.status = "completed"
+            stored.progress = result
+
+
+def test_a_dead_link_check_lets_the_next_miss_withdraw_the_row(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id, source_id, pending_id = _paged_absence(durable_database, tmp_path)
+    dead = PostingCheck(
+        status="unreadable",
+        note="Greenhouse hosted careers page returned HTTP 404",
+        platform="greenhouse",
+        http_status=404,
+    )
+    service = _checking_service(durable_database, dead)
+
+    for _miss in range(2):
+        _run_queued_checks(durable_database, service)
+        if _withdraw_missing(durable_database, tmp_path, workspace_id, source_id):
+            break
+
+    assert _withdrawn_at(durable_database, pending_id) is not None
+    assert _queued_checks(durable_database) == [[pending_id]]
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        PostingCheck(
+            status="unreadable",
+            note="Greenhouse single posting returned HTTP 404, and the board listing held no jobs.",
+            platform="greenhouse",
+        ),
+        PostingCheck(
+            status="unreadable",
+            note="Workday returned HTTP 403.",
+            platform="workday",
+            http_status=403,
+        ),
+    ],
+)
+def test_a_refresh_that_names_no_gone_status_is_not_a_dead_link(
+    durable_database: Database, tmp_path: Path, answer: PostingCheck
+) -> None:
+    workspace_id, _source_id, pending_id = _paged_absence(durable_database, tmp_path)
+
+    with pytest.raises(PublisherUnverifiedRefreshError):
+        _checking_service(durable_database, answer).refresh_pending_discovery(
+            workspace_id, pending_id
+        )
+
+
+def test_a_dismissed_marked_row_withdraws_on_the_next_miss_without_a_check(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = employer_board(durable_database, workspace_id, "Acme")
+    pending_id = _pending(
+        durable_database,
+        workspace_id,
+        url=_PAGED_ROLE_URL,
+        first_seen_on=date(2026, 8, 24),
+        source_id=source_id,
+    )
+    dismiss_pending_discovery(durable_database, workspace_id, pending_id)
+
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
+    with durable_database.session() as session:
+        row = session.get(PendingDiscovery, pending_id)
+        assert row is not None
+        row.absent_since = utc_now() - timedelta(hours=1)
+
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == [
+        "Operations Lead"
+    ]
+    assert _queued_checks(durable_database) == []
 
 
 def test_a_retried_absence_check_holds_the_row_until_it_completes(

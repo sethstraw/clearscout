@@ -68,7 +68,7 @@ describe("ScreenedOutSummary", () => {
     expect(within(acme).getByRole("cell", { name: "3" })).toBeTruthy();
     expect(
       within(acme).getByRole("link", { name: "Review screened candidates" }).getAttribute("href"),
-    ).toBe("?tab=refusals&scan=task-acme-latest&source=Acme%20Robotics#screened-candidates");
+    ).toBe("?tab=boards&scan=task-acme-latest&source=Acme%20Robotics#screened-candidates");
     expect(queries).toEqual(["?offset=0&limit=250&latest_only=true"]);
   });
 

@@ -69,9 +69,9 @@ const READINESS_DETAIL_TEXT: Partial<Record<ContentReadiness, string>> = {
   screening_refused:
     "The posting text is readable, but it conflicts with your search rules. Review the findings and your rules, or dismiss this posting.",
   access_blocked:
-    "The publisher blocked the read. Refresh postings retries free; if it fails again, paste the posting text below.",
-  render_required: "This page needs a rendered read. Refresh postings tries one free.",
-  no_body: "No posting text saved. Refresh postings reads it free.",
+    "The publisher blocked the read. Refresh postings retries; if it fails again, paste the posting text below.",
+  render_required: "This page needs a rendered read. Refresh postings tries one.",
+  no_body: "No posting text saved. Refresh postings reads it.",
   fetch_failed: "Read failed; retry is available",
 };
 
@@ -335,7 +335,7 @@ function screeningRemediations(discovery: PendingDiscovery): string[] {
       );
     } else if (finding.code === "compensation_unknown") {
       actions.add(
-        "Compare any stated pay with your preference yourself. You can track this job for free while pay remains unconfirmed.",
+        "Compare any stated pay with your preference yourself. You can track this job while pay remains unconfirmed.",
       );
     } else if (finding.standing === "unknown") {
       actions.add("Refresh postings, or paste the current posting text below.");
@@ -896,8 +896,8 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
                 ) : null}
                 {item.content_status === "policy_refused" ? (
                   <p className="field-note">
-                    The publisher refused the read under its policy. Refresh postings retries free;
-                    if refused again, paste the text below.
+                    The publisher refused the read under its policy. Refresh postings retries; if
+                    refused again, paste the text below.
                   </p>
                 ) : null}
               </div>

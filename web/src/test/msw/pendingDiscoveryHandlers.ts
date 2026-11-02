@@ -24,9 +24,27 @@ import {
   queueFilterFailures,
   tally,
 } from "../../features/job-search/pendingDiscoveryFixtures";
+import { searchParametersState } from "../../features/search-parameters/searchParameterFixtures";
 
 const API = "*/api/v1";
 const WORKSPACE = `${API}/workspaces/:workspaceId`;
+
+const SAVED_PARAMETERS = searchParametersState({
+  id: "parameters-current",
+  configured: true,
+  parameters: {
+    opportunity_thesis: "",
+    score_weight_set: "",
+    working_day_shift_hours: 0,
+    locations: [],
+    seniority: {
+      minimum: "",
+      maximum: "",
+      title_matching: "guided",
+      target_titles: [{ title: "Fleet Lead", lane: null }],
+    },
+  },
+});
 
 /** A whole page, or bare rows the handler splits into lanes by retained content. */
 type QueuePageBody = PendingDiscoveryPage | PendingDiscovery[];
@@ -124,13 +142,9 @@ export function pendingQueueHandlers(reads: PendingQueueReads = {}): HttpHandler
     http.get(`${WORKSPACE}/master-cv/versions`, () =>
       HttpResponse.json(reads.masterCvVersions ?? []),
     ),
-    http.get(`${WORKSPACE}/job-search-parameters`, () =>
-      HttpResponse.json({ id: "parameters-current", configured: true }),
-    ),
+    http.get(`${WORKSPACE}/job-search-parameters`, () => HttpResponse.json(SAVED_PARAMETERS)),
     // The saved-parameter read is workspace-scoped by query string, not by path.
-    http.get(`${API}/job-search-parameters`, () =>
-      HttpResponse.json({ id: "parameters-current", configured: true }),
-    ),
+    http.get(`${API}/job-search-parameters`, () => HttpResponse.json(SAVED_PARAMETERS)),
     http.get(`${WORKSPACE}/relevance-review-configuration`, () =>
       HttpResponse.json(reads.relevanceReviewConfiguration ?? ANTHROPIC_REVIEW_CONFIGURATION),
     ),

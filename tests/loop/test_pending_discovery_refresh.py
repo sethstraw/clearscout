@@ -899,14 +899,18 @@ def test_a_dead_link_refresh_says_the_posting_may_still_exist_at_the_employer(
     workspace_id = scan_workspace(durable_database)
     readable = PostingCheck(
         status="readable",
-        note="Lever published this posting metadata.",
-        platform="lever",
+        note="Greenhouse published this posting metadata.",
+        platform="greenhouse",
         title="Director of Product Management",
         location="Remote",
-        facts=published_listing_facts("lever", locations="Remote"),
+        facts=published_listing_facts("greenhouse", locations="Remote"),
     )
+    # The hosted careers page is the posting's own address, so its status is final.
     dead = PostingCheck(
-        status="unreadable", note=f"Lever returned HTTP {status}.", platform="lever"
+        status="unreadable",
+        note=f"Greenhouse hosted careers page returned HTTP {status}",
+        platform="greenhouse",
+        http_status=int(status),
     )
     checks = iter((readable, dead))
     service = SourceScanService(
@@ -917,7 +921,7 @@ def test_a_dead_link_refresh_says_the_posting_may_still_exist_at_the_employer(
     )
     staged = service.stage_found_posting(
         workspace_id,
-        "https://jobs.lever.co/globex/00000000-0000-0000-0000-000000000001",
+        "https://careers.example.test/roles/open?gh_jid=1234567890",
         date(2026, 8, 24),
         employer="Globex",
         check_publisher_facts=True,
@@ -928,7 +932,7 @@ def test_a_dead_link_refresh_says_the_posting_may_still_exist_at_the_employer(
         service.refresh_pending_discovery(workspace_id, staged.pending_discovery.id)
 
     message = str(raised.value)
-    assert f"Lever returned HTTP {status}." in message
+    assert f"Greenhouse hosted careers page returned HTTP {status}" in message
     assert "This link is dead" in message
     assert "Globex may still be advertising the posting on its own board" in message
 
@@ -938,14 +942,14 @@ def test_a_dead_link_refresh_says_the_posting_may_still_exist_at_the_employer(
 
 
 @pytest.mark.parametrize(
-    ("note", "unverified"),
+    ("note", "http_status", "unverified"),
     [
-        ("Workday returned HTTP 403 (S22).", True),
-        ("Lever returned HTTP 404.", False),
+        ("Workday returned HTTP 403 (S22).", 403, True),
+        ("Lever returned HTTP 404.", 404, False),
     ],
 )
 def test_a_dead_link_stays_a_failure_while_an_unconfirmed_read_is_only_unverified(
-    durable_database: Database, note: str, unverified: bool
+    durable_database: Database, note: str, http_status: int, unverified: bool
 ) -> None:
     workspace_id = scan_workspace(durable_database)
     readable = PostingCheck(
@@ -956,7 +960,10 @@ def test_a_dead_link_stays_a_failure_while_an_unconfirmed_read_is_only_unverifie
         location="Remote",
         facts=published_listing_facts("lever", locations="Remote"),
     )
-    checks = iter((readable, PostingCheck(status="unreadable", note=note, platform="lever")))
+    refused = PostingCheck(
+        status="unreadable", note=note, platform="lever", http_status=http_status
+    )
+    checks = iter((readable, refused))
     service = SourceScanService(
         durable_database,
         storage=runtime_storage(durable_database),

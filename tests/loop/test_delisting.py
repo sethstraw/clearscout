@@ -215,6 +215,17 @@ def test_greenhouse_transiently_empty_board_stays_unreadable() -> None:
     client = _Router([("jobs?content=true", 200, {"jobs": []}), ("/jobs/999", 404, None)])
     checked = check_posting(_GREENHOUSE_URL, client=client)  # type: ignore[arg-type]
     assert checked.status == "unreadable"
+    # Without a status the refresh cannot read the single-job 404 as a dead link.
+    assert checked.http_status is None
+
+
+def test_greenhouse_hosted_page_404_carries_its_status() -> None:
+    """The posting's own page answering 404 is a structured dead-link answer."""
+    client = _Router([("careers.example.test", 404, None)])
+    hosted = "https://careers.example.test/roles/open?gh_jid=1234567890"
+    checked = check_posting(hosted, client=client)  # type: ignore[arg-type]
+    assert checked.status == "unreadable"
+    assert checked.http_status == 404
 
 
 def test_lever_single_posting_404_reads_as_closed_on_a_liveness_fetch() -> None:

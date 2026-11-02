@@ -244,11 +244,14 @@ describe("CommandCenterPage", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "How Promising jobs to revisit is ordered" }),
     );
-    expect(
-      await screen.findByText(
-        "Highest overall score first; jobs with no overall score come last, by employer then title.",
-      ),
-    ).toBeTruthy();
+    const explanation = await screen.findByRole("dialog", {
+      name: "How Promising jobs to revisit is ordered",
+    });
+    expect(explanation.textContent).toBe(
+      "Highest overall score first; jobs with no overall score come last, by employer then title.",
+    );
+    // A block dialog inside a paragraph is invalid markup the browser would split.
+    expect(explanation.closest("p")).toBeNull();
     expect(screen.getByText("62")).toBeTruthy();
     expect(screen.getByText("Integration Engineer")).toBeTruthy();
   });
@@ -256,10 +259,10 @@ describe("CommandCenterPage", () => {
   it("folds the pipeline chart and recent tasks into a closed Advanced section", async () => {
     renderPage();
 
-    const heading = await screen.findByRole("heading", { name: "Recent tasks" });
-    const advanced = heading.closest("details")!;
-    expect(advanced.querySelector("summary")?.textContent).toBe("Advanced");
-    expect(advanced.hasAttribute("open")).toBe(false);
+    await screen.findByRole("heading", { name: "Recent tasks" });
+    const advanced = screen.getByRole<HTMLDetailsElement>("group", { name: "Advanced" });
+    expect(advanced.open).toBe(false);
+    expect(within(advanced).getByRole("heading", { name: "Recent tasks" })).toBeTruthy();
     expect(within(advanced).getByRole("heading", { name: "Application pipeline" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Help: Home" })).toBeTruthy();
   });

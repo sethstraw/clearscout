@@ -23,6 +23,13 @@ function headingSlugs(markdown: string): Set<string> {
   );
 }
 
+it("keeps the Review facts that left the queue toolbar in Review help", () => {
+  const body = HELP["find.review"].body;
+  expect(body).toContain("Open the posting or Details to check uncertain facts yourself.");
+  expect(body).toContain("pages can reveal more");
+  expect(body).toMatch(/counts cover every content state .* only the selected state otherwise/);
+});
+
 it("points every help entry at a heading that exists in the user guide", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const guide = readFileSync(resolve(here, "../../../docs/user-guide.md"), "utf8");

@@ -36,6 +36,10 @@ class PublisherUnverifiedRefreshError(ValidationError):
     """The publisher answered but would not confirm this row; distinct from a dead link."""
 
 
+class DeadLinkRefreshError(ValidationError):
+    """The publisher answered that this row's link is gone."""
+
+
 class EvaluationContentUnavailableError(ValidationError):
     """A full evaluation cannot acquire a verified publisher body without spending."""
 

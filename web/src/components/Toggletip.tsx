@@ -1,5 +1,6 @@
 import {
   FloatingFocusManager,
+  FloatingPortal,
   autoUpdate,
   flip,
   offset,
@@ -45,17 +46,19 @@ export function Toggletip({ label, children }: { label: string; children: ReactN
         ?
       </button>
       {open && (
-        <FloatingFocusManager context={context} modal={false}>
-          <div
-            aria-label={label}
-            className="toggletip"
-            ref={setFloating}
-            style={floatingStyles}
-            {...getFloatingProps()}
-          >
-            {children}
-          </div>
-        </FloatingFocusManager>
+        <FloatingPortal>
+          <FloatingFocusManager context={context} modal={false}>
+            <div
+              aria-label={label}
+              className="toggletip"
+              ref={setFloating}
+              style={floatingStyles}
+              {...getFloatingProps()}
+            >
+              {children}
+            </div>
+          </FloatingFocusManager>
+        </FloatingPortal>
       )}
     </>
   );

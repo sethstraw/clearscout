@@ -1,6 +1,21 @@
-import type { HttpHandler } from "msw";
+import { HttpResponse, http, type HttpHandler } from "msw";
 
-// Add per-test handlers with `server.use(...)` inside the test; the shared list
-// stays empty so a test that forgets a mock fails loudly rather than hitting
-// jsdom's fetch and getting an ambiguous error.
-export const handlers: HttpHandler[] = [];
+import type { Health } from "../../api/client/types";
+
+// Every PaidAction reads health for free mode, so a paid-mode health is the one
+// default. Add other mocks per test with `server.use(...)`.
+export const handlers: HttpHandler[] = [
+  http.get("*/api/v1/health", () =>
+    HttpResponse.json({
+      status: "ok",
+      version: "0.1.0",
+      database_exists: true,
+      database_reachable: true,
+      schema_current: true,
+      current_revision: "0001",
+      head_revision: "0001",
+      worker_available: true,
+      free_mode: false,
+    } satisfies Health),
+  ),
+];

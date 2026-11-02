@@ -18,7 +18,7 @@ type Activation =
   | { onPrepare: () => void; confirmation?: never; onAct?: never; onContinue?: never };
 
 const PAID_MARK = "Paid";
-const FREE_MODE_REASON = "Add a provider key to use paid actions.";
+export const FREE_MODE_REASON = "Add a provider key to use paid actions.";
 const PROVIDER_SETTINGS_PATH = "/settings?tab=provider";
 
 /**

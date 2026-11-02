@@ -124,7 +124,10 @@ describe("SettingsPage", () => {
     expect(await screen.findByText("Search setup")).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "Sources" })).toBeNull();
     expect(screen.getByText("Advanced search controls").closest("details")?.open).toBe(false);
-    expect(screen.getByRole("heading", { name: "Optional guided search (paid)" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Optional guided search" })).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Find roles from my background" }).getAttribute("href"),
+    ).toBe("/find?tab=web");
     expect(screen.getByText(/no job is ruled out by them/)).toBeTruthy();
     expect(
       screen.getByRole<HTMLButtonElement>("button", { name: "Save as new version" }).disabled,

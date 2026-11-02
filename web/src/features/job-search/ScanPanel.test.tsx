@@ -131,8 +131,9 @@ describe("ScanPanel", () => {
     panel();
 
     const button = await screen.findByRole<HTMLButtonElement>("button", { name: "Scan now" });
-    await screen.findByText("No boards yet.", { exact: false });
+    await screen.findByText("Add a board", { exact: false });
     expect(button.disabled).toBe(true);
+    expect(screen.queryByText(/No boards yet/)).toBeNull();
     const reason = document.getElementById(button.getAttribute("aria-describedby") ?? "");
     expect(reason?.textContent).toBe("Add a board below to scan.");
     expect(screen.getByRole("link", { name: "Add a board" }).getAttribute("href")).toBe(
@@ -166,6 +167,11 @@ describe("ScanPanel", () => {
       name: "Add target titles in Settings > Search",
     });
     expect(link.getAttribute("href")).toBe("/settings?tab=search");
+    const scanNow = screen.getByRole<HTMLButtonElement>("button", { name: "Scan now" });
+    expect(scanNow.disabled).toBe(true);
+    expect(
+      document.getElementById(scanNow.getAttribute("aria-describedby") ?? "")?.textContent,
+    ).toBe("Add a target title to scan.");
     expect(screen.getByRole("link", { name: "add one posting link" }).getAttribute("href")).toBe(
       "?tab=review",
     );
@@ -184,7 +190,7 @@ describe("ScanPanel", () => {
 
     const error = await screen.findByText("Scan failed: Publisher read failed.");
     expect(error.closest("details")).toBeNull();
-    expect(screen.getByRole("link", { name: "View scan tasks" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: "View scans in Activity" }).getAttribute("href")).toBe(
       "/tasks",
     );
     expect(screen.getByRole<HTMLButtonElement>("button", { name: "Scan now" }).disabled).toBe(
@@ -1056,7 +1062,7 @@ describe("ScanPanel source subsets", () => {
       screen.getByText("Other active scan: Northwind - running. Scanning Northwind: 1/1."),
     ).toBeTruthy();
     expect(screen.getByText("Showing the scan you just requested.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "View scan tasks" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: "View scans in Activity" }).getAttribute("href")).toBe(
       "/tasks",
     );
     expect(submitted[0]).toEqual({

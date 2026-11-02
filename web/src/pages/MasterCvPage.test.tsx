@@ -211,9 +211,13 @@ function installHandlers(
   return sent;
 }
 
-function chooseFile(container: HTMLElement, name: string) {
-  const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+function chooseFile(name: string) {
+  const input = screen.getByLabelText("CV source");
   fireEvent.change(input, { target: { files: [new File(["synthetic"], name)] } });
+}
+
+function importFold() {
+  return screen.getByRole<HTMLDetailsElement>("group", { name: "Import a version from a file" });
 }
 
 function renderPage() {
@@ -245,10 +249,10 @@ describe("MasterCvPage", () => {
 
   it("puts a file the model must re-read behind the paid mark and a confirm", async () => {
     const sent = installHandlers();
-    const { container } = renderPage();
+    renderPage();
     await screen.findByRole("button", { name: "Edit this CV" });
 
-    chooseFile(container, "Resume.docx");
+    chooseFile("Resume.docx");
     const button = await screen.findByRole<HTMLButtonElement>("button", {
       name: "Import as new version",
     });
@@ -267,12 +271,34 @@ describe("MasterCvPage", () => {
     expect(await screen.findByText(/Ready: 7 citable entries/)).toBeTruthy();
   });
 
-  it("imports Markdown and plain text with a plain button", async () => {
-    const sent = installHandlers();
-    const { container } = renderPage();
+  it("says a first re-read has no cost to estimate from", async () => {
+    installHandlers();
+    server.use(
+      http.get(`${WORKSPACE}/master-cv/reread-estimate`, () =>
+        HttpResponse.json({ past_rereads: 0, average_usd: null } satisfies MasterCvRereadEstimate),
+      ),
+    );
+    renderPage();
     await screen.findByRole("button", { name: "Edit this CV" });
 
-    chooseFile(container, "CV.txt");
+    chooseFile("Resume.docx");
+    const button = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Import as new version",
+    });
+    await waitFor(() => expect(button.disabled).toBe(false));
+    fireEvent.click(button);
+
+    const dialog = await screen.findByRole("dialog", { name: "Re-read this CV with the model?" });
+    expect(dialog.textContent).toContain("The cost is unknown until the first re-read.");
+    expect(dialog.textContent).not.toContain("Charges may be higher.");
+  });
+
+  it("imports Markdown and plain text with a plain button", async () => {
+    const sent = installHandlers();
+    renderPage();
+    await screen.findByRole("button", { name: "Edit this CV" });
+
+    chooseFile("CV.txt");
     const button = await screen.findByRole("button", { name: "Import as new version" });
     expect(within(button).queryByText("Paid")).toBeNull();
     fireEvent.click(button);
@@ -285,10 +311,10 @@ describe("MasterCvPage", () => {
     const sent = installHandlers({
       importStatus: (query) => (query.get("confirm_reread") === "true" ? 201 : 409),
     });
-    const { container } = renderPage();
+    renderPage();
     await screen.findByRole("button", { name: "Edit this CV" });
 
-    chooseFile(container, "notes.txt");
+    chooseFile("notes.txt");
     fireEvent.click(await screen.findByRole("button", { name: "Import as new version" }));
 
     const paid = await screen.findByRole<HTMLButtonElement>("button", {
@@ -304,12 +330,63 @@ describe("MasterCvPage", () => {
     expect(sent.imports.map((query) => query.get("confirm_reread"))).toEqual(["false", "true"]);
   });
 
-  it("keeps a paid import off in free mode and says why", async () => {
-    installHandlers({ freeMode: true });
-    const { container } = renderPage();
+  it("moves focus to the paid import when the server refuses a text file", async () => {
+    installHandlers({ importStatus: () => 409 });
+    renderPage();
     await screen.findByRole("button", { name: "Edit this CV" });
 
-    chooseFile(container, "Resume.pdf");
+    chooseFile("notes.txt");
+    fireEvent.click(await screen.findByRole("button", { name: "Import as new version" }));
+
+    const paid = await screen.findByRole("button", {
+      name: "Import as new version",
+      description: /Paid/,
+    });
+    await waitFor(() => expect(document.activeElement).toBe(paid));
+  });
+
+  it("offers the free route in free mode when the server refuses a text file", async () => {
+    installHandlers({ freeMode: true, importStatus: () => 409 });
+    renderPage();
+    await screen.findByRole("button", { name: "Edit this CV" });
+
+    chooseFile("notes.txt");
+    fireEvent.click(await screen.findByRole("button", { name: "Import as new version" }));
+
+    const route = await screen.findByText(/Markdown or text in the CV format imports free/);
+    // Only the transient error toast still carries the server text.
+    expect(screen.getAllByText("This CV needs a paid re-read.")).toHaveLength(1);
+    expect(route.textContent).toContain("Open Help on this page");
+    await waitFor(() => expect(document.activeElement).toBe(route));
+  });
+
+  it("keeps the import result in view after the first import", async () => {
+    let versions: MasterCvVersion[] = [];
+    installHandlers();
+    server.use(
+      http.get(`${WORKSPACE}/master-cv/versions`, () => HttpResponse.json(versions)),
+      http.post(`${WORKSPACE}/master-cv/import`, () => {
+        versions = [VERSION];
+        return HttpResponse.json(IMPORTED, { status: 201 });
+      }),
+    );
+    renderPage();
+    await screen.findByText("Nothing imported yet.");
+
+    chooseFile("CV.md");
+    fireEvent.click(screen.getByRole("button", { name: "Import as new version" }));
+
+    expect(await screen.findByText(/Ready: 7 citable entries/)).toBeTruthy();
+    await screen.findByRole("button", { name: "Edit this CV" });
+    expect(importFold().open).toBe(true);
+  });
+
+  it("keeps a paid import off in free mode and says why", async () => {
+    installHandlers({ freeMode: true });
+    renderPage();
+    await screen.findByRole("button", { name: "Edit this CV" });
+
+    chooseFile("Resume.pdf");
 
     expect(await screen.findByText("Add a provider key to use paid actions.")).toBeTruthy();
     const button = screen.getByRole<HTMLButtonElement>("button", { name: "Import as new version" });
@@ -318,10 +395,10 @@ describe("MasterCvPage", () => {
 
   it("opens the import form when there is no CV yet", async () => {
     installHandlers({ versions: [] });
-    const { container } = renderPage();
+    renderPage();
 
     await screen.findByText("Nothing imported yet.");
-    expect(container.querySelector("details.cv-import")?.hasAttribute("open")).toBe(true);
+    expect(importFold().open).toBe(true);
   });
 
   it("saves an edit the parser rejects only through a confirmed paid re-read", async () => {
@@ -363,7 +440,7 @@ describe("MasterCvPage", () => {
     expect(button.disabled).toBe(true);
     expect(
       screen.getByText(
-        "This draft needs a model re-read because it has no dated role. Fix that in the draft to save it without a charge, or re-read it.",
+        "This draft needs a model re-read because it has no dated role. Fix that in the draft to save it without a charge.",
       ),
     ).toBeTruthy();
   });

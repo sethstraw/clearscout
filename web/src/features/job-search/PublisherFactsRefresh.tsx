@@ -26,8 +26,8 @@ export function PublisherFactsRefresh({
       title: selected === 1 ? "Refresh this posting?" : `Refresh ${selected} selected postings?`,
       description:
         selected === 1
-          ? "Re-reads this posting from its publisher. If the publisher no longer lists it, it is closed, and a link that cannot be read keeps its stored facts and your corrected title. Nothing is spent."
-          : `Re-reads all ${selected} from their publishers, which takes a few minutes and can be cancelled from Tasks. A posting its publisher no longer lists is closed, and a link that cannot be read keeps its stored facts and your corrected title. Nothing is spent.`,
+          ? "Re-reads this posting from its publisher. If the publisher no longer lists it, it is closed, and a link that cannot be read keeps its stored facts and your corrected title."
+          : `Re-reads all ${selected} from their publishers, which takes a few minutes and can be cancelled from Activity. A posting its publisher no longer lists is closed, and a link that cannot be read keeps its stored facts and your corrected title.`,
       confirmLabel: selected === 1 ? "Refresh" : `Refresh ${selected}`,
     });
     if (!approved) return;
@@ -53,7 +53,7 @@ export function PublisherFactsRefresh({
             ? "Refresh posting"
             : `Refresh postings (${selected})`}
       </button>
-      <span className="field-note">Free. Re-reads facts, liveness, and posting text.</span>
+      <span className="field-note">Re-reads facts, liveness, and posting text.</span>
       {status === "completed" && (
         <span className="field-note" role="status">
           Refreshed {refresh.count("refreshed")}: {refresh.count("content_readable")} readable

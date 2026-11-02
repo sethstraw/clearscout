@@ -15,6 +15,7 @@ class PostingObservationBodyResponse(ObservationResponse):
     job_posting_id: str
     workspace_id: str
     source_url: str
+    discovery_url: str | None = None
     logical_type: ArtifactLogicalType
     mime_type: str
     sha256: str

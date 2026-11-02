@@ -2,9 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { Note } from "../api/client/types";
-import { AppProviders } from "../providers";
-import { server } from "../test/msw/server";
+import type { Note } from "../../api/client/types";
+import { AppProviders } from "../../providers";
+import { server } from "../../test/msw/server";
 import { WorkspacePage } from "./WorkspacePage";
 
 afterEach(() => {

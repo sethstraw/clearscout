@@ -14,7 +14,7 @@ export function FitReport({
   staleReason,
 }: {
   error: Error | null;
-  exportUrl: string;
+  exportUrl?: string;
   onShowEvidence: (evidenceId: string) => void;
   isError: boolean;
   isLoading: boolean;
@@ -81,9 +81,11 @@ export function FitReport({
             This Markdown was generated from committed findings. Opening it never calls a model.
           </p>
         </div>
-        <a className="button button--quiet" href={exportUrl}>
-          Export Markdown
-        </a>
+        {exportUrl && (
+          <a className="button button--quiet" download href={exportUrl}>
+            Export Markdown
+          </a>
+        )}
       </header>
       {isLoading && <LoadingState label="Verifying fit report" />}
       {isError && <ErrorState error={error} />}

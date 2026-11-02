@@ -92,7 +92,7 @@ function TailoringActions({
       <h2>Tailoring Studio</h2>
       {evaluateActionId && (
         <p className="field-note">
-          To re-evaluate this job, use the{" "}
+          To evaluate or re-evaluate this job, use the{" "}
           <a href={`#${evaluateActionId}`}>evaluation button in the page header</a>.
         </p>
       )}

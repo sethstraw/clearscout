@@ -6625,6 +6625,8 @@ export interface components {
             body: string;
             /** Body Artifact Id */
             body_artifact_id: string | null;
+            /** Discovery Url */
+            discovery_url?: string | null;
             /** Employment Type */
             employment_type: string;
             /** Extraction Method */

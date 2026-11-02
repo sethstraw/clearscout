@@ -168,7 +168,7 @@ describe("SearchSuggestions", () => {
     panel();
 
     expect(
-      await screen.findByRole("heading", { name: "Suggestions from search vocabulary" }),
+      await screen.findByRole("heading", { name: "Suggestions from search vocabulary", level: 3 }),
     ).toBeTruthy();
     expect(screen.getByText(/Decisions save at once/)).toBeTruthy();
     expect(await screen.findByText("Streaming Platform Engineer")).toBeTruthy();
@@ -205,6 +205,7 @@ describe("SearchSuggestions", () => {
     expect(await screen.findByText("Streaming Platform Engineer")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "How suggestions and review limits work" }));
     expect(screen.getByText(/Approvals do not count against the review limit/)).toBeTruthy();
+    expect(screen.getByText(/You can approve anything in Not using later\./)).toBeTruthy();
     expect(screen.getByText("1 awaiting review; inbox limit 8; room for 7 new")).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Approved (1)" })).toBeTruthy();
     expect(screen.queryByText(/active set is reduced/)).toBeNull();

@@ -11,6 +11,7 @@ import {
 } from "../../api/client";
 import {
   useEnqueueTask,
+  useFreeMode,
   usePendingQueueRescreen,
   useRelevanceReviewProviderConfiguration,
   useResetPendingQueue,
@@ -19,7 +20,7 @@ import {
   useTrackPendingDiscovery,
 } from "../../api/hooks";
 import { useConfirmation } from "../../confirmations";
-import { PaidAction } from "../../components/PaidAction";
+import { FREE_MODE_REASON, PaidAction } from "../../components/PaidAction";
 import { EvaluationCostDetails } from "../../components/EvaluationCostDetails";
 import { EmptyState, ErrorState } from "../../components/States";
 import { DiscoveryDispositionManager, DismissSelection } from "./DiscoveryDispositions";
@@ -203,6 +204,7 @@ export function PendingDiscoveryQueue({
   workspaceId: string;
 }) {
   const costs = useTaskCosts(workspaceId);
+  const freeMode = useFreeMode();
   const relevanceReviewConfiguration = useRelevanceReviewProviderConfiguration(workspaceId, true);
   const enqueue = useEnqueueTask(workspaceId);
   const track = useTrackPendingDiscovery(workspaceId);
@@ -360,6 +362,7 @@ export function PendingDiscoveryQueue({
   // Keyboard evaluate and review reach the same paid confirmation the buttons use.
   // An ineligible key announces why, matching what a disabled mouse button shows.
   const evaluateOne = async (item: PendingDiscovery) => {
+    if (freeMode) return setAnnounce(FREE_MODE_REASON);
     if (evaluationPreparing.current)
       return setAnnounce("Evaluation confirmation already in progress");
     if (!costs.loaded) return setAnnounce("Costs still loading");
@@ -412,6 +415,7 @@ export function PendingDiscoveryQueue({
   }, []);
 
   const reviewOne = async (item: PendingDiscovery) => {
+    if (freeMode) return setAnnounce(FREE_MODE_REASON);
     if (!costs.loaded) return setAnnounce("Costs still loading");
     if (!relevanceReviewConfiguration.loaded) return setAnnounce("Provider configuration loading");
     if (relevanceReviewConfiguration.isError)
@@ -679,7 +683,7 @@ export function PendingDiscoveryQueue({
   const requestQueueReset = async () => {
     const approved = await confirm({
       title: "Reset the pending queue?",
-      description: `This forgets machine decisions for all ${discoveries.length} discoveries shown and any others still pending. It keeps your disposition choices, favorite and kept discoveries, rows under a running paid task, and rows that no board scan can find; those source-less rows are re-screened in place. The next free scan re-stages the remaining active openings. Jobs and their evaluation history are unchanged.`,
+      description: `This forgets machine decisions for all ${discoveries.length} discoveries shown and any others still pending. It keeps your disposition choices, favorite and kept discoveries, rows under a running paid task, and rows that no board scan can find; those source-less rows are re-screened in place. The next scan re-stages the remaining active openings. Jobs and their evaluation history are unchanged.`,
       confirmLabel: "Reset pending queue",
       danger: true,
     });
@@ -1046,7 +1050,7 @@ export function PendingDiscoveryQueue({
           >
             {filters.constraint === "needs_clarification" ? <h3>Unconfirmed matches</h3> : null}
             {filters.constraint === "excluded_only" ? <h3>Screened out</h3> : null}
-            <table aria-label="Pending job discoveries" data-tour="find-review">
+            <table aria-label="Pending job discoveries">
               <thead>
                 <tr>
                   <th scope="col">
@@ -1140,7 +1144,7 @@ export function PendingDiscoveryQueue({
         <EmptyState>
           <p>No openings are waiting. Scan your saved boards to find new postings.</p>
           <a className="button button--primary" href="?tab=boards">
-            Scan for openings
+            Scan your boards
           </a>
         </EmptyState>
       ) : null}

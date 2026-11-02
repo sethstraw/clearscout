@@ -10064,6 +10064,17 @@
             ],
             "title": "Body Artifact Id"
           },
+          "discovery_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Url"
+          },
           "employment_type": {
             "title": "Employment Type",
             "type": "string"

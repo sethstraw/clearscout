@@ -63,6 +63,7 @@ from tailorcv.application.discovery.source_reading import (
     SourceReader,
 )
 from tailorcv.application.failures import (
+    DeadLinkRefreshError,
     PublisherUnverifiedRefreshError,
     UnsupportedPublisherRefreshError,
     ValidationError,
@@ -132,22 +133,17 @@ from tailorcv.infrastructure.web_fetch.ingest.url import check_posting, workday_
 from tailorcv.infrastructure.web_fetch.policy import FetchPolicyError, PoliteHttpClient
 from tailorcv.shared.errors import TailorcvError
 
-_DEAD_LINK_STATUSES = ("404", "410")
+_DEAD_LINK_STATUSES = (404, 410)
 # Ledger families memoized at once, well above the worker's concurrent recording passes.
 _LEDGER_SCOPE_CACHE_SIZE = 64
 
 
-def _link_is_dead(note: str) -> bool:
-    """A stored link that 404s or 410s is gone, not momentarily unreadable."""
-    return any(f"HTTP {code}" in note for code in _DEAD_LINK_STATUSES)
-
-
-def _refresh_failure_message(employer: str, title: str, note: str) -> str:
+def _refresh_failure_message(employer: str, title: str, note: str, *, dead: bool = False) -> str:
     """Name the row a failed refresh belongs to, and flag a dead link as re-addable."""
     employer = employer.strip()
     row = ", ".join(part for part in (employer, title.strip()) if part)
     prefix = f"{row}: " if row else ""
-    if employer and _link_is_dead(note):
+    if employer and dead:
         return (
             f"{prefix}{note} This link is dead, but {employer} may still be advertising the "
             f"posting on its own board; re-add it from there."
@@ -752,9 +748,13 @@ class SourceScanService:
                 _refresh_failure_message(pending.employer, pending.title, checked.note)
             )
         if checked.status != "readable":
-            message = _refresh_failure_message(pending.employer, pending.title, checked.note)
-            if _link_is_dead(checked.note):
-                raise ValidationError(message)
+            # Only the posting's own 404 or 410 is final; a note can quote a transient one.
+            dead = checked.http_status in _DEAD_LINK_STATUSES
+            message = _refresh_failure_message(
+                pending.employer, pending.title, checked.note, dead=dead
+            )
+            if dead:
+                raise DeadLinkRefreshError(message)
             raise PublisherUnverifiedRefreshError(message)
         self.staging.checks.refresh_pending_discovery(
             workspace_id,
@@ -1289,7 +1289,7 @@ class DiscoveryRefreshBatchHandler:
         withdrawn: list[str] = []
         not_checkable: list[str] = []
         unverified: list[str] = []
-        failures: list[dict[str, str]] = []
+        failures: list[dict[str, str | bool]] = []
         content_failures: list[dict[str, str]] = []
         content_outcomes: dict[str, int] = {}
         content_kept = 0
@@ -1324,7 +1324,11 @@ class DiscoveryRefreshBatchHandler:
                     # facts stand and the body read still decides whether it is gone.
                     unverified.append(pending_id)
                 except _ROW_FAILURES as error:
-                    failures.append(pending_row_failure(pending_id, error))
+                    # A dead link is a final answer about the row, unlike a transient error.
+                    conclusive = isinstance(error, DeadLinkRefreshError)
+                    failures.append(
+                        {**pending_row_failure(pending_id, error), "conclusive": conclusive}
+                    )
                     continue
                 else:
                     # A refresh that reads the publisher as closed withdraws the row, and a

@@ -802,11 +802,10 @@ export function SearchParameterSetup({
       <section className="panel">
         <header>
           <div>
-            <h2>Optional guided search (paid)</h2>
+            <h2>Optional guided search</h2>
             <p>
-              Enter target titles and preferences below for free discovery. With a provider key and
-              CV, paid guided search can suggest evidence-backed role families and adjacent
-              directions.
+              Target titles and preferences below drive discovery. With a provider key and CV,
+              guided search can suggest evidence-backed role families and adjacent directions.
             </p>
           </div>
         </header>
@@ -816,8 +815,8 @@ export function SearchParameterSetup({
             steer choices. Blank values remain unstated; they do not become refusals. Search changes
             take effect only after Save as new version.
           </p>
-          <a className="button button--quiet" href="/find?tab=campaign">
-            Find roles from my background (paid)
+          <a className="button button--quiet" href="/find?tab=web">
+            Find roles from my background
           </a>
         </div>
       </section>

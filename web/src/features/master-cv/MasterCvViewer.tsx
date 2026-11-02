@@ -8,6 +8,7 @@ import {
   useMasterCvImpact,
   useMasterCvRereadCosts,
   useMasterCvVersions,
+  useFreeMode,
   useSaveMasterCv,
 } from "../../api/hooks";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
@@ -116,6 +117,7 @@ export function MasterCvViewer({
   const impact = useMasterCvImpact(workspaceId);
   const save = useSaveMasterCv(workspaceId);
   const rereadCosts = useMasterCvRereadCosts(workspaceId);
+  const free = useFreeMode();
   const all = useMemo(() => versions.data ?? [], [versions.data]);
   const currentId = all.find((item) => item.is_current)?.id ?? all[0]?.id ?? "";
   const viewing = selected || currentId;
@@ -321,7 +323,7 @@ export function MasterCvViewer({
                 {impact.data.reread_reason && (
                   <p className="field-note">
                     This draft needs a model re-read because {impact.data.reread_reason}. Fix that
-                    in the draft to save it without a charge, or re-read it.
+                    in the draft to save it without a charge{free ? "" : ", or re-read it"}.
                   </p>
                 )}
                 <div className="button-row">

@@ -341,7 +341,7 @@ where intake permits it. Published reading policy still applies.
 
 Find jobs has four task tabs:
 
-- Scan for openings reads all enabled sources, an explicit source selection,
+- Scan your boards reads all enabled sources, an explicit source selection,
   or one source. Selected scans can include sources excluded from bulk scans;
   selecting them does not enable them. Read history is filterable by source
   and result. It shows retained dated source and query records; same-day rescans
@@ -501,7 +501,7 @@ calls no model.
    Then choose **Add source**.
 5. Switch on **Swept**. A source that states a condition shows it first and
    waits for you to accept it.
-6. Open **Find jobs > Scan for openings > Schedule free scans**. Choose daily
+6. Open **Find jobs > Scan your boards > Schedule free scans**. Choose daily
    or weekly, a local time, and a named time zone such as `Europe/London`.
 7. Keep the local worker running. Scheduled scans run only while it runs.
    After a shutdown, one catch-up scan runs on the next start.
@@ -522,7 +522,7 @@ The sections below give each step in full.
 
 ## Schedule free board scans
 
-Open **Find jobs > Scan for openings > Schedule free scans**. Each workspace
+Open **Find jobs > Scan your boards > Schedule free scans**. Each workspace
 has one optional daily or weekly schedule. Choose a local time and named IANA
 time zone, such as `Europe/London`; weekly schedules also need a weekday.
 Save manually entered target titles before enabling a schedule.
@@ -563,7 +563,7 @@ not one job's application form.
    not mean permission was established.
 5. Choose **Add source**. Check its **Swept** control. If the source states a
    condition, read and confirm it before enabling the scan.
-6. Open **Find jobs > Scan for openings**. Scan all enabled sources, select a
+6. Open **Find jobs > Scan your boards**. Scan all enabled sources, select a
    subset and choose **Scan selected sources**, or use one source's Scan
    control. Check the confirmed scope, result, and read history. New candidates
    appear under **Review found jobs**.

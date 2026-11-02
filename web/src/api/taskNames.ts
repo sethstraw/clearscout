@@ -90,7 +90,7 @@ export const TASK_KINDS: Record<TaskType, TaskKind> = {
     detail: "Propose CV-grounded search terms for you to review before they affect later runs.",
   },
   "source.scan": {
-    name: "Scan for openings",
+    name: "Scan your boards",
     detail:
       "Scan the boards you already track for current openings. Finds postings; does not evaluate them.",
   },

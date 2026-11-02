@@ -31,11 +31,13 @@ function renderReader(
   sourceUrl: string,
   initialEntry = "/jobs/job-1",
   robotsBasis: "allowed" | "single_posting_read" | null = "allowed",
+  discoveryUrl: string | null = null,
 ) {
   const log = requestLog();
   const body = {
     body: "Synthetic posting body",
     body_artifact_id: "artifact-older",
+    discovery_url: discoveryUrl,
     employment_type: "full-time",
     extraction_method: "html",
     fetched_at: "2026-07-01T12:00:00Z",
@@ -102,6 +104,33 @@ describe("PostingReader", () => {
     const credit = await screen.findByRole("link", { name: "Job data from Himalayas" });
     expect(credit.getAttribute("href")).toBe(applicationLink);
     expect(screen.getByRole("link", { name: "Source" }).getAttribute("href")).toBe(applicationLink);
+  });
+
+  it("credits Arbeitnow when an employer address is the source", async () => {
+    const employerLink = "https://careers.example.test/openings/42";
+    const discovery = "https://www.arbeitnow.com/jobs/companies/initech/data-analyst-42";
+    renderReader(employerLink, "/jobs/job-1", "allowed", discovery);
+
+    const credit = await screen.findByRole("link", { name: "Job data from Arbeitnow" });
+    expect(credit.getAttribute("href")).toBe("https://www.arbeitnow.com/");
+    expect(screen.getByRole("link", { name: "Source" }).getAttribute("href")).toBe(employerLink);
+  });
+
+  it("credits the aggregator source when discovery came from an employer address", async () => {
+    const himalayas = "https://himalayas.app/companies/initech/jobs/data-analyst";
+    renderReader(himalayas, "/jobs/job-1", "allowed", "https://careers.example.test/openings/42");
+
+    const credit = await screen.findByRole("link", { name: "Job data from Himalayas" });
+    expect(credit.getAttribute("href")).toBe(himalayas);
+  });
+
+  it("credits the aggregator the body came from over an earlier one", async () => {
+    const himalayas = "https://himalayas.app/companies/initech/jobs/data-analyst";
+    const arbeitnow = "https://www.arbeitnow.com/jobs/companies/initech/data-analyst-42";
+    renderReader(himalayas, "/jobs/job-1", "allowed", arbeitnow);
+
+    expect(await screen.findByRole("link", { name: "Job data from Himalayas" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Job data from Arbeitnow" })).toBeNull();
   });
 
   it("does not make an active-scheme source clickable", async () => {

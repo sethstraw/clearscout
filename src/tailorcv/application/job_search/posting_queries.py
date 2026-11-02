@@ -71,12 +71,22 @@ def posting_observation(
             .order_by(PostingUrl.is_primary.desc(), PostingUrl.created_at, PostingUrl.id)
             .limit(1)
         )
+        discovery_url = session.scalar(
+            select(PostingUrl.url)
+            .where(
+                PostingUrl.job_posting_id == observation.job_posting_id,
+                PostingUrl.url_type == "discovery",
+            )
+            .order_by(PostingUrl.created_at, PostingUrl.id)
+            .limit(1)
+        )
         return PostingObservationBodyResponse.model_validate(
             {
                 **_observation(observation),
                 "job_posting_id": observation.job_posting_id,
                 "workspace_id": workspace_id,
                 "source_url": source_url or "",
+                "discovery_url": discovery_url,
                 "logical_type": artifact.logical_type,
                 "mime_type": artifact.mime_type,
                 "sha256": artifact.sha256,

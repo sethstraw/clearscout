@@ -113,14 +113,18 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
       : progressSource
         ? `Scanning ${progressSource}`
         : "Scanning sources";
-  const scanDisabled = scan.isPending || sources.isLoading || sources.isError;
+  const scanDisabled = scan.isPending || sources.isLoading || sources.isError || titlesMissing;
   const bulkScanDisabled = scanDisabled || enabledSources.length === 0;
   const bulkScanReason =
-    sources.isSuccess && enabledSources.length === 0
-      ? sourceItems.length === 0
-        ? "Add a board below to scan."
-        : "Turn on sweeping for a board below to scan."
-      : "";
+    sources.isSuccess && sourceItems.length === 0 ? (
+      <>
+        <a href="#source-add-heading">Add a board</a> below to scan.
+      </>
+    ) : sources.isSuccess && enabledSources.length === 0 ? (
+      "Turn on sweeping for a board below to scan."
+    ) : titlesMissing ? (
+      "Add a target title to scan."
+    ) : null;
   const filteredSources = sourceItems.filter((item) =>
     item.name.toLowerCase().includes(sourceFilter.trim().toLowerCase()),
   );
@@ -237,7 +241,8 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
         {scan.data && <p className="field-note">Showing the scan you just requested.</p>}
         {(scanTask.data || otherActiveScans.length > 0) && (
           <p className="field-note">
-            Scan information comes from the recent task window. <a href="/tasks">View scan tasks</a>
+            Scan information comes from the recent task window.{" "}
+            <a href="/tasks">View scans in Activity</a>
           </p>
         )}
         {otherActiveScans.length > 0 && (
@@ -288,11 +293,6 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
         {running && scanTask.data?.status === "running" && (
           <p role="status">
             {progressLabel}: {progressCurrent}/{progressTotal}
-          </p>
-        )}
-        {sources.isSuccess && sourceItems.length === 0 && (
-          <p>
-            No boards yet. <a href="#source-add-heading">Add a board</a> below, then scan it.
           </p>
         )}
         {sources.isSuccess && sourceItems.length > 0 && (

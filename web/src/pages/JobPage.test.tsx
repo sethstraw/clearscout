@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -252,8 +252,10 @@ describe("JobPage", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Tailor" }));
     expect(screen.getByRole("tab", { name: "Files" })).toBeTruthy();
     const studioLink = screen.getByRole("link", { name: "evaluation button in the page header" });
-    const target = document.getElementById(studioLink.getAttribute("href")!.slice(1));
-    expect(target?.querySelector("button.button--paid")).toBeTruthy();
+    const target = screen.getByRole("group", { name: "Evaluation" });
+    expect(studioLink.getAttribute("href")).toBe(`#${target.id}`);
+    expect(target.tabIndex).toBe(-1);
+    expect(within(target).getByRole("button", { name: "Re-run evaluation" })).toBeTruthy();
     expect(screen.getByRole("tablist", { name: "Tailoring workspace sections" })).toBeTruthy();
     const exportUrl = "/api/v1/jobs/job-1/fit-report/export?workspace_id=workspace-jobs";
     expect(screen.queryByRole("link", { name: "Download fit report" })).toBeNull();
@@ -891,6 +893,8 @@ describe("JobPage", () => {
     expect(billingStatus.textContent).toBe(
       "Recorded cost for this task: $0.0413 across 2 model calls.",
     );
+    // The Advanced fold remounts closed, so the result has to sit outside it.
+    expect(billingStatus.closest("details")).toBeNull();
     const retry = screen.getByRole("button", { name: "Refresh with dispute re-extraction" });
     expect(
       billingStatus.compareDocumentPosition(retry) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -1352,6 +1356,25 @@ describe("JobPage", () => {
     expect(await screen.findByRole("button", { name: "Archive" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Re-run evaluation" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Refresh posting" })).toBeNull();
+  });
+
+  it.each([
+    ["an archived job", { archived_at: "2026-08-10T12:00:00Z" }],
+    ["a job with no stored fit report", { fit_report_available: false }],
+  ])("offers no fit report export for %s", async (_label, change) => {
+    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    installJob({ detail: { ...detail, ...change } });
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/jobs/job-1?tab=fit-report"]}>
+          <Routes>
+            <Route path="/jobs/:jobId" element={<JobPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByRole("heading", { name: "Stored fit report" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Export Markdown" })).toBeNull();
   });
 
   it("shows orphaned rulings when a re-evaluation dropped their requirement", async () => {

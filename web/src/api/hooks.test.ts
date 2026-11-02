@@ -336,6 +336,10 @@ describe("task costs", () => {
       "About $6.00 for 50 attempts",
     );
     expect(result.current.confirmation("search.vocabulary")).toContain("No completed runs yet.");
+    expect(result.current.confirmation("search.vocabulary")).toContain(
+      "The cost is unknown until the first run",
+    );
+    expect(result.current.confirmation("search.vocabulary")).not.toContain("may be higher");
     expect(result.current.isPaid("posting.refresh")).toBe(false);
     expect(result.current.isPaid("posting.refresh_with_reextraction")).toBe(true);
     expect(result.current.isPaid("posting.refresh_with_rematch")).toBe(true);

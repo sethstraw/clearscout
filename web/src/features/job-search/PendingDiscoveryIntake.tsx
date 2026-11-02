@@ -176,7 +176,7 @@ export function PendingDiscoveryIntake({
             verification?.status === "readable"
               ? `${action} ${identity}. Publisher verified ${verified.join(", ") || "the posting response"}.`
               : `${action} ${identity} with unverified hints.`,
-          read: "Saved; preparing its free posting read.",
+          read: "Saved; preparing its posting read.",
         });
         reads.push({ resultId: item.id, pendingId: stored.id });
         onAdded(stored.id);
@@ -207,7 +207,7 @@ export function PendingDiscoveryIntake({
         await refresh.refresh(batch.map((item) => item.pendingId));
         for (const item of batch)
           updateResult(item.resultId, {
-            read: "Free posting read queued. Check the pending queue for the result.",
+            read: "Posting read queued. Check the pending queue for the result.",
           });
       } catch (error) {
         const detail = error instanceof Error ? error.message : "The read queue is unavailable.";
@@ -228,9 +228,9 @@ export function PendingDiscoveryIntake({
       <summary className="button button--quiet">Add a posting</summary>
       <div className="menu-disclosure__panel">
         <p>
-          Paste direct public posting links, one per line. Each added posting gets a free
-          policy-gated content read before it can enter the ready queue. Results stay below while
-          you add more links.
+          Paste direct public posting links, one per line. Each added posting gets a policy-gated
+          content read before it can enter the ready queue. Results stay below while you add more
+          links.
         </p>
         <form
           onSubmit={(event) => {

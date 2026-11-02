@@ -81,8 +81,8 @@ describe("PendingDiscoveryIntake", () => {
     await screen.findByText(
       "Processed 7 links: 2 added, 2 duplicates, 2 invalid or unsupported, 1 failed.",
     );
-    expect(intakeResult(first).getByText(/Free posting read queued/)).toBeTruthy();
-    expect(intakeResult(last).getByText(/Free posting read queued/)).toBeTruthy();
+    expect(intakeResult(first).getByText(/Posting read queued/)).toBeTruthy();
+    expect(intakeResult(last).getByText(/Posting read queued/)).toBeTruthy();
     expect(intakeResult(duplicate).getByText(/already staged/)).toBeTruthy();
     expect(intakeResult(unsupported).getByText(/not allowed by policy/)).toBeTruthy();
     expect(intakeResult(failed).getByText(/Staging is unavailable/)).toBeTruthy();
@@ -139,8 +139,8 @@ describe("PendingDiscoveryIntake", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Add posting" }));
     await waitFor(() => expect(tasks).toBe(2));
-    expect(intakeResult(first).getByText(/Free posting read queued/)).toBeTruthy();
-    expect(intakeResult(second).getByText(/Free posting read queued/)).toBeTruthy();
+    expect(intakeResult(first).getByText(/Posting read queued/)).toBeTruthy();
+    expect(intakeResult(second).getByText(/Posting read queued/)).toBeTruthy();
 
     submitLinks(first);
     await screen.findByText(
@@ -172,7 +172,7 @@ describe("PendingDiscoveryIntake", () => {
     expect(intakeResult(url).getByText("Added")).toBeTruthy();
     expect(onAdded.mock.calls).toEqual([["saved"]]);
     expect(screen.getByLabelText<HTMLTextAreaElement>("Posting link").value).toBe("");
-    expect(screen.queryByText(/Free posting read queued/)).toBeNull();
+    expect(screen.queryByText(/Posting read queued/)).toBeNull();
   });
 
   it("leaves a retired duplicate untouched without a publisher check or read", async () => {

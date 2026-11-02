@@ -203,6 +203,12 @@ export function JobsPage() {
     postingStatus ||
     includeArchived,
   );
+  // The Advanced fold starts closed, so its filters are named where they stay visible.
+  const advancedFilters = [
+    includeArchived ? "archived jobs included" : "",
+    completeness === "incomplete_only" ? "evidence gaps only" : "",
+    completeness === "complete" ? "evidence complete only" : "",
+  ].filter(Boolean);
 
   return (
     <Page
@@ -334,6 +340,21 @@ export function JobsPage() {
             </label>
           </div>
         </details>
+        {advancedFilters.length > 0 && (
+          <p className="field-note jobs-ledger__advanced-active" role="status">
+            Advanced filter on: {advancedFilters.join(", ")}.{" "}
+            <button
+              className="text-button"
+              onClick={() => {
+                updateCompleteness("");
+                updateIncludeArchived(false);
+              }}
+              type="button"
+            >
+              Clear advanced filters
+            </button>
+          </p>
+        )}
         <div className="toolbar-actions">
           <ConfirmedActionButton
             className="button button--quiet"

@@ -105,15 +105,15 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
   const [strictUncertainty, setStrictUncertainty] = useState(() =>
     readStrictUncertainty(workspaceId),
   );
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const screenedOutLinked = searchParams.get(SCREENED_OUT_PARAM) === "excluded_only";
   const [filters, setFilters] = useState<PendingQueueFilters>(() => ({
     ...DEFAULT_QUEUE_FILTERS,
-    constraint:
-      searchParams.get(SCREENED_OUT_PARAM) === "excluded_only"
-        ? "excluded_only"
-        : strictUncertainty
-          ? "pursue_only"
-          : DEFAULT_QUEUE_FILTERS.constraint,
+    constraint: screenedOutLinked
+      ? "excluded_only"
+      : strictUncertainty
+        ? "pursue_only"
+        : DEFAULT_QUEUE_FILTERS.constraint,
   }));
   const [searchText, setSearchText] = useState("");
   const debouncedSearch = useDebouncedValue(searchText, 250);
@@ -213,9 +213,37 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
       setFilters(next);
       removeFirstPage();
       restartPaging();
+      const screenedOut = next.constraint === "excluded_only";
+      setSearchParams(
+        (current) => {
+          if ((current.get(SCREENED_OUT_PARAM) === "excluded_only") === screenedOut) return current;
+          const params = new URLSearchParams(current);
+          if (screenedOut) params.set(SCREENED_OUT_PARAM, "excluded_only");
+          else params.delete(SCREENED_OUT_PARAM);
+          return params;
+        },
+        { replace: true },
+      );
     },
-    [removeFirstPage, restartPaging],
+    [removeFirstPage, restartPaging, setSearchParams],
   );
+  // Following a Screened out link while the queue is open switches the filter.
+  const [linkedSeen, setLinkedSeen] = useState(screenedOutLinked);
+  if (linkedSeen !== screenedOutLinked) {
+    setLinkedSeen(screenedOutLinked);
+    if (screenedOutLinked !== (filters.constraint === "excluded_only")) {
+      setFilters({
+        ...filters,
+        constraint: screenedOutLinked
+          ? "excluded_only"
+          : strictUncertainty
+            ? "pursue_only"
+            : DEFAULT_QUEUE_FILTERS.constraint,
+      });
+      removeFirstPage();
+      restartPaging();
+    }
+  }
   const changeStrictUncertainty = useCallback(
     (value: boolean) => {
       setStrictUncertainty(value);
@@ -340,7 +368,7 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
   }, [attentionOffset, keptFromPreviousRead, limit, page, readyOffset]);
 
   return (
-    <article className="panel pending-discoveries">
+    <article className="panel pending-discoveries" data-tour="find-review">
       <header>
         <div>
           <h2 ref={panelHeadingRef} tabIndex={-1}>

@@ -317,7 +317,7 @@ describe("Level saved lists", () => {
     renderLevel([], vi.fn());
 
     expect(
-      screen.getByText("None saved yet. Add one here for free or accept a search suggestion."),
+      screen.getByText("None saved yet. Add one here or accept a search suggestion."),
     ).toBeTruthy();
   });
 });
@@ -366,7 +366,7 @@ describe("Level explicit employer associations", () => {
   it("adds a manual employer type without a provider or CV", () => {
     const patch = vi.fn<(changes: Partial<Draft>) => void>();
     renderLevel([], patch);
-    fireEvent.click(screen.getByRole("button", { name: "Add employer type (free)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add employer type" }));
     expect(patch.mock.calls.at(-1)?.[0].employers?.archetypes).toEqual([
       { name: "", because: "", employer_names: [] },
     ]);

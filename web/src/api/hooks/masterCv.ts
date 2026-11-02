@@ -101,7 +101,10 @@ export function useMasterCvRereadCosts(workspaceId: string): TaskCosts {
       cost: () => cost,
       inline: () => each,
       summary: () => `${cost} ${measured}`,
-      confirmation: () => `${measured} Charges may be higher.`,
+      confirmation: () =>
+        average === null || average === undefined
+          ? "The cost is unknown until the first re-read."
+          : `${measured} Charges may be higher.`,
     };
   }, [estimate.data, estimate.isError]);
 }

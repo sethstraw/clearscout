@@ -92,7 +92,7 @@
 	justify-content: space-between;
 }
 
-.search-suggestion-group__heading h3,
+.search-suggestion-group__heading h4,
 .search-suggestion-group__heading p {
 	margin: 0;
 }
@@ -133,8 +133,12 @@
 }
 
 .search-suggestion-card__content p,
-.search-suggestion-card__title h4 {
+.search-suggestion-card__title h5 {
 	margin: 0;
+}
+
+.search-suggestion-card__title h5 {
+	font-size: 1em;
 }
 
 .search-suggestion-card__title {

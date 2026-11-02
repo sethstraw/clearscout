@@ -305,7 +305,7 @@ describe("PendingDiscoveryRow", () => {
     const item = baseItem();
     const view = renderRow(item);
     view.rerender(rowElement(item, { detailsOpen: true }));
-    fireEvent.click(screen.getByText("Edit closing date (free)"));
+    fireEvent.click(screen.getByText("Edit closing date"));
     fireEvent.change(screen.getByLabelText("Your closing date", { selector: "input" }), {
       target: { value: "2026-10-21" },
     });
@@ -344,7 +344,7 @@ describe("PendingDiscoveryRow", () => {
     );
     const item = baseItem();
     const view = renderRow(item, { detailsOpen: true });
-    fireEvent.click(screen.getByText("Edit closing date (free)"));
+    fireEvent.click(screen.getByText("Edit closing date"));
     fireEvent.change(screen.getByLabelText("Your closing date", { selector: "input" }), {
       target: { value: "2026-10-21" },
     });
@@ -390,12 +390,12 @@ describe("PendingDiscoveryRow", () => {
     expect(screen.queryByText("Publisher closing date")).toBeNull();
     expect(screen.queryByText("Not stated")).toBeNull();
     expect(screen.queryByText("Not set; using publisher information")).toBeNull();
-    expect(screen.queryByText("Edit closing date (free)")).toBeNull();
+    expect(screen.queryByText("Edit closing date")).toBeNull();
     view.rerender(rowElement(item, { detailsOpen: true }));
     const dates = screen.getByRole("group", { name: "Closing dates for Product Manager" });
     expect(within(dates).getByText("Not stated")).toBeTruthy();
     expect(within(dates).getByText("Not set; using publisher information")).toBeTruthy();
-    expect(within(dates).getByText("Edit closing date (free)")).toBeTruthy();
+    expect(within(dates).getByText("Edit closing date")).toBeTruthy();
   });
 
   it("shows a personal closing date and its passed warning without the collapsed-row editor", () => {
@@ -408,7 +408,7 @@ describe("PendingDiscoveryRow", () => {
       expect(
         within(dates).getByText("Your closing date has passed. It is a tracking reminder."),
       ).toBeTruthy();
-      expect(screen.queryByText("Edit closing date (free)")).toBeNull();
+      expect(screen.queryByText("Edit closing date")).toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -430,13 +430,13 @@ describe("PendingDiscoveryRow", () => {
       }),
     );
     renderRow(baseItem(), { detailsOpen: true });
-    fireEvent.click(screen.getByText("Edit closing date (free)"));
+    fireEvent.click(screen.getByText("Edit closing date"));
     fireEvent.change(screen.getByLabelText("Your closing date", { selector: "input" }), {
       target: { value: "2026-10-21" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save date" }));
     await screen.findByText("Your closing date was saved.");
-    fireEvent.click(screen.getByText("Edit closing date (free)"));
+    fireEvent.click(screen.getByText("Edit closing date"));
     fireEvent.click(screen.getByRole("button", { name: "Use publisher date" }));
     await screen.findByText("Using the publisher closing date.");
     expect(writes.requests).toHaveLength(2);
@@ -949,7 +949,7 @@ describe("PendingDiscoveryRow", () => {
       ).toBeNull();
       expect(
         screen.getByText(
-          "Compare any stated pay with your preference yourself. You can track this job for free while pay remains unconfirmed.",
+          "Compare any stated pay with your preference yourself. You can track this job while pay remains unconfirmed.",
         ),
       ).toBeTruthy();
       expect(screen.getByRole("button", { name: "Track job" })).toBeTruthy();

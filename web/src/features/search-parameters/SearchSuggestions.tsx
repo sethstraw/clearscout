@@ -256,8 +256,8 @@ export function SearchSuggestions({ workspaceId }: { workspaceId: string }) {
     <section aria-labelledby="search-suggestions-heading" className="panel search-suggestions">
       <header>
         <div>
-          <h2 id="search-suggestions-heading">Suggestions from search vocabulary</h2>
-          <div>
+          <h3 id="search-suggestions-heading">Suggestions from search vocabulary</h3>
+          <p>
             Approve useful terms for later searches. Decisions save at once.{" "}
             <Toggletip label="How suggestions and review limits work">
               <p>
@@ -265,8 +265,8 @@ export function SearchSuggestions({ workspaceId }: { workspaceId: string }) {
                 suggestion from its own run. Save for later keeps one without using it. Not using
                 frees its review slot, and the same suggestion is not offered again. Duplicate is a
                 Not using decision and merges or deletes nothing. Withdrawing an approval moves it
-                to Not using. Approvals do not count against the review limit. Decisions change no
-                existing jobs.
+                to Not using. You can approve anything in Not using later. Approvals do not count
+                against the review limit. Decisions change no existing jobs.
               </p>
               {capacitySummary ? (
                 <p className="search-suggestion-capacity-summary">
@@ -275,7 +275,7 @@ export function SearchSuggestions({ workspaceId }: { workspaceId: string }) {
                 </p>
               ) : null}
             </Toggletip>
-          </div>
+          </p>
         </div>
       </header>
       <div className="panel-body search-suggestions__body">
@@ -379,7 +379,7 @@ function SuggestionGroup({
   if (error != null)
     return (
       <section className="search-suggestion-group">
-        <h3>{title}</h3>
+        <h4>{title}</h4>
         <ErrorState error={error} />
       </section>
     );
@@ -387,7 +387,7 @@ function SuggestionGroup({
     <section className="search-suggestion-group">
       <div className="search-suggestion-group__heading">
         <div>
-          <h3>{title}</h3>
+          <h4>{title}</h4>
           <p>{description}</p>
         </div>
         {capacity ? <p className="search-suggestion-capacity">{capacityLabel(capacity)}</p> : null}
@@ -448,7 +448,7 @@ function SuggestionCard({
     <li className="search-suggestion-card">
       <div className="search-suggestion-card__content">
         <div className="search-suggestion-card__title">
-          <h4>{item.name}</h4>
+          <h5>{item.name}</h5>
           <span className={`search-suggestion-status search-suggestion-status--${item.state}`}>
             {decisionStatus(item)}
           </span>

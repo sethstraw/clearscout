@@ -224,3 +224,8 @@
 .home-advanced[open] > summary {
 	margin-bottom: 0.8rem;
 }
+
+.ranked-list-detail {
+	font-size: var(--text-sm);
+	margin: 0;
+}

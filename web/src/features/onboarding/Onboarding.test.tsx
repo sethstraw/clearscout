@@ -257,6 +257,19 @@ describe("WelcomePage", () => {
     await waitFor(() => expect(created?.provider).toBe("anthropic"));
   });
 
+  it("states the default workspace folder as a hint, not a placeholder", async () => {
+    server.use(...welcomeReads());
+    renderPage();
+    await screen.findByRole("heading", { name: "Create the workspace" });
+
+    const folder = screen.getByRole("textbox", { name: /Workspace folder/ });
+    expect(folder.getAttribute("placeholder")).toBeNull();
+    expect(folder).toHaveProperty("value", "");
+    expect(
+      screen.getByRole("textbox", { description: "Leave blank to use Documents/TailorCV." }),
+    ).toBe(folder);
+  });
+
   it("opens the existing search setup without a CV or provider key", async () => {
     window.localStorage.setItem("tailorcv.workspace", workspace.id);
     server.use(...welcomeReads({ workspaces: [workspace] }));
@@ -293,6 +306,7 @@ describe("WelcomePage", () => {
     renderPage();
     await screen.findByRole("heading", { name: "Basic search preferences" });
     expect(screen.getByText(/need a provider key and master CV/)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Provider key and CV (optional)" })).toBeTruthy();
     expect(screen.getByText(/Manual search setup, posting-link intake/)).toBeTruthy();
     expect(
       screen
@@ -315,7 +329,7 @@ describe("WelcomePage", () => {
       "Posting links",
     );
     expect(screen.getByRole("link", { name: "Find jobs" }).getAttribute("href")).toBe(
-      "/find?tab=pending",
+      "/find?tab=review",
     );
   });
 });

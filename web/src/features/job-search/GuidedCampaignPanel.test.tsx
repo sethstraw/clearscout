@@ -1003,6 +1003,7 @@ describe("GuidedCampaignPanel", () => {
     expect(await screen.findByText(/could not be confirmed \(rate limited\)/)).toBeTruthy();
     const abandonButton = screen.getByRole("button", { name: "Abandon attempt 1" });
     expect(abandonButton.className).toContain("button--danger");
+    expect(screen.getByText("Report details").closest("details")?.open).toBe(true);
     fireEvent.click(abandonButton);
     const dialog = await screen.findByRole("dialog");
     expect(dialog.textContent).toContain("closes the campaign as incomplete");

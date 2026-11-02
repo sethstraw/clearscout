@@ -39,10 +39,10 @@ function JobList({
       <header>
         <div>
           <h2>{title}</h2>
-          <p>
+          <div className="ranked-list-detail">
             {detail}{" "}
             {order ? <Toggletip label={`How ${title} is ordered`}>{order}</Toggletip> : null}
-          </p>
+          </div>
         </div>
       </header>
       {jobs.length ? (
@@ -194,7 +194,7 @@ export function CommandCenterPage() {
           scoreLabel="overall"
         />
       </section>
-      <details className="home-advanced">
+      <details aria-label="Advanced" className="home-advanced">
         <summary>Advanced</summary>
         <section className="dashboard-grid">
           <section className="panel chart-panel">

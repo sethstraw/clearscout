@@ -430,7 +430,7 @@ function TaskArticle({
           <p className="field-note">
             This read stays incomplete at least until its deferred links are read, and board scan
             history keeps it only while no newer read of the same kind exists for this source.{" "}
-            <a className="text-button" href="/find?tab=scans#source-scan-history-heading">
+            <a className="text-button" href="/find?tab=boards#source-scan-history-heading">
               Open board scan history to read its deferred links
             </a>
           </p>
@@ -490,7 +490,7 @@ function TaskArticle({
         </ConfirmedActionButton>
       )}
       {interrupted && sourceScan && !freshScan && (
-        <a className="button button--quiet" href="/find?tab=scans">
+        <a className="button button--quiet" href="/find?tab=boards">
           Choose a fresh scan
         </a>
       )}
@@ -526,7 +526,7 @@ function TaskArticle({
       )}
       {retryable && costs.loaded && !costs.isError && paid && reviewingPaidRetry && (
         <PaidAction
-          ariaLabel={`Retry ${taskLabel}`}
+          ariaLabel={`Retry task: ${taskLabel}`}
           compact
           confirmation={{
             title: `Retry ${taskLabel}?`,

@@ -59,7 +59,7 @@ describe("JobOverview closing dates", () => {
     fireEvent.change(screen.getByLabelText("Your note"), {
       target: { value: "Unsaved review draft" },
     });
-    fireEvent.click(within(dates).getByText("Edit closing date (free)"));
+    fireEvent.click(within(dates).getByText("Edit closing date"));
     fireEvent.change(within(dates).getByLabelText("Your closing date"), {
       target: { value: "2026-11-09" },
     });
@@ -124,7 +124,7 @@ describe("JobOverview closing dates", () => {
     );
     const view = render(overview(job));
     const dates = screen.getByRole("group", { name: "Closing dates" });
-    fireEvent.click(within(dates).getByText("Edit closing date (free)"));
+    fireEvent.click(within(dates).getByText("Edit closing date"));
     fireEvent.change(within(dates).getByLabelText("Your closing date"), {
       target: { value: "2026-11-09" },
     });
@@ -156,7 +156,7 @@ describe("JobOverview closing dates", () => {
     expect(within(dates).getByText("2026-11-13")).toBeTruthy();
     expect(within(dates).getByText("Applications close November 13, 2026")).toBeTruthy();
     expect(within(dates).getByText("Observed 2026-10-01T10:00:00Z")).toBeTruthy();
-    fireEvent.click(within(dates).getByText("Edit closing date (free)"));
+    fireEvent.click(within(dates).getByText("Edit closing date"));
     fireEvent.click(within(dates).getByRole("button", { name: "Use publisher date" }));
     await within(dates).findByText("Using the publisher closing date.");
     expect(bodies).toEqual([
