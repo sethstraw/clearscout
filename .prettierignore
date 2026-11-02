@@ -26,3 +26,6 @@ tests/fixtures/
 
 # Local agent memory, hidden from git by .git/info/exclude rather than .gitignore.
 .claude/agent-memory-local/
+
+# Worktree lock files here can vanish mid-check while agents add or remove worktrees.
+.git/
