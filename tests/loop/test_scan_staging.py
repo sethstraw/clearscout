@@ -3448,7 +3448,19 @@ def _settle_checks(database: Database) -> None:
         for task in session.scalars(
             select(BackgroundTask).where(BackgroundTask.task_type == "discovery.refresh_batch")
         ):
-            task.status = "failed"
+            task.status = "completed"
+
+
+def _end_checks(database: Database, status: str) -> list[str]:
+    with database.session() as session:
+        tasks = list(
+            session.scalars(
+                select(BackgroundTask).where(BackgroundTask.task_type == "discovery.refresh_batch")
+            )
+        )
+        for task in tasks:
+            task.status = status
+        return [task.id for task in tasks]
 
 
 def _withdrawn_at(database: Database, pending_id: str) -> datetime | None:
@@ -3548,6 +3560,40 @@ def test_a_second_miss_keeps_the_mark_while_its_absence_check_is_still_queued(
     assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
     assert _withdrawn_at(durable_database, pending_id) is None
     assert _queued_checks(durable_database) == [[pending_id]]
+
+
+@pytest.mark.parametrize("ended", ["cancelled", "failed"])
+def test_a_second_miss_after_an_unfinished_check_marks_the_row_again_and_queues_a_new_check(
+    durable_database: Database, tmp_path: Path, ended: str
+) -> None:
+    workspace_id, source_id, pending_id = _paged_absence(durable_database, tmp_path)
+    _end_checks(durable_database, ended)
+
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
+    assert _withdrawn_at(durable_database, pending_id) is None
+    assert _queued_checks(durable_database) == [[pending_id], [pending_id]]
+
+    _settle_checks(durable_database)
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == [
+        "Operations Lead"
+    ]
+
+
+def test_a_retried_absence_check_holds_the_row_until_it_completes(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id, source_id, pending_id = _paged_absence(durable_database, tmp_path)
+    [cancelled] = _end_checks(durable_database, "cancelled")
+    TaskCommands(durable_database, TaskEventLog(durable_database)).retry(cancelled)
+
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
+    assert _queued_checks(durable_database) == [[pending_id], [pending_id]]
+
+    _settle_checks(durable_database)
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == [
+        "Operations Lead"
+    ]
+    assert _queued_checks(durable_database) == [[pending_id], [pending_id]]
 
 
 def test_a_complete_read_listing_a_marked_row_resets_its_absence(

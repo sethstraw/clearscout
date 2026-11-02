@@ -876,8 +876,11 @@ is never withdrawn.
 A read across several listing pages is complete but not atomic: a board that
 reorders between page fetches can drop an opening from every page it served.
 So a miss on a multi-page read only marks the row and queues a content read of
-its own page. The next complete read that also lacks it withdraws it, unless
-that check found the page live. A single-page read withdraws on the first miss.
+its own page. The next complete read that also lacks it withdraws it once that
+check has completed, unless the check found the page live. A miss while the
+check is still queued or running keeps the mark, and a miss after the check was
+cancelled or failed marks the row again and queues a new check. A single-page
+read withdraws on the first miss.
 
 ```mermaid
 stateDiagram-v2
@@ -898,7 +901,8 @@ stateDiagram-v2
     PersonDismissed --> Pending: a person restores it
     Pending --> Absent: a complete multi-page read misses it
     Absent --> Pending: the content check finds it live, or a read lists it
-    Absent --> Withdrawn: the next complete read also misses it
+    Absent --> Absent: the next complete read misses it before its check completes
+    Absent --> Withdrawn: the next complete read misses it after its check completes
     Pending --> Withdrawn: a complete single-page read misses it
     Ready --> Evaluated: discovery.evaluate commits the job and archives the row
     Evaluated --> [*]

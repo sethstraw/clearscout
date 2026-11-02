@@ -6,7 +6,7 @@ import hashlib
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from tailorcv.application.discovery.pending import release_variants_of_withdrawn
 from tailorcv.application.discovery.scan_staging.matching import listed_row_ids
 from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.domain import PostingIdentityStatus, PostingStatus, utc_now
+from tailorcv.domain import PostingIdentityStatus, PostingStatus, TaskStatus, utc_now
 from tailorcv.domain.staged_facts import STAGED_FACTS_VERSIONS, FreshnessState, StagedListingFacts
 from tailorcv.infrastructure.persistence.models import (
     AuditEvent,
@@ -93,17 +93,38 @@ def queue_absence_checks(
     return queue
 
 
-def _pending_absence_checks(session: Session, workspace_id: str) -> set[str]:
-    """Return the rows whose queued or running absence check has not settled."""
-    payloads = session.scalars(
-        select(BackgroundTask.payload).where(
+_UNSETTLED_CHECK = frozenset({TaskStatus.QUEUED.value, TaskStatus.RUNNING.value})
+_UNFINISHED_CHECK = frozenset({TaskStatus.CANCELLED.value, TaskStatus.FAILED.value})
+
+
+def _latest_check_status(session: Session, workspace_id: str) -> dict[str, str]:
+    """Return each row's status in the most recent refresh batch that names it."""
+    # Any refresh batch reads the row's page, and a retried check carries a retry key.
+    tasks = session.execute(
+        select(BackgroundTask.payload, BackgroundTask.status)
+        .where(
             BackgroundTask.workspace_id == workspace_id,
             BackgroundTask.task_type == "discovery.refresh_batch",
-            BackgroundTask.idempotency_key.like("absence-check:%"),
-            BackgroundTask.status.in_(["queued", "running"]),
         )
+        .order_by(BackgroundTask.created_at)
     )
-    return {str(item) for payload in payloads for item in payload["pending_discovery_ids"]}
+    return {
+        str(item): status for payload, status in tasks for item in payload["pending_discovery_ids"]
+    }
+
+
+def _miss_step(
+    row: PendingDiscovery, read: WithdrawingRead | None, check: str | None
+) -> Literal["mark", "keep", "withdraw"]:
+    """Return what a complete read's miss does to a row, given its latest check's status."""
+    if read is None or not read.multi_page:
+        return "withdraw"
+    if not read.prior_mark(row.absent_since):
+        return "mark" if row.absent_since is None else "keep"
+    if check in _UNSETTLED_CHECK:
+        return "keep"
+    # A check that never finished cannot back a withdrawal, so this miss marks the row again.
+    return "mark" if check in _UNFINISHED_CHECK else "withdraw"
 
 
 def _verified_active_since(
@@ -221,7 +242,8 @@ def withdraw_absent_in_session(
     rather than finding it silently gone. Content verified active after the
     last complete read from a prior day keeps a row. A multi-page read only
     marks a row it misses for the first time and hands it to ``check_absent``;
-    the next complete read that also misses it withdraws it.
+    the next complete read that also misses it withdraws it once that check
+    has completed, and marks it again when the check was cancelled or failed.
     """
     now = utc_now()
     gone: list[str] = []
@@ -244,8 +266,7 @@ def withdraw_absent_in_session(
         )
     ).all()
     listed = listed_row_ids(staged, list(present_urls))
-    unchecked: list[str] = []
-    checking: set[str] | None = None
+    missed: list[PendingDiscovery] = []
     for row in staged:
         if row.id in listed:
             row.absent_since = None
@@ -255,18 +276,17 @@ def withdraw_absent_in_session(
             row.absent_since = None
             _record_absent_but_verified_active(session, row, evidence, source_id, correlation_id)
             _mark_verified_current(row)
-            continue
-        first_paged_miss = (
-            read is not None and read.multi_page and not read.prior_mark(row.absent_since)
-        )
-        if checking is None and read is not None and read.multi_page:
-            checking = _pending_absence_checks(session, workspace_id)
-        if row.withdrawn_at is None and (first_paged_miss or row.id in (checking or ())):
-            if row.absent_since is None:
-                row.absent_since = now
-                unchecked.append(row.id)
-            continue
-        if row.withdrawn_at is None:
+        elif row.withdrawn_at is None:
+            missed.append(row)
+    paged = missed and read is not None and read.multi_page
+    checks = _latest_check_status(session, workspace_id) if paged else {}
+    unchecked: list[str] = []
+    for row in missed:
+        step = _miss_step(row, read, checks.get(row.id))
+        if step == "mark":
+            row.absent_since = now
+            unchecked.append(row.id)
+        elif step == "withdraw":
             _withdraw_absent_row(session, row, source_id, now, read, correlation_id)
             gone.append(row.title)
             withdrawn.append(row.id)
