@@ -51,10 +51,6 @@ def _bundled_price(model: str, provider: str) -> ModelPrice:
         or search_threshold is not None
     ):
         raise ValueError(f"Incompatible bundled pricing policy for {model}")
-    # The pinned catalog starts gpt-5.6 at 272K; OpenAI's model docs say >272K.
-    # https://developers.openai.com/api/docs/models/gpt-5.6-sol
-    if provider == "openai" and model.startswith("gpt-5.6-") and threshold == 271_999:
-        threshold = 272_000
     return ModelPrice(
         input=input_rate,
         output=output_rate,
@@ -90,49 +86,21 @@ SHIPPED_MODELS: dict[str, str] = {
     for model in models
 }
 
-# Published rates for a shipped model the pinned catalog does not price yet.
-# https://developers.openai.com/api/docs/pricing
-_PUBLISHED_ONLY: dict[str, ModelPrice] = {
-    "gpt-6.1-sol": ModelPrice(
-        input=2.0,
-        output=10.0,
-        cache_read=0.1,
-        cache_write=2.5,
-        search_per_thousand_calls=10.0,
-        long_context_threshold=272_000,
-        long_context_input_multiplier=2.0,
-        long_context_output_multiplier=1.5,
-    ),
-}
-
-
-def _shipped_price(model: str, provider: str) -> ModelPrice:
-    """Price a shipped model from the catalog, or its published card when the catalog lacks it."""
-    try:
-        return _bundled_price(model, provider)
-    except LookupError:
-        if model in _PUBLISHED_ONLY:
-            return _PUBLISHED_ONLY[model]
-        raise
-
-
 PRICES: dict[str, ModelPrice] = {
-    model: _shipped_price(model, provider) for model, provider in SHIPPED_MODELS.items()
+    model: _bundled_price(model, provider) for model, provider in SHIPPED_MODELS.items()
 }
 
 _CATALOG = f"genai-prices {genai_prices.__version__}"
 # The pinned release and its PyPI upload date; the bundled data carries no date of its own.
-BUNDLED_TABLE_VERSION = "0.1.9"
-BUNDLED_TABLE_DATE = date(2026, 9, 25)
+BUNDLED_TABLE_VERSION = "0.2.1"
+BUNDLED_TABLE_DATE = date(2026, 10, 30)
 
 
 @dataclass(frozen=True)
 class PriceProvenance:
     """The origin of one model's current rates and the date of the table they came from."""
 
-    source_kind: Literal[
-        "bundled_catalog", "published_fallback", "refreshed_catalog", "configured_override"
-    ]
+    source_kind: Literal["bundled_catalog", "refreshed_catalog", "configured_override"]
     source_urls: tuple[str, ...]
     snapshot_label: str
     currency: Literal["USD"] = "USD"
@@ -150,17 +118,8 @@ def _price_provenance(
     source: str | None = None,
     fetched: DataSnapshot | None = None,
 ) -> PriceProvenance:
-    """Describe the catalog or published card that supplied a shipped rate."""
-    try:
-        card = calc_price(Usage(), model, provider_id=provider)
-    except LookupError:
-        if model not in _PUBLISHED_ONLY:
-            raise
-        return PriceProvenance(
-            source_kind="published_fallback",
-            source_urls=("https://developers.openai.com/api/docs/pricing",),
-            snapshot_label=label,
-        )
+    """Describe the catalog that supplied a shipped rate."""
+    card = calc_price(Usage(), model, provider_id=provider)
     return PriceProvenance(
         source_kind="refreshed_catalog" if fetched is not None else "bundled_catalog",
         source_urls=(source,) if source is not None else tuple(card.provider.pricing_urls or ()),
@@ -295,13 +254,18 @@ def _snapshot_base(
     base = _SNAPSHOT_SUFFIX.sub("", name)
     if base == name:
         return None
-    # The catalog cannot vouch for a model it does not list; its published card does.
-    if base in _PUBLISHED_ONLY and (not provider or SHIPPED_MODELS[base] == provider):
-        return base
+    data = catalog or get_snapshot()
     try:
-        calculation = (catalog or get_snapshot()).calc(Usage(), name, provider or None, None, None)
+        calculation = data.calc(Usage(), name, provider or None, None, None)
     except LookupError:
-        return None
+        # The catalog lists some shipped models without their dated forms.
+        shipped_by = SHIPPED_MODELS.get(base)
+        if shipped_by is None or provider not in ("", shipped_by):
+            return None
+        try:
+            calculation = data.calc(Usage(), base, shipped_by, None, None)
+        except LookupError:
+            return None
     if provider and calculation.provider.id != provider:
         return None
     return base if calculation.model.id == base else None
@@ -490,7 +454,7 @@ def _catalog_rates() -> tuple[dict[str, ModelPrice], list[str]]:
     dropped: list[str] = []
     for model, provider in SHIPPED_MODELS.items():
         try:
-            rates[model] = _shipped_price(model, provider)
+            rates[model] = _bundled_price(model, provider)
         except (LookupError, ValueError):
             dropped.append(model)
     return rates, sorted(dropped)

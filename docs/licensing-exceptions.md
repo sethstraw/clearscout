@@ -68,17 +68,11 @@ breaks on 11, so the same nested entry keeps that package alone on 3.1.5. The
 whole-tree audit reports that copy as a moderate development advisory, which
 the audit permits.
 
-## Security exception
+## Security audit
 
-The version-bound exception covers React Router and React Router DOM 7.18.4
-for GHSA-qwww-vcr4-c8h2, concerning React Server Component action execution. TailorCV is a
-client-only SPA: it does not enable React Router RSC mode, define server
-actions, or expose an action endpoint. `scripts/audit_npm_security.py` permits
-only this advisory at exactly 7.18.4 and fails on any other production finding
-or version movement, and on any high or critical advisory in a development
-dependency. Remove the exception when an upstream fixed release is
-available and reviewed. Downgrading to the audit-suggested 7.11.0 was rejected
-because it reintroduced a broader set of older advisories.
+`scripts/audit_npm_security.py` fails on any production npm advisory and on
+any high or critical advisory in a development dependency. No advisory is
+excepted.
 
 ## Generated and original assets
 

@@ -1,4 +1,4 @@
-"""Fail on npm production advisories outside one exact, inapplicable exception.
+"""Fail on any npm production advisory.
 
 Development dependencies fail the audit only on a high or critical advisory.
 """
@@ -8,20 +8,13 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from pathlib import Path
 from typing import Any
 
-APPROVED_ADVISORY = "https://github.com/advisories/GHSA-qwww-vcr4-c8h2"
-APPROVED_PACKAGES = {"react-router", "react-router-dom"}
-APPROVED_VERSION = "7.18.4"
 BLOCKING_DEVELOPMENT_SEVERITIES = {"high", "critical"}
 
 
 def main() -> int:
-    """Run npm's audit and accept only the documented client-only RSC finding."""
-    version_status = _review_approved_versions()
-    if version_status is not None:
-        return version_status
+    """Run npm's audit over production, then over the whole tree."""
     npm = shutil.which("npm")
     if npm is None:
         print("BLOCKER: npm is unavailable")
@@ -48,18 +41,6 @@ def _audited(npm: str, *, production_only: bool) -> dict[str, Any] | int:
         return response_status
     vulnerabilities: dict[str, Any] = report["vulnerabilities"]
     return vulnerabilities
-
-
-def _review_approved_versions() -> int | None:
-    lock = json.loads(Path("web/package-lock.json").read_text(encoding="utf-8"))
-    for package in APPROVED_PACKAGES:
-        installed = lock["packages"][f"node_modules/{package}"]["version"]
-        if installed != APPROVED_VERSION:
-            print(
-                f"BLOCKER: {package} moved from reviewed version {APPROVED_VERSION} to {installed}"
-            )
-            return 1
-    return None
 
 
 def _run_npm_audit(npm: str, *, production_only: bool) -> subprocess.CompletedProcess[str]:
@@ -105,23 +86,10 @@ def _audit_response_status(
 
 
 def _review_vulnerabilities(vulnerabilities: dict[str, Any]) -> int:
-    unexpected = set(vulnerabilities) - APPROVED_PACKAGES
-    if unexpected:
-        print("BLOCKER: unreviewed production advisories: " + ", ".join(sorted(unexpected)))
+    if vulnerabilities:
+        print("BLOCKER: production advisories: " + ", ".join(sorted(vulnerabilities)))
         return 1
-    for name, record in vulnerabilities.items():
-        if name not in APPROVED_PACKAGES or not isinstance(record, dict):
-            return 1
-        direct_advisories = [item for item in record.get("via", []) if isinstance(item, dict)]
-        if direct_advisories and any(
-            item.get("url") != APPROVED_ADVISORY for item in direct_advisories
-        ):
-            print(f"BLOCKER: {name} includes an unreviewed advisory")
-            return 1
-    print(
-        "npm production audit passed with one version-bound RSC/server-action exception; "
-        "TailorCV is a client-only SPA and exposes no React Router actions."
-    )
+    print("npm production audit passed: no advisory.")
     return 0
 
 
@@ -129,9 +97,7 @@ def _review_development(vulnerabilities: dict[str, Any]) -> int:
     blocking = sorted(
         name
         for name, record in vulnerabilities.items()
-        if name not in APPROVED_PACKAGES
-        and isinstance(record, dict)
-        and record.get("severity") in BLOCKING_DEVELOPMENT_SEVERITIES
+        if isinstance(record, dict) and record.get("severity") in BLOCKING_DEVELOPMENT_SEVERITIES
     )
     if blocking:
         print("BLOCKER: high or critical development advisories: " + ", ".join(blocking))

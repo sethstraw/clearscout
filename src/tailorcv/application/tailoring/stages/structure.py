@@ -9,7 +9,7 @@ word by word against what it cited, dates included.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
@@ -126,14 +126,15 @@ def response_schema(source: SourceDocument) -> type[BaseModel]:
         line=(line_literal, ...),
         reason=(str, ...),
     )
+    optional_sourced: Any = sourced | None
     role = create_model(
         "ConstrainedRole",
         __config__=ConfigDict(extra="forbid"),
         organisation=(sourced, ...),
-        title=(sourced | None, None),
-        title_of_record=(sourced | None, None),
-        dates=(sourced | None, None),
-        location=(sourced | None, None),
+        title=(optional_sourced, None),
+        title_of_record=(optional_sourced, None),
+        dates=(optional_sourced, None),
+        location=(optional_sourced, None),
         context=(list[sourced], Field(default_factory=list)),  # type: ignore[valid-type]
         bullets=(list[sourced], Field(default_factory=list)),  # type: ignore[valid-type]
     )

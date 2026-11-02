@@ -410,7 +410,7 @@ def draft_schema(
     line is asked for only when ``earlier`` roles exist to print it under.
     """
     entry_literal = Literal[entry_ids]  # type: ignore[valid-type]
-    role_literal = Literal[role_keys] if role_keys else str
+    role_literal: Any = Literal[role_keys] if role_keys else str
     line = create_model(
         "ConstrainedLine",
         __config__=ConfigDict(extra="forbid"),
@@ -429,11 +429,12 @@ def draft_schema(
             source_ids=(list[skill_literal], Field(default_factory=list)),
         )
         skills["skills"] = (list[skill], Field(default_factory=list))  # type: ignore[valid-type]
+    optional_line: Any = line | None
     role = create_model(
         "ConstrainedRole",
         __config__=ConfigDict(extra="forbid"),
         role_key=(role_literal, ...),
-        context=(line | None, None),
+        context=(optional_line, None),
         bullets=(list[line], Field(default_factory=list)),  # type: ignore[valid-type]
     )
     earlier_career: dict[str, Any] = {"earlier_career": (line | None, None)} if earlier else {}

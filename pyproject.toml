@@ -44,9 +44,9 @@ dependencies = [
     # Starlette is imported directly.
     "starlette>=1.4,<2",
     "uvicorn>=0.51,<1",
-    "anthropic>=0.69",
-    "openai>=1.99",
-    "genai-prices==0.1.9",
+    "anthropic>=0.69,<1",
+    "openai>=1.99,<3",
+    "genai-prices==0.2.1",
     "trafilatura>=2.0",
     "lxml>=6,<7",
     "pypdfium2>=5.0",

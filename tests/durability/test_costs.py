@@ -417,9 +417,7 @@ def test_a_suffix_that_is_not_a_published_snapshot_date_is_left_unpriced(served:
     [
         ("anthropic", "claude-sonnet-5", "claude-sonnet-5"),
         ("anthropic", "claude-sonnet-5-20260514", "claude-sonnet-5"),
-        ("anthropic", "claude-sonnet-5-2026-05-14", "claude-sonnet-5"),
         ("anthropic", "claude-sonnet-5@20260514", "claude-sonnet-5"),
-        ("anthropic", "claude-sonnet-5-1", "claude-sonnet-5"),
         ("anthropic", "claude-opus-5", "claude-opus-5"),
         ("anthropic", "claude-opus-5-5", "claude-opus-5-5"),
         ("anthropic", "claude-haiku-4-5-20251001", "claude-haiku-4-5"),
@@ -454,6 +452,8 @@ def test_the_pinned_catalog_resolves_these_names_onto_these_models(
         ("openai", "gpt-5.6-terra-v1:0"),
         ("openai", "gpt-5.6-luna-1106-preview"),
         ("anthropic", "claude-opus-5-mini"),
+        ("anthropic", "claude-sonnet-5-2026-05-14"),
+        ("anthropic", "claude-sonnet-5-1"),
     ],
 )
 def test_the_pinned_catalog_refuses_these_names_outright(provider: str, name: str) -> None:
@@ -485,9 +485,9 @@ def test_a_name_the_catalog_widens_onto_a_shipped_model_is_still_unpriced(name: 
 @pytest.mark.parametrize(
     ("model", "source_kind", "table_date"),
     [
-        ("gpt-5.6-terra", "bundled_catalog", date(2026, 9, 25)),
-        ("claude-opus-5", "bundled_catalog", date(2026, 9, 25)),
-        ("gpt-6.1-sol", "published_fallback", None),
+        ("gpt-5.6-terra", "bundled_catalog", date(2026, 10, 30)),
+        ("claude-opus-5", "bundled_catalog", date(2026, 10, 30)),
+        ("gpt-6.1-sol", "bundled_catalog", date(2026, 10, 30)),
     ],
 )
 def test_current_prices_identifies_the_rate_source_and_the_bundled_table_date(
@@ -505,8 +505,6 @@ def test_current_prices_identifies_the_rate_source_and_the_bundled_table_date(
     assert provenance.source_kind == source_kind
     assert provenance.source_urls
     assert all(url.startswith("https://") for url in provenance.source_urls)
-    if source_kind == "published_fallback":
-        assert provenance.source_urls == ("https://developers.openai.com/api/docs/pricing",)
     assert provenance.currency == "USD"
     assert provenance.fetched_at is None
     assert provenance.table_date == table_date
@@ -620,11 +618,7 @@ def test_a_refreshed_current_price_names_the_accepted_source_and_fetch_date(
     assert snapshot.provenance["claude-opus-5"].table_date == date(2026, 10, 1)
     assert before.prices["gpt-5.6-terra"].input == 2
     assert before.provenance["gpt-5.6-terra"].fetched_at is None
-    assert before.provenance["gpt-5.6-terra"].table_date == date(2026, 9, 25)
-    fallback = snapshot.provenance["gpt-6.1-sol"]
-    assert fallback.source_kind == "published_fallback"
-    assert fallback.fetched_at is None
-    assert fallback.source_urls == ("https://developers.openai.com/api/docs/pricing",)
+    assert before.provenance["gpt-5.6-terra"].table_date == date(2026, 10, 30)
 
 
 @pytest.mark.parametrize("failure", ["fetch", "empty", "unusable"])

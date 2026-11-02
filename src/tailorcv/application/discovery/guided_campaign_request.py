@@ -56,6 +56,10 @@ def campaign_response_schema(branch_keys: tuple[str, ...]) -> type[BaseModel]:
         query=(str, ...),
         branch_keys=(list[key_literal], Field(default_factory=list)),
     )
+    searches: Any = Annotated[
+        list[search_report_model],  # type: ignore[valid-type]
+        BeforeValidator(_clipped_searches),
+    ]
     return create_model(
         "ConstrainedCampaignAnswer",
         __config__=ConfigDict(extra="forbid"),
@@ -67,13 +71,7 @@ def campaign_response_schema(branch_keys: tuple[str, ...]) -> type[BaseModel]:
             list[url_report_model],  # type: ignore[valid-type]
             Field(default_factory=list, max_length=MAX_BOARDS),
         ),
-        searches=(
-            Annotated[
-                list[search_report_model],  # type: ignore[valid-type]
-                BeforeValidator(_clipped_searches),
-            ],
-            Field(default_factory=list, max_length=MAX_SEARCHES),
-        ),
+        searches=(searches, Field(default_factory=list, max_length=MAX_SEARCHES)),
     )
 
 

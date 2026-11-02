@@ -6754,7 +6754,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "bundled_catalog" | "published_fallback" | "refreshed_catalog" | "configured_override";
+            source_kind: "bundled_catalog" | "refreshed_catalog" | "configured_override";
             /** Source Urls */
             source_urls: string[];
             /** Table Date */

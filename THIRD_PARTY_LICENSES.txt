@@ -113,8 +113,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-@tanstack/query-core 5.104.1 - MIT
-https://www.npmjs.com/package/@tanstack/query-core/v/5.104.1
+@tanstack/query-core 5.105.2 - MIT
+https://www.npmjs.com/package/@tanstack/query-core/v/5.105.2
 
 --- LICENSE ---
 MIT License
@@ -140,8 +140,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-@tanstack/react-query 5.104.1 - MIT
-https://www.npmjs.com/package/@tanstack/react-query/v/5.104.1
+@tanstack/react-query 5.105.2 - MIT
+https://www.npmjs.com/package/@tanstack/react-query/v/5.105.2
 
 --- LICENSE ---
 MIT License
@@ -3681,8 +3681,8 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ==============================================================================
-react 19.3.0 - MIT
-https://www.npmjs.com/package/react/v/19.3.0
+react 19.3.1 - MIT
+https://www.npmjs.com/package/react/v/19.3.1
 
 --- LICENSE ---
 MIT License
@@ -3708,8 +3708,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-react-dom 19.3.0 - MIT
-https://www.npmjs.com/package/react-dom/v/19.3.0
+react-dom 19.3.1 - MIT
+https://www.npmjs.com/package/react-dom/v/19.3.1
 
 --- LICENSE ---
 MIT License
@@ -3735,8 +3735,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-react-hook-form 7.89.0 - MIT
-https://www.npmjs.com/package/react-hook-form/v/7.89.0
+react-hook-form 7.91.0 - MIT
+https://www.npmjs.com/package/react-hook-form/v/7.91.0
 
 --- LICENSE ---
 MIT License
@@ -3843,8 +3843,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-react-router 7.18.4 - MIT
-https://www.npmjs.com/package/react-router/v/7.18.4
+react-router 7.18.5 - MIT
+https://www.npmjs.com/package/react-router/v/7.18.5
 
 --- LICENSE.md ---
 MIT License
@@ -3872,8 +3872,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-react-router-dom 7.18.4 - MIT
-https://www.npmjs.com/package/react-router-dom/v/7.18.4
+react-router-dom 7.18.5 - MIT
+https://www.npmjs.com/package/react-router-dom/v/7.18.5
 
 --- LICENSE.md ---
 MIT License
@@ -4457,8 +4457,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-set-cookie-parser 2.7.2 - MIT
-https://www.npmjs.com/package/set-cookie-parser/v/2.7.2
+set-cookie-parser 2.7.3 - MIT
+https://www.npmjs.com/package/set-cookie-parser/v/2.7.3
 
 --- LICENSE ---
 The MIT License (MIT)

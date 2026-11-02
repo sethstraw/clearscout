@@ -265,6 +265,15 @@ def response_schema(entry_ids: tuple[str, ...], *, conditions: tuple[str, ...]) 
         evidence = list[str]
         evidence_limit = 0
     exclusion: Any = Literal[conditions] | None if conditions else None
+    hard_condition: Any = Literal["passes", "conflicts", "unresolved"]
+    decisive_basis: Any = Literal[
+        "core_match",
+        "transferable_match",
+        "core_gap",
+        "hard_conflict",
+        "logistics_unknown",
+        "insufficient_posting",
+    ]
     item = create_model(
         "ConstrainedRelevanceReviewRecommendation",
         __config__=ConfigDict(extra="forbid"),
@@ -273,19 +282,9 @@ def response_schema(entry_ids: tuple[str, ...], *, conditions: tuple[str, ...]) 
         outcome=(RelevanceReviewAnswerOutcome, "judged"),
         core_work_alignment=(RelevanceReviewCoreWorkAlignment, ...),
         core_qualification_alignment=(RelevanceReviewQualificationAlignment, ...),
-        hard_condition=(Literal["passes", "conflicts", "unresolved"], ...),
+        hard_condition=(hard_condition, ...),
         matched_exclusion=(exclusion, None),
-        decisive_basis=(
-            Literal[
-                "core_match",
-                "transferable_match",
-                "core_gap",
-                "hard_conflict",
-                "logistics_unknown",
-                "insufficient_posting",
-            ],
-            ...,
-        ),
+        decisive_basis=(decisive_basis, ...),
         posting_evidence_span_ids=(
             list[str],
             Field(min_length=1, max_length=5),
