@@ -1,0 +1,87 @@
+.job-hero {
+	align-items: start;
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.9rem;
+	box-shadow: var(--shadow);
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+	margin-bottom: 1rem;
+	padding: 1.1rem 1.35rem;
+}
+
+.currentness-review {
+	align-items: center;
+	background: color-mix(in srgb, var(--accent) 9%, transparent);
+	border: 1px solid var(--accent);
+	border-radius: 0.65rem;
+	display: flex;
+	gap: 1rem;
+	justify-content: space-between;
+	margin: 0 0 0.75rem;
+	padding: 0.6rem 0.85rem;
+}
+
+.currentness-review p {
+	color: var(--ink-soft);
+	font-size: var(--text-xs);
+	margin: 0.15rem 0 0;
+}
+
+.currentness-review__actions {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 0.45rem;
+}
+
+.currentness-review__actions .button {
+	white-space: nowrap;
+}
+
+.job-hero > div {
+	border-right: 1px solid var(--line);
+	min-width: 0;
+}
+
+.job-hero > div:last-child {
+	border: 0;
+}
+
+.job-hero span:not(.status) {
+	color: var(--ink-soft);
+	display: block;
+	font-size: var(--text-2xs);
+	margin-bottom: 0.35rem;
+	text-transform: uppercase;
+}
+
+.hero-score strong {
+	font-size: var(--text-lg);
+}
+
+.hero-score--compensation {
+	grid-column: span 2;
+}
+
+.hero-score small {
+	color: var(--ink-soft);
+	display: block;
+	font-size: var(--text-2xs);
+	margin-top: 0.2rem;
+}
+
+.hero-score__pill {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	color: var(--ink-soft);
+	display: inline-block;
+	font-size: var(--text-2xs);
+	font-weight: 500;
+	margin-left: 0.4rem;
+	margin-top: 0;
+	padding: 0.05rem 0.4rem;
+	text-transform: uppercase;
+	vertical-align: middle;
+}

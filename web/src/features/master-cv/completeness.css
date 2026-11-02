@@ -1,0 +1,85 @@
+.fact-value {
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	display: -webkit-box;
+	overflow: hidden;
+}
+
+.completeness-card {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.8rem;
+	margin-bottom: 1rem;
+	padding: 1rem 1.2rem;
+}
+
+.completeness-card--incomplete {
+	background: color-mix(in srgb, var(--amber) 6%, var(--surface));
+	border-color: color-mix(in srgb, var(--amber) 28%, var(--line));
+}
+
+.completeness-card > header {
+	align-items: start;
+	display: flex;
+	justify-content: space-between;
+}
+
+.completeness-card > header strong {
+	font-size: var(--text-sm);
+}
+
+.completeness-card > header p {
+	font-size: var(--text-xs);
+	margin: 0.2rem 0 0;
+}
+
+.completeness-card ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45rem 1rem;
+	list-style: none;
+	margin: 0.8rem 0 0;
+	padding: 0;
+}
+
+.completeness-card li {
+	align-items: center;
+	color: var(--ink-soft);
+	display: flex;
+	font-size: var(--text-xs);
+	gap: 0.35rem;
+}
+
+.completeness-card li > svg {
+	color: var(--teal);
+	flex-shrink: 0;
+}
+
+.completeness-card li a {
+	color: var(--accent-ink);
+	font-weight: 700;
+	margin-left: 0.2rem;
+}
+
+.reconciliation-note {
+	align-items: center;
+	background: color-mix(in srgb, var(--blue) 8%, var(--surface));
+	border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--line));
+	border-radius: 0.8rem;
+	display: flex;
+	gap: 1rem;
+	justify-content: space-between;
+	margin-bottom: 1rem;
+	padding: 1rem 1.2rem;
+}
+
+.reconciliation-note strong {
+	display: block;
+	font-size: var(--text-sm);
+	margin-bottom: 0.25rem;
+}
+
+.reconciliation-note p {
+	font-size: var(--text-xs);
+	margin: 0;
+}

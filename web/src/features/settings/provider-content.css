@@ -1,0 +1,17 @@
+.provider-row {
+	border-top: 1px solid var(--line);
+	padding: 0.9rem 0;
+}
+
+.provider-row:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.provider-row > header {
+	align-items: center;
+	display: flex;
+	gap: 0.6rem;
+	justify-content: space-between;
+	margin-bottom: 0.4rem;
+}

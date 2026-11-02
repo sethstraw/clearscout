@@ -1,0 +1,31 @@
+.operation-form > .button {
+	justify-self: start;
+}
+
+.playground-response {
+	border-top: 1px solid var(--line);
+}
+
+.playground-response > header {
+	align-items: center;
+	display: flex;
+	font-size: var(--text-xs);
+	justify-content: space-between;
+	padding: 0.8rem 1.2rem;
+}
+
+.playground-response header span {
+	color: var(--ink-soft);
+}
+
+.playground-response pre {
+	background: var(--surface-muted);
+	font-size: var(--text-2xs);
+	line-height: 1.6;
+	margin: 0;
+	max-height: 520px;
+	overflow: auto;
+	padding: 1.2rem;
+	white-space: pre-wrap;
+	word-break: break-word;
+}

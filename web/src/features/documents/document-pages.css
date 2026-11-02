@@ -1,0 +1,188 @@
+/* Page-specific layout rules. */
+
+/* Keep document selection above the document surface. */
+.documents-stack {
+	display: grid;
+	gap: 1rem;
+}
+
+.document-toolbar,
+.document-actions {
+	padding: 0.9rem 1.1rem;
+}
+
+.document-add {
+	align-items: end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.8rem;
+}
+
+.document-add .compact-field {
+	max-width: 18rem;
+}
+
+.upload-button {
+	cursor: pointer;
+}
+
+.document-open {
+	background: none;
+	border: 0;
+	color: var(--accent-ink);
+	cursor: pointer;
+	font: inherit;
+	padding: 0;
+	text-align: left;
+}
+
+.document-row.selected {
+	background: var(--accent-soft);
+}
+
+.file-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-top: 0.5rem;
+}
+
+.file-actions a,
+.file-actions button,
+.version-history button,
+.note-list button {
+	background: transparent;
+	border: 0;
+	color: var(--accent-ink);
+	cursor: pointer;
+	font-size: var(--text-2xs);
+	font-weight: 700;
+	padding: 0;
+}
+
+.file-actions button:disabled {
+	color: var(--ink-soft);
+	cursor: not-allowed;
+}
+
+.artifact-viewer {
+	min-width: 0;
+}
+
+.artifact-viewer > object {
+	height: 75vh;
+	width: 100%;
+}
+
+.artifact-viewer > img {
+	display: block;
+	margin: 1rem auto;
+	max-height: 75vh;
+	max-width: calc(100% - 2rem);
+}
+
+.artifact-viewer > pre {
+	background: var(--surface-muted);
+	font-size: var(--text-xs);
+	line-height: 1.65;
+	margin: 0;
+	max-height: 75vh;
+	overflow: auto;
+	padding: 1.3rem;
+	white-space: pre-wrap;
+}
+
+.json-document {
+	background: var(--surface-muted);
+	font-family: ui-monospace, monospace;
+	font-size: var(--text-xs);
+	line-height: 1.65;
+	margin: 0;
+	overflow-wrap: anywhere;
+	padding: 1rem 1.3rem;
+}
+
+.json-node > summary {
+	cursor: pointer;
+	display: flex;
+	gap: 0.6rem;
+}
+
+.json-node > ul {
+	border-left: 1px solid var(--line);
+	list-style: none;
+	margin: 0.4rem 0 0.2rem 0.4rem;
+	padding-left: 0.8rem;
+}
+
+.json-node .json-document {
+	background: transparent;
+	padding: 0;
+}
+
+.json-key {
+	color: var(--accent);
+	font-weight: 700;
+}
+
+.json-type {
+	color: var(--ink-soft);
+}
+
+.json-value {
+	display: flex;
+	gap: 0.6rem;
+}
+
+.artifact-header {
+	align-items: start;
+	border-bottom: 1px solid var(--line);
+	display: flex;
+	justify-content: space-between;
+	padding: 1rem 1.25rem;
+}
+
+.artifact-header h2 {
+	margin-bottom: 0.25rem;
+	overflow-wrap: anywhere;
+}
+
+.artifact-header p {
+	font-family: ui-monospace, monospace;
+	font-size: var(--text-2xs);
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.relabel-form,
+.relabel-details form {
+	align-items: center;
+	display: flex;
+	gap: 0.4rem;
+	margin-top: 0.5rem;
+}
+
+.relabel-form input,
+.relabel-details input {
+	font-size: var(--text-2xs);
+	min-height: 2rem;
+	min-width: 0;
+	padding: 0.3rem 0.45rem;
+}
+
+.relabel-form button,
+.relabel-details button {
+	background: var(--accent);
+	border: 0;
+	border-radius: 0.35rem;
+	color: white;
+	cursor: pointer;
+	font-size: var(--text-2xs);
+	padding: 0.4rem 0.55rem;
+}
+
+.relabel-details {
+	color: var(--accent-ink);
+	font-size: var(--text-2xs);
+	margin-top: 0.5rem;
+}

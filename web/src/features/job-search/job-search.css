@@ -1,0 +1,1606 @@
+.search-loop {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.8rem;
+	box-shadow: var(--shadow);
+	padding: 1rem 1.2rem;
+}
+
+.scan-panel > header {
+	gap: 1rem;
+}
+
+.scan-panel > header > div:first-child {
+	flex: 1;
+	min-width: 0;
+}
+
+.scan-panel > header > div:last-child {
+	flex-shrink: 0;
+}
+
+.scan-options,
+.scan-schedule-editor {
+	margin-block: 0.75rem;
+}
+
+.scan-options > summary,
+.scan-schedule-editor > summary,
+.scan-schedule > details > summary {
+	cursor: pointer;
+	font-size: var(--text-sm);
+	font-weight: 650;
+}
+
+.scan-schedule-fields {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+	margin-block: 0.75rem;
+}
+
+.scan-schedule-fields > .compact-field {
+	display: flex;
+	flex-direction: column;
+	font-size: var(--text-xs);
+	font-weight: 650;
+	gap: 0.35rem;
+	min-width: 0;
+}
+
+.scan-schedule-fields :is(input, select) {
+	min-width: 0;
+	width: 100%;
+}
+
+@media (max-width: 760px) {
+	.scan-panel > header {
+		flex-direction: column;
+	}
+}
+
+.search-loop ol,
+.search-loop ul {
+	counter-reset: loop-step;
+	display: grid;
+	gap: 0.9rem;
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.search-loop li {
+	border-left: 2px solid var(--line);
+	counter-increment: loop-step;
+	display: flex;
+	flex-direction: column;
+	padding-left: 0.8rem;
+}
+
+/* Keep cost markers aligned across steps. */
+.search-loop span {
+	margin-top: auto;
+}
+
+.search-loop li::before {
+	color: var(--ink-soft);
+	content: counter(loop-step);
+	display: block;
+	font-size: var(--text-2xs);
+	font-weight: 700;
+}
+
+.search-loop strong {
+	display: block;
+	font-size: var(--text-sm);
+}
+
+.search-loop p {
+	color: var(--ink-soft);
+	font-size: var(--text-xs);
+	margin: 0.2rem 0 0.35rem;
+}
+
+.search-loop span {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	font-weight: 650;
+}
+
+.search-loop--choices li::before {
+	content: none;
+}
+
+.search-loop--choices .badge {
+	align-self: flex-start;
+	border: 1px solid var(--line);
+	border-radius: 0.4rem;
+	color: var(--ink);
+	font-size: var(--text-xs);
+	font-weight: 700;
+	padding: 0.25rem 0.5rem;
+}
+
+.search-loop--choices .badge--paid {
+	background: color-mix(in srgb, var(--amber) 15%, var(--surface));
+	border-color: var(--amber);
+}
+
+.place-arrangement {
+	border-top: 1px solid var(--line);
+	padding-top: 0.7rem;
+}
+
+.place-arrangement > summary {
+	align-items: baseline;
+	cursor: pointer;
+	display: flex;
+	font-size: var(--text-xs);
+	font-weight: 680;
+	gap: 0.5rem;
+}
+
+.place-arrangement > summary .field-note,
+.panel-body details > summary > .field-note {
+	font-weight: 500;
+}
+
+.place-arrangement[open] > summary {
+	margin-bottom: 0.8rem;
+}
+
+.source-add__fields {
+	display: grid;
+	gap: 1rem 1.25rem;
+	grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+	margin-bottom: 1rem;
+}
+
+.source-add__step-label {
+	font-size: var(--text-sm);
+	font-weight: 700;
+	margin: 0 0 0.55rem;
+}
+
+.source-add__details {
+	border: 1px solid var(--line);
+	border-radius: 0.7rem;
+	margin: 0.75rem 0 0;
+	padding: 0.65rem 0.8rem 0.8rem;
+}
+
+.source-add__details legend {
+	font-size: var(--text-sm);
+	font-weight: 700;
+	padding: 0 0.35rem;
+}
+
+.source-add__evidence-note {
+	margin: 0 0 0.55rem;
+}
+
+.source-add__details-grid {
+	align-items: end;
+	display: grid;
+	gap: 0.65rem;
+	grid-template-columns:
+		minmax(10rem, 0.8fr) minmax(14rem, 1.3fr) minmax(12rem, 1fr)
+		max-content;
+}
+
+.source-add__details-grid .compact-field {
+	align-content: end;
+	display: grid;
+	gap: 0.3rem;
+	min-width: 0;
+}
+
+.source-add__details-grid input,
+.source-add__details-grid textarea {
+	max-width: 100%;
+	min-width: 0;
+	width: 100%;
+}
+
+.source-add__submit {
+	margin-bottom: 0;
+}
+
+/* States what the ledger cannot prove, so it must not read like the row count
+   beneath it. */
+.screened-outcomes__limit {
+	background: var(--surface-muted);
+	border-left: 3px solid var(--amber);
+	color: var(--ink);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	margin: 0.75rem 0 0.5rem;
+	max-width: 60ch;
+	padding: 0.5rem 1rem;
+	padding-left: calc(1rem - 2px);
+}
+
+/* Compose with field-note; only override its margin so the limitation note,
+   row count, and table share one left edge. */
+.screened-outcomes__note {
+	margin: 0 0 0.5rem calc(1rem + 1px);
+}
+
+.screened-outcomes-table td:nth-child(5) {
+	min-width: 19rem;
+	vertical-align: top;
+}
+
+.screened-outcomes-table td:nth-child(6) {
+	min-width: 11rem;
+	vertical-align: top;
+}
+
+/* Employer is a row header for accessibility; match the plain data-cell look
+   so it does not read as a second header row beside Source. */
+.screened-outcomes-table th[scope="row"] {
+	background: transparent;
+	color: var(--ink);
+	font-size: var(--text-sm);
+	font-weight: 400;
+	letter-spacing: normal;
+	padding: 0.85rem 1rem;
+	text-transform: none;
+}
+
+@media (max-width: 760px) {
+	.source-add__details-grid {
+		align-items: stretch;
+		grid-template-columns: 1fr;
+	}
+
+	.source-add__submit {
+		justify-self: start;
+	}
+}
+
+.source-list {
+	display: grid;
+	gap: 0.9rem;
+	list-style: none;
+	margin: 0;
+	padding: 0 1.25rem 1.25rem;
+}
+
+.source-card {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.8rem;
+	display: grid;
+	gap: 0.9rem;
+	padding: 1rem 1.1rem;
+}
+
+.source-card__header {
+	align-items: start;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.8rem;
+	justify-content: space-between;
+}
+
+.source-card__header h3 {
+	font-size: var(--text-base);
+	margin: 0;
+}
+
+.source-card__actions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+}
+
+.source-swept {
+	align-items: center;
+	color: var(--ink-soft);
+	display: flex;
+	font-size: var(--text-2xs);
+	gap: 0.4rem;
+	white-space: nowrap;
+}
+
+.source-consent {
+	flex-basis: 100%;
+}
+
+.source-card__fields {
+	display: grid;
+	gap: 1rem 1.5rem;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.source-field {
+	align-content: start;
+	display: grid;
+	gap: 0.3rem;
+	min-width: 0;
+}
+
+.source-field > label {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	font-weight: 650;
+	text-transform: uppercase;
+}
+
+.source-field input,
+.source-field textarea {
+	max-width: 100%;
+	min-width: 0;
+	width: 100%;
+}
+
+.source-field__control {
+	align-items: start;
+	display: flex;
+	gap: 0.5rem;
+}
+
+.source-field__control input {
+	flex: 1;
+}
+
+.source-card__read {
+	border-top: 1px solid var(--line);
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	margin: 0;
+	padding-top: 0.7rem;
+}
+
+.relevance-review details {
+	margin-top: 0.5rem;
+}
+
+.relevance-review summary {
+	cursor: pointer;
+	font-weight: 650;
+}
+
+.pending-discoveries > header {
+	flex-wrap: wrap;
+	gap: 0.4rem 1rem;
+	padding-block: 0.55rem;
+}
+
+.pending-discoveries > .panel-body {
+	gap: 0.45rem;
+	grid-template-columns: minmax(0, 1fr) auto;
+	padding: 0.7rem 1rem;
+}
+
+.pending-discoveries > .panel-body > * {
+	grid-column: 1 / -1;
+}
+
+.pending-discoveries > .panel-body > .discovery-batch-bar {
+	grid-column: 1;
+}
+
+.pending-discoveries > .panel-body > .discovery-batch-bar:has(button) {
+	grid-column: 1 / -1;
+}
+
+.pending-discoveries > .panel-body > .pending-kbd-hint {
+	grid-column: 2;
+}
+
+.pending-discoveries .pending-kbd-status:empty {
+	position: absolute;
+}
+
+.discovery-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.45rem 0.75rem;
+}
+
+.discovery-toolbar__groups {
+	flex: 1 1 auto;
+	margin: 0;
+	min-width: 0;
+	order: 0;
+}
+
+.discovery-toolbar__groups > label {
+	align-items: center;
+	display: inline-flex;
+	font-size: var(--text-xs);
+	gap: 0.35rem;
+	min-height: 2rem;
+}
+
+.discovery-toolbar__groups .button {
+	font-size: var(--text-xs);
+	min-height: 2rem;
+	padding: 0.3rem 0.6rem;
+}
+
+.discovery-toolbar__filters {
+	align-items: end;
+	display: grid;
+	flex: 1 1 36rem;
+	gap: 0.4rem 0.55rem;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	min-width: 0;
+	order: 2;
+}
+
+.discovery-toolbar__field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	min-width: 0;
+}
+
+.discovery-toolbar__field label {
+	font-size: var(--text-2xs);
+	font-weight: 650;
+}
+
+.discovery-toolbar__field select,
+.discovery-toolbar__field input {
+	font-size: var(--text-xs);
+	min-width: 0;
+	padding-block: 0.25rem;
+	width: 100%;
+}
+
+.discovery-toolbar__secondary {
+	align-items: end;
+	display: grid;
+	gap: 0.5rem;
+	grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+	margin-top: 0.5rem;
+}
+
+.discovery-toolbar__secondary .multi-select {
+	gap: 0.1rem;
+}
+
+.discovery-toolbar__secondary .multi-select__caption {
+	font-size: var(--text-2xs);
+}
+
+.discovery-toolbar__more,
+.discovery-toolbar__help {
+	font-size: var(--text-xs);
+	min-width: 0;
+	order: 3;
+}
+
+.discovery-toolbar__more > summary,
+.discovery-toolbar__help > summary {
+	cursor: pointer;
+	min-height: 1.5rem;
+	overflow-wrap: break-word;
+}
+
+.discovery-toolbar__more[open],
+.discovery-toolbar__help[open] {
+	flex-basis: 100%;
+}
+
+.discovery-toolbar__help .field-note {
+	margin-block: 0.35rem;
+}
+
+.discovery-toolbar__markers {
+	align-items: center;
+	flex: 1 1 auto;
+	margin: 0;
+	order: 3;
+}
+
+.discovery-toolbar__markers .chip {
+	min-height: 1.5rem;
+}
+
+.discovery-toolbar__view-row {
+	display: contents;
+}
+
+.discovery-toolbar__view {
+	display: flex;
+	gap: 0.55rem;
+	min-width: 0;
+	order: 3;
+}
+
+.discovery-toolbar__view .discovery-toolbar__field {
+	width: 9rem;
+}
+
+.discovery-toolbar__count {
+	color: var(--ink-soft);
+	flex-basis: 100%;
+	font-size: var(--text-xs);
+	order: 4;
+}
+
+.discovery-toolbar__actions {
+	order: 3;
+	align-self: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.discovery-toolbar__actions .button {
+	font-size: var(--text-xs);
+	min-height: 1.9rem;
+	padding: 0.3rem 0.7rem;
+}
+
+.discovery-changes {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	font-size: var(--text-xs);
+	gap: 0.4rem 0.75rem;
+	margin: 0;
+}
+
+.discovery-changes .button {
+	font-size: var(--text-xs);
+	min-height: 2rem;
+	padding: 0.3rem 0.7rem;
+}
+
+.discovery-maintenance {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	width: auto;
+}
+
+/* A details/summary pair acts as the menu trigger, so the panel expands in
+   place below it. */
+.menu-disclosure > summary {
+	list-style: none;
+}
+
+.menu-disclosure > summary::-webkit-details-marker {
+	display: none;
+}
+
+.menu-disclosure__panel {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 0.7rem;
+	margin-top: 0.6rem;
+	padding: 1rem;
+	width: min(32rem, 100%);
+}
+
+.posting-check {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.6rem;
+	display: grid;
+	gap: 0.45rem;
+	margin-top: 0.75rem;
+	padding: 0.75rem;
+}
+
+.posting-check--warning {
+	border-color: var(--amber);
+}
+
+.posting-check dl {
+	display: grid;
+	gap: 0.25rem 0.75rem;
+	grid-template-columns: max-content minmax(0, 1fr);
+	margin: 0;
+}
+
+.posting-check dt {
+	color: var(--ink-soft);
+	font-weight: 650;
+}
+
+.posting-check dd,
+.posting-check p {
+	margin: 0;
+}
+
+.discovery-batch-bar {
+	align-items: center;
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.7rem;
+	box-shadow: var(--shadow);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	padding: 0.5rem 0.6rem;
+	position: sticky;
+	top: 0;
+	z-index: 4;
+}
+
+.discovery-batch-bar .button {
+	font-size: var(--text-xs);
+	min-height: 1.9rem;
+	padding: 0.3rem 0.6rem;
+}
+
+.discovery-batch-bar__count {
+	flex-basis: 100%;
+	font-size: var(--text-xs);
+}
+
+.discovery-batch-bar__count .field-note {
+	margin: 0;
+}
+
+/* The selection bound becomes its own refusal in place, keeping the full row. */
+.discovery-batch-bar .field-note--blocked {
+	color: var(--danger);
+}
+
+/* Utility actions (dismiss, clear) sit at the far end of the bar. */
+.discovery-batch-bar__end {
+	display: flex;
+	gap: 0.6rem;
+	margin-left: auto;
+	align-items: center;
+}
+
+/* Same "spends money" mark as the batch bar, laid out inline here. */
+.posting-resolution-action__estimate {
+	align-items: center;
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.publisher-facts-refresh {
+	display: grid;
+	gap: 0.5rem;
+	justify-items: start;
+}
+
+.discovery-advanced > summary {
+	cursor: pointer;
+	font-weight: 650;
+}
+
+.discovery-dispositions,
+.discovery-disposition {
+	display: grid;
+	gap: 0.5rem;
+}
+
+/* A zero-minimum track keeps the dismissed table scrolling inside the panel. */
+.discovery-dispositions {
+	grid-template-columns: minmax(0, 1fr);
+	border: 1px solid var(--line);
+	border-radius: 0.7rem;
+	padding: 1rem;
+}
+
+.discovery-disposition__form select,
+.discovery-disposition__form textarea {
+	width: min(22rem, 100%);
+}
+
+.discovery-disposition__category,
+.discovery-disposition__other {
+	display: grid;
+	gap: 0.35rem;
+	min-width: 0;
+}
+
+.discovery-disposition__form {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 0.55rem;
+	display: grid;
+	gap: 0.5rem;
+	padding: 0.7rem;
+}
+
+.pending-discovery-row > th,
+.pending-discovery-row > td {
+	padding-block: 0.65rem;
+	vertical-align: top;
+}
+
+.content-readiness {
+	border-inline-start: 0.25rem solid var(--line);
+}
+
+.content-readiness--ready {
+	border-inline-start-color: var(--teal);
+}
+
+.content-readiness--no_body,
+.content-readiness--access_blocked,
+.content-readiness--fetch_failed,
+.content-readiness--render_required,
+.content-readiness--session_required,
+.content-readiness--policy_refused,
+.content-readiness--partial_text {
+	border-inline-start-color: var(--amber);
+}
+
+.content-readiness--withdrawn,
+.content-readiness--identity_not_verified,
+.content-readiness--identity_ambiguous,
+.content-readiness--identity_contradicted,
+.content-readiness--url_mismatch,
+.content-readiness--evidence_incomplete {
+	border-inline-start-color: var(--ink-soft);
+}
+
+/* Heading and route chips share one line; the explanation lives in the
+   region's title attribute. */
+.discovery-attention {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 0.75rem;
+	padding: 0.5rem 0.85rem;
+	border: 1px solid var(--line);
+	border-inline-start: 0.25rem solid var(--amber);
+	border-radius: 0.5rem;
+	background: var(--surface-muted);
+}
+
+.discovery-attention__routes {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.discovery-attention__route {
+	font-size: var(--text-2xs);
+	min-height: 0;
+	padding: 0.25rem 0.5rem;
+}
+
+.pending-recommendation {
+	line-height: 1.35;
+}
+
+.pending-verdict {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+	margin-bottom: 0.35rem;
+}
+
+/* Larger than the provenance pills so the verdict reads before the initial screen. */
+.pending-verdict__badge {
+	font-size: var(--text-xs);
+	padding: 0.35rem 0.6rem;
+}
+
+.pending-verdict__stale {
+	color: var(--amber);
+	font-size: var(--text-2xs);
+	font-weight: 650;
+}
+
+.pending-recommendation__reason,
+.pending-recommendation__summary {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	margin-block: 0.2rem 0.35rem;
+	overflow: hidden;
+}
+
+.pending-work-facts {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+	margin-top: 0.35rem;
+}
+
+.pending-work-fact {
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	line-height: 1.2;
+	padding: 0.15rem 0.4rem;
+}
+
+.pending-row-actions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem;
+}
+
+/* Everything before Details and Dismiss takes its own full-width line. */
+.pending-row-actions > :not(:nth-last-child(-n + 2)) {
+	flex-basis: 100%;
+}
+
+.pending-row-actions > :nth-last-child(-n + 2) {
+	flex: 1 1 auto;
+}
+
+.pending-row-actions .button,
+.pending-row-markers .button,
+.pending-keep-note .button {
+	font-size: var(--text-2xs);
+	min-height: 1.7rem;
+	padding: 0.25rem 0.5rem;
+}
+
+.pending-row-markers {
+	align-items: center;
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+	vertical-align: middle;
+}
+
+/* A save error reads as a short line beside the pills. */
+.pending-row-markers > .field-error[role="alert"] {
+	background: none;
+	border: 0;
+	font-size: var(--text-2xs);
+	padding: 0;
+}
+
+.pending-row-markers .button,
+.pending-keep-note .button {
+	min-height: 0;
+	padding: 0.1rem 0.4rem;
+}
+
+.pending-keep-note {
+	margin-top: 0.25rem;
+}
+
+.pending-keep-note__text {
+	background: none;
+	border: 0;
+	color: inherit;
+	cursor: text;
+	font: inherit;
+	padding: 0;
+	text-align: start;
+}
+
+.pending-keep-note input {
+	font-size: var(--text-xs);
+	padding-block: 0.2rem;
+	width: 100%;
+}
+
+button.chip {
+	cursor: pointer;
+}
+
+.pending-row-markers .button[aria-pressed="true"],
+.discovery-toolbar__groups .button[aria-pressed="true"],
+.chip[aria-pressed="true"] {
+	background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+	border-color: var(--accent);
+	color: var(--accent);
+	font-weight: 600;
+}
+
+.pending-origin {
+	margin-top: 0.3rem;
+}
+
+.pending-origin > span + span::before {
+	color: var(--line);
+	content: " | ";
+}
+
+/* Row headers are semibold; the not-stated placeholder stays as quiet as a Place note. */
+.employer-not-stated {
+	font-weight: 400;
+}
+
+.pending-origin__host {
+	overflow-wrap: anywhere;
+}
+
+.pending-row-editor td {
+	background: var(--surface-muted);
+	padding: 0.65rem 0.75rem;
+}
+
+/* Desktop headers stick to the page rather than a nested vertical scroller. */
+.table-wrap.pending-queue-keyboard {
+	max-height: none;
+	overflow: clip;
+}
+
+@media (max-width: 760px) {
+	.table-wrap.pending-queue-keyboard {
+		overflow: auto;
+	}
+}
+
+/* Relevance takes the width left over; Place fits an unwrapped "Remote, from location"
+   badge. */
+table[aria-label="Pending job discoveries"] {
+	table-layout: fixed;
+}
+
+table[aria-label="Pending job discoveries"] td,
+table[aria-label="Pending job discoveries"] th {
+	overflow-wrap: break-word;
+	padding-inline: 0.6rem;
+}
+
+table[aria-label="Pending job discoveries"] > thead th {
+	box-sizing: border-box;
+	top: var(--pending-batch-bar-height, 0);
+}
+
+table[aria-label="Pending job discoveries"] > tbody th {
+	overflow-wrap: normal;
+}
+
+table[aria-label="Pending job discoveries"] > thead th:nth-child(1) {
+	width: 2.75rem;
+}
+
+table[aria-label="Pending job discoveries"] > thead th:nth-child(2) {
+	width: 9rem;
+}
+
+table[aria-label="Pending job discoveries"] > thead th:nth-child(3) {
+	width: 26%;
+}
+
+table[aria-label="Pending job discoveries"] > thead th:nth-child(4) {
+	width: 11.5rem;
+}
+
+table[aria-label="Pending job discoveries"] > thead th:nth-child(6) {
+	width: 11.25rem;
+}
+
+.pending-row-actions .button {
+	max-width: 100%;
+	white-space: normal;
+}
+
+.pending-discovery-row > td:nth-child(3) .button {
+	font-size: var(--text-2xs);
+	min-height: 0;
+	padding: 0.1rem 0.4rem;
+}
+
+.pending-discovery-row > td:nth-child(4) > [role="group"] {
+	font-size: var(--text-xs);
+	line-height: 1.4;
+	margin-top: 0.5rem;
+	min-width: 0;
+	overflow-wrap: break-word;
+}
+
+.pending-row-details__group > [role="group"] > details {
+	margin-top: 0.35rem;
+}
+
+.pending-row-details__group > [role="group"] summary {
+	cursor: pointer;
+}
+
+.pending-row-details__group > [role="group"] form {
+	display: grid;
+	gap: 0.35rem;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.pending-row-details__group > [role="group"] .field {
+	min-width: 0;
+}
+
+.pending-row-details__group > [role="group"] input[type="date"] {
+	min-width: 0;
+	padding-inline: 0.5rem;
+	width: 100%;
+}
+
+.pending-row-details__group > [role="group"] .button {
+	font-size: var(--text-xs);
+	max-width: 100%;
+	min-height: 2rem;
+	padding: 0.35rem 0.5rem;
+	white-space: normal;
+}
+
+.pending-row-details {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.pending-row-details__group {
+	display: grid;
+	gap: 0.35rem;
+	align-content: start;
+}
+
+.pending-row-details__group > .field-note:first-child {
+	margin-top: 0;
+}
+
+/* Match the readable captured-body block in .evidence-source pre. */
+.pending-listing__text {
+	background: var(--surface-muted);
+	border-radius: 0.55rem;
+	font-size: var(--text-2xs);
+	line-height: 1.65;
+	margin: 0.35rem 0 0;
+	max-height: 22rem;
+	overflow: auto;
+	padding: 0.9rem;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.pending-row-editor .discovery-disposition__form {
+	align-items: end;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.pending-row-editor .discovery-disposition__form > .button-row {
+	grid-column: 3;
+	margin: 0;
+	white-space: nowrap;
+}
+
+.pending-row-editor .discovery-disposition__form > .field-error {
+	grid-column: 1 / -1;
+}
+
+.pending-row--selected > * {
+	background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.pending-queue-keyboard:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.pending-row--kbd-focus > * {
+	background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+
+/* One rail at the row's left edge, not a bar at every column. */
+.pending-row--kbd-focus > *:first-child {
+	box-shadow: inset 3px 0 0 0 var(--accent);
+}
+
+.pending-kbd-hint {
+	align-items: center;
+	color: var(--ink-soft);
+	display: flex;
+	font-size: var(--text-2xs);
+	gap: 0.4rem;
+	margin-block: 0.2rem;
+}
+
+.pending-kbd-hint .button {
+	font-size: var(--text-xs);
+	min-height: 1.5rem;
+	padding: 0.15rem 0.4rem;
+}
+
+.pending-kbd-status {
+	color: var(--ink-soft);
+	font-size: var(--text-xs);
+	margin-block: 0.2rem;
+	min-height: 1.2em;
+}
+
+/* The live region stays mounted for screen readers but takes no space empty. */
+.pending-kbd-status:empty {
+	margin-block: 0;
+	min-height: 0;
+}
+
+.pending-undo {
+	align-items: center;
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.4rem;
+	box-shadow: var(--shadow);
+	display: flex;
+	gap: 0.75rem;
+	justify-content: space-between;
+	margin-block: 0.5rem;
+	padding: 0.5rem 0.75rem;
+}
+
+.pending-row-alert td {
+	background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+	padding-block: 0.6rem;
+}
+
+.pending-row-alert__content {
+	border-left: 3px solid var(--danger);
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	padding: 0.45rem 0.7rem;
+}
+
+.discovery-action--queued:disabled {
+	background: var(--surface-muted);
+	border-color: var(--line);
+	color: var(--ink-soft);
+	opacity: 1;
+}
+
+.pending-provenance {
+	display: grid;
+	gap: 0.25rem;
+}
+
+.pending-provenance__facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+}
+
+.pending-provenance__facts .badge {
+	font-size: var(--text-2xs);
+	padding: 0.1rem 0.3rem;
+}
+
+.pending-provenance__details > summary {
+	cursor: pointer;
+	font-size: var(--text-xs);
+	font-weight: 650;
+	max-width: 24ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.pending-provenance__details[open] > summary {
+	max-width: none;
+	overflow-wrap: anywhere;
+	white-space: normal;
+}
+
+.pending-provenance .discovery-evidence {
+	margin-top: 0;
+}
+
+.pending-row-title__missing {
+	display: grid;
+	gap: 0.3rem;
+}
+
+.pending-row-title__prompt {
+	background: var(--surface);
+	border: 1px dashed var(--accent);
+	border-radius: 0.45rem;
+	color: var(--accent);
+	cursor: pointer;
+	font: inherit;
+	font-weight: 680;
+	padding: 0.5rem 0.65rem;
+	text-align: left;
+}
+
+.pending-row-title__prompt:hover {
+	background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+table[aria-label="Pending job discoveries"] input[type="checkbox"] {
+	accent-color: var(--accent);
+	block-size: 1.15rem;
+	cursor: pointer;
+	inline-size: 1.15rem;
+}
+
+.table-wrap input[type="checkbox"]:disabled {
+	cursor: not-allowed;
+}
+
+.discovery-dispositions fieldset {
+	border: 1px solid var(--line);
+	border-radius: 0.55rem;
+	display: grid;
+	gap: 0.5rem;
+	padding: 0.7rem 1rem 1rem;
+}
+
+.discovery-dispositions fieldset > p {
+	margin: 0;
+}
+
+.discovery-dispositions textarea {
+	width: 100%;
+	max-width: 60rem;
+}
+
+.dismissed-discoveries-table {
+	min-width: 60rem;
+	table-layout: fixed;
+}
+
+.dismissed-discoveries-table th:nth-child(1),
+.dismissed-discoveries-table td:nth-child(1) {
+	width: 12%;
+}
+
+.dismissed-discoveries-table th:nth-child(2),
+.dismissed-discoveries-table td:nth-child(2) {
+	width: 19%;
+}
+
+.dismissed-discoveries-table th:nth-child(3),
+.dismissed-discoveries-table td:nth-child(3) {
+	width: 14%;
+}
+
+.dismissed-discoveries-table th:nth-child(4),
+.dismissed-discoveries-table td:nth-child(4) {
+	width: 26%;
+}
+
+.dismissed-discoveries-table th:nth-child(5),
+.dismissed-discoveries-table td:nth-child(5) {
+	width: 12%;
+}
+
+.dismissed-discoveries-table th:nth-child(6),
+.dismissed-discoveries-table td:nth-child(6) {
+	width: 17%;
+}
+
+.dismissed-discoveries-table td {
+	vertical-align: top;
+}
+
+.dismissed-discovery-url {
+	margin: 0.2rem 0 0;
+	overflow-wrap: anywhere;
+}
+
+/* Outrank the quiet "Show history" beside it without a solid-primary fill,
+   which would read as a wall of glowing buttons across up to 100 rows. */
+.dismissed-discovery-restore {
+	background: transparent;
+	border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+	color: var(--accent-ink);
+}
+
+.dismissed-discovery-reason {
+	display: grid;
+	gap: 0.25rem;
+}
+
+.dismissed-discovery-reason strong {
+	font-size: var(--text-xs);
+	text-transform: capitalize;
+}
+
+.dismissed-discovery-reason small {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+}
+
+.discovery-evidence {
+	margin-top: 0.5rem;
+}
+
+.discovery-evidence summary {
+	cursor: pointer;
+	font-size: var(--text-2xs);
+	font-weight: 650;
+}
+
+.discovery-facts > div {
+	display: grid;
+	grid-template-columns: minmax(7rem, 0.35fr) 1fr;
+}
+
+.discovery-facts dt {
+	font-weight: 650;
+	text-transform: capitalize;
+}
+
+.discovery-facts .field-note {
+	display: block;
+}
+
+.discovery-funnel {
+	margin-top: 1rem;
+}
+
+.screened-out-summary__count {
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.guided-campaign-progress,
+.search-vocabulary-progress {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 0.65rem;
+	display: grid;
+	gap: 0.45rem;
+	padding: 0.85rem 1rem;
+}
+
+.guided-campaign-progress p,
+.search-vocabulary-progress p {
+	margin: 0;
+}
+
+.guided-campaign-progress progress,
+.search-vocabulary-progress progress {
+	inline-size: min(100%, 32rem);
+}
+
+.relevance-review__dispute {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin-top: 0.5rem;
+}
+
+.relevance-review__dispute textarea {
+	flex: 1 1 18rem;
+}
+
+.relevance-review__basis {
+	display: grid;
+	gap: 0.5rem;
+	grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.relevance-review__basis div {
+	border: 1px solid var(--line);
+	border-radius: 0.5rem;
+	padding: 0.65rem;
+}
+
+.relevance-review__basis dt {
+	font-weight: 700;
+}
+
+.relevance-review__basis dd {
+	margin: 0.2rem 0 0;
+	text-transform: capitalize;
+}
+
+@media (max-width: 760px) {
+	.pending-discoveries > .panel-body {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.pending-discoveries > .panel-body > .discovery-batch-bar,
+	.pending-discoveries > .panel-body > .pending-kbd-hint {
+		grid-column: 1;
+	}
+
+	.discovery-toolbar__groups,
+	.discovery-toolbar__filters {
+		flex-basis: 100%;
+	}
+
+	.discovery-toolbar__filters {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.discovery-toolbar__view {
+		flex: 1 1 100%;
+	}
+
+	.discovery-toolbar__view .discovery-toolbar__field {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.pending-row-editor .discovery-disposition__form {
+		grid-template-columns: 1fr;
+	}
+
+	.pending-row-editor .discovery-disposition__form > .button-row,
+	.pending-row-editor .discovery-disposition__form > .field-error {
+		grid-column: 1;
+	}
+}
+
+.chip-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+	list-style: none;
+	margin: 0.35rem 0 0;
+	padding: 0;
+}
+
+.chip {
+	border-radius: 999px;
+	border-width: 1px;
+	font-size: var(--text-2xs);
+	line-height: 1.2;
+	padding: 0.15rem 0.5rem;
+	white-space: nowrap;
+}
+
+/* Zero specificity, so a .status--tone-* class recolors a chip in any stylesheet order. */
+:where(.chip) {
+	background: var(--surface-muted);
+	border-color: var(--line);
+	border-style: solid;
+	color: var(--ink-soft);
+}
+
+/* A narrow cell wraps the row, and a chip longer than the cell wraps its own label. */
+.chip-row--fit > .chip {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	white-space: normal;
+}
+
+.pending-readiness {
+	display: inline-block;
+	margin-top: 0.25rem;
+}
+
+.row-alert td {
+	background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+	padding-block: 0.55rem;
+}
+
+.row-note td {
+	background: var(--surface-muted);
+	padding-block: 0.55rem;
+}
+
+.row-note__body {
+	border-left: 3px solid var(--ink-soft);
+	color: var(--ink-soft);
+	overflow-wrap: anywhere;
+	padding: 0.45rem 0.7rem;
+}
+
+.row-alert__body {
+	border-left: 3px solid var(--danger);
+	color: var(--danger);
+	overflow-wrap: anywhere;
+	padding: 0.45rem 0.7rem;
+}
+
+.row-alert__body [role="alert"] {
+	color: inherit;
+}
+
+.row-alert__examples {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.5rem;
+	list-style: none;
+	margin: 0.35rem 0 0;
+	padding: 0;
+}
+
+.row-alert__examples li + li::before {
+	color: var(--ink-soft);
+	content: ",";
+	margin-right: 0.25rem;
+}
+
+.row-alert__examples code {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: var(--text-2xs);
+	overflow-wrap: anywhere;
+}
+
+.scan-staged {
+	margin-top: 1rem;
+}
+
+.scan-staged > summary {
+	color: var(--ink-soft);
+	font-size: var(--text-xs);
+}
+
+.scan-staged > .field-note {
+	margin: 0.5rem 0 0.75rem;
+}
+
+.scan-withdrawn > summary {
+	color: var(--ink-soft);
+	font-size: var(--text-xs);
+}
+
+/* Keep starting, reviewing a run, and changing vocabulary distinct. */
+.guided-campaign-layout,
+.search-vocabulary-layout {
+	display: grid;
+	gap: 1.25rem;
+}
+
+.guided-campaign-start > header {
+	gap: 1.25rem;
+	flex-wrap: wrap;
+}
+
+.guided-campaign-layout .panel-body p a:not(.button),
+.search-vocabulary-layout .panel-body p a:not(.button) {
+	color: var(--accent-ink);
+	text-decoration: underline;
+}
+
+.guided-campaign-result .button--primary {
+	display: flex;
+	width: fit-content;
+	margin-top: 0.75rem;
+}
+
+.guided-campaign-result > header {
+	background: var(--surface-muted);
+}
+
+.guided-campaign-result .field-error p + p {
+	margin-top: 0.5rem;
+}
+
+.search-vocabulary-terms > summary {
+	padding: 1rem 1.35rem;
+	font-weight: 650;
+}
+
+.find-help {
+	color: var(--ink-soft);
+	font-size: var(--text-sm);
+	margin-top: 1rem;
+}
+
+.find-help > :not(summary) {
+	margin-top: 1rem;
+}
+
+[aria-label="Find jobs sections"].tabs {
+	flex-wrap: wrap;
+	overflow-x: visible;
+}
+
+/* The confirm dialog is 480px wide; the shared table min-width would force a
+   horizontal scroll for a two-column source list, so drop it here only. */
+.scan-sources-confirm table {
+	min-width: 0;
+}
+
+/* Campaign preview and report tables carry few columns of short text, so the
+   shared table min-width only forces an unneeded horizontal scroll here. */
+.guided-campaign-narrow-table table {
+	min-width: 0;
+}
+
+.scan-history__follow-up {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-top: 0.35rem;
+}
+
+.discovery-funnel__reasons {
+	margin-top: 0.6rem;
+}

@@ -1,0 +1,45 @@
+/* Import order defines the cascade; vendor overrides remain unlayered. */
+
+@layer tokens, application;
+
+@import "./styles/tokens.css" layer(tokens);
+@import "./styles/base.css" layer(application);
+@import "./styles/shell.css" layer(application);
+@import "./styles/controls-core.css" layer(application);
+@import "./features/command-center/dashboard.css" layer(application);
+@import "./features/tasks/task-row.css" layer(application);
+@import "./styles/control-states.css" layer(application);
+@import "./styles/tables.css" layer(application);
+@import "./styles/content-core.css" layer(application);
+@import "./features/job-detail/job-summary.css" layer(application);
+@import "./features/tasks/task-payload.css" layer(application);
+@import "./features/applications/application-events.css" layer(application);
+@import "./features/settings/provider-content.css" layer(application);
+@import "./features/master-cv/completeness.css" layer(application);
+@import "./features/job-detail/job-records.css" layer(application);
+@import "./features/applications/application-board.css" layer(application);
+@import "./features/tasks/task-history.css" layer(application);
+@import "./features/master-cv/master-cv.css" layer(application);
+@import "./features/job-detail/fit-report.css" layer(application);
+@import "./styles/markdown-document.css" layer(application);
+@import "./features/tailoring/studio-layout.css" layer(application);
+@import "./features/job-evidence/job-evidence.css" layer(application);
+@import "./features/onboarding/onboarding.css" layer(application);
+@import "./features/tailoring/tailoring-studio.css" layer(application);
+@import "./features/prompts/prompts.css" layer(application);
+@import "./features/tailoring/tailoring-studio-questions.css" layer(application);
+@import "./features/documents/document-pages.css" layer(application);
+@import "./features/master-cv/editor.css" layer(application);
+@import "./features/workspace-records/records.css" layer(application);
+@import "./features/tailoring/review.css" layer(application);
+@import "./styles/dialogs-and-panels.css" layer(application);
+@import "./styles/unified-diff.css" layer(application);
+@import "./features/api-playground/api-playground.css" layer(application);
+@import "./styles/field-notes.css" layer(application);
+@import "./features/api-playground/api-playground-response.css" layer(application);
+@import "./features/job-search/job-search.css" layer(application);
+@import "./features/search-parameters/search-parameters.css" layer(application);
+@import "./features/settings/guardrails-editor.css" layer(application);
+@import "./features/settings/guardrail-preview.css" layer(application);
+@import "./styles/responsive.css" layer(application);
+@import "./styles/vendor-overrides.css";

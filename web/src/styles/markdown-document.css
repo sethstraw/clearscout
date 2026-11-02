@@ -1,0 +1,6 @@
+.markdown-document {
+	line-height: 1.65;
+	margin: 0 auto;
+	max-width: 920px;
+	padding: clamp(1.2rem, 4vw, 3rem);
+}

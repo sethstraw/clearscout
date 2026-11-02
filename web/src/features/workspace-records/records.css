@@ -1,0 +1,163 @@
+.notes-layout {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.3fr);
+}
+
+.notes-layout > .panel {
+	padding: 1.3rem;
+}
+
+.notes-layout form,
+.panel > form {
+	display: grid;
+	gap: 0.85rem;
+}
+
+.field-grid {
+	display: grid;
+	gap: 1rem 1.25rem;
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	margin-bottom: 1rem;
+}
+
+/* Bound the control instead of sizing it to the widest child. */
+.notes-layout label,
+.panel > form label,
+.compact-field {
+	align-content: start;
+	color: var(--ink-soft);
+	display: grid;
+	font-size: var(--text-2xs);
+	gap: 0.35rem;
+	grid-template-columns: minmax(0, 1fr);
+	min-width: 0;
+}
+
+.notes-layout label > *,
+.panel > form label > *,
+.compact-field > * {
+	max-width: 100%;
+	min-width: 0;
+}
+
+.non-evidence-note {
+	background: color-mix(in srgb, var(--blue) 8%, var(--surface));
+	border: 1px solid color-mix(in srgb, var(--blue) 25%, var(--line));
+	border-radius: 0.6rem;
+	margin-bottom: 1rem;
+	padding: 0.8rem;
+}
+
+.non-evidence-note strong {
+	color: var(--blue);
+	font-size: var(--text-xs);
+}
+
+.non-evidence-note p {
+	font-size: var(--text-2xs);
+	margin: 0.2rem 0 0;
+}
+
+.note-list {
+	display: grid;
+	gap: 0.75rem;
+	list-style: none;
+	padding: 0;
+}
+
+.note-list > li {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 0.65rem;
+	padding: 0.9rem;
+}
+
+.note-list > li > header {
+	align-items: start;
+	display: flex;
+	justify-content: space-between;
+}
+
+.note-list header > div {
+	display: grid;
+	gap: 0.2rem;
+}
+
+.note-list time,
+.note-list small {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+}
+
+.note-list header > div:last-child {
+	display: flex;
+	gap: 0.6rem;
+}
+
+.note-list .markdown-document {
+	padding: 0.5rem 0 0;
+}
+
+.record-list {
+	display: grid;
+	gap: 0.6rem;
+	list-style: none;
+	padding: 0;
+}
+
+.record-list li {
+	align-items: start;
+	background: var(--surface-muted);
+	border-radius: 0.6rem;
+	display: grid;
+	gap: 0.25rem;
+	padding: 0.8rem;
+}
+
+.record-list strong {
+	font-size: var(--text-sm);
+}
+
+.record-list span,
+.record-list small,
+.record-list time,
+.record-list em {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+}
+
+.inline-form {
+	align-items: end;
+	display: grid !important;
+	grid-template-columns: 1fr auto auto;
+}
+
+.tag-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	list-style: none;
+	padding: 0;
+}
+
+.tag-list li {
+	align-items: center;
+	background: var(--surface-muted);
+	border-radius: 999px;
+	display: flex;
+	font-size: var(--text-xs);
+	gap: 0.4rem;
+	padding: 0.35rem 0.65rem;
+}
+
+.tag-list li > span {
+	border-radius: 50%;
+	height: 0.65rem;
+	width: 0.65rem;
+}
+
+.tag-list small {
+	color: var(--ink-soft);
+	margin-left: 0.3rem;
+}

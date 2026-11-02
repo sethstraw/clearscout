@@ -1,0 +1,9 @@
+.field-note {
+	color: var(--ink-soft);
+	font-size: var(--text-xs);
+	margin-left: 0.5rem;
+}
+
+.compact-field > .field-note {
+	margin-left: 0;
+}

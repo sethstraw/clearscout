@@ -1,0 +1,1 @@
+"""TailorCV terminal command adapters."""

@@ -1,0 +1,205 @@
+.checkbox-list {
+	column-gap: 1.1rem;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+	row-gap: 0.35rem;
+}
+
+.checkbox-list label {
+	align-items: center;
+	color: var(--ink);
+	cursor: pointer;
+	display: inline-flex;
+	font-size: var(--text-sm);
+	gap: 0.5rem;
+	line-height: 1.25;
+}
+
+.checkbox-list input[type="checkbox"] {
+	margin: 0;
+}
+
+.token-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.5rem;
+	list-style: none;
+	margin: 0.5rem 0 0;
+	padding: 0;
+}
+
+.token-list li {
+	background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+	border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+	border-radius: 999px;
+	color: var(--ink);
+	font-size: var(--text-xs);
+	padding: 0.2rem 0.65rem;
+}
+
+.focus-sections {
+	display: grid;
+	gap: 1.5rem;
+}
+
+.cluster-list {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.cluster-list__header {
+	align-items: center;
+	display: flex;
+	gap: 1rem;
+	justify-content: space-between;
+}
+
+.list-cap-note {
+	color: var(--ink-soft);
+	margin: 0;
+}
+
+.list-cap-unused {
+	border-left: 0.25rem solid var(--line);
+	padding-left: 0.75rem;
+}
+
+.record-list .list-cap-badge {
+	color: var(--ink-soft);
+	font-size: var(--text-xs);
+}
+
+.order-controls {
+	display: inline-flex;
+	gap: 0.35rem;
+}
+
+.search-suggestions__body {
+	display: grid;
+	gap: 1rem;
+}
+
+.search-suggestion-group {
+	display: grid;
+	gap: 0.75rem;
+	margin-top: 1.25rem;
+}
+
+.search-suggestion-group__heading {
+	align-items: start;
+	display: flex;
+	gap: 1rem;
+	justify-content: space-between;
+}
+
+.search-suggestion-group__heading h3,
+.search-suggestion-group__heading p {
+	margin: 0;
+}
+
+.search-suggestion-capacity {
+	color: var(--ink-soft);
+	font-size: var(--text-sm);
+	max-width: 25rem;
+	text-align: right;
+}
+
+.search-suggestion-list {
+	display: grid;
+	gap: 0.5rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.search-suggestion-bulk {
+	margin-top: 0.6rem;
+}
+
+.search-suggestion-card {
+	align-items: start;
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.65rem;
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: minmax(0, 1fr) minmax(12rem, auto);
+	padding: 0.7rem 0.8rem;
+}
+
+.search-suggestion-card__content {
+	display: grid;
+	gap: 0.3rem;
+}
+
+.search-suggestion-card__content p,
+.search-suggestion-card__title h4 {
+	margin: 0;
+}
+
+.search-suggestion-card__title {
+	align-items: center;
+	display: flex;
+	gap: 0.65rem;
+	justify-content: space-between;
+}
+
+.search-suggestion-card__metadata,
+.search-suggestion-card__provenance {
+	color: var(--ink-soft);
+	font-size: var(--text-sm);
+}
+
+.search-suggestion-card__version {
+	color: var(--warning-ink, var(--ink));
+	font-size: var(--text-sm);
+	font-weight: 600;
+}
+
+.search-suggestion-status {
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	font-size: var(--text-xs);
+	font-weight: 600;
+	padding: 0.2rem 0.55rem;
+	white-space: nowrap;
+}
+
+.search-suggestion-status--accepted {
+	background: color-mix(in srgb, var(--success, #34785d) 12%, var(--surface));
+}
+
+.search-suggestion-status--proposed {
+	background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.search-suggestion-status--rejected {
+	background: color-mix(in srgb, var(--line) 35%, var(--surface));
+}
+
+.search-suggestion-actions,
+.search-suggestion-rejection-controls {
+	display: grid;
+	gap: 0.65rem;
+}
+
+.search-suggestion-reject {
+	max-width: 28rem;
+}
+
+.search-suggestion-reject summary,
+.proposal-rationale summary {
+	cursor: pointer;
+}
+
+.search-suggestion-rejection-controls label {
+	display: grid;
+	font-size: var(--text-sm);
+	gap: 0.3rem;
+}
+
+.search-setup > details > summary {
+	cursor: pointer;
+	font-weight: 600;
+	padding: 1rem;
+}

@@ -1,0 +1,115 @@
+.welcome {
+	align-items: safe center;
+	background:
+		radial-gradient(
+			circle at 15% 20%,
+			color-mix(in srgb, var(--accent) 15%, transparent),
+			transparent 28%
+		),
+		radial-gradient(
+			circle at 82% 75%,
+			color-mix(in srgb, var(--teal) 12%, transparent),
+			transparent 25%
+		),
+		var(--canvas);
+	display: flex;
+	justify-content: center;
+	min-height: 100vh;
+	padding: 2rem;
+}
+
+.welcome-card {
+	background: color-mix(in srgb, var(--surface) 94%, transparent);
+	border: 1px solid var(--line);
+	border-radius: 1.2rem;
+	box-shadow: 0 28px 80px rgba(43, 37, 74, 0.13);
+	max-width: 580px;
+	padding: clamp(2rem, 6vw, 4rem);
+	width: 100%;
+}
+
+.welcome-card h1 {
+	font-size: var(--text-display);
+}
+
+.welcome-card > p:not(.eyebrow) {
+	font-size: var(--text-base);
+}
+
+.welcome-card--onboarding {
+	max-width: 1080px;
+}
+
+.onboarding-steps {
+	display: grid;
+	gap: 0.65rem;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	list-style: none;
+	margin: 2rem 0;
+	padding: 0;
+}
+
+.onboarding-steps li {
+	align-items: center;
+	color: var(--ink-soft);
+	display: flex;
+	font-size: var(--text-xs);
+	font-weight: 650;
+	gap: 0.45rem;
+}
+
+.onboarding-steps li > span {
+	align-items: center;
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	display: inline-flex;
+	height: 1.8rem;
+	justify-content: center;
+	width: 1.8rem;
+}
+
+.onboarding-steps li[data-state="complete"] > span {
+	background: color-mix(in srgb, var(--teal) 12%, var(--surface));
+	border-color: var(--teal);
+	color: var(--teal);
+}
+
+.onboarding-steps li[data-state="current"] {
+	color: var(--ink);
+}
+
+.onboarding-steps li[data-state="current"] > span {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: white;
+}
+
+.onboarding-step {
+	border-top: 1px solid var(--line);
+	padding-top: 1.5rem;
+}
+
+.onboarding-step > h2 {
+	font-size: var(--text-xl);
+}
+
+.onboarding-ready .button-row {
+	margin-top: 1.5rem;
+}
+
+@media (max-width: 760px) {
+	.onboarding-steps {
+		grid-template-columns: 1fr;
+	}
+}
+
+.welcome form {
+	display: grid;
+	gap: 1rem;
+	margin-top: 2rem;
+}
+
+.welcome label span {
+	font-weight: 400;
+}

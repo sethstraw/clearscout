@@ -1,0 +1,24 @@
+.application-entry {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.65rem;
+	box-shadow: 0 8px 22px rgba(30, 32, 44, 0.05);
+	display: grid;
+	gap: 0.5rem;
+	padding: 0.9rem;
+	transition: 150ms ease;
+}
+
+.application-entry:hover {
+	border-color: var(--accent);
+}
+
+.application-move select {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.45rem;
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	padding: 0.3rem 0.4rem;
+	width: 100%;
+}

@@ -1,0 +1,33 @@
+.task-row {
+	align-items: center;
+	border-bottom: 1px solid var(--line);
+	display: flex;
+	justify-content: space-between;
+	padding: 0.95rem 1.35rem;
+}
+
+.task-row > div {
+	min-width: 0;
+}
+
+.task-row strong {
+	display: block;
+	font-size: var(--text-sm);
+}
+
+.task-row span:not(.status) {
+	color: var(--ink-soft);
+	display: block;
+	font-size: var(--text-2xs);
+	margin-top: 0.2rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.task-row .task-error {
+	font-size: var(--text-2xs);
+	margin-top: 0.3rem;
+	overflow-wrap: anywhere;
+	white-space: normal;
+}

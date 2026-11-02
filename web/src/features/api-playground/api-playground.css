@@ -1,0 +1,185 @@
+.playground-warning {
+	background: color-mix(in srgb, var(--blue) 8%, var(--surface));
+	border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--line));
+	border-radius: 0.75rem;
+	margin-bottom: 1rem;
+	padding: 0.9rem 1rem;
+}
+
+.playground-warning strong {
+	color: var(--blue);
+	font-size: var(--text-sm);
+}
+
+.playground-warning p {
+	font-size: var(--text-xs);
+	margin: 0.2rem 0 0;
+}
+
+.playground-layout {
+	align-items: start;
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: minmax(270px, 0.42fr) minmax(0, 1fr);
+}
+
+.endpoint-browser {
+	max-height: calc(100vh - 3rem);
+	overflow: auto;
+	padding: 1rem;
+	position: sticky;
+	top: 1rem;
+}
+
+.endpoint-browser .search-field {
+	color: var(--ink-soft);
+	display: grid;
+	font-size: var(--text-2xs);
+	gap: 0.35rem;
+}
+
+.endpoint-count {
+	font-size: var(--text-2xs);
+	margin: 0.65rem 0;
+}
+
+.endpoint-browser nav section + section {
+	border-top: 1px solid var(--line);
+	margin-top: 0.8rem;
+	padding-top: 0.7rem;
+}
+
+.endpoint-browser nav h2 {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	letter-spacing: 0.08em;
+	margin: 0.45rem;
+	text-transform: uppercase;
+}
+
+.endpoint-browser nav button {
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 0.55rem;
+	color: var(--ink);
+	cursor: pointer;
+	display: grid;
+	gap: 0.18rem 0.5rem;
+	grid-template-columns: 44px minmax(0, 1fr);
+	padding: 0.55rem;
+	text-align: left;
+	width: 100%;
+}
+
+.endpoint-browser nav button:hover {
+	background: var(--surface-muted);
+}
+
+.endpoint-browser nav button.selected {
+	background: var(--accent-soft);
+	border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+}
+
+.endpoint-browser nav button > span {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: var(--text-2xs);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.endpoint-browser nav button small {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	grid-column: 2;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.http-method {
+	align-items: center;
+	border-radius: 0.3rem;
+	color: white;
+	display: inline-flex;
+	font-size: var(--text-2xs);
+	font-weight: 800;
+	justify-content: center;
+	padding: 0.18rem 0.3rem;
+}
+
+.http-method--get {
+	background: var(--blue);
+}
+
+.http-method--post {
+	background: var(--teal);
+}
+
+.http-method--put,
+.http-method--patch {
+	background: var(--amber);
+}
+
+.http-method--delete {
+	background: var(--danger);
+}
+
+.operation-panel {
+	min-width: 0;
+}
+
+.operation-panel > header {
+	gap: 1rem;
+}
+
+.operation-path {
+	align-items: center;
+	display: flex;
+	gap: 0.55rem;
+}
+
+.operation-path > code:last-child {
+	color: var(--ink);
+	font-size: var(--text-sm);
+	overflow-wrap: anywhere;
+}
+
+.operation-tag {
+	background: var(--surface-muted);
+	border-radius: 999px;
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+	padding: 0.3rem 0.55rem;
+}
+
+.operation-form {
+	display: grid;
+	gap: 0.9rem;
+	padding: 1.25rem;
+}
+
+.operation-form > label {
+	color: var(--ink-soft);
+	display: grid;
+	font-size: var(--text-xs);
+	gap: 0.35rem;
+}
+
+.operation-form label > span small {
+	margin-left: 0.35rem;
+}
+
+.operation-form textarea {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: var(--text-xs);
+}
+
+.mutation-acknowledgement {
+	align-items: center;
+	background: color-mix(in srgb, var(--amber) 9%, var(--surface));
+	border: 1px solid color-mix(in srgb, var(--amber) 28%, var(--line));
+	border-radius: 0.55rem;
+	display: flex !important;
+	padding: 0.75rem;
+}

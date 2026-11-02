@@ -1,0 +1,19 @@
+.studio-grid {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.studio-grid > .panel {
+	padding: 1.35rem;
+}
+
+.studio-actions > p {
+	font-size: var(--text-sm);
+}
+
+.button-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+}

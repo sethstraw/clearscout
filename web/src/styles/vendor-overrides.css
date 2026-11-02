@@ -1,0 +1,120 @@
+/* TailorCV's owned Markdown and editor wrappers outrank vendor package CSS. */
+
+.markdown-document .wmde-markdown h3 {
+	font-size: var(--text-base);
+	margin: 1.4rem 0 0.5rem;
+}
+
+.markdown-document .wmde-markdown h4,
+.markdown-document .wmde-markdown h5,
+.markdown-document .wmde-markdown h6 {
+	font-size: var(--text-sm);
+	margin: 1.2rem 0 0.4rem;
+}
+
+.markdown-document .wmde-markdown pre {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 0.65rem;
+	overflow-x: auto;
+	padding: 0.8rem 0.9rem;
+}
+
+/* Inline code carries its own background; inside a block that background is
+   painted twice and reads as a box within a box. */
+.markdown-document .wmde-markdown pre code {
+	background: none;
+	border: 0;
+	padding: 0;
+}
+
+.markdown-document .wmde-markdown blockquote {
+	border-left: 3px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+	color: var(--ink-soft);
+	margin: 1rem 0;
+	padding: 0.2rem 0 0.2rem 0.9rem;
+}
+
+.markdown-document .wmde-markdown hr {
+	border: 0;
+	border-top: 1px solid var(--line);
+	margin: 1.5rem 0;
+}
+
+.markdown-document .wmde-markdown a {
+	color: var(--accent-ink);
+	text-decoration: underline;
+}
+
+.markdown-document .wmde-markdown img {
+	border-radius: 0.5rem;
+	max-width: 100%;
+}
+
+.markdown-document .wmde-markdown ul,
+.markdown-document .wmde-markdown ol {
+	padding-left: 1.3rem;
+}
+
+/* GFM task lists render a checkbox inside the list item. */
+.markdown-document .wmde-markdown li input[type="checkbox"] {
+	margin-right: 0.4rem;
+}
+
+/* A wide table scrolls inside the document rather than widening the panel. */
+.markdown-document .wmde-markdown table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+.markdown-editor .w-md-editor {
+	border: 1px solid var(--line);
+	border-radius: 0.7rem;
+	box-shadow: none;
+}
+
+.markdown-document .wmde-markdown h1 {
+	font-size: var(--text-2xl);
+}
+
+.markdown-document .wmde-markdown h2 {
+	border-bottom: 1px solid var(--line);
+	margin-top: 2.2rem;
+	padding-bottom: 0.4rem;
+}
+
+.markdown-document .wmde-markdown p,
+.markdown-document .wmde-markdown li {
+	color: var(--ink);
+	font-size: var(--text-sm);
+}
+
+.markdown-document .wmde-markdown table {
+	border-collapse: collapse;
+	margin: 1rem 0;
+	min-width: 0;
+	width: 100%;
+}
+
+.markdown-document .wmde-markdown th {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	color: var(--ink);
+	font-size: var(--text-sm);
+	font-weight: 700;
+	padding: 0.6rem 0.8rem;
+	text-align: left;
+}
+
+.markdown-document .wmde-markdown td {
+	border: 1px solid var(--line);
+	font-size: var(--text-sm);
+	padding: 0.6rem 0.8rem;
+}
+
+.markdown-document .wmde-markdown code {
+	background: var(--surface-muted);
+	border-radius: 0.25rem;
+	padding: 0.1rem 0.25rem;
+}

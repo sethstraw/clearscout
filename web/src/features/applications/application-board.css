@@ -1,0 +1,107 @@
+.kanban {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(4, minmax(220px, 1fr));
+	overflow-x: auto;
+	padding-bottom: 1rem;
+}
+
+.application-sort {
+	align-self: start;
+	max-width: 100%;
+	width: fit-content;
+}
+
+.kanban-column {
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 0.8rem;
+	min-height: 460px;
+	padding: 0.7rem;
+}
+
+.kanban-column > header {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	padding: 0.4rem 0.25rem 0.9rem;
+}
+
+.kanban-column h2 {
+	font-size: var(--text-xs);
+	margin: 0;
+	text-transform: capitalize;
+}
+
+.kanban-column__count {
+	align-items: center;
+	background: var(--surface-strong);
+	border-radius: 50%;
+	color: var(--ink-soft);
+	display: flex;
+	font-size: var(--text-2xs);
+	height: 1.4rem;
+	justify-content: center;
+	width: 1.4rem;
+}
+
+.kanban-stack {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.application-card {
+	display: block;
+}
+
+.application-card > span {
+	color: var(--accent-ink);
+	display: block;
+	font-size: var(--text-2xs);
+	font-weight: 720;
+	margin-bottom: 0.35rem;
+}
+
+.application-card > strong {
+	display: block;
+	font-size: var(--text-sm);
+	line-height: 1.45;
+}
+
+.application-card > div {
+	display: flex;
+	gap: 0.8rem;
+	margin-top: 0.8rem;
+}
+
+.application-card small {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+}
+
+.application-files-link {
+	color: var(--accent-ink);
+	display: block;
+	font-size: var(--text-2xs);
+	font-weight: 700;
+	padding: 0.35rem 0.55rem 0;
+}
+
+.application-files > header label {
+	cursor: pointer;
+}
+
+.application-files .table-wrap {
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.application-files td {
+	vertical-align: top;
+}
+
+.application-files .path-value {
+	max-width: 220px;
+	overflow-wrap: anywhere;
+}

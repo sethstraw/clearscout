@@ -1,0 +1,82 @@
+.review-panel {
+	border-top: 1px solid var(--line);
+	padding: 1.2rem;
+}
+
+.review-panel > header {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+}
+
+.review-panel > header p {
+	font-size: var(--text-2xs);
+	margin: 0.2rem 0 0;
+}
+
+.review-panel > ol {
+	display: grid;
+	gap: 0.55rem;
+	list-style: none;
+	padding: 0;
+}
+
+.review-panel > ol > li {
+	align-items: start;
+	background: var(--surface-muted);
+	border: 1px solid var(--line);
+	border-radius: 0.6rem;
+	display: grid;
+	gap: 0.8rem;
+	grid-template-columns: 1fr minmax(230px, 0.6fr);
+	padding: 0.75rem;
+}
+
+.review-panel li > div:first-child {
+	display: grid;
+	gap: 0.25rem;
+}
+
+.review-panel li span,
+.review-panel li small,
+.review-panel li p {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+}
+
+.review-panel li strong {
+	font-size: var(--text-xs);
+}
+
+.review-panel li p {
+	margin: 0.25rem 0 0;
+}
+
+.review-decision {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45rem;
+	justify-content: end;
+}
+
+.review-decision button {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 0.4rem;
+	color: var(--ink);
+	cursor: pointer;
+	font-size: var(--text-2xs);
+	padding: 0.35rem 0.5rem;
+}
+
+.review-decision button:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
+}
+
+.review-decision input {
+	font-size: var(--text-2xs);
+	min-height: 2rem;
+	padding: 0.35rem 0.5rem;
+}

@@ -1,0 +1,85 @@
+.markdown-editor {
+	min-width: 0;
+}
+
+.editor-toolbar {
+	align-items: center;
+	background: var(--surface-muted);
+	border-bottom: 1px solid var(--line);
+	display: flex;
+	gap: 1rem;
+	justify-content: flex-end;
+	padding: 0.7rem 1rem;
+}
+
+.editor-toolbar span {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+}
+
+.editor-toolbar span:first-child {
+	margin-right: auto;
+}
+
+.citation-warning {
+	background: color-mix(in srgb, var(--amber) 10%, var(--surface));
+	border-bottom: 1px solid color-mix(in srgb, var(--amber) 35%, var(--line));
+	padding: 1rem 1.2rem;
+}
+
+.citation-warning strong {
+	color: var(--amber);
+	font-size: var(--text-sm);
+}
+
+.citation-warning li,
+.citation-warning p,
+.citation-warning label {
+	color: var(--ink-soft);
+	font-size: var(--text-2xs);
+}
+
+.citation-warning label {
+	display: grid;
+	gap: 0.35rem;
+}
+
+.version-history {
+	border-top: 1px solid var(--line);
+	padding: 1rem 1.2rem;
+}
+
+.version-history ul {
+	display: grid;
+	gap: 0.5rem;
+	list-style: none;
+	padding: 0;
+}
+
+.version-history li {
+	align-items: center;
+	background: var(--surface-muted);
+	border-radius: 0.55rem;
+	display: grid;
+	gap: 0.35rem;
+	grid-template-columns: 1fr auto;
+	padding: 0.65rem;
+}
+
+.version-history li > span,
+.version-history li > small {
+	font-size: var(--text-2xs);
+}
+
+.version-history li > small {
+	color: var(--ink-soft);
+	grid-column: 1;
+	overflow-wrap: anywhere;
+}
+
+.version-history li > div {
+	display: flex;
+	gap: 0.6rem;
+	grid-column: 2;
+	grid-row: 1 / span 2;
+}

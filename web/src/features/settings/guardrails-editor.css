@@ -1,0 +1,55 @@
+.guardrails-fields {
+	display: grid;
+	gap: 1.1rem 1.4rem;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	margin-bottom: 1.1rem;
+}
+
+.guardrails-field {
+	color: var(--ink);
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	min-width: 0;
+}
+
+.guardrails-field__label {
+	color: var(--ink);
+	font-size: var(--text-sm);
+	font-weight: 640;
+}
+
+.guardrails-field textarea,
+.guardrails-field input {
+	width: 100%;
+}
+
+.guardrails-field textarea {
+	min-height: 6.5rem;
+	resize: vertical;
+}
+
+.guardrails-field .field-note {
+	color: var(--ink-soft);
+	margin: 0;
+}
+
+.guardrails-field--full {
+	grid-column: 1 / -1;
+}
+
+.guardrails-toggles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem 1.6rem;
+	grid-column: 1 / -1;
+	margin-top: 0.15rem;
+}
+
+.guardrails-toggles label {
+	align-items: center;
+	color: var(--ink);
+	display: inline-flex;
+	font-size: var(--text-sm);
+	gap: 0.45rem;
+}
