@@ -1,0 +1,736 @@
+[project]
+name = "tailorcv"
+version = "0.1.0"
+description = "Local, evidence-grounded job search and resume tailoring from one master CV."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md", "THIRD_PARTY_LICENSES.txt"]
+authors = [{ name = "Seth A. Strawbridge, PharmD" }]
+keywords = [
+    "resume",
+    "cv",
+    "tailoring",
+    "job-search",
+    "job-tracker",
+    "local-first",
+    "llm",
+    "provenance",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    # Claim only what is exercised: Linux and macOS on 3.12. Windows and 3.13
+    # are untested.
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "alembic>=1.18.5,<2",
+    "anyio>=4,<5",
+    "babel>=2.18,<3",
+    "defusedxml>=0.7,<1",
+    "typer>=0.15",
+    "fastapi>=0.139.2,<1",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.7",
+    "sqlalchemy>=2.0.51,<2.1",
+    # Starlette is imported directly.
+    "starlette>=1.4,<2",
+    "uvicorn>=0.51,<1",
+    "anthropic>=0.69",
+    "openai>=1.99",
+    "genai-prices==0.1.9",
+    "trafilatura>=2.0",
+    "lxml>=6,<7",
+    "pypdfium2>=5.0",
+    "httpx>=0.28",
+    "keyring>=25.5",
+    "platformdirs>=4.3",
+    "playwright>=1.62,<2",
+    "starlette-admin>=1.0.1,<2",
+    "cleanco>=2.3,<3",
+    "protego>=0.7,<1",
+]
+
+# PEP 735 development dependencies, which are not an installable extra.
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "mypy>=1.14",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pip-audit==2.10.1",
+    "pip-licenses==5.5.5",
+    "pytest-xdist>=3.6",
+    "import-linter>=2.7",
+    "deptry>=0.25",
+    "libcst>=1.9",
+    "hypothesis>=6.167.1",
+    "geonamescache==3.0.2",
+    "complexipy==8.0.1",
+    "vulture==2.16",
+]
+
+[project.scripts]
+tailorcv = "tailorcv.bootstrap.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/sethstraw/tailorcv"
+Documentation = "https://github.com/sethstraw/tailorcv/blob/main/docs/user-guide.md"
+Source = "https://github.com/sethstraw/tailorcv"
+Issues = "https://github.com/sethstraw/tailorcv/issues"
+Changelog = "https://github.com/sethstraw/tailorcv/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tailorcv"]
+
+# Prompts ship with the wheel so an installed tool behaves like the repository.
+[tool.hatch.build.targets.wheel.force-include]
+"prompts" = "tailorcv/prompts"
+"src/tailorcv/infrastructure/persistence/migrations/script.py.mako" = "tailorcv/infrastructure/persistence/migrations/script.py.mako"
+"web/dist" = "tailorcv/web"
+
+# List sdist contents explicitly so evaluations ship without entering the wheel.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/prompts",
+    "/tests",
+    "/evals",
+    "/scripts",
+    "/pyproject.toml",
+    "/uv.lock",
+    "/README.md",
+    "/AGENTS.md",
+    "/ARCHITECTURE.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/CODE_OF_CONDUCT.md",
+    "/SECURITY.md",
+    "/SUPPORT.md",
+    "/LICENSE",
+    "/NOTICE",
+    "/THIRD_PARTY_NOTICES.md",
+    "/THIRD_PARTY_LICENSES.txt",
+    "/docs",
+    "/web",
+]
+exclude = [
+    "/web/node_modules",
+    "/web/coverage",
+]
+
+[tool.hatch.build.targets.sdist.force-include]
+"web/dist" = "web/dist"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["src/tailorcv/infrastructure/persistence/migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",      # pycodestyle and pyflakes
+    "I",                # import order
+    "N",                # naming
+    "UP",               # modern syntax for the declared floor
+    "B", "A", "C4",     # bugbear, builtin shadowing, comprehensions
+    "SIM", "RET", "ARG",# simplification, returns, unused arguments
+    "PTH",              # pathlib over os.path
+    "S",                # bandit: security lint
+    "D",                # docstrings
+    "BLE",              # broad except, which this codebase justifies case by case
+    "C90",              # cyclomatic complexity, bounded below
+    "PL",               # pylint: argument counts, branch counts, small correctness
+    "ERA",              # commented-out code
+    "TID",              # relative imports and banned import paths
+    "FURB",             # refurb: modernisation the UP rules do not cover
+    "RUF",              # ruff's own rules, including unused noqa
+    "ASYNC", "LOG", "G",# async misuse and logging call shape
+    # pytest style, named rule by rule: the PT family's own defaults are disputed
+    # upstream, PT011 would make error prose a contract everywhere, and PT018 is a
+    # per-assertion judgment because a tuple equality states one coherent outcome.
+    "PT006", "PT007", "PT012", "PT014", "PT015", "PT017", "PT022", "PT026",
+]
+# D203/D213 select conflicting docstring conventions.
+# UP046/UP047 require Python 3.12.
+# PLR2004 and PLC0415 allow fixture and deferred-import patterns.
+ignore = ["D203", "D213", "UP046", "UP047", "PLR2004", "PLC0415"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may go undocumented, use assert, and keep the arguments a double stands in for.
+# RUF043: a pytest.raises match is a regular expression here only by coincidence.
+"tests/*" = [
+    "D100", "D101", "D102", "D103", "D104", "D107",
+    "ARG001", "ARG002", "ARG005",
+    "S101", "S105", "S106",
+    "RUF043",
+    # An end-to-end test is a long script by nature; splitting one to satisfy a
+    # statement count would hide the sequence it exists to assert.
+    "PLR0915",
+]
+"scripts/*" = ["S101"]
+# The ambiguous characters are the data: this module normalises them, and these
+# tests assert that it does, so the literals have to stay as written.
+"src/tailorcv/application/tailoring/pipeline/importer.py" = ["RUF001"]
+"tests/loop/test_import.py" = ["RUF001"]
+"tests/loop/test_verify.py" = ["RUF001"]
+
+# Ceilings, not targets: each caps the worst case in `src/`, so nothing gets
+# worse while the numbers are ratcheted down.
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
+[tool.ruff.lint.pylint]
+max-args = 16
+max-positional-args = 14
+max-returns = 9
+max-branches = 20
+max-statements = 72
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# Import Linter checks direct imports at the package boundaries.
+[tool.importlinter]
+root_packages = ["tailorcv"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "domain does not import application, delivery, infrastructure or bootstrap"
+type = "forbidden"
+source_modules = ["tailorcv.domain"]
+forbidden_modules = [
+    "tailorcv.application",
+    "tailorcv.bootstrap",
+    "tailorcv.delivery",
+    "tailorcv.infrastructure",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "persistence does not import application code"
+type = "forbidden"
+source_modules = ["tailorcv.infrastructure.persistence"]
+forbidden_modules = ["tailorcv.application"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "application does not import delivery or bootstrap"
+type = "forbidden"
+source_modules = ["tailorcv.application"]
+forbidden_modules = [
+    "tailorcv.bootstrap",
+    "tailorcv.delivery",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "delivery imports bootstrap only to start processes and run setup"
+type = "forbidden"
+source_modules = ["tailorcv.delivery"]
+forbidden_modules = ["tailorcv.bootstrap"]
+# The CLI entry point, `setup`, and `serve`/`worker`/`start`/`stop` compose the app.
+ignore_imports = [
+    "tailorcv.delivery.cli.__main__ -> tailorcv.bootstrap.cli",
+    "tailorcv.delivery.cli.workspace -> tailorcv.bootstrap.setup",
+    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.api",
+    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.local_runtime",
+    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.logging",
+    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.worker",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "shared primitives import no other tailorcv layer"
+type = "forbidden"
+source_modules = [
+    "tailorcv.shared.costs",
+    "tailorcv.shared.errors",
+    "tailorcv.shared.layout",
+    "tailorcv.shared.models",
+    "tailorcv.shared.quantities",
+    "tailorcv.shared.results",
+    "tailorcv.shared.text",
+]
+forbidden_modules = [
+    "tailorcv.application",
+    "tailorcv.bootstrap",
+    "tailorcv.delivery",
+    "tailorcv.domain",
+    "tailorcv.infrastructure",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "tailoring stages import no service or persistence code"
+type = "forbidden"
+source_modules = ["tailorcv.application.tailoring.stages"]
+forbidden_modules = [
+    "tailorcv.application.discovery",
+    "tailorcv.application.documents",
+    "tailorcv.application.job_search",
+    "tailorcv.application.master_cv.artifacts",
+    "tailorcv.application.master_cv.commands",
+    "tailorcv.application.master_cv.intake",
+    "tailorcv.application.master_cv.queries",
+    "tailorcv.application.master_cv.service",
+    "tailorcv.application.portability",
+    "tailorcv.application.tasks",
+    "tailorcv.application.workspaces",
+    "tailorcv.infrastructure.persistence",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "delivery adapters do not import ORM models"
+type = "forbidden"
+source_modules = ["tailorcv.delivery.api", "tailorcv.delivery.cli"]
+forbidden_modules = [
+    "tailorcv.infrastructure.persistence.models",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "master CV imports no other capability except document evidence"
+type = "forbidden"
+source_modules = ["tailorcv.application.master_cv"]
+forbidden_modules = [
+    "tailorcv.application.discovery",
+    "tailorcv.application.documents",
+    "tailorcv.application.job_search",
+    "tailorcv.application.portability",
+    "tailorcv.application.tasks",
+]
+# EvidenceArtifactService is the one documents port; master CV stores and reads files with it.
+ignore_imports = [
+    "tailorcv.application.master_cv.artifacts -> tailorcv.application.documents.evidence_artifacts",
+    "tailorcv.application.master_cv.service -> tailorcv.application.documents.evidence_artifacts",
+]
+allow_indirect_imports = true
+
+# The three search and review tasks are priced and approved separately, so one
+# must not reach into another's service. Reading derived vocabulary rules, search
+# planning, and the parameter summary is shared and stays outside these rules.
+[[tool.importlinter.contracts]]
+name = "search vocabulary does not import the campaign or the review"
+type = "forbidden"
+source_modules = [
+    "tailorcv.application.discovery.search_proposal_inbox",
+    "tailorcv.application.discovery.search_vocabulary",
+]
+forbidden_modules = [
+    "tailorcv.application.discovery.guided_campaign",
+    "tailorcv.application.discovery.guided_campaign_admission",
+    "tailorcv.application.discovery.guided_campaign_ledger",
+    "tailorcv.application.discovery.guided_campaign_report",
+    "tailorcv.application.discovery.guided_campaign_request",
+    "tailorcv.application.discovery.guided_campaign_runner",
+    "tailorcv.application.discovery.relevance_review",
+    "tailorcv.application.discovery.relevance_review_preparation",
+    "tailorcv.application.discovery.relevance_review_queries",
+    "tailorcv.application.discovery.relevance_review_records",
+    "tailorcv.application.discovery.relevance_review_spans",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "relevance review does not import the campaign or the vocabulary"
+type = "forbidden"
+source_modules = [
+    "tailorcv.application.discovery.relevance_review",
+    "tailorcv.application.discovery.relevance_review_preparation",
+    "tailorcv.application.discovery.relevance_review_queries",
+    "tailorcv.application.discovery.relevance_review_records",
+    "tailorcv.application.discovery.relevance_review_spans",
+]
+forbidden_modules = [
+    "tailorcv.application.discovery.guided_campaign",
+    "tailorcv.application.discovery.guided_campaign_admission",
+    "tailorcv.application.discovery.guided_campaign_ledger",
+    "tailorcv.application.discovery.guided_campaign_report",
+    "tailorcv.application.discovery.guided_campaign_request",
+    "tailorcv.application.discovery.guided_campaign_runner",
+    "tailorcv.application.discovery.search_proposal_inbox",
+    "tailorcv.application.discovery.search_vocabulary",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "guided campaign does not import the vocabulary or the review"
+type = "forbidden"
+source_modules = [
+    "tailorcv.application.discovery.guided_campaign",
+    "tailorcv.application.discovery.guided_campaign_admission",
+    "tailorcv.application.discovery.guided_campaign_ledger",
+    "tailorcv.application.discovery.guided_campaign_report",
+    "tailorcv.application.discovery.guided_campaign_request",
+    "tailorcv.application.discovery.guided_campaign_runner",
+]
+forbidden_modules = [
+    "tailorcv.application.discovery.relevance_review",
+    "tailorcv.application.discovery.relevance_review_preparation",
+    "tailorcv.application.discovery.relevance_review_queries",
+    "tailorcv.application.discovery.relevance_review_records",
+    "tailorcv.application.discovery.relevance_review_spans",
+    "tailorcv.application.discovery.search_proposal_inbox",
+    "tailorcv.application.discovery.search_vocabulary",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "infrastructure does not import delivery or bootstrap"
+type = "forbidden"
+source_modules = ["tailorcv.infrastructure"]
+forbidden_modules = ["tailorcv.bootstrap", "tailorcv.delivery"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "web fetch does not import persistence"
+type = "forbidden"
+source_modules = ["tailorcv.infrastructure.web_fetch"]
+forbidden_modules = ["tailorcv.infrastructure.persistence"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "providers do not import persistence"
+type = "forbidden"
+source_modules = ["tailorcv.infrastructure.providers"]
+forbidden_modules = ["tailorcv.infrastructure.persistence"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "pure evaluation modules import no SDK, database or infrastructure"
+type = "forbidden"
+source_modules = [
+    "tailorcv.application.job_search.fit_reports",
+    "tailorcv.application.tailoring.workflows.evaluation_commit",
+    "tailorcv.application.tailoring.workflows.evaluation_evidence",
+    "tailorcv.application.tailoring.workflows.evaluation_policy",
+    "tailorcv.application.tailoring.workflows.evaluation_report",
+]
+forbidden_modules = [
+    "anthropic",
+    "fastapi",
+    "httpx",
+    "keyring",
+    "openai",
+    "requests",
+    "sqlalchemy",
+    "tailorcv.infrastructure",
+]
+allow_indirect_imports = true
+
+# `tailorcv.domain.identity` owns URL parsing and folding for the application.
+[[tool.importlinter.contracts]]
+name = "application parses URLs only through domain identity"
+type = "forbidden"
+source_modules = ["tailorcv.application"]
+forbidden_modules = ["urllib"]
+ignore_imports = [
+    # Posting identity derives requisition keys and locale variants from the URL.
+    "tailorcv.application.discovery.posting_identity -> urllib",
+    # Tenant slugs come percent-encoded from the board adapters' URL patterns.
+    "tailorcv.application.discovery.board_slugs -> urllib",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "fit package imports flow from the reader down to the lexicon"
+type = "layers"
+containers = ["tailorcv.application.tailoring.fit"]
+layers = ["reader", "facts | preferences | gates", "structure", "lexicon"]
+
+[[tool.importlinter.contracts]]
+name = "fit structure package imports flow from blocks down to reading and quotes"
+type = "layers"
+containers = ["tailorcv.application.tailoring.fit.structure"]
+layers = [
+    "blocks | requirements",
+    "run_on | units",
+    "boilerplate | headings",
+    "quotes | reading | waivers",
+]
+
+[[tool.importlinter.contracts]]
+name = "fit preferences imports flow from each fit reading down to clauses"
+type = "layers"
+containers = ["tailorcv.application.tailoring.fit.preferences"]
+layers = ["place | travel | time_zone | level | pay", "pay_lines", "pay_periods", "clauses"]
+
+[[tool.importlinter.contracts]]
+name = "fit facts imports flow from the readers down to arrangement vocabulary"
+type = "layers"
+containers = ["tailorcv.application.tailoring.fit.facts"]
+layers = [
+    "disagreements | arrangement | education | residence | roles",
+    "arrangement_lines | seniority",
+    "arrangement_vocabulary",
+]
+
+[[tool.importlinter.contracts]]
+name = "verify package imports flow from the documents down to the lexicon"
+type = "layers"
+containers = ["tailorcv.application.tailoring.stages.verify"]
+layers = [
+    "resume | letter",
+    "report",
+    "critic | checks | guardrail_checks",
+    "citations | verdicts",
+    "rubric",
+    "lexicon",
+]
+
+[[tool.importlinter.contracts]]
+name = "careers package imports flow from classification down to the parser"
+type = "layers"
+containers = ["tailorcv.infrastructure.web_fetch.ingest.careers"]
+layers = ["classification", "parser"]
+
+[[tool.importlinter.contracts]]
+name = "url package imports flow from reading down to transport and results"
+type = "layers"
+containers = ["tailorcv.infrastructure.web_fetch.ingest.url"]
+layers = ["reading", "checks", "platform_readers", "addresses | feeds", "page_text", "results | transport"]
+
+[[tool.importlinter.contracts]]
+name = "board reads package imports flow from listed pages down to results"
+type = "layers"
+containers = ["tailorcv.infrastructure.web_fetch.board_reads"]
+layers = [
+    "listed_pages | publisher_search",
+    "scope | sitemaps",
+    "continuations | page_fingerprints | partitions",
+    "payloads | results",
+]
+# Function-local imports whose chains run through posting_identity and platforms back into this facade.
+ignore_imports = [
+    "tailorcv.application.discovery.source_reading -> tailorcv.application.discovery.posting_identity",
+    "tailorcv.infrastructure.web_fetch.board_reads.scope -> tailorcv.infrastructure.web_fetch.boards",
+    "tailorcv.infrastructure.web_fetch.board_reads.scope -> tailorcv.infrastructure.web_fetch.platforms",
+]
+
+[[tool.importlinter.contracts]]
+name = "board adapters package imports flow from the fetcher down to read scope"
+type = "layers"
+containers = ["tailorcv.infrastructure.web_fetch.board_adapters"]
+layers = [
+    "fetcher",
+    "continuation_merge | detail_reads",
+    "identify | transport",
+    "read_scope",
+]
+
+[[tool.importlinter.contracts]]
+name = "job search models import flow from the pending queue down to vocabulary"
+type = "layers"
+containers = ["tailorcv.application.job_search.models"]
+layers = [
+    "pending",
+    "closures | relevance_reviews | workspace | sources | fit_reports | posting_diffs",
+    "vocabulary | posting_facts | jobs | proposals | screened_out | dispositions | costs",
+]
+
+[[tool.importlinter.contracts]]
+name = "screening package imports flow from the screen down to shared findings"
+type = "layers"
+containers = ["tailorcv.application.discovery.screening"]
+layers = [
+    "screen | holdouts",
+    "titles | location | arrangement",
+    "employer | employment | compensation | bulk | place_signals",
+    "findings | arrangement_terms",
+]
+
+[[tool.importlinter.contracts]]
+name = "content resolution imports flow from the service down to read results"
+type = "layers"
+containers = ["tailorcv.application.discovery.content_resolution"]
+layers = ["service", "store | reads", "retained", "targets | screen | current", "results"]
+# The facade re-exports these layers; cross-capability chains re-enter through it.
+ignore_imports = [
+    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.current",
+    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.results",
+    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.screen",
+    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.service",
+    "tailorcv.application.discovery.content_resolution -> tailorcv.application.discovery.content_resolution.targets",
+]
+
+[[tool.importlinter.contracts]]
+name = "scan queries package imports flow from the service down to wording"
+type = "layers"
+containers = ["tailorcv.application.discovery.scan_queries"]
+layers = [
+    "service",
+    "queue_page",
+    "pending_rows | history | outcomes",
+    "queue",
+    "projection",
+    "wording | workspace | board_holders",
+]
+# The facade re-exports these layers; cross-capability chains re-enter through it.
+ignore_imports = [
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.board_holders",
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.history",
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.outcomes",
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.projection",
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.queue",
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.service",
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.wording",
+    "tailorcv.application.discovery.scan_queries -> tailorcv.application.discovery.scan_queries.workspace",
+]
+
+[[tool.importlinter.contracts]]
+name = "scan staging imports flow from the service down to matching and reasons"
+type = "layers"
+containers = ["tailorcv.application.discovery.scan_staging"]
+layers = [
+    "service",
+    "rows | checks",
+    "capture | found | absence",
+    "families | publisher_facts",
+    "matching | reasons",
+]
+# The facade re-exports these layers; cross-capability chains re-enter through it.
+ignore_imports = [
+    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.absence",
+    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.found",
+    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.publisher_facts",
+    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.reasons",
+    "tailorcv.application.discovery.scan_staging -> tailorcv.application.discovery.scan_staging.service",
+]
+
+[[tool.importlinter.contracts]]
+name = "scan sweep package imports flow from the sweep down to board models"
+type = "layers"
+containers = ["tailorcv.application.discovery.scan_sweep"]
+layers = [
+    "sweep",
+    "recording | rescreen",
+    "content_evidence | listing_audit | listing_screen | outcome | workday",
+    "models",
+]
+# The facade re-exports these layers; cross-capability chains re-enter through it.
+ignore_imports = [
+    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.models",
+    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.recording",
+    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.rescreen",
+    "tailorcv.application.discovery.scan_sweep -> tailorcv.application.discovery.scan_sweep.sweep",
+]
+
+[[tool.importlinter.contracts]]
+name = "source continuation imports flow from the handler down to limits"
+type = "layers"
+containers = ["tailorcv.application.discovery.source_continuation"]
+layers = [
+    "handler",
+    "commands | coverage",
+    "publisher",
+    "frontier_carry | frontier_recording",
+    "alignerr | frontier_refresh | publisher_targets | workday",
+    "chunk | detail_checkpoints | phenom | rescreen | targets",
+    "family | limits",
+]
+# The facade re-exports these layers; cross-capability chains re-enter through it.
+ignore_imports = [
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.commands",
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.coverage",
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.family",
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.handler",
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.limits",
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.publisher",
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.rescreen",
+    "tailorcv.application.discovery.source_continuation -> tailorcv.application.discovery.source_continuation.targets",
+]
+
+[tool.deptry]
+# DEP002 audits shipped dependencies.
+known_first_party = ["tailorcv"]
+
+[tool.deptry.per_rule_ignores]
+# `alembic` and `uvicorn` are invoked as programs.
+DEP002 = ["alembic", "uvicorn"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests", "evals"]
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+# Pyright uses the same interpreter and import roots as the supported
+# development setup.
+[tool.pyright]
+include = ["src", "tests", "scripts", "evals"]
+exclude = [".venv", "web", "build", "dist", "**/__pycache__", "**/node_modules", "**/.*"]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+extraPaths = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["trafilatura.*", "pypdfium2.*", "keyring.*", "defusedxml.*", "cleanco.*"]
+ignore_missing_imports = true
+
+# Tests are type-checked, but pytest fixtures arrive untyped, so a test function
+# is not required to annotate its own signature. Everything else stays strict.
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+
+# Keep pytest focused on the unit suite; evaluations run separately.
+[tool.pytest.ini_options]
+testpaths = ["tests", ".agents/hooks/tests"]
+# Tests use isolated temporary directories and up to eight workers by default.
+# worksteal rebalances uneven tests and reuses fixtures better than the default load.
+addopts = "-q -n auto --maxprocesses=8 --dist worksteal -m 'not recorded and not transport'"
+pythonpath = ["src"]
+# Set individually rather than through `strict`, whose umbrella also enables whatever
+# strictness a future pytest adds, and the dependency floor here is a range not a pin.
+strict_config = true
+strict_markers = true
+strict_parametrization_ids = true
+strict_xfail = true
+markers = [
+    "recorded: replay provider SDK traffic through an explicit cassette run",
+    "transport: exercise official provider SDKs over a controlled HTTP transport",
+]
+filterwarnings = [
+    # The suite raises none, so an escaping warning is a regression, not a backlog.
+    "error",
+    # Match only the known dependency warning.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.:starlette.exceptions.StarletteDeprecationWarning",
+]
+
+# `evals` is deliberately absent: coverage measures the shipped program under the
+# unit suite, and the unit suite does not run the evaluations.
+[tool.coverage.run]
+source = ["tailorcv"]
+omit = [
+    # Generated Alembic runtime and DDL are verified through upgrade/downgrade
+    # behavior; line coverage of generated operations is not an application test.
+    "*/tailorcv/infrastructure/persistence/migrations/env.py",
+    "*/tailorcv/infrastructure/persistence/migrations/versions/*",
+]
+# Branch coverage: a line executed once is not a line whose conditions were both taken.
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+# Statements and branches together, ratcheted up and never down.
+fail_under = 90

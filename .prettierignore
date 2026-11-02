@@ -1,0 +1,28 @@
+# Read together with .gitignore, which the format scripts pass first. Anything
+# git ignores is already out of scope, so this file only needs the tracked files
+# that Prettier must still leave alone.
+
+# Generated, and diffed by the gate. Formatting these here would only be undone
+# by the next generator run, and the diff would fail in between.
+web/dist/
+web/openapi.json
+web/src/api/schema.d.ts
+web/package-lock.json
+THIRD_PARTY_NOTICES.md
+src/tailorcv/domain/gazetteer.json
+
+# Prompt text. prompts.suite_fingerprint hashes these bytes, so reformatting one
+# changes the fingerprint, invalidates every cached run, and moves every eval
+# baseline.
+prompts/
+
+# Recorded inputs and expected outputs. Their exact bytes are the fixture.
+evals/baselines/
+evals/cvs/
+evals/fixtures/
+evals/golden/receipts/
+tests/cassettes/
+tests/fixtures/
+
+# Local agent memory, hidden from git by .git/info/exclude rather than .gitignore.
+.claude/agent-memory-local/

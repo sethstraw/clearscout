@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a broadly useful improvement or configuration option.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What is difficult or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Show the ideal command or configuration when useful.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Scope check
+      description: tailorcv writes a reviewable local package and keeps a local record of your own search. Rendering and submitting an application are deliberately out of scope.
+      options:
+        - label: This does not ask tailorcv to render a document or submit an application.
+          required: true

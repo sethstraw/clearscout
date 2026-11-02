@@ -1,0 +1,49 @@
+name: Bug report
+description: Report reproducible behavior that differs from what tailorcv documents.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Never attach a real CV, job application, or personal contact information. Use synthetic content.
+  - type: input
+    id: version
+    attributes:
+      label: tailorcv version
+      description: Output from `tailorcv --version`.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and provider
+      description: Operating system, Python version, and which provider was in use. `tailorcv doctor` reports all three and never prints a key.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the command and the synthetic CV or posting needed to reproduce the problem.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed real names, contact details, credentials, and CV content.
+          required: true

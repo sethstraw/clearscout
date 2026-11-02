@@ -1,0 +1,2 @@
+PATH_add .venv/bin
+PATH_add scripts

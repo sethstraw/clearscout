@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Refuse a commit the fast half of the gate rejects. Enable with:
+#
+#   git config core.hooksPath .githooks
+#
+# Bypass with `git commit --no-verify`.
+
+set -uo pipefail
+
+# `core.hooksPath` points at one checkout, so this script's own location names
+# the wrong tree when a worktree commits; the committing tree is checked instead.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+MAINTAINER_EMAIL="sethstraw@users.noreply.github.com"
+
+check_maintainer_identity() {
+  local kind="$1"
+  local identity="$2"
+  local name="${identity%% <*}"
+  local email="${identity#*<}"
+  email="${email%%>*}"
+
+  case "$name" in
+    "Seth A. Strawbridge" | "Seth Strawbridge" | "sethstraw")
+      if [[ "$email" != "$MAINTAINER_EMAIL" ]]; then
+        printf '\nCommit refused. The %s identity for %s must use %s.\n' \
+          "$kind" "$name" "$MAINTAINER_EMAIL" >&2
+        return 1
+      fi
+      ;;
+  esac
+}
+
+check_maintainer_identity "author" "$(git var GIT_AUTHOR_IDENT)" || exit 1
+check_maintainer_identity "committer" "$(git var GIT_COMMITTER_IDENT)" || exit 1
+
+if ! scripts/gate.sh fast; then
+  printf '\nCommit refused. Fix the above, or commit with --no-verify.\n' >&2
+  exit 1
+fi

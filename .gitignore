@@ -1,0 +1,93 @@
+# Build and tooling artifacts.
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.complexipy_cache/
+# import-linter writes its own .gitignore inside this directory. Listed here too,
+# because a tool ignoring itself is not something to depend on.
+.import_linter_cache/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
+web/node_modules/
+web/coverage/
+# An npm or vitest command run from the repository root instead of web/ writes
+# its cache here rather than under web/.
+/node_modules/
+/.vite/
+# CI builds the production SPA into the release distributions.
+/web/dist/
+
+# Operating system and editor cruft.
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Credentials. A key belongs in the system keyring.
+.env
+.env.*
+*.pem
+*.key
+
+# Everything a clone-based run writes: database, artifacts, workspaces,
+# backups, exports, uploads, and logs.
+/local-data/
+.tailorcv-runtime/
+# A CLI run writes its review packages under settings.output_dir, which resolves
+# against the settings file's directory rather than through RuntimeStorage.
+/applications/
+/tailorcv-development.sqlite3
+
+# The user's own settings and career record are never eligible for tracking.
+# The two settings names match at any depth; the rest only at the root.
+tailorcv.toml
+guardrails.toml
+/CV_Master.md
+/Import_Report.md
+/*.sqlite
+/*.sqlite3
+/*.db
+/*.db-wal
+/*.db-shm
+/*.pdf
+/*.docx
+/*.doc
+/*.rtf
+/*.pages
+/*.png
+/*.jpg
+/*.jpeg
+
+# Per-machine agent overlay. The shared agent setup is tracked.
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/rules/local-*.md
+.claude/state/
+.claude/agent-memory/
+.claude/commands/
+.claude/worktrees/
+.codex/config.toml
+
+# Serena memories are generated from local context, so they are not published.
+# project.yml is regenerable with `serena project create`.
+.serena/
+.playwright-mcp/
+.playwright-cli/
+
+# Evaluation harness. A golden set built from real postings and run logs holding
+# model output stay out; the two synthetic golden sets are published so their
+# scores can be reproduced, and the public-data audit scans them.
+/evals/golden/*.jsonl
+!/evals/golden/match.jsonl
+!/evals/golden/relevance_review.jsonl
+/evals/inspect/logs/
+/reports/eval/
+
+.envrc

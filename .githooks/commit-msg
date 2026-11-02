@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Refuse a commit message carrying AI attribution or non-ASCII text.
+
+Usage: commit-msg MESSAGE_FILE
+
+A git commit-msg hook, installed as .githooks/commit-msg, so it covers every
+client that commits.
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+ATTRIBUTION = re.compile(
+    r"^\s*co-authored-by:.*\b(claude|codex|copilot|chatgpt|gpt|gemini|cursor|anthropic|openai)\b"
+    r"|noreply@anthropic\.com|@openai\.com"
+    r"|generated (with|by) \[?(claude|codex|chatgpt|copilot)"
+    r"|^\s*claude-session:"
+    r"|\U0001F916",
+    re.IGNORECASE,
+)
+
+# `git commit -v` appends the diff below this line, and a diff may hold anything.
+SCISSORS = "# ------------------------ >8 ------------------------"
+
+
+def problems(text: str) -> list[str]:
+    found: list[str] = []
+    for number, line in enumerate(text.splitlines(), 1):
+        if line.startswith(SCISSORS):
+            break
+        if line.startswith("#"):
+            continue
+        if ATTRIBUTION.search(line):
+            found.append(f"line {number}: AI attribution: {line.strip()}")
+        elif any(ord(ch) > 127 for ch in line):
+            found.append(f"line {number}: non-ASCII character: {line.strip()}")
+    return found
+
+
+def main() -> int:  # noqa: D103
+    if len(sys.argv) != 2:
+        print(__doc__.strip().splitlines()[2], file=sys.stderr)
+        return 64
+    found = problems(Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace"))
+    if not found:
+        return 0
+    print("Commit refused: the message must be ASCII and carry no AI attribution.", file=sys.stderr)
+    for item in found:
+        print(f"  {item}", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

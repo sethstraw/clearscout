@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Nothing in this workflow needs to write anything.
+permissions:
+  contents: read
+
+env:
+  # Refuse to install a package matching a known malware advisory, before any
+  # of its code is allowed to run.
+  UV_MALWARE_CHECK: "1"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --prefix web
+      - run: npm --prefix web run build
+      - run: uv sync --locked --all-groups
+      - run: bash scripts/gate.sh py
+      - run: bash scripts/gate.sh generated
+      - run: bash scripts/gate.sh security
+
+  floor:
+    name: Test suite on the declared minimum Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --prefix web
+      - run: npm --prefix web run build
+
+      # Run the declared minimum Python version explicitly.
+      - run: uv sync --locked --all-groups --python 3.12
+      - run: uv run --python 3.12 mypy
+      - run: uv run --python 3.12 pytest
+        env:
+          HYPOTHESIS_PROFILE: ci
+
+  package:
+    name: Build and smoke-test the distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci --prefix web
+      - run: bash scripts/gate.sh package
+
+  install:
+    # The README tells a reader to run `uv tool install`, which resolves and
+    # isolates differently from pip, so the documented command is the one tested,
+    # on every operating system the package claims.
+    name: Install the documented way on every claimed platform
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --prefix web
+      - run: npm --prefix web run build
+      - run: uv build --wheel
+
+      - name: Install the wheel the way the README says to
+        run: uv tool install ./dist/*.whl
+
+      - name: Exercise installed first use outside the checkout
+        working-directory: ${{ runner.temp }}
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          tailorcv --version
+          tailorcv --help
+          runtime_dir="$(mktemp -d)"
+          cd "$runtime_dir"
+          tailorcv template CV_Master.md
+          test -s CV_Master.md
+          "$(uv tool dir)/tailorcv/bin/python" -I "$GITHUB_WORKSPACE/scripts/smoke_installed_frontend.py"
+
+  workflows:
+    name: Audit the workflows themselves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - run: bash scripts/gate.sh workflows
