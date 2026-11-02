@@ -1,0 +1,155 @@
+name = "poor_fit"
+proves = """
+A posting this record does not answer. Screening exists so that finding this out
+costs two extraction-tier calls rather than a drafted resume, and the thing that
+must not happen is a clean-looking screen: every requirement a gap, a blocking
+gate nothing answers, and none of it quietly softened into a weak match on the
+way to the report.
+
+Screen mode, because that is what the program does with a posting like this and
+what a person would actually run.
+"""
+mode = "screen"
+
+posting = """
+Clinical Pharmacist, Ambulatory Care, Ridgeline Health Network
+
+Ridgeline Health Network operates fourteen ambulatory clinics. We are hiring a
+clinical pharmacist for our chronic disease management service.
+
+Responsibilities:
+- Provide comprehensive medication management under a collaborative practice
+  agreement
+- Run anticoagulation and diabetes clinics alongside the primary care team
+- Precept pharmacy residents and fourth-year students
+
+Requirements:
+- Doctor of Pharmacy degree from an accredited program
+- Active pharmacist licensure in this state
+- PGY1 residency or three years of ambulatory practice
+- Board certification in ambulatory care pharmacy, or eligibility within a year
+
+This position is on site in Ridgeline. Employment is contingent on licensure
+verification before the start date.
+"""
+
+[evidence]
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+
+[responses.jobspec]
+title = "Clinical Pharmacist, Ambulatory Care"
+company = "Ridgeline Health Network"
+seniority = "mid"
+location = "Ridgeline, on site"
+keywords = ["medication management", "anticoagulation", "ambulatory care", "PharmD"]
+
+[[responses.jobspec.requirements]]
+text = "Doctor of Pharmacy degree from an accredited program"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Active pharmacist licensure in this state"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "PGY1 residency or three years of ambulatory practice"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Board certification in ambulatory care pharmacy"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Precept pharmacy residents and students"
+importance = "responsibility"
+
+[[responses.jobspec.hard_gates]]
+kind = "degree"
+text = "Doctor of Pharmacy degree from an accredited program"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "credential"
+text = "Active pharmacist licensure in this state"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "location"
+text = "This position is on site in Ridgeline"
+blocking = true
+
+[[responses.match]]
+requirement = "Doctor of Pharmacy degree from an accredited program"
+classification = "GAP"
+strength = "none"
+note = "The record holds a computer science degree."
+
+[[responses.match]]
+requirement = "Active pharmacist licensure in this state"
+classification = "GAP"
+strength = "none"
+note = "No licensure of any kind is in the record."
+
+[[responses.match]]
+requirement = "PGY1 residency or three years of ambulatory practice"
+classification = "GAP"
+strength = "none"
+note = "No clinical practice is in the record."
+
+[[responses.match]]
+requirement = "Board certification in ambulatory care pharmacy"
+classification = "GAP"
+strength = "none"
+note = "No board certification is in the record."
+
+# Deliberately soft: a model reaching for something to say offers adjacent work
+# on clinical data as though it answered a teaching responsibility. Matching
+# accepts it, and this is what selection weight it is worth.
+[[responses.match]]
+requirement = "Precept pharmacy residents and students"
+classification = "TAILORING_ONLY"
+strength = "weak"
+evidence = ["context_adventure"]
+note = "Worked with clinicians on definitions. This is not preceptorship."
+
+[expect]
+requirements = [
+    "Doctor of Pharmacy degree from an accredited program",
+    "Active pharmacist licensure in this state",
+    "PGY1 residency or three years of ambulatory practice",
+    "Board certification in ambulatory care pharmacy",
+    "Precept pharmacy residents and students",
+]
+must_have = [
+    "Doctor of Pharmacy degree from an accredited program",
+    "Active pharmacist licensure in this state",
+    "PGY1 residency or three years of ambulatory practice",
+]
+hard_gates = [
+    "Doctor of Pharmacy degree from an accredited program",
+    "Active pharmacist licensure in this state",
+    "This position is on site in Ridgeline",
+]
+blocking_gates = [
+    "Doctor of Pharmacy degree from an accredited program",
+    "Active pharmacist licensure in this state",
+    "This position is on site in Ridgeline",
+]
+gaps = [
+    "Doctor of Pharmacy degree from an accredited program",
+    "Active pharmacist licensure in this state",
+    "PGY1 residency or three years of ambulatory practice",
+    "Board certification in ambulatory care pharmacy",
+]
+
+[expect.classifications]
+"Doctor of Pharmacy degree from an accredited program" = "GAP"
+"Active pharmacist licensure in this state" = "GAP"
+"Precept pharmacy residents and students" = "TAILORING_ONLY"
+
+[expect.measured]
+model_calls = 2
+# The model called r04 preferred, but the posting lists it under "Requirements".
+# The deterministic reading disagrees rather than deferring; a person settles it.
+model_rule_disagreements = 1

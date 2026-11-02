@@ -1,0 +1,71 @@
+name = "derived_ambiguous_family"
+proves = """
+A negative control. This posting is about a pipeline, a product, delivery, and
+stakeholders, and none of that places it. The reading must answer "not stated"
+rather than name whichever family scored a point higher, because a coin toss
+presented as a finding is worse than no finding.
+
+Two bars produce that answer and both are needed: a minimum, so one shared
+phrase is not a classification, and a margin, so a text the vocabulary reads two
+ways is reported as reading two ways.
+"""
+mode = "screen"
+
+posting = """
+Pipeline Manager, Trey Regional
+
+Trey Regional is looking for a pipeline manager to own delivery of our product
+across the region. You will work with a wide range of stakeholders and keep
+things moving.
+
+What you will do:
+- Manage the pipeline and keep every stakeholder informed of where it stands
+- Drive the product forward with the team and the partners around it
+- Report on progress to leadership each month
+- Improve the process where the process is the thing slowing us down
+
+Requirements:
+- Strong written and spoken communication
+- Comfort with ambiguity and shifting priorities
+- Willingness to learn our tools
+"""
+
+[responses.jobspec]
+title = "Pipeline Manager"
+company = "Trey Regional"
+seniority = "mid"
+location = "Regional"
+keywords = ["pipeline", "stakeholders", "delivery"]
+
+[[responses.jobspec.requirements]]
+text = "Strong written and spoken communication"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Comfort with ambiguity and shifting priorities"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Strong written and spoken communication"
+classification = "TRANSFERABLE"
+strength = "weak"
+note = "Nothing in the record is about communication as such."
+
+[[responses.match]]
+requirement = "Comfort with ambiguity and shifting priorities"
+classification = "TAILORING_ONLY"
+strength = "weak"
+note = "A claim any record could make, which is why it is worth nothing."
+
+[expect.derived]
+role_family = "not stated"
+specialty = "not stated"
+seniority = "not stated"
+orientation = "not stated"
+years = "not stated"
+education = "not stated"
+location = "not stated"
+authorization = "not stated"
+
+[expect.measured]
+model_calls = 2

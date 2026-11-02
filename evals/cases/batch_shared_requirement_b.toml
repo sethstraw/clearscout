@@ -1,0 +1,67 @@
+name = "batch_shared_requirement_b"
+proves = """
+The second posting of the pair in `batch_shared_requirement_a`.
+
+A separate case rather than a second posting inside one file, because that is
+what a batch is: postings screened on their own and compared afterwards. This
+one has its own posting, its own scripted extraction, its own scripted match,
+and its own marker phrase, and the comparison is scored on the case that names
+it.
+
+It asks for the same first thing as the other posting, in wording that shares
+one word with it, and for a second thing the other does not mention at all. The
+second is what shows the comparison groups a requirement rather than grouping a
+batch.
+"""
+mode = "screen"
+
+posting = """
+Streaming Engineer, Kestrel Meadow Logistics
+
+Kestrel Meadow Logistics runs nightly consolidation for its regional depots and
+is moving the pipeline off a scheduler nobody wants to maintain.
+
+Requirements:
+- Hands-on with Kubernetes clusters
+- Airflow scheduling for nightly loads
+
+Hybrid, two days per week in the office.
+Benefits and legal:
+- We offer paid time off, a 401(k) with matching, and a home office allowance.
+- Applicants will receive consideration without regard to any protected status.
+- This posting is not an offer of employment and the range is not a commitment.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Streaming Engineer"
+company = "Kestrel Meadow Logistics"
+location = "Hybrid"
+keywords = ["Kubernetes", "Airflow"]
+
+[[responses.jobspec.requirements]]
+text = "Hands-on with Kubernetes clusters"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Airflow scheduling for nightly loads"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Hands-on with Kubernetes clusters"
+classification = "GAP"
+note = "Nothing in the record mentions it."
+
+[[responses.match]]
+requirement = "Airflow scheduling for nightly loads"
+classification = "GAP"
+note = "The record describes Kafka rather than Airflow."
+
+[expect]
+gaps = ["Hands-on with Kubernetes clusters", "Airflow scheduling for nightly loads"]
+batch_marker = "Kestrel Meadow Logistics"
+
+[expect.measured]
+model_calls = 2

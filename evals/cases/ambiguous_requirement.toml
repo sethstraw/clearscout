@@ -1,0 +1,164 @@
+name = "ambiguous_requirement"
+proves = """
+A posting written in phrases that do not say what they want. "Modern data stack",
+"strong communication", "self-starter", and "experience with large-scale systems"
+can each be read as answered or unanswered, and forcing them either way is a
+lie in one direction or a lost opportunity in the other.
+
+What the program must do is classify them with a note that says which reading was
+taken, and carry that note into the report where a person can disagree with it.
+The failure this rules out is the one that is invisible: an ambiguous
+requirement recorded as DIRECT with no explanation, which reads in the report
+exactly like a requirement the record genuinely answers.
+
+Screen mode. Deciding whether these are answered is what screening is for, and
+it happens before anything is drafted.
+"""
+mode = "screen"
+
+posting = """
+Data Engineer, Modern Stack, Blue Yonder Airlines Cargo
+
+Blue Yonder Airlines Cargo is modernizing how we move freight data. We want a
+data engineer who is comfortable with ambiguity and can move fast.
+
+What we are looking for:
+- Experience with the modern data stack
+- Comfortable with large-scale systems
+- Strong communication skills and stakeholder management
+- A self-starter who can operate without close supervision
+- Solid SQL
+
+Nice to have: exposure to streaming, familiarity with infrastructure as code.
+
+Hybrid, two days a week in our cargo operations building.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+context_fabrikam = "Worked on platform architecture within a team of six"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+skills_governance = "dimensional modeling, schema registry design"
+
+[responses.jobspec]
+title = "Data Engineer, Modern Stack"
+company = "Blue Yonder Airlines Cargo"
+seniority = "mid"
+location = "Hybrid, two days on site"
+keywords = ["SQL", "streaming", "infrastructure as code", "data stack"]
+
+[[responses.jobspec.requirements]]
+text = "Experience with the modern data stack"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Comfortable with large-scale systems"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Strong communication skills and stakeholder management"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "A self-starter who can operate without close supervision"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Solid SQL"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Exposure to streaming"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Familiarity with infrastructure as code"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "location"
+text = "Hybrid, two days a week in our cargo operations building"
+blocking = true
+
+# "Modern data stack" names no tool. Answered against what the record actually
+# holds, with the reading stated.
+[[responses.match]]
+requirement = "Experience with the modern data stack"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["skills_platform", "skills_governance"]
+note = "Read as warehouse modeling, streaming ingestion, and IaC. The posting names no specific tool."
+
+# "Large-scale" is a comparison with no baseline. The record has figures; whether
+# they count as large is the reader's call, and the note says so.
+[[responses.match]]
+requirement = "Comfortable with large-scale systems"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["kafka", "warehouse"]
+note = "212 feeds and a 1,400-column rule set. The posting states no scale to compare against."
+
+# No accomplishment evidences a soft skill. Not a gap in the record either.
+[[responses.match]]
+requirement = "Strong communication skills and stakeholder management"
+classification = "TAILORING_ONLY"
+strength = "weak"
+evidence = ["context_fabrikam", "context_adventure"]
+note = "Cross-team work with analytics, compliance, and clinicians. No direct evidence of the skill itself."
+
+[[responses.match]]
+requirement = "A self-starter who can operate without close supervision"
+classification = "TAILORING_ONLY"
+strength = "weak"
+evidence = ["context_fabrikam"]
+note = "Nothing in a record evidences this. Read as a tone requirement, not a checkable one."
+
+[[responses.match]]
+requirement = "Solid SQL"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse", "skills_platform"]
+note = "Warehouse modeling in PostgreSQL."
+
+[[responses.match]]
+requirement = "Exposure to streaming"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt a production ingestion tier."
+
+[[responses.match]]
+requirement = "Familiarity with infrastructure as code"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform", "skills_platform"]
+note = "Terraform modules for every environment."
+
+[expect]
+requirements = [
+    "Experience with the modern data stack",
+    "Comfortable with large-scale systems",
+    "Strong communication skills and stakeholder management",
+    "A self-starter who can operate without close supervision",
+    "Solid SQL",
+    "Exposure to streaming",
+    "Familiarity with infrastructure as code",
+]
+hard_gates = ["Hybrid, two days a week in our cargo operations building"]
+blocking_gates = ["Hybrid, two days a week in our cargo operations building"]
+gaps = []
+
+# The point of the case: none of the four vague requirements is DIRECT, and none
+# of them is a gap either. They are classified in the middle with a note.
+[expect.classifications]
+"Experience with the modern data stack" = "TRANSFERABLE"
+"Comfortable with large-scale systems" = "TRANSFERABLE"
+"Strong communication skills and stakeholder management" = "TAILORING_ONLY"
+"A self-starter who can operate without close supervision" = "TAILORING_ONLY"
+"Solid SQL" = "DIRECT"
+
+[expect.measured]
+model_calls = 2

@@ -1,0 +1,11 @@
+{
+  "id": 9001,
+  "title": "Senior Data Engineer, Knowledge & Information",
+  "updated_at": "2026-07-18T14:20:00Z",
+  "location": {"name": "Remote - United States"},
+  "content": "<p>Own data quality and lineage across a distributed platform. Partner with engineers and product teams to improve data quality, governance, observability, and reliable delivery across the organization.</p><ul><li>Kafka and PostgreSQL</li><li>Terraform experience</li><li>Design durable systems and document operational decisions for the teams that maintain them.</li></ul>",
+  "metadata": [
+    {"id": "employment_type", "name": "Employment Type", "value": "Full-time"},
+    {"id": "unknown_future_field", "name": "New field", "value": "ignored"}
+  ]
+}

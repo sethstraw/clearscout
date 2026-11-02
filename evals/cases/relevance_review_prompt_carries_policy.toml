@@ -1,0 +1,110 @@
+name = "relevance_review_prompt_carries_policy"
+proves = """
+The relevance-review stage is driven end to end with no database: detached
+discovery rows, deterministic spans, the shipped prompt composition, the schema
+the task closes over its CV and conditions, and the shipped local validation.
+
+The provider is scripted. This case cannot show that the live model obeys the
+prompt, and no scorer here compares a classification to an expected one, because
+the case wrote both halves. What it shows is that the prompt carries the policy
+and that the response contract accepts a good answer.
+
+Two properties of the request are the reason this case exists. The instructions
+must name every one of the six decisive_basis values the schema will accept, or
+the model is being offered a vocabulary it was never told how to use. And the
+evidence segment, which is identical for every batch in a run and is therefore
+the part a provider-side prefix cache can hold, must carry none of the posting
+text; postings belong in the task segment.
+"""
+mode = "screen"
+
+posting = """
+Streaming Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The platform
+group owns the ingestion tier and the schema contract between the yard systems
+and the reporting warehouse, and the compatibility rules that keep a breaking
+change from reaching a consumer without warning.
+
+You would join nine engineers who keep telemetry from every locomotive, siding,
+and loading dock arriving in order. The work is unglamorous and the consequences
+of getting it wrong are visible to customers within the hour.
+
+Requirements:
+- Kafka in production
+- Schema governance for freight telemetry
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+
+[responses.jobspec]
+title = "Streaming Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka", "schema governance"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema governance for freight telemetry"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Production Kafka across 212 feeds."
+
+[[responses.match]]
+requirement = "Schema governance for freight telemetry"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["registry"]
+note = "Registry and compatibility rules, in clinical rather than freight data."
+
+[relevance_review]
+search_context = """
+Target work: streaming ingestion and schema governance on a data platform.
+Locations accepted: remote within the United States.
+Authorization: unrestricted right to work in the United States.
+"""
+
+[[relevance_review.postings]]
+id = "pending-policy-a"
+employer = "Northwind Freight Systems"
+title = "Data Platform Engineer"
+location = "Remote, United States"
+body = """
+Northwind Freight Systems keeps every shipment event in one stream and needs an
+engineer to own the ingestion tier that feeds it.
+
+You would own the schema contract between the producing yard systems and the
+reporting warehouse, and the compatibility rules that keep a breaking change
+from reaching a consumer.
+
+Remote within the United States. We hire on our own payroll in all fifty states.
+"""
+
+[[relevance_review.results]]
+posting = "pending-policy-a"
+recommendation = "review"
+summary = "Ingestion ownership and schema contracts match the record's streaming and governance work."
+core_work_alignment = "direct"
+core_qualification_alignment = "established"
+hard_condition = "passes"
+decisive_basis = "core_match"
+spans = [2]
+evidence = ["registry"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

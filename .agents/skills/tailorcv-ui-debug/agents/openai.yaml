@@ -1,0 +1,4 @@
+interface:
+  display_name: "TailorCV UI Debug"
+  short_description: "Debug TailorCV UI flows with browser evidence"
+  default_prompt: "Use $tailorcv-ui-debug to reproduce and diagnose this TailorCV interface issue."

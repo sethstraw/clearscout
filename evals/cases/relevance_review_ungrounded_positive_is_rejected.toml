@@ -1,0 +1,109 @@
+name = "relevance_review_ungrounded_positive_is_rejected"
+proves = """
+A positive answer that cites no master-CV evidence is refused. The scripted
+result classifies the work as direct and the qualifications as established, and
+recommends review, while citing nothing from the record that could support
+either. Local validation rejects it as invalid_cv_evidence, so nothing is
+recorded and the count of valid results is zero.
+
+The provider is scripted, so this cannot show that the live model grounds its
+positive answers; it shows that the prompt carries the rule and that the response
+contract rejects an ungrounded answer rather than letting one through. The schema
+cannot catch this one: an empty evidence list is a legal list, so the refusal has
+to come from the deterministic check after parsing, and this case is what holds
+that check in place.
+"""
+mode = "screen"
+
+posting = """
+Analytics Engineer, Woodgrove
+
+Woodgrove builds reporting for a customs brokerage and wants an
+analytics engineer to own the reporting pipeline end to end, from the source
+loads through the published models the brokerage staff read every morning.
+
+You would rebuild the nightly load so a failed step can resume, model the
+reporting layer, and keep the definitions agreed with the analysts who use them.
+
+Requirements:
+- SQL reporting pipelines
+- Python for orchestration
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+orchestration = "Rewrote the load orchestration in Python"
+
+[responses.jobspec]
+title = "Analytics Engineer"
+company = "Woodgrove"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["SQL", "Python", "reporting pipelines"]
+
+[[responses.jobspec.requirements]]
+text = "SQL reporting pipelines"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Python for orchestration"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "SQL reporting pipelines"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse"]
+note = "Warehouse modeling and its nightly load."
+
+[[responses.match]]
+requirement = "Python for orchestration"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["orchestration"]
+note = "Load orchestration rewritten in Python."
+
+[relevance_review]
+search_context = """
+Target work: reporting pipelines and warehouse modeling.
+Locations accepted: remote within the United States.
+Authorization: unrestricted right to work in the United States.
+"""
+
+[[relevance_review.postings]]
+id = "pending-ungrounded-a"
+employer = "Proseware Analytics"
+title = "Analytics Engineer"
+location = "Remote, United States"
+body = """
+Proseware Analytics needs an analytics engineer to own the reporting pipeline
+that serves its customs brokerage, from the source loads through the published
+models.
+
+You would rebuild the nightly load, model the reporting layer, and keep the
+definitions agreed with the analysts who use them.
+
+Remote within the United States.
+"""
+
+# Direct work and established qualifications, citing nothing from the record.
+# The schema accepts an empty evidence list; the local check does not.
+[[relevance_review.results]]
+posting = "pending-ungrounded-a"
+recommendation = "review"
+summary = "Reporting pipeline ownership and warehouse modeling align with the candidate."
+core_work_alignment = "direct"
+core_qualification_alignment = "established"
+hard_condition = "passes"
+decisive_basis = "core_match"
+spans = [1]
+evidence = []
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 0
+relevance_review_failures = 1
+"relevance_review_failure.invalid_cv_evidence" = 1
+relevance_review_missing_rules = 0

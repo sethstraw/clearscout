@@ -1,0 +1,72 @@
+name = "posting_recovery_candidate_ready"
+proves = """
+Moves `posting_recovery` off the unevaluated list: a scripted answer reaches
+the pure identity check in `assisted_content_resolution.py` and clears the
+identity check, the search-record validation, and candidate validation, all
+before `resolver.resolve`, which the harness never calls.
+
+A single cited, exact publisher-body candidate is recorded as
+"candidate_ready" rather than resolved, because resolving one means reading a
+live page. This proves the deterministic gate accepts the shape a resolvable
+answer takes; it says nothing about a live model finding one.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[posting_recovery]
+employer = "Contoso Rail Freight"
+title = "Platform Engineer"
+known_url = "https://boards.example.test/postings/original-platform-engineer"
+candidate_urls = ["https://contoso-rail-freight.example.test/careers/platform-engineer"]
+
+[posting_recovery.search]
+queries = ["Contoso Rail Freight platform engineer posting"]
+
+[[posting_recovery.search.sources]]
+url = "https://contoso-rail-freight.example.test/careers/platform-engineer"
+title = "Platform Engineer - Contoso Rail Freight"
+
+[[posting_recovery.observations]]
+url = "https://contoso-rail-freight.example.test/careers/platform-engineer"
+authority = "publisher_body"
+completeness = "complete"
+identity = "exact"
+posting_status = "active"
+note = "Employer and title match the known posting exactly."
+
+[expect]
+posting_recovery = "candidate_ready"

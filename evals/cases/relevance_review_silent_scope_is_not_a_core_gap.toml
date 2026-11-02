@@ -1,0 +1,109 @@
+name = "relevance_review_silent_scope_is_not_a_core_gap"
+proves = """
+A posting that establishes its core work and states nothing either way about the
+core responsibility that decides the result has a reason class and a
+recommendation to land on. The core work is established and transferable, the
+deciding responsibility is unstated rather than unmet, and the recorded answer is
+investigate on an insufficient_posting basis with it carried as an open question.
+
+The provider is scripted, so this cannot show that the live model stops reading
+posting silence as an absent qualification; that is the judgment the prompt
+repair is aimed at and only a live run measures it. What it shows is that the
+shape the prompt now routes here is one the contract and the local checks accept
+rather than a tuple nothing can express.
+"""
+mode = "screen"
+
+posting = """
+Data Platform Engineer, Alpine Ridge Terminals
+
+Alpine Ridge Terminals runs barge and rail transfers at four river terminals and
+wants an engineer for the stream behind its scheduling estate. Lift moves, gate
+transactions, and berth assignments arrive there, and the planners downstream
+expect them in order.
+
+You would own the ingestion tier in production and the definitions agreed with
+the analysts who read the reporting layer it feeds.
+
+Requirements:
+- Kafka in production
+- Schema governance across the reporting estate
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+
+[responses.jobspec]
+title = "Data Platform Engineer"
+company = "Alpine Ridge Terminals"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka", "schema governance"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema governance across the reporting estate"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Production Kafka ingestion tier."
+
+[[responses.match]]
+requirement = "Schema governance across the reporting estate"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["registry"]
+note = "Schema registry and the compatibility rules around it."
+
+[relevance_review]
+search_context = """
+Target work: streaming ingestion on a data platform, with ownership of schema
+governance across the estate as the scope that decides the result.
+Locations accepted: remote within the United States.
+Authorization: unrestricted right to work in the United States.
+"""
+
+[[relevance_review.postings]]
+id = "pending-silent-scope-a"
+employer = "Kestrel Meadow Data"
+title = "Platform Engineer, Ingestion"
+location = "Remote, United States"
+body = """
+Kestrel Meadow Data sells a hosted ingestion product to freight operators, and
+is hiring an engineer onto the team that runs it.
+
+You would keep the ingestion tier healthy in production, take the on-call
+rotation with five other engineers, and work with the product group on what
+customers need from the next release.
+
+Remote within the United States. We hire on our own payroll in all fifty states.
+"""
+
+# The body establishes the ingestion work and says nothing either way about
+# governance ownership, so the deciding scope is unstated rather than absent.
+[[relevance_review.results]]
+posting = "pending-silent-scope-a"
+recommendation = "investigate"
+summary = "Ingestion ownership transfers; the posting never says who owns schema governance."
+core_work_alignment = "transferable"
+core_qualification_alignment = "unresolved"
+hard_condition = "passes"
+decisive_basis = "insufficient_posting"
+spans = [2]
+evidence = ["kafka"]
+unresolved_questions = ["Does this role own schema governance, or only the ingestion tier?"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

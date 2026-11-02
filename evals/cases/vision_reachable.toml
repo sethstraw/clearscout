@@ -1,0 +1,66 @@
+name = "vision_reachable"
+proves = """
+Moves `vision` off the unevaluated list: a scripted transcript reaches
+`vision_reader`'s request and then the shipped `from_image` reader, offline,
+against a real temporary screenshot.
+
+The provider is scripted, so this proves the image reaches the request as an
+attached image and that the transcript clears the shipped minimum-length gate.
+It says nothing about whether a live model reads a screenshot accurately.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[vision]
+image_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP4z8AARAwQCgAf7gP9i18U1AAAAABJRU5ErkJggg=="
+transcript = """
+Streaming Platform Engineer, Northwind Rail Freight
+
+Northwind Rail Freight keeps every shipment event in one stream and needs an \
+engineer to own the ingestion tier that feeds it. You would maintain the \
+schema contract between the yard systems and the reporting warehouse, and the \
+compatibility rules that keep a breaking change from reaching a consumer.
+
+Requirements:
+- Kafka in production
+- Schema governance for freight telemetry
+
+Remote within the United States. We review applications weekly.
+"""
+
+[expect.measured]
+vision_images_sent = 1

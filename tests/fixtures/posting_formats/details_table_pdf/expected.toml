@@ -1,0 +1,48 @@
+# A posting stating its details in a label-and-value table. Following the stream
+# reads each row across, which is the order the table is written to be read in.
+source = "posting.pdf"
+faithful = "stream"
+
+lines = [
+    "Staff Platform Engineer at Acme Logistics",
+    "We are hiring a staff platform engineer to own the scheduling API and the",
+    "services that feed it. You will lead the migration of fourteen regional",
+    "dispatch services onto a single contract, and set the review bar for the",
+    "team that keeps them running. Eight years of production experience with",
+    "distributed systems is what we are looking for.",
+    "Location Bramblewick, Calderfield",
+    "Employment type Full time, permanent",
+    "Requisition REQ-4417",
+    "Posted 3 days ago",
+    "Team Platform engineering",
+    "Reports to Director of Engineering",
+    "On site Two days a week",
+    "Travel 10 percent",
+]
+
+# Cutting the gutter between the label cell and the value cell leaves every
+# detail eight lines from the field it belongs to.
+columns = [
+    "Staff Platform Engineer at Acme Logistics",
+    "We are hiring a staff platform engineer to own the scheduling API and the",
+    "services that feed it. You will lead the migration of fourteen regional",
+    "dispatch services onto a single contract, and set the review bar for the",
+    "team that keeps them running. Eight years of production experience with",
+    "distributed systems is what we are looking for.",
+    "Location",
+    "Employment type",
+    "Requisition",
+    "Posted",
+    "Team",
+    "Reports to",
+    "On site",
+    "Travel",
+    "Bramblewick, Calderfield",
+    "Full time, permanent",
+    "REQ-4417",
+    "3 days ago",
+    "Platform engineering",
+    "Director of Engineering",
+    "Two days a week",
+    "10 percent",
+]

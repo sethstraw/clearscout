@@ -1,0 +1,108 @@
+name = "relevance_review_insufficient_posting_is_reachable"
+proves = """
+The insufficient_posting reason class is reachable in the program. The posting
+body states the employer's mission and its benefits and never states what the
+role does, which is the shape the prompt describes for insufficient_posting, and
+this case carries that shape through the schema and through local validation to
+a recorded insufficient_evidence result with no failures.
+
+The provider is scripted, so this cannot show that the live model abstains on a
+body that establishes nothing; that is the judgment only a live run measures.
+What it shows is that the prompt carries the policy and that the contract accepts
+an abstention whose alignment fields are all unresolved, which no earlier case
+recorded and a contract could have quietly refused.
+"""
+mode = "screen"
+
+posting = """
+Streaming Platform Engineer, Trey Research Terminals
+
+Trey Research Terminals runs container traffic through two inland ports and
+wants an engineer for the stream its scheduling estate reads. Crane moves, gate
+transactions, and yard repositions all arrive there, and the planners downstream
+expect them in order.
+
+You would own the ingestion tier and the schema contract with the reporting
+warehouse.
+
+Requirements:
+- Kafka in production
+- Warehouse modeling in PostgreSQL
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+
+[responses.jobspec]
+title = "Streaming Platform Engineer"
+company = "Trey Research Terminals"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka", "PostgreSQL"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Warehouse modeling in PostgreSQL"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Production Kafka ingestion tier."
+
+[[responses.match]]
+requirement = "Warehouse modeling in PostgreSQL"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse"]
+note = "Reporting warehouse modeled in PostgreSQL."
+
+[relevance_review]
+search_context = """
+Target work: streaming ingestion and warehouse modeling on a data platform.
+Locations accepted: remote within the United States.
+Authorization: unrestricted right to work in the United States.
+"""
+
+[[relevance_review.postings]]
+id = "pending-insufficient-a"
+employer = "Wingtip Freight Data"
+title = "Engineer"
+location = "Remote, United States"
+body = """
+Wingtip Freight Data has grown every year since it was founded and believes
+the people who work here are the reason. We are hiring.
+
+You would join a group that values curiosity, candour, and the sort of colleague
+who leaves a handover better than they found it. We offer unlimited leave, a
+learning budget, and a company gathering twice a year.
+
+Apply with a resume. We read every one.
+"""
+
+# Nothing in the body states responsibilities or required capabilities, so every
+# alignment field stays unresolved and the recommendation is an abstention.
+[[relevance_review.results]]
+posting = "pending-insufficient-a"
+recommendation = "insufficient_evidence"
+summary = "The body states the employer's culture and benefits and never states the work."
+core_work_alignment = "unresolved"
+core_qualification_alignment = "unresolved"
+hard_condition = "unresolved"
+decisive_basis = "insufficient_posting"
+spans = [2]
+evidence = []
+unresolved_questions = ["What work does the role do, and what does it require?"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

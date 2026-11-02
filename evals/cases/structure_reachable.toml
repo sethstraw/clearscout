@@ -1,0 +1,98 @@
+name = "structure_reachable"
+proves = """
+Moves `structure` off the unevaluated list: a scripted extraction reaches
+`structure.structure` and runs through the shipped importer's `assemble` and
+`verify` against a synthetic uploaded CV, offline.
+
+The provider is scripted, so this proves the wiring and that the shipped
+authenticity, alignment, and losslessness checks run against a scripted
+extraction. It says nothing about a live model's extraction quality.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[structure]
+source = """
+Alex Doe
+alex.doe@example.com
+
+Summary
+Builds streaming platforms.
+
+Experience
+Northwind Traders
+Platform Engineer
+2019 to Present
+Rebuilt the ingestion tier on Kafka.
+
+Education
+Bachelor of Science, Computer Science, Example University, 2015 to 2019
+"""
+
+[structure.name]
+text = "Alex Doe"
+lines = [1]
+
+[[structure.contact]]
+text = "alex.doe@example.com"
+lines = [2]
+
+[[structure.summary]]
+text = "Builds streaming platforms."
+lines = [4]
+
+[[structure.roles]]
+
+[structure.roles.organisation]
+text = "Northwind Traders"
+lines = [6]
+
+[structure.roles.title]
+text = "Platform Engineer"
+lines = [7]
+
+[structure.roles.dates]
+text = "2019 to Present"
+lines = [8]
+
+[[structure.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka."
+lines = [9]
+
+[[structure.education]]
+text = "Bachelor of Science, Computer Science, Example University, 2015 to 2019"
+lines = [11]

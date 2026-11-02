@@ -1,0 +1,81 @@
+# One page carrying a sidebar beside the body and a details table beneath both.
+# Neither reading holds it whole: each repairs one half and breaks the other.
+source = "posting.pdf"
+faithful = "neither"
+
+lines = [
+    "Scheduling Engineer at Globex Freight",
+    "Globex Freight is hiring a scheduling",
+    "engineer for the dispatch platform that",
+    "eleven depots plan their day from. You",
+    "will own the planner service and the",
+    "contract it publishes to the depots.",
+    "WHAT YOU WILL DO",
+    "Keep the planner within its overnight",
+    "window as depots are added.",
+    "AT A GLANCE",
+    "Team",
+    "Dispatch platform",
+    "Reports to",
+    "Head of Dispatch",
+    "Interview",
+    "Three conversations",
+    "Location Thistledown Quay",
+    "Employment type Full time, permanent",
+    "Requisition REQ-8120",
+    "Posted Yesterday",
+    "On site Three days a week",
+    "Travel Occasional depot visits",
+]
+
+# The stream keeps every details row across and glues the sidebar to the body.
+stream = [
+    "Scheduling Engineer at Globex Freight AT A GLANCE",
+    "Globex Freight is hiring a scheduling Team",
+    "engineer for the dispatch platform that Dispatch platform",
+    "eleven depots plan their day from. You Reports to",
+    "will own the planner service and the Head of Dispatch",
+    "contract it publishes to the depots. Interview",
+    "WHAT YOU WILL DO Three conversations",
+    "Keep the planner within its overnight",
+    "window as depots are added.",
+    "Location Thistledown Quay",
+    "Employment type Full time, permanent",
+    "Requisition REQ-8120",
+    "Posted Yesterday",
+    "On site Three days a week",
+    "Travel Occasional depot visits",
+]
+
+# The cut separates the sidebar cleanly and takes the details table apart with
+# the same stroke, leaving each value six lines below its label.
+columns = [
+    "Scheduling Engineer at Globex Freight",
+    "Globex Freight is hiring a scheduling",
+    "engineer for the dispatch platform that",
+    "eleven depots plan their day from. You",
+    "will own the planner service and the",
+    "contract it publishes to the depots.",
+    "WHAT YOU WILL DO",
+    "Keep the planner within its overnight",
+    "window as depots are added.",
+    "Location",
+    "Employment type",
+    "Requisition",
+    "Posted",
+    "On site",
+    "Travel",
+    "AT A GLANCE",
+    "Team",
+    "Dispatch platform",
+    "Reports to",
+    "Head of Dispatch",
+    "Interview",
+    "Three conversations",
+    "Thistledown Quay",
+    "Full time, permanent",
+    "REQ-8120",
+    "Yesterday",
+    "Three days a week",
+    "Occasional depot visits",
+]

@@ -1,0 +1,77 @@
+name = "discovery_invented_metric"
+proves = """
+A metric that was not stated does not exist.
+
+The person describes real work in their own words and states no number. The
+wording proposed from it carries a percentage. It is refused naming the figure,
+and nothing becomes evidence.
+
+This is the fabrication that survives every other check in the program: a figure
+in a master CV is the source of truth by the time drafting sees it, so the
+numbers check downstream would confirm it against itself. The only place to
+catch it is here, before it is written down.
+"""
+mode = "screen"
+
+posting = """
+Data Reliability Engineer, Northwind Grocers Supply
+
+Northwind Grocers Supply runs nightly loads for its replenishment system and
+wants them to stop failing quietly.
+
+Requirements:
+- Retry and backoff design for batch jobs
+- Terraform for environment provisioning
+
+Hybrid, two days per week in the office.
+Benefits and legal:
+- We offer paid time off, a 401(k) with matching, and a home office allowance.
+- Applicants will receive consideration without regard to any protected status.
+- This posting is not an offer of employment and the range is not a commitment.
+"""
+
+[evidence]
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Data Reliability Engineer"
+company = "Northwind Grocers Supply"
+location = "Hybrid"
+keywords = ["retry", "backoff", "Terraform"]
+
+[[responses.jobspec.requirements]]
+text = "Retry and backoff design for batch jobs"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for environment provisioning"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Retry and backoff design for batch jobs"
+classification = "GAP"
+note = "The record does not describe it."
+
+[[responses.match]]
+requirement = "Terraform for environment provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Wrote the provisioning modules."
+
+[discovery]
+about = "retry and backoff for batch jobs"
+gap = "r01"
+replies = ["I built the retry and backoff layer for the nightly loads myself."]
+claim = "Built the retry and backoff layer, cutting failed nightly loads by 40 percent."
+scope = "the nightly loads"
+placement = "Fabrikam"
+
+[expect]
+gaps = ["Retry and backoff design for batch jobs"]
+discovery = "refused"
+
+[expect.measured]
+model_calls = 2
+discovery_questions_asked = 1
+discovery_unclosed_gaps = 1

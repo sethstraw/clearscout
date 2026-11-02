@@ -1,0 +1,109 @@
+name = "relevance_review_core_gap_is_reachable"
+proves = """
+The core_gap reason class is reachable in the program. The posting states a
+defining requirement and the supplied record establishes nothing behind it,
+which is the shape the prompt describes for core_gap, and this case carries that
+shape through the schema and through local validation to a recorded unlikely
+result with no failures.
+
+The provider is scripted, so this cannot show that the live model reserves
+core_gap for a requirement the posting actually states rather than for a posting
+that stays silent; only a live run measures that. What it shows is that the
+prompt carries the policy and that the contract accepts the one recorded shape
+that cites posting spans and no CV evidence at all, which the local check
+otherwise refuses.
+"""
+mode = "screen"
+
+posting = """
+Data Platform Engineer, Coho Vineyard Freight
+
+Coho Vineyard Freight moves refrigerated produce for a grower cooperative and
+wants an engineer for the ingestion tier its dispatch estate runs on. Every
+temperature reading, gate scan, and load assignment arrives on one stream, and
+the planners downstream expect it in order.
+
+You would own the streaming platform in production and the schema contract
+between the dispatch systems and the reporting warehouse.
+
+Requirements:
+- Kafka in production
+- Schema governance for dispatch telemetry
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+
+[responses.jobspec]
+title = "Data Platform Engineer"
+company = "Coho Vineyard Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka", "schema governance"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema governance for dispatch telemetry"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Production Kafka ingestion tier."
+
+[[responses.match]]
+requirement = "Schema governance for dispatch telemetry"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["registry"]
+note = "Registry and compatibility rules, in another telemetry estate."
+
+[relevance_review]
+search_context = """
+Target work: streaming ingestion and schema governance on a data platform.
+Locations accepted: remote within the United States.
+Authorization: unrestricted right to work in the United States.
+"""
+
+[[relevance_review.postings]]
+id = "pending-core-gap-a"
+employer = "Blue Yonder Data Systems"
+title = "Query Engine Developer"
+location = "Remote, United States"
+body = """
+Blue Yonder Data Systems builds the columnar query engine its customers run
+their own warehouses on, and is hiring an engineer onto the execution team.
+
+The work is the engine itself: the vectorized execution operators, the cost
+model the planner consults, and the memory layout underneath both. You would
+spend your time in the C++ codebase that implements them, and the team asks for
+several years of query-optimizer internals before a first review.
+
+Remote within the United States. We hire on our own payroll in all fifty states.
+"""
+
+# The posting states the defining work and the defining qualification, and no
+# supplied evidence id reaches either, so the accepted answer cites no record.
+[[relevance_review.results]]
+posting = "pending-core-gap-a"
+recommendation = "unlikely"
+summary = "Execution-operator and optimizer-internals work the record establishes nothing behind."
+core_work_alignment = "absent"
+core_qualification_alignment = "absent"
+hard_condition = "passes"
+decisive_basis = "core_gap"
+spans = [2]
+evidence = []
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

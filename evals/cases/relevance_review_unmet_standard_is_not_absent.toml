@@ -1,0 +1,106 @@
+name = "relevance_review_unmet_standard_is_not_absent"
+proves = """
+A role asking for Kafka and gRPC, when the CV shows RabbitMQ messaging in
+production, names tools the record lacks inside a capability it shows in
+delivered work. That is an unmet degree of the capability, so the qualification
+is unresolved rather than absent, and the answer is transferable_match and
+investigate with the RabbitMQ id cited.
+
+The provider is scripted, so this cannot show that the live model reads the
+missing tools as depth rather than absence; only a live run measures that. It
+shows the contract and local checks accept the unresolved, cited answer.
+"""
+mode = "screen"
+cv = "platform_documentation.md"
+
+posting = """
+Backend Engineer, Event Platform, Northwind Traders
+
+Northwind Traders connects its order, billing, and inventory services through a
+shared event platform that every warehouse and storefront team depends on.
+
+You would build and run the services that carry orders, invoices, and stock
+events between systems, own their monitoring and alerting, and keep the
+on-call runbooks current for the teams that publish to the platform.
+
+Requirements:
+- Kafka event streaming in production
+- gRPC service APIs
+
+Remote within the United States.
+"""
+
+[evidence]
+rabbitmq = "Ran the RabbitMQ order and billing event queues in production"
+
+[responses.jobspec]
+title = "Backend Engineer, Event Platform"
+company = "Northwind Traders"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka", "gRPC", "messaging"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka event streaming in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "gRPC service APIs"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka event streaming in production"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["rabbitmq"]
+note = "Production event queues on RabbitMQ rather than Kafka."
+
+[[responses.match]]
+requirement = "gRPC service APIs"
+classification = "GAP"
+strength = "none"
+evidence = []
+note = "No gRPC work in the record."
+
+[relevance_review]
+search_context = """
+Opportunity thesis (person-stated preference, not evidence): Backend messaging and platform work at a product-led employer
+Kinds of work this person does: backend engineering (messaging, event queues)
+Places this person may work: Remote, United States (eligibility authorized)
+"""
+
+[[relevance_review.postings]]
+id = "pending-unmet-standard-a"
+employer = "Fabrikam Software"
+title = "Senior Messaging Engineer"
+location = "Remote, United States"
+body = """
+Fabrikam Software runs an event exchange for its commerce services.
+
+You would build and operate the services that move orders, invoices, and stock
+events, and keep their monitoring and on-call runbooks current.
+
+Requirements:
+- Kafka and gRPC experience
+
+Remote within the United States.
+"""
+
+# RabbitMQ in production is the capability; Kafka and gRPC are tools it does
+# not reach, so the qualification is unresolved, never absent.
+[[relevance_review.results]]
+posting = "pending-unmet-standard-a"
+recommendation = "investigate"
+summary = "Production RabbitMQ queues show the messaging work; Kafka and gRPC are unconfirmed tools within it."
+core_work_alignment = "direct"
+core_qualification_alignment = "unresolved"
+hard_condition = "passes"
+decisive_basis = "transferable_match"
+spans = [2, 3]
+evidence = ["rabbitmq"]
+unresolved_questions = ["Has the candidate built Kafka or gRPC services beyond RabbitMQ?"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

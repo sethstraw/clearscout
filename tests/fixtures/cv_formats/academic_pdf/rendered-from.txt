@@ -1,0 +1,1 @@
+cv.pdf was rendered once from source.md by pressume 0.2.0 (render --formats pdf --no-verify, default theme); cv.pdf.sha256 records its digest.

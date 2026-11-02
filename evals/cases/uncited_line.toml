@@ -1,0 +1,130 @@
+name = "uncited_line"
+proves = """
+The simplest fabrication route and the one the whole design closes: a line with
+no provenance at all. The schema permits an empty citation list, because a
+required non-empty array is not expressible in strict structured output, so the
+drafter can return a bullet that cites nothing and this one does.
+
+``verify.checks.provenance`` fails the run, names how many lines and quotes the first,
+and marks the finding as one a rewrite could clear, which is what feeds it back
+to the drafter in a real run. The critic is never asked. The package is written
+with the failure visible rather than withheld, because a person who paid for a
+run should get something to read.
+"""
+mode = "draft"
+
+posting = """
+Data Platform Engineer, Wingtip Toys Distribution
+
+Wingtip Toys Distribution is hiring a data platform engineer for the ingestion
+and provisioning tier.
+
+Requirements:
+- Kafka in production
+- Terraform for provisioning
+- Data quality tooling
+
+The tier feeds order, inventory, and returns data into a shared warehouse, and
+the team is five engineers split across ingestion and provisioning. You would
+own one of those halves and be expected to understand the other.
+
+Remote within the United States.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+quality = "Introduced data quality rules covering 1,400 columns"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+context_fabrikam = "Worked on platform architecture within a team of six"
+
+[responses.jobspec]
+title = "Data Platform Engineer"
+company = "Wingtip Toys Distribution"
+seniority = "senior"
+location = "Remote, United States"
+keywords = ["Kafka", "Terraform", "data quality"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for provisioning"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Data quality tooling"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier."
+
+[[responses.match]]
+requirement = "Terraform for provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform", "skills_platform"]
+note = "Wrote the provisioning modules."
+
+[[responses.match]]
+requirement = "Data quality tooling"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["quality"]
+note = "1,400 columns of rules."
+
+[responses.draft.summary]
+text = "Platform engineer working on streaming ingestion and provisioning."
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go"
+evidence = ["skills_platform"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+# No evidence at all. Plausible, unattributed, and unfalsifiable from the record.
+[[responses.draft.roles.bullets]]
+text = "Mentored four junior engineers through the platform onboarding programme and set the team's code review standard."
+evidence = []
+
+[[responses.draft.roles.bullets]]
+text = "Wrote the Terraform modules that provision every environment, replacing a two-day runbook."
+evidence = ["terraform"]
+
+[responses.critic]
+alignment = 5
+preservation = 5
+specificity = 5
+readability = 5
+ats_clarity = 5
+human_voice = 5
+guidance = "Never reached: the free checks reject this draft first."
+
+[expect]
+immutable = ["Fabrikam Data Works", "Staff Platform Engineer"]
+
+[expect.checks]
+"sources cited" = "fail"
+"numbers traced" = "pass"
+"document structure" = "pass"
+
+[expect.measured]
+model_calls = 3
+uncited_lines = 1

@@ -1,0 +1,64 @@
+name = "cover_letter_reachable"
+proves = """
+Moves `cover_letter` off the unevaluated list: a scripted answer reaches
+`draft.cover_letter` after a clean resume draft, through the same selected
+evidence and `verify.check_letter` the shipped rewrite pass uses, offline.
+
+The provider is scripted, so this proves the wiring and that the shipped letter
+checks run against a scripted answer. It says nothing about whether a live
+model writes a good letter.
+"""
+mode = "draft"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[responses.draft.summary]
+text = "Platform engineer with production Kafka experience."
+evidence = ["kafka"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka."
+evidence = ["kafka"]
+
+[[responses.cover_letter.paragraphs]]
+text = "I rebuilt the ingestion tier on Kafka in my current role."
+evidence = ["kafka"]
+
+[expect.checks]
+"sources cited" = "pass"

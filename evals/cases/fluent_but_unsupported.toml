@@ -1,0 +1,181 @@
+name = "fluent_but_unsupported"
+proves = """
+A draft that reads better than any other case here and is not supported by what
+it cites. The prose is specific, restrained, and scannable, the citations are
+valid, and the substance is not in the entries cited: an on-call rotation, a
+migration off a legacy vendor, and a cost reduction that appear nowhere in the
+record.
+
+Every deterministic check passes. There is no figure to trace, because the
+invented claims are careful not to carry one, which is what makes this different
+from ``invented_figure``. The only thing that answers it is the critic, and here
+the critic is scripted to catch it.
+
+That last sentence is the whole limitation of a scripted evaluation and the
+reason this case is worth keeping anyway. What it proves is the wiring: a critic
+that names an unsupported claim fails the run through ``verify.critic_finding``
+regardless of how high the six ratings are, the run is not written as passing,
+and preservation is a gate rather than an average. What it cannot prove is that
+a real critic would notice. That is a live measurement and this harness does not
+make it.
+
+Worth noting what the eval-only scorers also miss here. "Led the migration off a
+legacy managed pipeline vendor" is an ownership claim, and ``ownership_inflation``
+records zero, because the entry it cites describes no shared work for the claim
+to contradict. The scorer looks for a claim that conflicts with its evidence, not
+for a claim its evidence is silent about, and silence is the harder case.
+"""
+mode = "draft"
+
+posting = """
+Staff Reliability Engineer, Data Platform, Adatum Freight Networks
+
+Adatum Freight Networks needs a staff engineer to take responsibility for the
+reliability of the data platform.
+
+Requirements:
+- Kafka in production
+- On-call ownership of a data platform
+- Vendor migration experience
+- Demonstrable cost reduction
+
+The platform carries shipment telemetry for regional carriers, and the team that
+runs it is four engineers. You would be the fifth, and the one the others expect
+to have an opinion about what breaks and why.
+
+Remote within the United States.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+quality = "Introduced data quality rules covering 1,400 columns"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+context_fabrikam = "Worked on platform architecture within a team of six"
+
+[responses.jobspec]
+title = "Staff Reliability Engineer, Data Platform"
+company = "Adatum Freight Networks"
+seniority = "staff"
+location = "Remote, United States"
+keywords = ["Kafka", "on-call", "vendor migration", "cost reduction"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "On-call ownership of a data platform"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Vendor migration experience"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Demonstrable cost reduction"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier."
+
+[[responses.match]]
+requirement = "On-call ownership of a data platform"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["quality"]
+note = "Routed quality failures to owning teams."
+
+[[responses.match]]
+requirement = "Vendor migration experience"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["terraform"]
+note = "Replaced a manual runbook with provisioning modules."
+
+[[responses.match]]
+requirement = "Demonstrable cost reduction"
+classification = "TRANSFERABLE"
+strength = "weak"
+evidence = ["terraform"]
+note = "A two-day runbook became an automated provision."
+
+[responses.draft.summary]
+text = """
+Platform engineer who keeps regulated data moving and keeps the people who \
+depend on it out of the incident channel.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go"
+evidence = ["skills_platform"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team, with analytics and compliance on every schema change."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+# Fluent, specific, plausible, and absent from the entry it cites. No figure,
+# so nothing traces and nothing fails.
+[[responses.draft.roles.bullets]]
+text = "Carried the primary on-call rotation for the ingestion platform and rewrote the runbooks the rest of the team paged from."
+evidence = ["terraform"]
+
+[[responses.draft.roles.bullets]]
+text = "Led the migration off a legacy managed pipeline vendor, which took the platform's recurring spend down materially."
+evidence = ["terraform"]
+
+[[responses.draft.roles.bullets]]
+text = "Introduced data quality rules covering 1,400 columns, routing failures to the owning team."
+evidence = ["quality"]
+
+# The only thing in the run that answers any of this, and it is scripted.
+[responses.critic]
+alignment = 5
+preservation = 2
+specificity = 5
+readability = 5
+ats_clarity = 5
+human_voice = 5
+guidance = "Three claims are not in the evidence they cite."
+
+[[responses.critic.unsupported_claims]]
+claim = "primary on-call rotation: the cited entry is about Terraform modules"
+boundary = "adjacent"
+
+[[responses.critic.unsupported_claims]]
+claim = "migration off a legacy managed pipeline vendor: absent from the record"
+boundary = "absent_from_record"
+
+[[responses.critic.unsupported_claims]]
+claim = "recurring spend down materially: no cost claim is in the record"
+boundary = "absent_from_record"
+
+[expect]
+immutable = ["Fabrikam Data Works", "Staff Platform Engineer", "April 2021 to Present"]
+
+[expect.checks]
+# Everything free passes. The critic is the only failure, and it fails on the
+# named claims rather than on the ratings, five of which are the maximum.
+"sources cited" = "pass"
+"numbers traced" = "pass"
+"document structure" = "pass"
+"first person" = "pass"
+"character policy" = "pass"
+"critic" = "fail"
+
+[expect.measured]
+model_calls = 4

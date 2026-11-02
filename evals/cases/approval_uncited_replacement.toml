@@ -1,0 +1,232 @@
+name = "approval_uncited_replacement"
+proves = """
+A reviewer rejects a drafted bullet and writes their own replacement, citing
+nothing at all. Replacement text is not privileged: it goes through the same
+provenance check the model's text does, so the approval is refused and the
+document is never written.
+
+What this proves is that the review workflow is not a way around the evidence
+contract. It proves nothing about how likely a person is to try, which is the
+question a real reviewer answers and this cannot.
+"""
+mode = "draft"
+
+posting = """
+Staff Platform Engineer, Litware Freight Systems
+
+Litware Freight Systems moves regulated shipment data for carriers across North
+America. We are hiring a staff engineer to own the streaming ingestion tier and
+the governance tooling around it.
+
+What you will do:
+- Run and evolve a Kafka-based ingestion tier serving dozens of source systems
+- Design schema registry compatibility rules so producers cannot break consumers
+- Provision every environment with Terraform, from an empty account upward
+- Extend the column-level data lineage service the analytics teams depend on
+- Define data quality rules and route failures to the teams that own the data
+
+What we require:
+- Deep production experience with Kafka
+- Terraform for infrastructure provisioning
+- PostgreSQL data modeling at scale
+- Demonstrated schema governance work
+
+Preferred: data lineage tooling, data quality rules, prior work in a regulated
+industry.
+
+Remote within the United States. We are not able to sponsor employment visas
+for this role.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+terraform = "Wrote the Terraform modules that provision every environment"
+lineage = "Contributed to the lineage service"
+quality = "Introduced data quality rules covering 1,400 columns"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+reconciliation = "Automated the reconciliation process"
+orchestration = "Rewrote the load orchestration in Python"
+first_pipeline = "Delivered the first automated reporting pipeline"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+skills_governance = "dimensional modeling, schema registry design"
+context_fabrikam = "Worked on platform architecture within a team of six"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+context_tailspin = "Built reporting pipelines for a freight brokerage"
+
+[responses.jobspec]
+title = "Staff Platform Engineer"
+company = "Litware Freight Systems"
+seniority = "staff"
+location = "Remote, United States"
+keywords = [
+    "Kafka",
+    "Terraform",
+    "PostgreSQL",
+    "schema registry",
+    "data lineage",
+    "data quality rules",
+]
+
+[[responses.jobspec.requirements]]
+text = "Deep production experience with Kafka"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for infrastructure provisioning"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "PostgreSQL data modeling at scale"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Demonstrated schema governance work"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Data lineage tooling"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Data quality rules"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "sponsorship"
+text = "Not able to sponsor employment visas"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "location"
+text = "Remote within the United States"
+blocking = false
+
+[[responses.match]]
+requirement = "Deep production experience with Kafka"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier on Kafka in production."
+
+[[responses.match]]
+requirement = "Terraform for infrastructure provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform", "skills_platform"]
+note = "Wrote the provisioning modules."
+
+[[responses.match]]
+requirement = "PostgreSQL data modeling at scale"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse", "skills_platform"]
+note = "Modeled a reporting warehouse in PostgreSQL."
+
+[[responses.match]]
+requirement = "Demonstrated schema governance work"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["registry", "skills_governance"]
+note = "Designed the registry and its compatibility rules."
+
+[[responses.match]]
+requirement = "Data lineage tooling"
+classification = "DIRECT"
+strength = "moderate"
+evidence = ["lineage"]
+note = "Contributed to a column-level lineage service."
+
+[[responses.match]]
+requirement = "Data quality rules"
+classification = "DIRECT"
+strength = "moderate"
+evidence = ["quality"]
+note = "Introduced rules with ownership routing."
+
+[responses.draft.summary]
+text = """
+Platform engineer working on streaming ingestion, schema governance, and the \
+data lineage and quality tooling around them, across regulated shipment and \
+clinical data.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go, Docker"
+evidence = ["skills_platform"]
+
+[[responses.draft.skills]]
+label = "Governance"
+text = "schema registry, data lineage, data quality rules, dimensional modeling"
+evidence = ["skills_governance"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team, with analytics and compliance on every schema change."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+[[responses.draft.roles.bullets]]
+text = "Designed the schema registry and its compatibility rules with two other engineers, stopping 31 breaking changes before release."
+evidence = ["registry"]
+
+[[responses.draft.roles.bullets]]
+text = "Wrote the Terraform modules that provision every environment, replacing a two-day runbook."
+evidence = ["terraform"]
+
+[[responses.draft.roles.bullets]]
+text = "Contributed to the lineage service that traces any column to its source system, which four downstream teams adopted."
+evidence = ["lineage"]
+
+[[responses.draft.roles.bullets]]
+text = "Introduced data quality rules covering 1,400 columns, routing failures to the owning team."
+evidence = ["quality"]
+
+[[responses.draft.roles]]
+role = "Adventure Works"
+
+[responses.draft.roles.context]
+text = "Clinical reporting warehouse and its nightly load, with analysts and clinicians on definitions."
+evidence = ["context_adventure"]
+
+[[responses.draft.roles.bullets]]
+text = "Modeled the clinical reporting warehouse in PostgreSQL, reducing the nightly load window from 7 hours to 95 minutes."
+evidence = ["warehouse"]
+
+[[responses.draft.roles]]
+role = "Tailspin"
+
+[responses.draft.roles.context]
+text = "Reporting pipelines for a freight brokerage."
+evidence = ["context_tailspin"]
+
+[responses.critic]
+alignment = 5
+preservation = 5
+specificity = 5
+readability = 4
+ats_clarity = 5
+human_voice = 4
+guidance = "Reads as a defensible record of the work."
+
+[[approval]]
+slot = "summary"
+decision = "reject"
+
+[approval.replacement]
+text = "Ran the entire data organisation and set its technical direction."
+
+[expect]
+approval = "refused"
+
+[expect.measured]
+model_calls = 4
+unsupported_replacements_admitted = 0

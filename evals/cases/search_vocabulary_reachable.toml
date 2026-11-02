@@ -1,0 +1,66 @@
+name = "search_vocabulary_reachable"
+proves = """
+Moves `search_vocabulary` off the unevaluated list: a scripted proposal reaches
+`SearchVocabularyService.ask` and then the same deterministic gate
+`_prepare_completion` applies, offline, with the durable service's database
+session replaced by detached inputs.
+
+The titles are the case's own script, so agreement with a classification is not
+a finding. What is measured is the program's decision: a title matching the
+search's own exclusion list must be refused, and one grounded in real evidence
+must be accepted. It says nothing about whether a live model would propose
+either title unprompted.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[search_vocabulary]
+excluded_titles = ["Farm Equipment Technician"]
+
+[[search_vocabulary.titles]]
+title = "Streaming Platform Engineer"
+reason = "The Kafka ingestion work is the same shape of job under a different name."
+evidence = ["kafka"]
+
+[[search_vocabulary.titles]]
+title = "Farm Equipment Technician"
+reason = "Proposed by mistake; the record has nothing to do with this trade."
+evidence = ["kafka"]
+
+[expect.measured]
+search_vocabulary_titles_accepted = 1
+search_vocabulary_titles_refused = 1

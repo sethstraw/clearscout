@@ -1,0 +1,18 @@
+# An ordinary one-column posting. Its indented bullets leave an inner left-hand
+# gap that is too thin a side to be cut, so both readings agree.
+source = "posting.pdf"
+faithful = "either"
+
+lines = [
+    "Data Platform Engineer at Northwind Rail",
+    "Northwind Rail runs the timetable that four regional operators publish from,",
+    "and the platform team keeps the feeds behind it honest. You will own the",
+    "ingestion path from operator uploads through to the published timetable.",
+    "WHAT WE ARE LOOKING FOR",
+    "Five years building batch or streaming data pipelines in production.",
+    "Fluency in Python and SQL, and comfort reading a schema you did not write.",
+    "Experience carrying a pager for a pipeline you wrote.",
+    "HOW WE WORK",
+    "Reviews are written, releases are small, and the roadmap is public to the",
+    "whole company. The team meets in person two days a week.",
+]

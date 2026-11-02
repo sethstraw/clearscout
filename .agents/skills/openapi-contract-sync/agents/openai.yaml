@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenAPI contract sync"
+  short_description: "Regenerate the SPA client after Pydantic or FastAPI changes"
+  default_prompt: "Regenerate the OpenAPI schema and the SPA's generated TypeScript types with scripts/generate.sh, then verify `npm --prefix web run typecheck`. Report any drift and stop if it is unrelated to the current change."

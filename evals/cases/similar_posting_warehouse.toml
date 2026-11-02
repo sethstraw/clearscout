@@ -1,0 +1,104 @@
+name = "similar_posting_warehouse"
+proves = """
+The third of three near-identical postings from the same employer. This one is
+about the warehouse, which the record answers from a different employer and a
+different decade than the other two. See ``similar_posting_ingestion.toml`` for
+what the set as a whole measures.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer I, Warehouse, Lucerne Publishing Freight
+
+Lucerne Publishing Freight runs three platform teams. This role is on the
+warehouse team.
+
+Requirements:
+- Dimensional modeling in PostgreSQL
+- Nightly load performance work
+- Reconciliation and data correctness processes
+
+Preferred: Python for orchestration.
+
+The warehouse team owns the models the business reports from and the nightly
+load that fills them. Most of the work is making the load finish earlier and
+making the numbers agree with the systems they came from.
+
+Remote within the United States. No visa sponsorship is available.
+"""
+
+[evidence]
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+reconciliation = "Automated the reconciliation process"
+orchestration = "Rewrote the load orchestration in Python"
+skills_governance = "dimensional modeling, schema registry design"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+
+[responses.jobspec]
+title = "Platform Engineer I, Warehouse"
+company = "Lucerne Publishing Freight"
+seniority = "mid"
+location = "Remote, United States"
+keywords = ["PostgreSQL", "dimensional modeling", "reconciliation", "Python"]
+
+[[responses.jobspec.requirements]]
+text = "Dimensional modeling in PostgreSQL"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Nightly load performance work"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Reconciliation and data correctness processes"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Python for orchestration"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "sponsorship"
+text = "No visa sponsorship is available"
+blocking = true
+
+[[responses.match]]
+requirement = "Dimensional modeling in PostgreSQL"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse", "skills_governance"]
+note = "Modeled a clinical reporting warehouse."
+
+[[responses.match]]
+requirement = "Nightly load performance work"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse", "orchestration"]
+note = "7 hours to 95 minutes, with resumable steps."
+
+[[responses.match]]
+requirement = "Reconciliation and data correctness processes"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["reconciliation"]
+note = "Automated a process that took two analyst days a week."
+
+[[responses.match]]
+requirement = "Python for orchestration"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["orchestration", "skills_platform"]
+note = "Rewrote the load orchestration in Python."
+
+[expect]
+must_have = [
+    "Dimensional modeling in PostgreSQL",
+    "Nightly load performance work",
+    "Reconciliation and data correctness processes",
+]
+hard_gates = ["No visa sponsorship is available"]
+blocking_gates = ["No visa sponsorship is available"]
+distinct_from = ["similar_posting_ingestion", "similar_posting_governance"]
+
+[expect.measured]
+model_calls = 2

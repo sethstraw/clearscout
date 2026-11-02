@@ -1,0 +1,501 @@
+name = "long_record_fit"
+proves = """
+A record far longer than two pages, drafted in full, is fitted to the page by
+dropping its weakest bullets, and the fit never drops the last printed answer
+to a must-have. The audit must-have is answered only by two weak bullets that
+the fit reaches; one of them has to survive, so must-have coverage passes on
+the document as it prints.
+"""
+mode = "draft"
+cv = "long_record.md"
+
+posting = """
+Principal Data Engineer, Litware Freight Systems
+
+Litware Freight Systems moves regulated shipment data for carriers across North
+America. We are hiring a principal engineer to own event streaming and the
+warehouse it feeds, and to help the compliance team through its audits.
+
+What we require:
+- Production experience with streaming data pipelines
+- Data warehouse modeling
+- Support for regulatory audits
+
+Nice to have: Kafka and schema registry contracts, dbt modeling over
+PostgreSQL, Airflow orchestration, Terraform provisioning, typed Python data
+services, warehouse partitioning and query tuning, reducing pipeline latency,
+reducing manual analyst effort, catching breaking changes before release, and
+insurance claims data.
+
+Remote within the United States.
+"""
+
+[evidence]
+b00 = "Rebuilt the carrier event"
+b01 = "Designed the rate quote"
+b02 = "Migrated the shipment status"
+b03 = "Automated the dock scheduling"
+b04 = "Replaced the fuel surcharge"
+b05 = "Consolidated the lane pricing"
+b06 = "Introduced the invoice matching"
+b07 = "Rewrote the driver hours"
+b08 = "Moved the customs document"
+b09 = "Split the freight claims"
+b10 = "Tuned the warehouse slotting"
+b11 = "Documented the tender acceptance"
+b12 = "Retired the proof of"
+b13 = "Hardened the telematics ingestion"
+b14 = "Standardized the accessorial charge"
+b15 = "Extended the route exception"
+b16 = "Rebuilt the partner onboarding"
+b17 = "Designed the capacity forecast"
+b18 = "Migrated the point of"
+b19 = "Automated the store inventory"
+b20 = "Replaced the promotion lift"
+b21 = "Consolidated the loyalty event"
+b22 = "Introduced the markdown pricing"
+b23 = "Rewrote the vendor scorecard"
+b24 = "Moved the supplier catalog"
+b25 = "Split the returns reconciliation"
+b26 = "Tuned the basket analysis"
+b27 = "Documented the planogram compliance"
+b28 = "Retired the gift card"
+b29 = "Hardened the e-commerce clickstream"
+b30 = "Standardized the replenishment signal"
+b31 = "Extended the shrink reporting"
+b32 = "Rebuilt the store labor"
+b33 = "Designed the regional sales"
+b34 = "Migrated the price elasticity"
+b35 = "Automated the assortment planning"
+b36 = "Replaced the claims intake"
+b37 = "Consolidated the adjuster workload"
+b38 = "Introduced the policy lookup"
+b39 = "Rewrote the subrogation tracker"
+b40 = "Moved the fraud referral"
+b41 = "Split the premium billing"
+b42 = "Tuned the reserve change"
+b43 = "Documented the provider directory"
+b44 = "Retired the litigation hold"
+b45 = "Hardened the payment remittance"
+b46 = "Prepared the evidence binder"
+b47 = "Answered follow-up questions from"
+summary_recent = "Recent work centers on event streaming"
+skills_platform = "Python, SQL, Kafka, PostgreSQL"
+skills_practice = "dimensional modeling, schema registry design"
+context_contoso = "Led the data platform group of eight engineers"
+context_northwind = "Owned the retail analytics warehouse"
+context_woodgrove = "Built claims reporting pipelines for an insurance"
+
+[responses.jobspec]
+title = "Principal Data Engineer"
+company = "Litware Freight Systems"
+seniority = "principal"
+location = "Remote, United States"
+keywords = ["Kafka", "PostgreSQL", "data warehouse", "audit"]
+
+[[responses.jobspec.requirements]]
+text = "Production experience with streaming data pipelines"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Data warehouse modeling"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Support for regulatory audits"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Kafka and schema registry contracts"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "dbt modeling over PostgreSQL"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Airflow orchestration"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform provisioning"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Typed Python data services"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Warehouse partitioning and query tuning"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Reducing pipeline latency"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Reducing manual analyst effort"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Catching breaking changes before release"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Insurance claims data"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "location"
+text = "Remote within the United States"
+blocking = false
+
+[[responses.match]]
+requirement = "Production experience with streaming data pipelines"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b00", "b01", "b02", "b03", "skills_platform"]
+note = "Built and ran the streaming tiers."
+
+[[responses.match]]
+requirement = "Data warehouse modeling"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b18", "b19", "b20", "b21", "skills_practice"]
+note = "Modeled the warehouses those tiers feed."
+
+[[responses.match]]
+requirement = "Support for regulatory audits"
+classification = "TRANSFERABLE"
+strength = "weak"
+evidence = ["b46", "b47"]
+note = "Prepared audit evidence and answered examiners, early in the record."
+
+[[responses.match]]
+requirement = "Kafka and schema registry contracts"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b04", "b05", "b06", "b07"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "dbt modeling over PostgreSQL"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b08", "b09", "b10", "b11"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Airflow orchestration"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b12", "b13", "b14", "b15"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Terraform provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b16", "b17", "b22", "b23"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Typed Python data services"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b24", "b25", "b26", "b27"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Warehouse partitioning and query tuning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b28", "b29", "b30", "b31"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Reducing pipeline latency"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b32", "b33", "b34", "b35"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Reducing manual analyst effort"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b36", "b37", "b38", "b39"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Catching breaking changes before release"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b40", "b41", "b42", "b43"]
+note = "Stated in the cited bullets."
+
+[[responses.match]]
+requirement = "Insurance claims data"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["b44", "b45"]
+note = "Stated in the cited bullets."
+
+[responses.draft.summary]
+text = """
+Data engineer building event streaming, warehouse models, and the data \
+contracts between them for freight, retail, and insurance companies.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Python, SQL, Kafka, PostgreSQL, Terraform, Airflow, dbt, Docker"
+evidence = ["skills_platform"]
+
+[[responses.draft.skills]]
+label = "Practice"
+text = "dimensional modeling, schema registry design, data contracts, data quality rules"
+evidence = ["skills_practice"]
+
+[[responses.draft.roles]]
+role = "Contoso"
+
+[responses.draft.roles.context]
+text = "Led the eight-engineer data platform group serving carrier operations, pricing, and finance analytics."
+evidence = ["context_contoso"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the carrier event stream using Kafka and schema registry contracts so producers could not break downstream consumers, cutting median latency from 12 minutes to 20 seconds across 4 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b00"]
+
+[[responses.draft.roles.bullets]]
+text = "Designed the rate quote pipeline using partitioned warehouse tables with clustering chosen from measured query plans, reducing the nightly load window from 4 hours to 27 minutes for 5 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b01"]
+
+[[responses.draft.roles.bullets]]
+text = "Migrated the shipment status feed using a Python service with typed contracts and contract tests in continuous integration, removing 18 manual steps and 34 hours of weekly analyst effort across 6 teams, reviewed with the security and compliance group before each release."
+evidence = ["b02"]
+
+[[responses.draft.roles.bullets]]
+text = "Automated the dock scheduling service using Terraform modules that provision every environment from an empty account, catching 21 breaking changes before release over 41 months and 7 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b03"]
+
+[[responses.draft.roles.bullets]]
+text = "Replaced the fuel surcharge calculator using Airflow with retries, backfills, and alerts routed to the owning team, cutting median latency from 24 minutes to 48 seconds across 8 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b04"]
+
+[[responses.draft.roles.bullets]]
+text = "Consolidated the lane pricing model store using incremental dbt models over PostgreSQL with tested keys and documented grain, reducing the nightly load window from 8 hours to 55 minutes for 9 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b05"]
+
+[[responses.draft.roles.bullets]]
+text = "Introduced the invoice matching job using Kafka and schema registry contracts so producers could not break downstream consumers, removing 30 manual steps and 62 hours of weekly analyst effort across 10 teams, reviewed with the security and compliance group before each release."
+evidence = ["b06"]
+
+[[responses.draft.roles.bullets]]
+text = "Rewrote the driver hours ledger using partitioned warehouse tables with clustering chosen from measured query plans, catching 33 breaking changes before release over 69 months and 11 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b07"]
+
+[[responses.draft.roles.bullets]]
+text = "Moved the customs document intake using a Python service with typed contracts and contract tests in continuous integration, cutting median latency from 36 minutes to 76 seconds across 12 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b08"]
+
+[[responses.draft.roles.bullets]]
+text = "Split the freight claims tracker using Terraform modules that provision every environment from an empty account, reducing the nightly load window from 4 hours to 83 minutes for 13 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b09"]
+
+[[responses.draft.roles.bullets]]
+text = "Tuned the warehouse slotting feed using Airflow with retries, backfills, and alerts routed to the owning team, removing 42 manual steps and 90 hours of weekly analyst effort across 14 teams, reviewed with the security and compliance group before each release."
+evidence = ["b10"]
+
+[[responses.draft.roles.bullets]]
+text = "Documented the tender acceptance log using incremental dbt models over PostgreSQL with tested keys and documented grain, catching 45 breaking changes before release over 97 months and 15 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b11"]
+
+[[responses.draft.roles.bullets]]
+text = "Retired the proof of delivery archive using Kafka and schema registry contracts so producers could not break downstream consumers, cutting median latency from 48 minutes to 104 seconds across 16 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b12"]
+
+[[responses.draft.roles.bullets]]
+text = "Hardened the telematics ingestion tier using partitioned warehouse tables with clustering chosen from measured query plans, reducing the nightly load window from 8 hours to 111 minutes for 17 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b13"]
+
+[[responses.draft.roles.bullets]]
+text = "Standardized the accessorial charge engine using a Python service with typed contracts and contract tests in continuous integration, removing 54 manual steps and 118 hours of weekly analyst effort across 18 teams, reviewed with the security and compliance group before each release."
+evidence = ["b14"]
+
+[[responses.draft.roles.bullets]]
+text = "Extended the route exception queue using Terraform modules that provision every environment from an empty account, catching 57 breaking changes before release over 125 months and 19 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b15"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the partner onboarding API using Airflow with retries, backfills, and alerts routed to the owning team, cutting median latency from 60 minutes to 132 seconds across 20 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b16"]
+
+[[responses.draft.roles]]
+role = "Northwind"
+
+[responses.draft.roles.context]
+text = "Owned the retail analytics warehouse and the ingestion jobs feeding it."
+evidence = ["context_northwind"]
+
+[[responses.draft.roles.bullets]]
+text = "Migrated the point of sale loader using Kafka and schema registry contracts so producers could not break downstream consumers, removing 66 manual steps and 146 hours of weekly analyst effort across 22 teams, reviewed with the security and compliance group before each release."
+evidence = ["b18"]
+
+[[responses.draft.roles.bullets]]
+text = "Automated the store inventory snapshot using partitioned warehouse tables with clustering chosen from measured query plans, catching 69 breaking changes before release over 153 months and 23 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b19"]
+
+[[responses.draft.roles.bullets]]
+text = "Replaced the promotion lift model using a Python service with typed contracts and contract tests in continuous integration, cutting median latency from 72 minutes to 160 seconds across 24 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b20"]
+
+[[responses.draft.roles.bullets]]
+text = "Consolidated the loyalty event feed using Terraform modules that provision every environment from an empty account, reducing the nightly load window from 8 hours to 167 minutes for 25 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b21"]
+
+[[responses.draft.roles.bullets]]
+text = "Introduced the markdown pricing tables using Airflow with retries, backfills, and alerts routed to the owning team, removing 78 manual steps and 174 hours of weekly analyst effort across 26 teams, reviewed with the security and compliance group before each release."
+evidence = ["b22"]
+
+[[responses.draft.roles.bullets]]
+text = "Rewrote the vendor scorecard job using incremental dbt models over PostgreSQL with tested keys and documented grain, catching 81 breaking changes before release over 181 months and 27 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b23"]
+
+[[responses.draft.roles.bullets]]
+text = "Moved the supplier catalog sync using Kafka and schema registry contracts so producers could not break downstream consumers, cutting median latency from 84 minutes to 188 seconds across 28 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b24"]
+
+[[responses.draft.roles.bullets]]
+text = "Split the returns reconciliation using partitioned warehouse tables with clustering chosen from measured query plans, reducing the nightly load window from 4 hours to 195 minutes for 29 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b25"]
+
+[[responses.draft.roles.bullets]]
+text = "Tuned the basket analysis marts using a Python service with typed contracts and contract tests in continuous integration, removing 90 manual steps and 202 hours of weekly analyst effort across 30 teams, reviewed with the security and compliance group before each release."
+evidence = ["b26"]
+
+[[responses.draft.roles.bullets]]
+text = "Documented the planogram compliance feed using Terraform modules that provision every environment from an empty account, catching 93 breaking changes before release over 209 months and 31 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b27"]
+
+[[responses.draft.roles.bullets]]
+text = "Retired the gift card ledger using Airflow with retries, backfills, and alerts routed to the owning team, cutting median latency from 96 minutes to 216 seconds across 32 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b28"]
+
+[[responses.draft.roles.bullets]]
+text = "Hardened the e-commerce clickstream using incremental dbt models over PostgreSQL with tested keys and documented grain, reducing the nightly load window from 8 hours to 223 minutes for 33 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b29"]
+
+[[responses.draft.roles.bullets]]
+text = "Standardized the replenishment signal job using Kafka and schema registry contracts so producers could not break downstream consumers, removing 102 manual steps and 230 hours of weekly analyst effort across 34 teams, reviewed with the security and compliance group before each release."
+evidence = ["b30"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the store labor model using a Python service with typed contracts and contract tests in continuous integration, cutting median latency from 108 minutes to 244 seconds across 36 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b32"]
+
+[[responses.draft.roles.bullets]]
+text = "Designed the regional sales cube using Terraform modules that provision every environment from an empty account, reducing the nightly load window from 4 hours to 251 minutes for 37 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b33"]
+
+[[responses.draft.roles.bullets]]
+text = "Migrated the price elasticity store using Airflow with retries, backfills, and alerts routed to the owning team, removing 114 manual steps and 258 hours of weekly analyst effort across 38 teams, reviewed with the security and compliance group before each release."
+evidence = ["b34"]
+
+[[responses.draft.roles]]
+role = "Woodgrove"
+
+[responses.draft.roles.context]
+text = "Built claims reporting pipelines for an insurance servicing company."
+evidence = ["context_woodgrove"]
+
+[[responses.draft.roles.bullets]]
+text = "Replaced the claims intake extract using Kafka and schema registry contracts so producers could not break downstream consumers, cutting median latency from 120 minutes to 272 seconds across 40 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b36"]
+
+[[responses.draft.roles.bullets]]
+text = "Consolidated the adjuster workload report using partitioned warehouse tables with clustering chosen from measured query plans, reducing the nightly load window from 8 hours to 279 minutes for 41 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b37"]
+
+[[responses.draft.roles.bullets]]
+text = "Introduced the policy lookup service using a Python service with typed contracts and contract tests in continuous integration, removing 126 manual steps and 286 hours of weekly analyst effort across 42 teams, reviewed with the security and compliance group before each release."
+evidence = ["b38"]
+
+[[responses.draft.roles.bullets]]
+text = "Rewrote the subrogation tracker using Terraform modules that provision every environment from an empty account, catching 129 breaking changes before release over 293 months and 43 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b39"]
+
+[[responses.draft.roles.bullets]]
+text = "Moved the fraud referral queue using Airflow with retries, backfills, and alerts routed to the owning team, cutting median latency from 132 minutes to 300 seconds across 44 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b40"]
+
+[[responses.draft.roles.bullets]]
+text = "Split the premium billing extract using incremental dbt models over PostgreSQL with tested keys and documented grain, reducing the nightly load window from 4 hours to 307 minutes for 45 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b41"]
+
+[[responses.draft.roles.bullets]]
+text = "Tuned the reserve change log using Kafka and schema registry contracts so producers could not break downstream consumers, removing 138 manual steps and 314 hours of weekly analyst effort across 46 teams, reviewed with the security and compliance group before each release."
+evidence = ["b42"]
+
+[[responses.draft.roles.bullets]]
+text = "Documented the provider directory load using partitioned warehouse tables with clustering chosen from measured query plans, catching 141 breaking changes before release over 321 months and 47 deployments, handed over with runbooks the on-call rotation used without escalation."
+evidence = ["b43"]
+
+[[responses.draft.roles.bullets]]
+text = "Retired the litigation hold index using a Python service with typed contracts and contract tests in continuous integration, cutting median latency from 144 minutes to 328 seconds across 48 source feeds, working with the pricing and finance analysts who owned the definitions."
+evidence = ["b44"]
+
+[[responses.draft.roles.bullets]]
+text = "Hardened the payment remittance feed using Terraform modules that provision every environment from an empty account, reducing the nightly load window from 8 hours to 335 minutes for 49 downstream reports, pairing with the operations leads who ran the affected shifts."
+evidence = ["b45"]
+
+[[responses.draft.roles.bullets]]
+text = "Prepared the evidence binder for an external claims audit, collecting job logs and access reviews for 9 reporting pipelines."
+evidence = ["b46"]
+
+[[responses.draft.roles.bullets]]
+text = "Answered follow-up questions from state examiners about how 3 claims extracts were reconciled to the general ledger."
+evidence = ["b47"]
+
+[expect]
+requirements = [
+    "Production experience with streaming data pipelines",
+    "Data warehouse modeling",
+    "Support for regulatory audits",
+    "Kafka and schema registry contracts",
+    "dbt modeling over PostgreSQL",
+    "Airflow orchestration",
+    "Terraform provisioning",
+    "Typed Python data services",
+    "Warehouse partitioning and query tuning",
+    "Reducing pipeline latency",
+    "Reducing manual analyst effort",
+    "Catching breaking changes before release",
+    "Insurance claims data",
+]
+must_have = [
+    "Production experience with streaming data pipelines",
+    "Data warehouse modeling",
+    "Support for regulatory audits",
+]
+hard_gates = ["Remote within the United States"]
+immutable = [
+    "Contoso Freight Data",
+    "Principal Data Engineer",
+    "May 2019 to Present",
+    "Woodgrove Claims Services",
+    "March 2010 to May 2014",
+    "Bachelor of Science, Information Systems",
+]
+
+[expect.measured]
+model_calls = 3
+trimmed = 13
+
+[expect.checks]
+"must-have coverage" = "pass"
+"sources cited" = "pass"
+"numbers traced" = "pass"
+"document structure" = "pass"

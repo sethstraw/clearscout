@@ -1,0 +1,131 @@
+name = "derived_data_architecture"
+proves = """
+The confident case for the deterministic reading: a posting that states its
+market, its level, its experience floor, its degree, its working arrangement,
+and its sponsorship policy, all of which are read out of the text by rules with
+no model involved.
+
+What it does not prove is that the record fits. Nothing here scores a candidate
+against a posting, and the reading is reported beside the model's extraction
+rather than merged into it.
+
+Screen mode, because the reading runs before drafting and a posting is triaged
+long before anything is written.
+"""
+mode = "screen"
+
+posting = """
+Senior Data Architect, Contoso Data Group
+
+Contoso runs a regulated data estate across eleven business domains and is
+hiring a senior data architect to hold its shape.
+
+Responsibilities:
+- Own the canonical data model and the enterprise data model beneath it
+- Run master data management for customer and product, including the golden
+  record, entity resolution, and the survivorship rules behind both
+- Keep reference data and every shared code set current with the owning domain
+- Chair the data governance forum and set data quality rules with each data
+  domain ownership group
+
+Requirements:
+- 8+ years of experience in data architecture or data modeling
+- Bachelor's degree in a technical field, or equivalent experience
+- Demonstrated data stewardship across a system of record
+
+Preferred qualifications:
+- Familiarity with an interoperability standard
+- Conference speaking is a plus
+
+This role is hybrid, three days per week in the office in Riverbend. Contoso is
+unable to sponsor visas for this position.
+
+Benefits and legal:
+- We offer a 401(k) match and paid time off
+- Contoso is an equal opportunity employer and all qualified applicants will
+  receive consideration for employment without regard to any protected status
+"""
+
+[evidence]
+registry = "Designed the schema registry and its compatibility rules"
+quality = "Introduced data quality rules covering 1,400 columns"
+
+[responses.jobspec]
+title = "Senior Data Architect"
+company = "Contoso Data Group"
+seniority = "senior"
+location = "Riverbend, hybrid"
+keywords = ["data architecture", "master data management", "data governance", "reference data"]
+
+[[responses.jobspec.requirements]]
+text = "8+ years of experience in data architecture or data modeling"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Bachelor's degree in a technical field, or equivalent experience"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Demonstrated data stewardship across a system of record"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Familiarity with an interoperability standard"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "minimum_years"
+text = "8+ years of experience in data architecture"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "degree"
+text = "Bachelor's degree in a technical field, or equivalent experience"
+blocking = false
+
+[[responses.jobspec.hard_gates]]
+kind = "sponsorship"
+text = "Contoso is unable to sponsor visas for this position"
+blocking = true
+
+[[responses.match]]
+requirement = "8+ years of experience in data architecture or data modeling"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["registry"]
+
+[[responses.match]]
+requirement = "Bachelor's degree in a technical field, or equivalent experience"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["quality"]
+
+[[responses.match]]
+requirement = "Demonstrated data stewardship across a system of record"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["quality"]
+
+[[responses.match]]
+requirement = "Familiarity with an interoperability standard"
+classification = "GAP"
+strength = "none"
+note = "No interoperability standard is named in the record."
+
+[expect]
+must_have = ["8+ years of experience in data architecture or data modeling"]
+
+[expect.derived]
+role_family = "Data architecture and governance"
+specialty = "Master and reference data"
+seniority = "senior"
+years = "8"
+education = "bachelor's degree, or equivalent experience"
+location = "hybrid"
+authorization = "sponsorship is not offered"
+sections = "Requirements, Preferred qualifications"
+must_have = "3"
+preferred = "2"
+
+[expect.measured]
+model_calls = 2

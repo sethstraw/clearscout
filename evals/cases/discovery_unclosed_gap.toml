@@ -1,0 +1,74 @@
+name = "discovery_unclosed_gap"
+proves = """
+A gap discovery failed to close is still a gap.
+
+Three questions about one subject find nothing that could be written down, so
+the line closes and the requirement identifier comes back unclosed. Nothing in
+the program can mark a requirement answered because somebody was asked about it,
+and this is the case that would fail if anything ever did.
+
+The probe budget is the other half of it. Three questions and then it stops,
+because the fourth is an interrogation and the answers people give to reach the
+end of one are not evidence.
+"""
+mode = "screen"
+
+posting = """
+Machine Learning Platform Engineer, Woodgrove Analytics
+
+Woodgrove Analytics is standing up a feature store and wants somebody who has
+run model serving in production.
+
+Requirements:
+- Model serving infrastructure at production scale
+- Terraform for environment provisioning
+
+Remote within the United States.
+Benefits and legal:
+- We offer paid time off, a 401(k) with matching, and a home office allowance.
+- Applicants will receive consideration without regard to any protected status.
+- This posting is not an offer of employment and the range is not a commitment.
+"""
+
+[evidence]
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Machine Learning Platform Engineer"
+company = "Woodgrove Analytics"
+location = "Remote, United States"
+keywords = ["model serving", "feature store", "Terraform"]
+
+[[responses.jobspec.requirements]]
+text = "Model serving infrastructure at production scale"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for environment provisioning"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Model serving infrastructure at production scale"
+classification = "GAP"
+note = "The record does not describe model serving."
+
+[[responses.match]]
+requirement = "Terraform for environment provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Wrote the provisioning modules."
+
+[discovery]
+about = "model serving infrastructure"
+gap = "r01"
+replies = ["Hmm.", "Not sure.", "Maybe?", "Still nothing."]
+
+[expect]
+gaps = ["Model serving infrastructure at production scale"]
+discovery = "unanswered"
+
+[expect.measured]
+model_calls = 2
+discovery_questions_asked = 3
+discovery_unclosed_gaps = 1

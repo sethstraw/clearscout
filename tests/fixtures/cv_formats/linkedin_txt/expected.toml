@@ -1,0 +1,39 @@
+# A profile export pasted as text: page footers, abbreviated months with
+# parenthetical durations, a ligature, and a promotion at one employer.
+source = "profile.txt"
+name = "Jordan Example"
+contact = [
+    "jordan.example@example.com",
+    "www.linkedin.com/in/jordan-example",
+    "Senior Planning Analyst at Northwind Traders",
+    "Springfield",
+]
+summary = ["Planning analyst who turns store and supplier data into weekly replenishment decisions."]
+skills = ["Demand Forecasting", "SQL"]
+education = ["Example State University Bachelor of Science, Supply Chain Management (2012 - 2016)"]
+publications = []
+dropped = ["Contact", "Top Skills", "Summary", "Experience", "Education", "Page 1 of 2", "Page 2 of 2"]
+
+[[roles]]
+employer = "Northwind Traders"
+title = "Senior Planning Analyst"
+dates = "Jan 2022 - Present (2 years 9 months)"
+location = "Springfield"
+bullets = [
+    "Led the quarterly demand forecast for 30 stores and cut stockouts by 18 percent.",
+    "Ran field counts with 6 store managers to correct the forecast inputs.",
+]
+
+[[roles]]
+employer = "Northwind Traders"
+title = "Planning Analyst"
+dates = "Mar 2019 - Dec 2021 (2 years 10 months)"
+location = "Springfield"
+bullets = ["Built the replenishment model that sets weekly orders for 1,200 items."]
+
+[[roles]]
+employer = "Globex Corporation"
+title = "Inventory Coordinator"
+dates = "Aug 2016 - Feb 2019 (2 years 7 months)"
+location = "Riverside"
+bullets = ["Reconciled cycle counts across 4 warehouses each month."]

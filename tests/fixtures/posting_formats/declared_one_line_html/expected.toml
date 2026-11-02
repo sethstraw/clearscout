@@ -1,0 +1,38 @@
+# A posting declared in linked data whose description markup carries no line
+# breaks at all. The reading takes its shape from the elements instead: a
+# heading and a paragraph are separated by a blank line, and consecutive list
+# items sit on their own "- " lines under the heading they belong to.
+source = "posting.html"
+url = "https://jobs.example.com/globex-freight/postings/8120"
+method = "publisher markup"
+
+lines = [
+    "ABOUT GLOBEX FREIGHT",
+    "",
+    "Globex Freight is a made up name for a made up company, which is the point of a fixture. We move freight for eleven depots and we publish the timetable they plan against.",
+    "",
+    "THE ROLE",
+    "",
+    "We are looking for a Data Engineer to join the platform team. You will build and keep the pipelines that carry depot uploads through to the published timetable, and you will be the person who notices when a feed goes quiet.",
+    "",
+    "WHAT YOU WILL DO",
+    "",
+    "- Build batch and streaming pipelines that carry depot uploads into the warehouse.",
+    "- Model the published timetable so the depot teams can query it without asking us first.",
+    "- Keep the nightly checks green, and carry the pager for the pipelines you wrote.",
+    "- Work with the integration team on the rules a new carrier feed has to pass.",
+    "",
+    "WHAT YOU BRING",
+    "",
+    "- Five years building data pipelines that other people depended on.",
+    "- Fluency in Python and SQL, and comfort reading a schema you did not write.",
+    "- Experience with a layered warehouse, and an opinion about where transformation belongs.",
+    "",
+    "WHAT WE OFFER",
+    "",
+    "- Health cover for you and your dependants.",
+    "- A learning budget you do not have to justify twice.",
+    "- Two days a week in the Thistledown Quay office, and the rest wherever you work best.",
+    "",
+    "Globex Freight is an equal opportunity employer. We welcome applications from everyone and we make reasonable adjustments at every stage of the process.",
+]

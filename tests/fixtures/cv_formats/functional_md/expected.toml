@@ -1,0 +1,41 @@
+# Skills-first Markdown: asterisk bullets, bold employer lines with no role
+# headings, achievements grouped under a skill rather than an employer, and a
+# numbered publication list.
+source = "cv.md"
+name = "Casey Example"
+contact = ["casey.example@example.com | Springfield"]
+summary = ["Operations analyst who shortens reporting cycles for finance teams."]
+skills = [
+    "**Data analysis:** SQL, Python, spreadsheet modelling",
+    "**Reporting:** monthly close packs, variance commentary",
+]
+education = ["**BA Economics**, Example College, 2012 to 2016"]
+publications = [
+    "Example C. Faster month-end close. Ops Review. 2021.",
+    "Example C, Roe B. Variance commentary that gets read. Ops Review. 2022.",
+]
+dropped = ["## Skills", "## Profile", "## Experience", "## Publications", "## Education"]
+
+[[sections]]
+heading = "Achievements by Skill"
+items = [
+    "Process improvement",
+    "Standardised the month-end checklist across 4 regional teams.",
+    "Stakeholder reporting",
+    "Trained 15 analysts on the variance commentary template.",
+]
+
+[[roles]]
+employer = "Northwind Traders"
+title = "Operations Analyst"
+dates = "2019 - 2023"
+bullets = [
+    "Cut the monthly close from 9 days to 4 by automating 12 reconciliations.",
+    "Built the weekly variance report read by 5 regional directors.",
+]
+
+[[roles]]
+employer = "Acme Logistics"
+title = "Planning Associate"
+dates = "2016 - 2019"
+bullets = ["Scheduled inbound freight for 3 distribution centres."]

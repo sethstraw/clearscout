@@ -1,0 +1,25 @@
+# A two-column PDF: a sidebar beside the experience column, and a content
+# stream written row by row, so a reader following the stream interleaves them.
+source = "cv.pdf"
+name = "Rowan Example"
+contact = ["rowan.example@example.com | +00 555 0177"]
+skills = ["Python, Go, PostgreSQL, Kafka, Terraform, Kubernetes"]
+education = ["MSc, Distributed Systems, Example University, 2013 to 2015"]
+dropped = ["SKILLS", "EDUCATION", "PROFESSIONAL EXPERIENCE"]
+
+[[roles]]
+employer = "Acme Logistics"
+title = "Platform Engineer"
+dates = "2019 to Present"
+location = "Springfield"
+bullets = [
+    "Consolidated 14 regional dispatch services into one scheduling API.",
+    "Cut overnight batch runtime from 6 hours to 35 minutes.",
+]
+
+[[roles]]
+employer = "Initrode Freight"
+title = "Integration Engineer"
+dates = "2015 to 2019"
+location = "Riverside"
+bullets = ["Delivered 9 carrier integrations against a shared message contract."]

@@ -1,0 +1,52 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 1358 >>
+stream
+BT /F1 10 Tf 1 0 0 1 62 742 Tm (Rowan Example) Tj ET
+BT /F1 10 Tf 1 0 0 1 62 726 Tm (rowan.example@example.com | +00 555 0177) Tj ET
+BT /F1 10 Tf 1 0 0 1 62 690 Tm (SKILLS) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 690 Tm (PROFESSIONAL EXPERIENCE) Tj ET
+BT /F1 10 Tf 1 0 0 1 62 674 Tm (Python, Go, PostgreSQL, Kafka,) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 674 Tm (Acme Logistics) Tj ET
+BT /F1 10 Tf 1 0 0 1 62 658 Tm (Terraform, Kubernetes) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 658 Tm (Platform Engineer | 2019 to Present) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 642 Tm (Springfield) Tj ET
+BT /F1 10 Tf 1 0 0 1 62 626 Tm (EDUCATION) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 626 Tm (Consolidated 14 regional dispatch) Tj ET
+BT /F1 10 Tf 1 0 0 1 62 610 Tm (MSc, Distributed Systems,) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 610 Tm (services into one scheduling API.) Tj ET
+BT /F1 10 Tf 1 0 0 1 62 594 Tm (Example University, 2013 to 2015) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 594 Tm (Cut overnight batch runtime from) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 578 Tm (6 hours to 35 minutes.) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 562 Tm (Initrode Freight) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 546 Tm (Integration Engineer | 2015 to 2019) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 530 Tm (Riverside) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 514 Tm (Delivered 9 carrier integrations) Tj ET
+BT /F1 10 Tf 1 0 0 1 330 498 Tm (against a shared message contract.) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001650 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1720
+%%EOF

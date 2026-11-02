@@ -1,0 +1,77 @@
+name = "derived_management_language"
+proves = """
+A negative control for management mismatch. The title is Manager and the posting
+uses "manage" five times: a backlog, a roadmap, vendors, stakeholders, and a
+migration. Not one person reports to anybody in it.
+
+A keyword matcher calls this a people-management role and a candidate reads the
+answer and either applies for the wrong job or skips the right one. The rule is
+that a statement outranks a title, so with no statement there is no answer, and
+the note names the title word that was not enough on its own.
+
+The family is placed in the same run, which is the point of separating the two
+questions: what the work is about and who reports to whom are different facts
+and a posting can state one without the other.
+"""
+mode = "screen"
+
+posting = """
+Manager, Data Governance, Adatum Holdings
+
+You will manage the roadmap for our governance program, manage the stakeholders
+around it, and lead the migration to the new catalog.
+
+Responsibilities:
+- Manage the backlog for the governance program and manage vendor relationships
+- Publish data lineage, run metadata management, and keep the data catalog and
+  the business glossary current
+- Own the data quality rules and the data governance forum that agrees them
+- Work with each data domain ownership group on its own canonical data model
+
+Requirements:
+- 5 years of experience in data governance or data stewardship
+
+Preferred qualifications:
+- Comfort in a room full of people who disagree with each other
+"""
+
+[responses.jobspec]
+title = "Manager, Data Governance"
+company = "Adatum Holdings"
+seniority = "senior"
+location = "Not stated"
+keywords = ["data governance", "data lineage", "data catalog", "metadata management"]
+
+[[responses.jobspec.requirements]]
+text = "5 years of experience in data governance or data stewardship"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Comfort in a room full of people who disagree with each other"
+importance = "nice_to_have"
+
+[[responses.match]]
+requirement = "5 years of experience in data governance or data stewardship"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["lineage"]
+
+[[responses.match]]
+requirement = "Comfort in a room full of people who disagree with each other"
+classification = "TAILORING_ONLY"
+strength = "weak"
+note = "Not evidenceable from a record."
+
+[evidence]
+lineage = "Contributed to the lineage service that traces any column"
+
+[expect.derived]
+role_family = "Data architecture and governance"
+specialty = "Metadata, lineage, and catalogs"
+orientation = "not stated"
+seniority = "not stated"
+years = "5"
+education = "not stated"
+
+[expect.measured]
+model_calls = 2

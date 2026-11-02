@@ -1,0 +1,670 @@
+{
+  "protocol_version": "tailorcv-match-development-v1",
+  "reviewer_role": "B",
+  "packet_sha256": "ccfde6089012b27f15708580195a514db9a95e0b751b44ea20947de030815d7a",
+  "judgments": [
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000001",
+      "material": {
+        "family": "match",
+        "classification": "DIRECT",
+        "strength": "strong",
+        "dimension": "hard",
+        "challenge_class": "clear_supported",
+        "decisive_entry_ids": [
+          "syn-e1"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e1 is a Python service processing thirty million events per day; the stated live volume establishes production use at high event volume.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "d70bcb4bd68b1077c84d4417d1dd72449301fbedde618791690c4f490f940aea"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000002",
+      "material": {
+        "family": "match",
+        "classification": "DIRECT",
+        "strength": "strong",
+        "dimension": "behavioral",
+        "challenge_class": "clear_supported",
+        "decisive_entry_ids": [
+          "syn-e4",
+          "syn-e6"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e4 and syn-e6 state working with and coordinating engineering and customer support partners to deliver three releases.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "62db39c0e0a9a63c3beb9a2cd16566a2f59b2fcfaa088088a267aaec0ba7d7a4"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000003",
+      "material": {
+        "family": "match",
+        "classification": "TAILORING_ONLY",
+        "strength": "moderate",
+        "dimension": "hard",
+        "challenge_class": "partial_contribution",
+        "decisive_entry_ids": [
+          "syn-e7"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e7 names production readiness and scaling work on the payments platform with limiting wording (helped with); the qualifiers are met and the verb improves is not an ownership ask.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "5b3b5f7cf506a06e80273ffacad575c5b01507ddc38cb046027088ef029c67a2"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000004",
+      "material": {
+        "family": "match",
+        "classification": "TAILORING_ONLY",
+        "strength": "strong",
+        "dimension": "behavioral",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e4",
+          "syn-e6"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e4 and syn-e6 narrate working well with and coordinating cross-functional partners to deliver shared releases, without labeling the partnerships as trusted.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "5095dff3d083442b26b106269bba48018c1d2fb7ae8c10cdf3ea9d9fba92ac05"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000007",
+      "material": {
+        "family": "match",
+        "classification": "GAP",
+        "strength": "none",
+        "dimension": "behavioral",
+        "challenge_class": "absent_evidence",
+        "decisive_entry_ids": [],
+        "asserted_status_fact": null
+      },
+      "rationale": "No entry narrates coaching a team through ambiguous or strategic decisions; helping resolve delivery blockers is a different action.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "084b4610d0741f286ff3d7dbc03dcec765b7df6de62c486c075cd272e39620ac"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000008",
+      "material": {
+        "family": "match",
+        "classification": "ASSERTED",
+        "strength": "none",
+        "dimension": "hard",
+        "challenge_class": "boilerplate_or_status",
+        "decisive_entry_ids": [],
+        "asserted_status_fact": "Authorized to work in Canada without sponsorship."
+      },
+      "rationale": "The asserted status line states authorization to work in Canada without sponsorship.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "e359cd224b1c41b59835b3c04b06513dbc9439c7921f1e046ef990ef4959a92b"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000009",
+      "material": {
+        "family": "match",
+        "classification": "ASSERTED",
+        "strength": "none",
+        "dimension": "hard",
+        "challenge_class": "boilerplate_or_status",
+        "decisive_entry_ids": [],
+        "asserted_status_fact": "Located in Calgary, Alberta, Canada."
+      },
+      "rationale": "The asserted status line states the applicant is located in Calgary, Alberta.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "1241376ffa0c7f70889a1008d98580fe9719ed177b2e2a905079809e3ae4faef"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-00000000000a",
+      "material": {
+        "family": "match",
+        "classification": "GAP",
+        "strength": "none",
+        "dimension": "hard",
+        "challenge_class": "absent_evidence",
+        "decisive_entry_ids": [],
+        "asserted_status_fact": null
+      },
+      "rationale": "No entry names Rust, and Rust is outside the Python ecosystem the record shows, with a years qualifier.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "915af2a725ee0b0aedf9d9ecce8cba39ab8152dbb78baa04cc46ac0b086caa0d"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-00000000000b",
+      "material": {
+        "family": "match",
+        "classification": "GAP",
+        "strength": "none",
+        "dimension": "behavioral",
+        "challenge_class": "absent_evidence",
+        "decisive_entry_ids": [],
+        "asserted_status_fact": null
+      },
+      "rationale": "No entry narrates persuading executives or reversing contested decisions.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "cc806e37ce8d836083e95e94d693896bc2d282e7fae2d64e4c4a7accace3969c"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-00000000000d",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "weak",
+        "dimension": "hard",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e2"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e2 shows Kubernetes infrastructure work, which is in Helm's ecosystem, but Helm charts are never named and no stated fact establishes production delivery.",
+      "confidence": "low",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "cb67f9a3b4ab7ae926f738e0bc64a0674d70b06ebbfadaec752968f656a253e5"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-00000000000e",
+      "material": {
+        "family": "match",
+        "classification": "TAILORING_ONLY",
+        "strength": "strong",
+        "dimension": "behavioral",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e5"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e5 narrates helping teammates resolve delivery blockers on shared commitments, which is the unblocking trait itself, in the applicant's own words without labeling the disposition.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "7c56024a81b3f2723cdc9187a8f7e3036bfc2977656c336b1a19902635c721e8"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-00000000000f",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "moderate",
+        "dimension": "behavioral",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e6"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e6 narrates coordinating partner teams and assigning owners for releases, the same alignment pattern at a much smaller scale than a dozen product groups and a company-wide launch.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "5124775080b013ce4a1e69bc4b8d0ceba34d202488901808d319e6b2efc34d86"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000010",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "moderate",
+        "dimension": "hard",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e2"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e2 runs scheduled reconciliation jobs as Kubernetes CronJobs, an adjacent tool in the same Kubernetes ecosystem; Argo Workflows itself is never named.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "94c14a7cdae685d13e5a998e78309bf4d4ec2f9858a56c91b56a1ae81eddbb06"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000011",
+      "material": {
+        "family": "match",
+        "classification": "DIRECT",
+        "strength": "strong",
+        "dimension": "hard",
+        "challenge_class": "clear_supported",
+        "decisive_entry_ids": [
+          "syn-e1"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e1 delivered a Python payment event ingestion service at thirty million events per day, meeting the scale; the platform name is the employer's and the language list is examples.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "29c01026f33513aa460452bede46ae04ef116c317d3d6108d2adeddca327f004"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000012",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "weak",
+        "dimension": "hard",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e2"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e2 shows work on a reconciliation pipeline, but the role carries no dates, so the eight-year minimum is unmet; the finance and compliance teams are collaborators, not qualifiers.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "28921c99b0ab07e61f65e7742b4e3bd759bf436cc789d3499fa1e8730e4783ec"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "10000000-0000-4000-8000-000000000013",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "moderate",
+        "dimension": "hard",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e1"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e1 shows payment event ingestion in production at thirty million events per day, well short of the billion-per-day scale asked.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "26375437aefae47734b9a71f68dfeb8c1f5ab69ed892728430f31076a1b01d53"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "160a5fd5-310d-4e51-a423-c2f8599a7a66",
+      "material": {
+        "family": "match",
+        "classification": "DIRECT",
+        "strength": "strong",
+        "dimension": "hard",
+        "challenge_class": "clear_supported",
+        "decisive_entry_ids": [
+          "syn-e3"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e3 states leading the on-call rotation and coordinating incident response, which covers coordinating incidents as a rotation member.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "c846c7c10c20ec28af438a7a7841bfba6e74db84587dae0046a41a6a2ecdf1a2"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "1ba0fa9b-5342-4187-92a1-3c357f0bbcb6",
+      "material": {
+        "family": "match",
+        "classification": "TAILORING_ONLY",
+        "strength": "moderate",
+        "dimension": "hard",
+        "challenge_class": "partial_contribution",
+        "decisive_entry_ids": [
+          "syn-e7"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e7 names production readiness and scaling work on the payments platform with limiting wording (helped with); the qualifiers are met and no lead ask applies.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "6cb901dc91399cabbf05821095e51c1125697a6158de71052875a53d047f805c"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "56d3d0f3-3777-4acd-97eb-27a7e8259e54",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "weak",
+        "dimension": "hard",
+        "challenge_class": "partial_contribution",
+        "decisive_entry_ids": [
+          "syn-e7"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e7 shows help with scaling work on the payments platform, but no entry states capacity planning or load testing.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "5cddfaf4ea8adb285126d470c3c1b74c222691c0dd9ab56c8c1adbc9d44ab8b8"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "7834e5a8-9b0c-46db-8119-9dad6711877e",
+      "material": {
+        "family": "match",
+        "classification": "TAILORING_ONLY",
+        "strength": "moderate",
+        "dimension": "hard",
+        "challenge_class": "partial_contribution",
+        "decisive_entry_ids": [
+          "syn-e7"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e7 names production readiness work on the payments platform with limiting wording (helped with); every stated qualifier is met and no lead ask applies.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "2ab7e99cfe5d3255e0a16ac7ac94c51ba9eeff53bf8e95475037e0e5eea54adb"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "819bbb15-d894-4a3b-83e8-ede65cb8bac8",
+      "material": {
+        "family": "match",
+        "classification": "GAP",
+        "strength": "none",
+        "dimension": "hard",
+        "challenge_class": "absent_evidence",
+        "decisive_entry_ids": [],
+        "asserted_status_fact": null
+      },
+      "rationale": "No entry shows web front-end or accessibility work.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "d5f9f8aa751452eac3486fc43745ca8ec71d55998559a2c71707c140fec104a8"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "c183058c-6bfa-490d-846a-af6d388f103c",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "weak",
+        "dimension": "hard",
+        "challenge_class": "partial_contribution",
+        "decisive_entry_ids": [
+          "syn-e7"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e7 shows help with production readiness on the payments platform, but the role carries no dates, so the 3+ year minimum is unmet.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "eff7a297894d9c5722917dc25d6b6f9447afd7b11204dc77c6f713d2cbd68ffe"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "c9cc1f93-6988-4ff1-813a-329fc137c71a",
+      "material": {
+        "family": "match",
+        "classification": "GAP",
+        "strength": "none",
+        "dimension": "hard",
+        "challenge_class": "boilerplate_or_status",
+        "decisive_entry_ids": [],
+        "asserted_status_fact": null
+      },
+      "rationale": "No asserted status line or entry addresses a criminal record check; the asserted lines cover only work authorization and location.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "83e3d619105e2cb9b9d98acec969454adc2c417f56ad969704e756c93afa5730"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "d5630a68-344d-49b9-a238-7eb8bba60916",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "weak",
+        "dimension": "hard",
+        "challenge_class": "partial_contribution",
+        "decisive_entry_ids": [
+          "syn-e7"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e7 shows production readiness and scaling work on the payments platform, but only as help; the requirement asks the applicant to lead that work, which no entry states.",
+      "confidence": "high",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "5d1b117390fb9a69c1941a2e423a1a5e08a5316bdae1cdc64b9545e7f899ab34"
+    },
+    {
+      "protocol_version": "tailorcv-match-development-v1",
+      "family": "match",
+      "case_id": "f9de149e-e022-4ed5-a733-857af7a56589",
+      "material": {
+        "family": "match",
+        "classification": "TRANSFERABLE",
+        "strength": "weak",
+        "dimension": "hard",
+        "challenge_class": "soft_or_transferable",
+        "decisive_entry_ids": [
+          "syn-e3"
+        ],
+        "asserted_status_fact": null
+      },
+      "rationale": "syn-e3 shows leading an on-call rotation and incident response for a settlements service, but no entry mentions writing or maintaining runbooks, the core ask.",
+      "confidence": "medium",
+      "blindness": {
+        "historical_outcomes_unseen": true,
+        "other_reviewer_output_unseen": true,
+        "evaluated_output_unseen": true,
+        "future_provider_identity_unseen": true,
+        "future_selection_unseen": true,
+        "untrusted_requirement_treated_as_data": true
+      },
+      "judgment_sha256": "effbcad068d20db959bb0a46febaf2d6da8e0fb8d70c1db9280daa6c2fd31247"
+    }
+  ]
+}

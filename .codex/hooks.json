@@ -1,0 +1,53 @@
+{
+  "description": "TailorCV repository guards shared with the Claude adapter.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-piped-test-output.py\""
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-cat-heredoc.py\""
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-shared-checkout-git.py\""
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-credential-reads.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "^(Edit|Write|apply_patch|mcp__serena\\w*?__(replace|insert|rename|safe_delete)\\w*)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-extra-migration.py\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/stop-test-collect.py\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/stop-check-instruction-paths.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

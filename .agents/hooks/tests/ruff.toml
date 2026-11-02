@@ -1,0 +1,5 @@
+# Hook tests follow the repository test lint rules: undocumented, and assert allowed.
+extend = "../../../pyproject.toml"
+
+[lint.per-file-ignores]
+"*.py" = ["D101", "D102", "D103", "S101"]

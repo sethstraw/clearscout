@@ -1,0 +1,28 @@
+# A posting declared in linked data whose description is HTML: a styled wrapper
+# div, a retired block left behind as a comment, headings and list items, and a
+# link whose title attribute carries an angle bracket of its own. No tag, no
+# attribute and no comment reaches the reading, and each block keeps its break.
+source = "posting.html"
+url = "https://jobs.example.com/thistledown-freight/postings/2290"
+method = "publisher markup"
+
+lines = [
+    "About Thistledown Freight",
+    "",
+    "Thistledown Freight runs the overnight trunk between six depots, and the platform team keeps the paperwork that follows a pallet honest. The manifest service is the record every depot scans against, and it is the one system a driver cannot work around.",
+    "",
+    "What you will do",
+    "",
+    "- Own the manifest service that every depot scans against, end to end.",
+    "- Keep the nightly reconciliation green, and carry the pager for the jobs you wrote.",
+    "- Work with the depot leads on the checks a new route has to pass before it goes live.",
+    "",
+    "What you bring",
+    "",
+    "- Four years building services that other teams depended on.",
+    "- Fluency in Python and SQL, and patience with a schema you did not write.",
+    "",
+    "Apply through the depot careers site.",
+    "",
+    "Thistledown Freight is an equal opportunity employer and makes reasonable adjustments at every stage.",
+]

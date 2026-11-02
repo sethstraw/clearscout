@@ -1,0 +1,147 @@
+name = "relevance_review_logistics_unknown_is_reachable"
+proves = """
+The logistics_unknown reason class is reachable in the program. Aligned core work
+and established qualifications, with the posting stating neither a location nor a
+payroll arrangement, is the shape the prompt describes for it, and this case
+carries that shape through the schema and through local validation to a recorded
+result with no failures.
+
+The provider is scripted, so this cannot show that the live model picks
+logistics_unknown when it should; that is exactly the judgment a scripted run
+cannot measure. It shows that the prompt carries the policy and that the response
+contract accepts the answer rather than rejecting a value nothing has yet
+produced. That matters here more than elsewhere: logistics_unknown has never
+appeared in live data, so a contract that quietly refused it would have gone
+unnoticed.
+
+The second posting carries the middle value of hard_condition: a span that engages
+a listed exclusion condition without settling it answers unresolved, where open
+logistics alone answer passes. A posting whose hard condition is unsettled is not
+reviewable, so that one answers investigate while the first answers review.
+"""
+mode = "screen"
+
+posting = """
+Data Platform Engineer, Fourth Coffee Supply
+
+Fourth Coffee Supply runs its roasting and distribution reporting on a nightly
+warehouse load and wants to move to streaming ingestion. The reporting layer
+serves the roasting floor, the distribution planners, and the finance group, and
+all three want numbers that are current rather than a day old.
+
+You would own the streaming ingestion tier, the warehouse it feeds, and the
+definitions agreed with the analysts who read them.
+
+Requirements:
+- Kafka or an equivalent streaming platform in production
+- PostgreSQL warehouse modeling
+
+We have not decided where this role sits.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+
+[responses.jobspec]
+title = "Data Platform Engineer"
+company = "Fourth Coffee Supply"
+seniority = "not stated"
+location = "not stated"
+keywords = ["Kafka", "PostgreSQL", "streaming ingestion"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka or an equivalent streaming platform in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "PostgreSQL warehouse modeling"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka or an equivalent streaming platform in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Production Kafka ingestion tier."
+
+[[responses.match]]
+requirement = "PostgreSQL warehouse modeling"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse"]
+note = "Clinical reporting warehouse modeled in PostgreSQL."
+
+[relevance_review]
+search_context = """
+Target work: streaming ingestion and warehouse modeling on a data platform.
+Locations accepted: remote within the United States.
+Authorization: unrestricted right to work in the United States.
+Hard exclusion conditions the model must honor: on site five days a week.
+"""
+
+[[relevance_review.postings]]
+id = "pending-logistics-a"
+employer = "Litware Instruments"
+title = "Platform Data Engineer"
+location = ""
+body = """
+Litware Instruments is replacing a nightly batch load with a streaming ingestion
+tier, and needs an engineer who has run one in production and modeled the
+warehouse it feeds.
+
+You would own the ingestion tier, the schema contract with the reporting
+warehouse, and the compatibility rules around it.
+
+We are still working out where this role will sit and which entity will carry
+the payroll, and we will discuss that with candidates during the process.
+"""
+
+# Aligned work, established qualifications, and nothing open but the logistics
+# the posting declines to state.
+[[relevance_review.results]]
+posting = "pending-logistics-a"
+recommendation = "review"
+summary = "Streaming ingestion and warehouse ownership align; only location and payroll are open."
+core_work_alignment = "direct"
+core_qualification_alignment = "established"
+hard_condition = "passes"
+decisive_basis = "logistics_unknown"
+spans = [1]
+evidence = ["kafka"]
+unresolved_questions = ["Where does the role sit, and which entity carries the payroll?"]
+
+[[relevance_review.postings]]
+id = "pending-logistics-b"
+employer = "Proseware"
+title = "Streaming Data Engineer"
+location = ""
+body = """
+Proseware is moving its order reporting from a nightly batch load to a streaming
+ingestion tier, and needs an engineer who has run one in production and modeled
+the warehouse it feeds.
+
+You would own the ingestion tier and the schema contract with the reporting
+warehouse.
+
+The team keeps regular office time, and how much of it this role shares is agreed
+with each hire.
+"""
+
+# The attendance span engages the listed condition and does not say five days.
+[[relevance_review.results]]
+posting = "pending-logistics-b"
+recommendation = "investigate"
+summary = "Streaming ingestion and warehouse ownership align; the office expectation is not settled."
+core_work_alignment = "direct"
+core_qualification_alignment = "established"
+hard_condition = "unresolved"
+decisive_basis = "logistics_unknown"
+spans = [3]
+evidence = ["kafka"]
+unresolved_questions = ["How many days a week does this role attend the office?"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 2
+relevance_review_missing_rules = 0

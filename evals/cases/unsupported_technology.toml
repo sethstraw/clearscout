@@ -1,0 +1,188 @@
+name = "unsupported_technology"
+proves = """
+A required technology the record does not carry, and a model that tries to claim
+it anyway. The scripted matcher answers DIRECT for Kubernetes with no evidence
+and no strength, which is the shape of a confident answer with nothing behind it.
+
+The deterministic catch is in matching: a classification arriving without
+support is normalized to a gap rather than trusted, so it earns no selection
+weight, appears in the gaps table, and cannot pull an entry onto the page. The
+term then does not appear in the document, which is measured separately, because
+"the model did not claim it" and "the program would not have let it" are
+different statements and only the second one is a guarantee.
+"""
+mode = "draft"
+
+posting = """
+Platform Engineer, Streaming and Orchestration, Northbridge Freight
+
+Northbridge Freight runs shipment telemetry for a national carrier network. The
+platform team is hiring an engineer to run our streaming and orchestration tier.
+
+Requirements:
+- Kafka in production, including partitioning and consumer group management
+- Kubernetes: you will own our cluster topology, autoscaling, and operators
+- Terraform for provisioning
+- Rust for the high-throughput ingest workers
+
+Preferred: schema registry design, column-level lineage.
+
+Remote within the United States.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+terraform = "Wrote the Terraform modules that provision every environment"
+lineage = "Contributed to the lineage service"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+skills_governance = "dimensional modeling, schema registry design"
+context_fabrikam = "Worked on platform architecture within a team of six"
+
+[responses.jobspec]
+title = "Platform Engineer, Streaming and Orchestration"
+company = "Northbridge Freight"
+seniority = "senior"
+location = "Remote, United States"
+keywords = ["Kafka", "Kubernetes", "Terraform", "Rust", "schema registry", "lineage"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production including partitioning and consumer groups"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Kubernetes cluster topology autoscaling and operators"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for provisioning"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Rust for high-throughput ingest workers"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema registry design"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Column-level lineage"
+importance = "nice_to_have"
+
+[[responses.match]]
+requirement = "Kafka in production including partitioning and consumer groups"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Production ingestion tier on Kafka."
+
+# Confident and empty. Matching must not take this at face value.
+[[responses.match]]
+requirement = "Kubernetes cluster topology autoscaling and operators"
+classification = "DIRECT"
+strength = "none"
+note = "Container orchestration experience."
+
+[[responses.match]]
+requirement = "Terraform for provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform", "skills_platform"]
+note = "Wrote the provisioning modules."
+
+[[responses.match]]
+requirement = "Rust for high-throughput ingest workers"
+classification = "GAP"
+strength = "none"
+note = "The record shows Python and Go, not Rust."
+
+[[responses.match]]
+requirement = "Schema registry design"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["registry", "skills_governance"]
+note = "Designed the registry and its compatibility rules."
+
+[[responses.match]]
+requirement = "Column-level lineage"
+classification = "DIRECT"
+strength = "moderate"
+evidence = ["lineage"]
+note = "Contributed to a column-level lineage service."
+
+[responses.draft.summary]
+text = """
+Platform engineer working on streaming ingestion, schema governance, and the \
+provisioning underneath both.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go, Docker"
+evidence = ["skills_platform"]
+
+[[responses.draft.skills]]
+label = "Governance"
+text = "schema registry, data lineage, data quality rules"
+evidence = ["skills_governance"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+[[responses.draft.roles.bullets]]
+text = "Designed the schema registry and its compatibility rules with two other engineers, stopping 31 breaking changes before release."
+evidence = ["registry"]
+
+[[responses.draft.roles.bullets]]
+text = "Wrote the Terraform modules that provision every environment, replacing a two-day runbook."
+evidence = ["terraform"]
+
+[[responses.draft.roles.bullets]]
+text = "Contributed to the lineage service that traces any column to its source system."
+evidence = ["lineage"]
+
+[responses.critic]
+alignment = 4
+preservation = 5
+specificity = 4
+readability = 4
+ats_clarity = 4
+human_voice = 4
+guidance = "Keeps to what the record supports."
+
+[expect]
+must_have = [
+    "Kubernetes cluster topology autoscaling and operators",
+    "Rust for high-throughput ingest workers",
+]
+gaps = [
+    "Kubernetes cluster topology autoscaling and operators",
+    "Rust for high-throughput ingest workers",
+]
+absent = ["Kubernetes", "Rust", "autoscaling", "operators"]
+immutable = ["Fabrikam Data Works", "Staff Platform Engineer", "April 2021 to Present"]
+
+[expect.classifications]
+# Declared as a gap although the model said DIRECT. That difference is the case.
+"Kubernetes cluster topology autoscaling and operators" = "GAP"
+"Rust for high-throughput ingest workers" = "GAP"
+"Kafka in production including partitioning and consumer groups" = "DIRECT"
+
+[expect.checks]
+"sources cited" = "pass"
+"numbers traced" = "pass"
+"critic" = "pass"
+
+[expect.measured]
+model_calls = 4

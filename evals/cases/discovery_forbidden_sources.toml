@@ -1,0 +1,80 @@
+name = "discovery_forbidden_sources"
+proves = """
+The three sources a fabrication would enter through are refused by name.
+
+Generated resume text, a model's suggestion, and the job description are each
+offered as an answer, carrying the same fluent sentence, and each is refused. A
+claim is then proposed in wording taken from the posting rather than from the
+person, and it is refused a second time on the words it uses. Both barriers are
+exercised, because either of them alone can be got around: the first depends on
+text arriving honestly labelled, and the second does not.
+
+The job description is the one worth the case. The question was built from it,
+so a posting asking for something and an answer of "yes" is the shape this
+would fail in.
+"""
+mode = "screen"
+
+posting = """
+Staff Engineer, Service Mesh, Proseware Networks
+
+Proseware Networks runs a service mesh across four regions and wants somebody
+who has operated one rather than read about one.
+
+Requirements:
+- Owned a production service mesh, including certificate rotation
+- Terraform for environment provisioning
+
+Remote within the United States.
+Benefits and legal:
+- We offer paid time off, a 401(k) with matching, and a home office allowance.
+- Applicants will receive consideration without regard to any protected status.
+- This posting is not an offer of employment and the range is not a commitment.
+"""
+
+[evidence]
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Staff Engineer, Service Mesh"
+company = "Proseware Networks"
+location = "Remote, United States"
+keywords = ["service mesh", "certificate rotation", "Terraform"]
+
+[[responses.jobspec.requirements]]
+text = "Owned a production service mesh, including certificate rotation"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for environment provisioning"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Owned a production service mesh, including certificate rotation"
+classification = "GAP"
+note = "The record does not mention a service mesh."
+
+[[responses.match]]
+requirement = "Terraform for environment provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Wrote the provisioning modules."
+
+[discovery]
+about = "a production service mesh"
+gap = "r01"
+forbidden = ["generated resume text", "a model suggestion", "the job description"]
+replies = ["I helped the network team out when their certificates expired."]
+claim = "Owned a production service mesh, including certificate rotation."
+scope = "the network team"
+placement = "Fabrikam"
+
+[expect]
+gaps = ["Owned a production service mesh, including certificate rotation"]
+discovery = "refused"
+
+[expect.measured]
+model_calls = 2
+discovery_questions_asked = 1
+discovery_unclosed_gaps = 1

@@ -1,0 +1,89 @@
+name = "out_of_vocabulary_citation"
+proves = """
+The mechanism the whole product rests on, exercised from the other side. The
+scripted matcher cites an evidence identifier that does not exist in this CV.
+
+There is no check for this and there does not need to be. The matching schema is
+built at runtime as a ``Literal`` over exactly the identifiers this parse
+produced, so a citation to something absent cannot be represented. A constrained
+decoder cannot emit the token; a provider that emitted it anyway would be
+rejected at validation before the value reached another stage. The run refuses
+at the matching call, and the refusal is the result the case declares.
+
+Read alongside ``vocabulary_closed`` in every other case, which records that the
+vocabulary each stage was offered was the right one. This case records what
+happens when something outside it arrives regardless.
+"""
+mode = "screen"
+
+posting = """
+Data Platform Engineer, Fabrikam Residences
+
+Fabrikam Residences is hiring a data platform engineer for the ingestion tier.
+
+Requirements:
+- Kafka in production
+- Terraform for provisioning
+- Schema governance
+
+The ingestion tier reads from about ninety source systems and is the input to
+every report the business runs. The team is three engineers and a manager, and
+the work is split between keeping the tier up and widening what it can read.
+
+Remote within the United States. No visa sponsorship is available.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+# Not a phrase to look for: a literal identifier, shaped like a real one and
+# belonging to no entry in any CV. This is the only place the harness allows an
+# identifier to be written by hand, and this is what it is for.
+imaginary = "id:b-0000000000"
+
+[responses.jobspec]
+title = "Data Platform Engineer"
+company = "Fabrikam Residences"
+seniority = "senior"
+location = "Remote, United States"
+keywords = ["Kafka", "Terraform", "schema governance"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for provisioning"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema governance"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier."
+
+[[responses.match]]
+requirement = "Terraform for provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Wrote the provisioning modules."
+
+# The evidence for this does not exist.
+[[responses.match]]
+requirement = "Schema governance"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["imaginary"]
+note = "Governance framework rollout."
+
+[expect]
+rejected_stage = "match"
+
+[expect.measured]
+model_calls = 2

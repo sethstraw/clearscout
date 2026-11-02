@@ -1,0 +1,21 @@
+# Settings for recording the replay cassette.
+#
+# Everything here describes Jane Q. Example, the invented candidate in
+# master_cv.md. Request bodies are matched by digest on replay, so recording
+# against a private CV or different inputs produces a cassette that cannot replay.
+
+cv = "master_cv.md"
+pages = 2
+
+[rules]
+work_authorization = "Authorized to work in Canada without sponsorship | Remote within Canada"
+protected = ["Clinical Data Engineer - Life Sciences"]
+forbidden = ["enterprise MDM platform implementation"]
+# Three boundaries a keyword alone would hide: the span of a title, a headline
+# requirement the record nearly but does not meet, and production work set apart
+# from familiarity.
+distinctions = [
+    "Product Owner was Jane's formal responsibility from March 2023 to September 2025; earlier delivery work under informatics titles is functional experience, not additional time under a product title.",
+    "Canonical records, entity resolution, terminology, and governance are applied master-data patterns and do not establish implementation of an enterprise MDM platform.",
+    "SQL, Python, ETL, APIs, mapping, and validation are direct production experience; Databricks and PySpark are familiarity only.",
+]

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generated artifact sentinel"
+  short_description: "Detect drift between hand-edited generated artifacts and their source"
+  default_prompt: "Enumerate the generated artifacts that scripts/generate.sh writes. If any changed without a matching source change, name the offending files and stop; suggest running scripts/generate.sh and diffing again."

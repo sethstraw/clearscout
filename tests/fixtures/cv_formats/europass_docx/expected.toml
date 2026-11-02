@@ -1,0 +1,24 @@
+# Europass layout: name and contact in the page header, employer and dates
+# tab-aligned on one line, numeric MM/YYYY dates.
+source = "cv.docx"
+name = "Anna Example"
+contact = ["Springfield", "anna.example@example.com | +00 555 0100"]
+skills = ["Programming: Python, SQL, Scala"]
+education = ["MSc Computer Science, Example University, 09/2014 - 07/2016"]
+publications = []
+dropped = ["Work experience", "Education and training", "Personal skills", "Page 1 of 1"]
+
+[[roles]]
+employer = "Initech Systems"
+title = "Senior Data Engineer"
+dates = "03/2021 - 06/2024"
+bullets = [
+    "Migrated 14 batch pipelines to streaming and cut the nightly load by 6 hours.",
+    "Mentored 3 junior engineers through their first production releases.",
+]
+
+[[roles]]
+employer = "Globex Corporation"
+title = "Data Engineer"
+dates = "01/2017 - 02/2021"
+bullets = ["Built the reporting warehouse used by 9 regional teams."]

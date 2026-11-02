@@ -1,0 +1,74 @@
+name = "derived_sales_pipeline"
+proves = """
+A negative control for cross-family terminology, and a confident classification
+at the same time. This posting says "pipeline" six times and "product" twice,
+and it is a sales job.
+
+The failure it is written against is a keyword matcher reading it as data work,
+which is what happens when a taxonomy counts bare nouns. The shipped taxonomy
+carries "sales pipeline" and "data pipeline" and neither carries "pipeline", so
+the reading places this in the market it belongs to and no data family is named
+anywhere in the answer.
+"""
+mode = "screen"
+
+posting = """
+Account Executive, Mid-Market, Fabrikam Software
+
+Fabrikam sells scheduling software to regional operators. You will own your
+pipeline end to end and manage the product story for the buyers in your patch.
+
+Responsibilities:
+- Build sales pipeline through prospecting calls and disciplined discovery call
+  follow-up
+- Close deals against a sales quota and keep the territory plan current every
+  week
+- Maintain the customer relationship management system so the pipeline is worth
+  reading
+- Renew the accounts you win, because renewal rate is half the job
+
+Requirements:
+- 3+ years of experience selling software to operators
+- Willingness to travel to customer sites two weeks a month
+"""
+
+[responses.jobspec]
+title = "Account Executive, Mid-Market"
+company = "Fabrikam Software"
+seniority = "mid"
+location = "Field, with travel"
+keywords = ["sales pipeline", "prospecting", "quota", "renewals"]
+
+[[responses.jobspec.requirements]]
+text = "3+ years of experience selling software to operators"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Willingness to travel to customer sites two weeks a month"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "3+ years of experience selling software to operators"
+classification = "GAP"
+strength = "none"
+note = "No sales role is in the record."
+
+[[responses.match]]
+requirement = "Willingness to travel to customer sites two weeks a month"
+classification = "ASSERTED"
+strength = "none"
+note = "Willingness to travel is a statement, not evidence."
+
+[expect]
+gaps = ["3+ years of experience selling software to operators"]
+
+[expect.derived]
+role_family = "Sales and business development"
+specialty = "not stated"
+years = "3"
+seniority = "not stated"
+orientation = "not stated"
+education = "not stated"
+
+[expect.measured]
+model_calls = 2

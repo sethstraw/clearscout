@@ -1,0 +1,4 @@
+interface:
+  display_name: "TanStack Query audit"
+  short_description: "List and audit useQuery/useMutation usage in the SPA"
+  default_prompt: "For a given route or component in the SPA, list every useQuery, useMutation, useSuspenseQuery, and useInfiniteQuery with its key, staleTime, gcTime, and invalidation sites. Flag missing invalidations and keys that omit their variables."

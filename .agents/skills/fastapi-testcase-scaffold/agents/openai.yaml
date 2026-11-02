@@ -1,0 +1,4 @@
+interface:
+  display_name: "FastAPI test scaffold"
+  short_description: "Scaffold a pytest test for a TailorCV FastAPI route handler"
+  default_prompt: "Given a route handler under src/tailorcv/delivery/api/, scaffold a pytest test in the owning tests/delivery/ module that builds a TestClient over create_app and the durable_database_url fixture, mocks outbound httpx with an httpx.MockTransport client, asserts the observable outcome, covers one happy path and one adversarial input, and does not mock the database."

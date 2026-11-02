@@ -1,0 +1,34 @@
+# A rendered PDF: a word hyphenated across a line break, a ligature, a
+# numbered publication list, and a Grants section.
+source = "cv.pdf"
+name = "Dana Example"
+contact = ["Springfield | dana.example@example.com | 555-0142"]
+summary = ["Research software engineer who builds data systems for laboratory instruments."]
+education = ["PhD, Computational Biology, Example University, 2010 to 2015"]
+publications = [
+    "Example D, Roe B. Stream joins for instrument data. J Ex Comput. 2021;4(2):10-19.",
+    "Example D. Archive validation at scale. J Ex Comput. 2022;5(1):1-9.",
+    "Roe B, Example D. Calibration drift in field spectrometers. Ex Methods. 2018;2(3):44-51.",
+]
+dropped = ["SUMMARY", "PROFESSIONAL EXPERIENCE", "EDUCATION", "PUBLICATIONS"]
+
+[[sections]]
+heading = "GRANTS AND FUNDING"
+items = ["Instrument Data Commons, Example Science Foundation, Co-investigator, 2021."]
+
+[[roles]]
+employer = "Example University Research Computing"
+title = "Research Software Engineer"
+dates = "September 2019 to Present"
+location = "Springfield"
+bullets = [
+    "Led change management for 40 laboratory sites moving to the shared instrument archive.",
+    "Certified 12 acquisition pipelines against the archive validation suite.",
+]
+
+[[roles]]
+employer = "Acme Instruments"
+title = "Applications Scientist"
+dates = "June 2015 to August 2019"
+location = "Riverside"
+bullets = ["Wrote calibration software used on 300 spectrometers in the field."]

@@ -1,0 +1,159 @@
+name = "ownership_inflation"
+proves = """
+The model turns shared work into sole ownership. The evidence says the registry
+was designed "with two other engineers" and that the lineage service was
+"contributed to"; the draft says it was owned end to end and led.
+
+This case exists to record an uncomfortable result honestly. Every deterministic
+check passes. The citation is valid, the figures trace, the structure is right,
+and the ownership-verb check at most warns on a verb no cited entry uses. No
+deterministic check judges an ownership phrase such as "with two
+other engineers", because that is a judgment about wording rather than a rule
+a regular expression can settle. The
+shipped defences are the drafting prompt, the critic, and human review, and on a
+scripted run the critic says whatever the case tells it to.
+
+So the only thing standing between this draft and the page is the eval-only
+``ownership_inflation`` scorer, which is why it exists and why it is the leading
+candidate for promotion into a shipped check. What a live run would measure, and
+this cannot, is whether the drafting prompt makes a model less likely to write
+this in the first place.
+"""
+mode = "draft"
+
+posting = """
+Engineering Lead, Data Platform, Coho Vineyard Logistics
+
+Coho Vineyard Logistics is building out a data platform group and needs an
+engineering lead to own it.
+
+Responsibilities:
+- Own the schema contract and the registry that enforces it
+- Own the column-level lineage service end to end
+- Set the direction of the ingestion tier
+
+Requirements:
+- Demonstrated ownership of a schema registry
+- Demonstrated ownership of a data lineage service
+- Kafka in production
+
+Remote within the United States.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+lineage = "Contributed to the lineage service"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+skills_governance = "dimensional modeling, schema registry design"
+context_fabrikam = "Worked on platform architecture within a team of six"
+
+[responses.jobspec]
+title = "Engineering Lead, Data Platform"
+company = "Coho Vineyard Logistics"
+seniority = "lead"
+location = "Remote, United States"
+keywords = ["schema registry", "data lineage", "Kafka", "ownership"]
+
+[[responses.jobspec.requirements]]
+text = "Demonstrated ownership of a schema registry"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Demonstrated ownership of a data lineage service"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Demonstrated ownership of a schema registry"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["registry", "skills_governance"]
+note = "Designed it with two other engineers. Shared, not owned."
+
+[[responses.match]]
+requirement = "Demonstrated ownership of a data lineage service"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["lineage"]
+note = "Contributed to it. The record does not say who owned it."
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier."
+
+[responses.draft.summary]
+text = """
+Platform engineer working on streaming ingestion and the governance tooling \
+around it.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go"
+evidence = ["skills_platform"]
+
+[[responses.draft.skills]]
+label = "Governance"
+text = "schema registry, data lineage, data quality rules"
+evidence = ["skills_governance"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+# The inflation. Evidence: "with two other engineers". Draft: sole ownership.
+[[responses.draft.roles.bullets]]
+text = "Owned the schema registry and its compatibility rules end to end, stopping 31 breaking changes before release."
+evidence = ["registry"]
+
+# The second inflation. Evidence: "Contributed to". Draft: led the team.
+[[responses.draft.roles.bullets]]
+text = "Led the team that built the lineage service tracing any column to its source system, adopted by four downstream teams."
+evidence = ["lineage"]
+
+[responses.critic]
+alignment = 5
+preservation = 5
+specificity = 5
+readability = 5
+ats_clarity = 5
+human_voice = 5
+guidance = "A scripted critic. It approves whatever this file tells it to."
+
+[expect]
+gaps = []
+immutable = ["Fabrikam Data Works", "Staff Platform Engineer"]
+
+[expect.classifications]
+"Demonstrated ownership of a schema registry" = "TRANSFERABLE"
+"Demonstrated ownership of a data lineage service" = "TRANSFERABLE"
+
+# Every shipped check passes on a draft that materially overstates who did the
+# work. That is the finding, recorded rather than argued with.
+[expect.checks]
+"sources cited" = "pass"
+"numbers traced" = "pass"
+"document structure" = "pass"
+"first person" = "pass"
+"character policy" = "pass"
+"critic" = "pass"
+
+[expect.measured]
+model_calls = 4
+ownership_inflation = 2

@@ -1,0 +1,9 @@
+name = "tailorcv-worker"
+description = "Use for one bounded TailorCV implementation surface with explicit ownership. Do not use for broad planning or independent final judgment."
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Read .agents/roles/writer.md and follow it. It defines this role's scope,
+boundaries, focused checks, and return shape. Do not spawn subagents.
+"""

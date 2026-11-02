@@ -1,0 +1,155 @@
+name = "jobspec_conditional_gates"
+proves = """
+Three shapes of gate that read as absolute and are not: a clause that applies
+only under a condition ("If this role is remote, ..."), a gate that offers an
+alternative path (a degree or commensurate experience), and a step in the hiring
+process (an in-person interview). The extraction prompt says each is never
+blocking. Four gates in the same posting are absolute and stay blocking, so the
+case holds both kinds side by side. Two of those look like the shapes and are
+not: a sponsorship line limited to US-based positions meets its own condition
+on a posting that states no country but the United States, and a choice
+between a BS and an MS that offers no equivalent experience is one degree gate
+quoting the whole line rather than an alternative path.
+
+The scripted extraction answers the way the prompt asks. What the run measures
+is what the program does with that answer: every gate is found, the four
+absolute ones stay blocking, the other three are found and not blocking, and the
+verdict is reached with those three recorded but not deciding it. It does not
+measure whether a model returns this extraction; only a live run can.
+
+Screen mode, because gates decide a posting before anything is drafted.
+"""
+mode = "screen"
+
+posting = """
+Senior Data Engineer, Contoso Freight
+
+Contoso Freight moves parcel data for regional carriers and is rebuilding its
+ingestion platform.
+
+Requirements:
+- Bachelor's degree in computer science or commensurate experience
+- 5+ years of experience building data pipelines in Python
+- Must be authorized to work in the United States without sponsorship
+- Candidates are not eligible for visa sponsorship (applies to US-based positions)
+
+Education:
+BS or MS in Computer Science or Software Engineering required.
+
+Location:
+This position is based in the United States. If this role is remote, you must
+reside in a state where Contoso Freight employs staff.
+
+Hiring process:
+Finalists complete an in-person interview at the Riverbend office.
+"""
+
+[evidence]
+degree = "Bachelor of Science, Computer Science"
+orchestration = "Rewrote the load orchestration in Python"
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Senior Data Engineer"
+company = "Contoso Freight"
+seniority = "senior"
+location = "Remote or Riverbend"
+keywords = ["data pipelines", "Python", "ingestion platform"]
+
+[[responses.jobspec.requirements]]
+text = "Bachelor's degree in computer science or commensurate experience"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "5+ years of experience building data pipelines in Python"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "BS or MS in Computer Science or Software Engineering required"
+importance = "must_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "degree"
+text = "Bachelor's degree in computer science or commensurate experience"
+blocking = false
+
+[[responses.jobspec.hard_gates]]
+kind = "minimum_years"
+text = "5+ years of experience building data pipelines in Python"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "work_authorization"
+text = "Must be authorized to work in the United States without sponsorship"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "sponsorship"
+text = "Candidates are not eligible for visa sponsorship (applies to US-based positions)"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "degree"
+text = "BS or MS in Computer Science or Software Engineering required"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "location"
+text = "If this role is remote, you must reside in a state where Contoso Freight employs staff"
+blocking = false
+
+[[responses.jobspec.hard_gates]]
+kind = "onsite_cadence"
+text = "Finalists complete an in-person interview at the Riverbend office"
+blocking = false
+
+[[responses.match]]
+requirement = "Bachelor's degree in computer science or commensurate experience"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["degree"]
+note = "Bachelor of Science in Computer Science."
+
+[[responses.match]]
+requirement = "5+ years of experience building data pipelines in Python"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["orchestration", "kafka"]
+note = "Python pipeline work across roles dated 2017 to present."
+
+[[responses.match]]
+requirement = "BS or MS in Computer Science or Software Engineering required"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["degree"]
+note = "Bachelor of Science in Computer Science meets the lower of the two levels."
+
+[expect]
+requirements = [
+    "Bachelor's degree in computer science or commensurate experience",
+    "5+ years of experience building data pipelines in Python",
+    "BS or MS in Computer Science or Software Engineering required",
+]
+hard_gates = [
+    "Bachelor's degree in computer science or commensurate experience",
+    "5+ years of experience building data pipelines in Python",
+    "Must be authorized to work in the United States without sponsorship",
+    "Candidates are not eligible for visa sponsorship (applies to US-based positions)",
+    "BS or MS in Computer Science or Software Engineering required",
+    "If this role is remote, you must reside in a state where Contoso Freight employs staff",
+    "Finalists complete an in-person interview at the Riverbend office",
+]
+blocking_gates = [
+    "5+ years of experience building data pipelines in Python",
+    "Must be authorized to work in the United States without sponsorship",
+    "Candidates are not eligible for visa sponsorship (applies to US-based positions)",
+    "BS or MS in Computer Science or Software Engineering required",
+]
+nonblocking_gates = [
+    "Bachelor's degree in computer science or commensurate experience",
+    "If this role is remote, you must reside in a state where Contoso Freight employs staff",
+    "Finalists complete an in-person interview at the Riverbend office",
+]
+
+[expect.measured]
+model_calls = 2

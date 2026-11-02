@@ -1,0 +1,93 @@
+name = "match_years_sum"
+proves = """
+A years minimum counts the time the dated roles doing that kind of work cover,
+not the span from the first such role to the last. The record holds two
+engineering roles, July 2011 to February 2016 and January 2021 to the present,
+with a technical program management role between them.
+
+- "12+ years of software engineering experience" would be met by the
+  fifteen-year span and is not met by the roughly ten years the two roles
+  cover, so it is `TRANSFERABLE` at `weak`, naming the covered years.
+- "At least 8 years building and maintaining software" is the control: the
+  same two roles cover more than eight years, so it is `DIRECT` at `strong`.
+
+Both are stated under Requirements with no condition, so the extraction types
+both years gates blocking. The scripted match answers the way the match
+prompt's rule asks, and the run measures what the program does with those
+answers. Whether a model counts the covered time rather than the span is a
+live-run question this case cannot answer.
+"""
+mode = "screen"
+cv = "hybrid_career.md"
+
+posting = """
+Principal Software Engineer, Wingtip Transit
+
+Wingtip Transit runs the scheduling and passenger information systems for a
+regional bus network, and is replacing its vehicle telemetry pipeline.
+
+The platform team owns the services that turn vehicle location and door events
+into arrival predictions, service alerts, and the records dispatchers use to
+reconstruct an incident. This role leads the technical design of the new
+telemetry pipeline, reviews changes that touch the passenger information
+displays, and works with dispatch and maintenance staff when a release changes
+what they see. The team ships weekly and keeps every release reversible during
+service hours.
+
+Requirements:
+- 12+ years of software engineering experience
+- At least 8 years building and maintaining software
+"""
+
+[evidence]
+python_tools = "Built Python analysis tools"
+telemetry = "Built the telemetry replay service"
+
+[responses.jobspec]
+title = "Principal Software Engineer"
+company = "Wingtip Transit"
+seniority = "principal"
+keywords = ["software engineering", "vehicle telemetry", "passenger information"]
+
+[[responses.jobspec.requirements]]
+text = "12+ years of software engineering experience"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "At least 8 years building and maintaining software"
+importance = "must_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "minimum_years"
+text = "12+ years of software engineering experience"
+blocking = true
+
+[[responses.jobspec.hard_gates]]
+kind = "minimum_years"
+text = "At least 8 years building and maintaining software"
+blocking = true
+
+[[responses.match]]
+requirement = "12+ years of software engineering experience"
+classification = "TRANSFERABLE"
+strength = "weak"
+evidence = ["telemetry", "python_tools"]
+note = "Engineering roles dated July 2011 to February 2016 and January 2021 to present cover about ten years; the program management role between them does not count toward twelve."
+
+[[responses.match]]
+requirement = "At least 8 years building and maintaining software"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["telemetry", "python_tools"]
+note = "Engineering roles dated July 2011 to February 2016 and January 2021 to present cover about ten years."
+
+[expect.classifications]
+"12+ years of software engineering experience" = "TRANSFERABLE"
+"At least 8 years building and maintaining software" = "DIRECT"
+
+[expect.strengths]
+"12+ years of software engineering experience" = "weak"
+"At least 8 years building and maintaining software" = "strong"
+
+[expect.measured]
+model_calls = 2

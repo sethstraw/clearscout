@@ -1,0 +1,131 @@
+name = "relevance_review_cross_posting_span_is_rejected"
+proves = """
+Two postings are reviewed in one batch and the answer for the first cites a
+posting span that belongs to the second. The schema cannot refuse it: span ids
+are open strings, so a citation naming another posting in the same call parses.
+Local validation is what refuses it, as wrong_posting_span, and the second
+posting's own answer is accepted in the same pass.
+
+The provider is scripted, so this cannot show that the live model keeps its
+citations straight. It shows that the prompt carries the rule and that the
+response contract rejects a citation of a span the batch did send,
+which is the failure a batched call creates and a single-posting call cannot.
+"""
+mode = "screen"
+
+posting = """
+Data Platform Engineer, Adatum Terminals
+
+Adatum Terminals moves container traffic through three ports and wants an
+engineer for the ingestion tier behind its scheduling estate. Every crane move,
+gate transaction, and yard reposition arrives on the same stream, and the
+planners downstream expect it in order.
+
+You would run the streaming platform in production, own the schema contract with
+the reporting warehouse, and provision every environment from configuration that
+is checked in rather than typed at a console.
+
+Requirements:
+- Kafka in production
+- Terraform for provisioning
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Data Platform Engineer"
+company = "Adatum Terminals"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka", "Terraform"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for provisioning"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Production Kafka ingestion tier."
+
+[[responses.match]]
+requirement = "Terraform for provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Terraform modules for every environment."
+
+[relevance_review]
+search_context = """
+Target work: streaming ingestion and infrastructure provisioning on a data platform.
+Locations accepted: remote within the United States.
+Authorization: unrestricted right to work in the United States.
+"""
+
+[[relevance_review.postings]]
+id = "pending-cross-a"
+employer = "Adatum Terminals"
+title = "Data Platform Engineer"
+location = "Remote, United States"
+body = """
+Adatum Terminals is hiring an engineer to own the ingestion tier behind its
+container scheduling estate across three ports.
+
+You would run the streaming platform in production and provision every
+environment from checked-in configuration.
+"""
+
+[[relevance_review.postings]]
+id = "pending-cross-b"
+employer = "Volt Harbour"
+title = "Infrastructure Engineer"
+location = "Remote, United States"
+body = """
+Volt Harbour needs an infrastructure engineer to provision and maintain
+the environments its scheduling estate runs on.
+
+You would write the provisioning modules, keep four environments identical, and
+own the deployment path into each of them.
+"""
+
+# The citation names a span of pending-cross-b, which the batch sent and which
+# belongs to the wrong posting.
+[[relevance_review.results]]
+posting = "pending-cross-a"
+span_owner = "pending-cross-b"
+recommendation = "review"
+summary = "Ingestion ownership and provisioning align with the candidate's platform work."
+core_work_alignment = "direct"
+core_qualification_alignment = "established"
+hard_condition = "passes"
+decisive_basis = "core_match"
+spans = [2]
+evidence = ["kafka"]
+
+[[relevance_review.results]]
+posting = "pending-cross-b"
+recommendation = "review"
+summary = "Provisioning and environment parity align with the candidate's Terraform work."
+core_work_alignment = "direct"
+core_qualification_alignment = "established"
+hard_condition = "passes"
+decisive_basis = "core_match"
+spans = [2]
+evidence = ["terraform"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_failures = 1
+"relevance_review_failure.wrong_posting_span" = 1
+relevance_review_missing_rules = 0

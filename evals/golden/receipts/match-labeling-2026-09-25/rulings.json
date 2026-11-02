@@ -1,0 +1,18 @@
+[
+  {
+    "case_id": "10000000-0000-4000-8000-000000000004",
+    "accepted": [
+      {"classification": "TAILORING_ONLY", "strength": "strong"},
+      {"classification": "TAILORING_ONLY", "strength": "moderate"}
+    ],
+    "basis": "Neither the rubric nor the match prompt sets a strength for a partnership pattern narrated without the disposition's label; the product answered moderate 3 of 3 against strong in the dc9dd997 run."
+  },
+  {
+    "case_id": "10000000-0000-4000-8000-00000000000f",
+    "accepted": [
+      {"classification": "TRANSFERABLE", "strength": "moderate"},
+      {"classification": "TRANSFERABLE", "strength": "weak"}
+    ],
+    "basis": "Scale is the named difference, which the rubric says may be moderate, but owners are shown and priorities only loosely, so weak is also a reading it allows; the product answered weak 3 of 3 against moderate in the dc9dd997 run."
+  }
+]

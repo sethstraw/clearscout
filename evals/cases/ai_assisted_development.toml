@@ -1,0 +1,159 @@
+name = "ai_assisted_development"
+proves = """
+The record says an AI coding assistant was used to write migration scripts. The
+posting is for a company building AI products. The model resolves the gap in the
+most flattering direction available and writes that the platform itself does
+machine learning inference, citing the entry about the assistant.
+
+This is a fabrication with a valid citation and no invented number, so provenance
+and figures both pass. What catches it is a rule the person wrote down: a
+forbidden phrase in ``[rules]``, enforced by ``verify.guardrail_checks.forbidden``, which cannot
+be talked out of a verdict and does not need a model to agree.
+
+That is also the limit worth stating. The rule caught this because somebody
+anticipated the exact wording. A phrasing they did not anticipate would pass
+every deterministic check, which is what the eval-only scorers are looking for
+and what the critic is for on a live run.
+"""
+mode = "draft"
+
+posting = """
+Senior Platform Engineer, Fourth Coffee Intelligence
+
+Fourth Coffee Intelligence builds machine learning products for supply chain
+forecasting. Our platform team keeps the data and inference tiers running.
+
+Requirements:
+- Kafka in production
+- Terraform for provisioning
+- Experience building or operating AI-powered data products
+- Comfort working in an AI-assisted engineering organization
+
+Remote within the United States.
+"""
+
+[rules]
+forbidden = ["AI-powered", "machine learning inference", "AI platform"]
+distinctions = [
+    "Using an AI coding assistant is a development practice, not a product capability. Never describe the platform as an AI system on that basis.",
+]
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+assistant = "Used an AI coding assistant to draft and review the migration scripts"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+context_fabrikam = "Worked on platform architecture within a team of six"
+
+[responses.jobspec]
+title = "Senior Platform Engineer"
+company = "Fourth Coffee Intelligence"
+seniority = "senior"
+location = "Remote, United States"
+keywords = ["Kafka", "Terraform", "AI-assisted development", "data products"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for provisioning"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Experience building or operating AI-powered data products"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Comfort working in an AI-assisted engineering organization"
+importance = "nice_to_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier."
+
+[[responses.match]]
+requirement = "Terraform for provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform", "skills_platform"]
+note = "Wrote the provisioning modules."
+
+# The slide. The record supports the assistant, not the product.
+[[responses.match]]
+requirement = "Experience building or operating AI-powered data products"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["assistant"]
+note = "AI tooling is in the record."
+
+[[responses.match]]
+requirement = "Comfort working in an AI-assisted engineering organization"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["assistant"]
+note = "Used an AI coding assistant on a production cutover."
+
+[responses.draft.summary]
+text = """
+Platform engineer working on streaming ingestion and the provisioning \
+underneath it.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go"
+evidence = ["skills_platform"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+[[responses.draft.roles.bullets]]
+text = "Wrote the Terraform modules that provision every environment, replacing a two-day runbook."
+evidence = ["terraform"]
+
+# A development practice, rewritten as a product capability. Cited, ASCII, no
+# invented figure, and false.
+[[responses.draft.roles.bullets]]
+text = "Delivered an AI-powered migration tooling layer that runs machine learning inference over schema changes before a registry cutover."
+evidence = ["assistant"]
+
+[responses.critic]
+alignment = 5
+preservation = 5
+specificity = 5
+readability = 5
+ats_clarity = 5
+human_voice = 5
+guidance = "Never reached: the free checks reject this draft first."
+
+[expect]
+immutable = ["Fabrikam Data Works", "Staff Platform Engineer"]
+# The phrase the record does support, which must survive: the assistant was
+# real and describing it accurately is not a problem.
+posting_only = ["supply chain forecasting", "inference tiers"]
+
+[expect.checks]
+"forbidden strings" = "fail"
+"sources cited" = "pass"
+"numbers traced" = "pass"
+"document structure" = "pass"
+
+[expect.measured]
+model_calls = 3
+# The model called r04 preferred, but the posting lists it under "Requirements".
+# The deterministic reading disagrees rather than deferring; a person settles it.
+model_rule_disagreements = 1

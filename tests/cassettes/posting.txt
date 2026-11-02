@@ -1,0 +1,43 @@
+Technical Product Manager, Life Sciences Data Platform
+
+Northstar Bioinformatics builds data products used by research, clinical, and
+commercial teams across the life-sciences industry. We are hiring a Technical
+Product Manager to own the platform that turns partner and reference datasets
+into standardized, trusted, and reusable data products.
+
+Responsibilities
+
+- Own the roadmap and backlog for ingestion, schema reconciliation, reference
+  data, entity resolution, lineage, and data-quality capabilities.
+- Run discovery with scientists, data stewards, customers, and engineers, then
+  turn their needs into requirements, specifications, user stories, acceptance
+  criteria, release plans, and product demonstrations.
+- Define API contracts, mappings, transformations, validation rules, and
+  measurable outcomes for new data connectors.
+- Guide engineering and quality-assurance teams through delivery while making
+  clear prioritization decisions across competing datasets and stakeholders.
+- Improve how canonical records are matched, deduplicated, governed, and
+  synchronized with external systems.
+- Document data definitions, provenance, and permitted uses so downstream
+  analytics and AI products can use the data safely.
+
+Required qualifications
+
+- Three or more years of software product-management experience.
+- Experience managing a data platform or technical data product through the
+  full development lifecycle.
+- Strong SQL skills and hands-on familiarity with ETL or ELT pipelines, APIs,
+  data mapping, schema design, and data validation.
+- Demonstrated backlog management, requirements writing, customer discovery,
+  and cross-functional delivery in an Agile environment.
+- Clear communication with scientific, business, and engineering audiences.
+
+Preferred qualifications
+
+- Experience in life sciences, healthcare, clinical research, or drug data.
+- Direct experience with an enterprise master data management platform.
+- Familiarity with data catalogs, terminology systems, and data governance.
+- Background in software or data engineering.
+
+Remote within Canada. Applicants must be authorized to work in Canada without
+sponsorship. The base salary range is CAD 125,000 to CAD 155,000.

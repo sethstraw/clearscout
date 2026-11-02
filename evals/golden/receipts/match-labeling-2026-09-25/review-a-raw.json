@@ -1,0 +1,280 @@
+{
+  "reviewer_role": "A",
+  "judgments": [
+    {
+      "case_id": "10000000-0000-4000-8000-000000000013",
+      "classification": "TRANSFERABLE",
+      "strength": "moderate",
+      "dimension": "hard",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e1"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e1 shows a payment event ingestion service at thirty million events per day, well short of the requested billion per day; scale is the missing qualifier.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000009",
+      "classification": "ASSERTED",
+      "strength": "none",
+      "dimension": "hard",
+      "challenge_class": "boilerplate_or_status",
+      "decisive_entry_ids": [],
+      "asserted_status_fact": "Located in Calgary, Alberta, Canada.",
+      "rationale": "A residence requirement answered by the asserted location line placing the applicant in Calgary, Alberta.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "d5630a68-344d-49b9-a238-7eb8bba60916",
+      "classification": "TRANSFERABLE",
+      "strength": "weak",
+      "dimension": "hard",
+      "challenge_class": "partial_contribution",
+      "decisive_entry_ids": ["syn-e7"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e7 says the applicant helped with production readiness and scaling work on the payments platform, which does not state the leadership the requirement asks for.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "1ba0fa9b-5342-4187-92a1-3c357f0bbcb6",
+      "classification": "TAILORING_ONLY",
+      "strength": "moderate",
+      "dimension": "hard",
+      "challenge_class": "partial_contribution",
+      "decisive_entry_ids": ["syn-e7"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e7 names production readiness and scaling work on the payments platform, but only as work the applicant helped with, so the limited contribution stays in a truthful rewrite.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000001",
+      "classification": "DIRECT",
+      "strength": "strong",
+      "dimension": "hard",
+      "challenge_class": "clear_supported",
+      "decisive_entry_ids": ["syn-e1"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e1 shows a Python ingestion service processing thirty million payment events per day, a stated live volume that establishes production use at high event volume.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000012",
+      "classification": "TRANSFERABLE",
+      "strength": "weak",
+      "dimension": "hard",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e2"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e2 shows work on a reconciliation pipeline, but the only role carries no dates, so the eight-year minimum is unmet.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000008",
+      "classification": "ASSERTED",
+      "strength": "none",
+      "dimension": "hard",
+      "challenge_class": "boilerplate_or_status",
+      "decisive_entry_ids": [],
+      "asserted_status_fact": "Authorized to work in Canada without sponsorship.",
+      "rationale": "A work authorization requirement answered by the asserted status line stating authorization to work in Canada without sponsorship.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000007",
+      "classification": "GAP",
+      "strength": "none",
+      "dimension": "behavioral",
+      "challenge_class": "absent_evidence",
+      "decisive_entry_ids": [],
+      "asserted_status_fact": null,
+      "rationale": "No entry narrates coaching a team through ambiguous strategic decisions; resolving delivery blockers and assigning owners are different actions toward the same people.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000004",
+      "classification": "TAILORING_ONLY",
+      "strength": "strong",
+      "dimension": "behavioral",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e4"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e4 narrates working well with design, customer support, and engineering partners to deliver three releases, the cross-functional partnership pattern, without labelling it as trusted partnership.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-00000000000f",
+      "classification": "TRANSFERABLE",
+      "strength": "moderate",
+      "dimension": "behavioral",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e6"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e6 shows coordinating engineering and customer support partners and assigning owners for releases, the same alignment pattern at a smaller scale than a dozen product groups and a company-wide launch.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-00000000000a",
+      "classification": "GAP",
+      "strength": "none",
+      "dimension": "hard",
+      "challenge_class": "absent_evidence",
+      "decisive_entry_ids": [],
+      "asserted_status_fact": null,
+      "rationale": "Rust is outside the record's Python ecosystem and the requirement carries a five-year minimum; no entry names Rust.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000010",
+      "classification": "TRANSFERABLE",
+      "strength": "moderate",
+      "dimension": "hard",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e2"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e2 shows scheduled reconciliation jobs run as Kubernetes CronJobs, an adjacent tool in the Kubernetes ecosystem Argo Workflows runs on; Argo Workflows itself is the missing qualifier.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-00000000000b",
+      "classification": "GAP",
+      "strength": "none",
+      "dimension": "behavioral",
+      "challenge_class": "absent_evidence",
+      "decisive_entry_ids": [],
+      "asserted_status_fact": null,
+      "rationale": "No entry narrates persuading executive stakeholders or reversing contested decisions.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "56d3d0f3-3777-4acd-97eb-27a7e8259e54",
+      "classification": "TRANSFERABLE",
+      "strength": "weak",
+      "dimension": "hard",
+      "challenge_class": "partial_contribution",
+      "decisive_entry_ids": ["syn-e7"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e7 shows helping with scaling work on the payments platform, related to capacity work, but it states neither capacity planning nor load testing ahead of peak traffic.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000003",
+      "classification": "TAILORING_ONLY",
+      "strength": "moderate",
+      "dimension": "hard",
+      "challenge_class": "partial_contribution",
+      "decisive_entry_ids": ["syn-e7"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e7 names production readiness and scaling work on the payments platform, meeting every stated qualifier, but as work the applicant helped with.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "c9cc1f93-6988-4ff1-813a-329fc137c71a",
+      "classification": "GAP",
+      "strength": "none",
+      "dimension": "hard",
+      "challenge_class": "boilerplate_or_status",
+      "decisive_entry_ids": [],
+      "asserted_status_fact": null,
+      "rationale": "Neither asserted status line speaks to a criminal record check, and no entry does either.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-00000000000d",
+      "classification": "TRANSFERABLE",
+      "strength": "weak",
+      "dimension": "hard",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e2"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e2 shows Kubernetes infrastructure work, the ecosystem Helm belongs to, but names no Helm charts and states no fact establishing production use.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "c183058c-6bfa-490d-846a-af6d388f103c",
+      "classification": "TRANSFERABLE",
+      "strength": "weak",
+      "dimension": "hard",
+      "challenge_class": "partial_contribution",
+      "decisive_entry_ids": ["syn-e7"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e7 shows helping with production readiness on the payments platform, but the only role carries no dates, so the three-year minimum is unmet.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "819bbb15-d894-4a3b-83e8-ede65cb8bac8",
+      "classification": "GAP",
+      "strength": "none",
+      "dimension": "hard",
+      "challenge_class": "absent_evidence",
+      "decisive_entry_ids": [],
+      "asserted_status_fact": null,
+      "rationale": "No entry shows web front-end or accessibility work of any kind.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "160a5fd5-310d-4e51-a423-c2f8599a7a66",
+      "classification": "DIRECT",
+      "strength": "strong",
+      "dimension": "hard",
+      "challenge_class": "clear_supported",
+      "decisive_entry_ids": ["syn-e3"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e3 states the applicant led the on-call rotation and coordinated incident response for the settlements service.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000011",
+      "classification": "DIRECT",
+      "strength": "strong",
+      "dimension": "hard",
+      "challenge_class": "clear_supported",
+      "decisive_entry_ids": ["syn-e1"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e1 shows a Python payment event ingestion service at thirty million events per day, within tens of millions; the platform name and the language examples are not qualifiers.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "f9de149e-e022-4ed5-a733-857af7a56589",
+      "classification": "TRANSFERABLE",
+      "strength": "weak",
+      "dimension": "hard",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e3"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e3 shows leading the on-call rotation and incident response for the settlements service, but no entry mentions writing or maintaining runbooks.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-00000000000e",
+      "classification": "TAILORING_ONLY",
+      "strength": "strong",
+      "dimension": "behavioral",
+      "challenge_class": "soft_or_transferable",
+      "decisive_entry_ids": ["syn-e5"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e5 narrates helping teammates resolve delivery blockers and keeping shared commitments visible, which is the unblocking trait itself, though it does not label the disposition.",
+      "confidence": "medium"
+    },
+    {
+      "case_id": "7834e5a8-9b0c-46db-8119-9dad6711877e",
+      "classification": "TAILORING_ONLY",
+      "strength": "moderate",
+      "dimension": "hard",
+      "challenge_class": "partial_contribution",
+      "decisive_entry_ids": ["syn-e7"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e7 names production readiness work on the payments platform, meeting the stated qualifiers, but as work the applicant helped with.",
+      "confidence": "high"
+    },
+    {
+      "case_id": "10000000-0000-4000-8000-000000000002",
+      "classification": "DIRECT",
+      "strength": "strong",
+      "dimension": "behavioral",
+      "challenge_class": "clear_supported",
+      "decisive_entry_ids": ["syn-e4", "syn-e6"],
+      "asserted_status_fact": null,
+      "rationale": "syn-e6 shows coordinating engineering and customer support partners through release planning and delivering three releases, and syn-e4 shows working with the same partners to deliver them.",
+      "confidence": "medium"
+    }
+  ]
+}

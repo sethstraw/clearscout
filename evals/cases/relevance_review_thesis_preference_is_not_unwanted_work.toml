@@ -1,0 +1,97 @@
+name = "relevance_review_thesis_preference_is_not_unwanted_work"
+proves = """
+An opportunity-thesis line saying some work is less appealing as the main
+occupation is a preference, not a listed boundary. With no "Work this person
+does not want" line naming it, the posting's work is judged against the CV
+evidence alone and lands on transferable_match with the ids it weighed, not on
+an unwanted-work core_gap.
+
+The provider is scripted, so this cannot show that the live model keeps the
+thesis out of the unwanted-work route; only a live run measures that. It shows
+the contract and local checks accept the cited, non-gap answer for this shape.
+"""
+mode = "screen"
+cv = "platform_documentation.md"
+
+posting = """
+Release Notes Editor, Northwind Traders
+
+Northwind Traders publishes release notes and upgrade guides for the customer
+engineering teams that run its platform.
+
+You would write and revise the release digest, review reference guides against
+the shipped behavior, keep the editorial style guide current, and work with the
+support engineers who report the upgrade failures the guides are written to
+prevent.
+
+Requirements:
+- Published release notes or developer documentation
+
+Remote within the United States.
+"""
+
+[evidence]
+digest = "Published a quarterly release-notes digest"
+guides = "Wrote and maintained forty reviewed API reference guides"
+
+[responses.jobspec]
+title = "Release Notes Editor"
+company = "Northwind Traders"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["release notes", "developer documentation"]
+
+[[responses.jobspec.requirements]]
+text = "Published release notes or developer documentation"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Published release notes or developer documentation"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["digest"]
+note = "Quarterly release-notes digest."
+
+[relevance_review]
+search_context = """
+Opportunity thesis (person-stated preference, not evidence): Documentation platform leadership at a product-led employer; people management as the main occupation is less appealing
+Kinds of work this person does: technical writing (documentation platform, content evaluation)
+Places this person may work: Remote, United States (eligibility authorized)
+"""
+
+[[relevance_review.postings]]
+id = "pending-thesis-preference-a"
+employer = "Fabrikam Software"
+title = "Editor Lead, Developer Documentation"
+location = "Remote, United States"
+body = """
+Fabrikam Software maintains a developer reference for integrators and is hiring
+an editor lead for its reference program.
+
+You would edit reference guides, approve revisions against the specifications,
+and manage a small group of contributing writers.
+
+Requirements:
+- Experience writing reviewed API reference guides
+
+Remote within the United States.
+"""
+
+# People management appears only in the thesis, never as a listed boundary, so
+# it lowers no axis; the reference work cites the ids weighed.
+[[relevance_review.results]]
+posting = "pending-thesis-preference-a"
+recommendation = "investigate"
+summary = "Reference guide and digest work transfers; the thesis disfavors people management, which is a preference, not a boundary."
+core_work_alignment = "transferable"
+core_qualification_alignment = "established"
+hard_condition = "passes"
+decisive_basis = "transferable_match"
+spans = [2, 3]
+evidence = ["guides", "digest"]
+unresolved_questions = ["How much of the role is managing writers rather than editing?"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

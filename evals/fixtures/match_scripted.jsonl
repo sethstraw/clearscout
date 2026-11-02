@@ -1,0 +1,5 @@
+{"cv_hash":"51703d56c2a53475","dimension":"hard","id":"scripted-direct","input":"Deliver a production service.","metadata":{"scripted_classification":"DIRECT"},"split":"contract"}
+{"cv_hash":"51703d56c2a53475","dimension":"behavioral","id":"scripted-tailoring","input":"Coordinate delivery across teams.","metadata":{"scripted_classification":"TAILORING_ONLY"},"split":"contract"}
+{"cv_hash":"51703d56c2a53475","dimension":"hard","id":"scripted-transferable","input":"Deliver infrastructure with an adjacent tool.","metadata":{"scripted_classification":"TRANSFERABLE"},"split":"contract"}
+{"cv_hash":"51703d56c2a53475","dimension":"hard","id":"scripted-asserted","input":"Authorized to work in Canada.","metadata":{"scripted_classification":"ASSERTED"},"split":"contract"}
+{"cv_hash":"51703d56c2a53475","dimension":"behavioral","id":"scripted-gap","input":"Demonstrate an unsupported behavioral pattern.","metadata":{"scripted_classification":"GAP"},"split":"contract"}

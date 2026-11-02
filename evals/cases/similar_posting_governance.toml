@@ -1,0 +1,107 @@
+name = "similar_posting_governance"
+proves = """
+The second of three near-identical postings from the same employer. This one is
+about governance, so the same record should answer it with different evidence
+than the ingestion posting does. See ``similar_posting_ingestion.toml`` for what
+the set as a whole measures.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer I, Governance, Lucerne Publishing Freight
+
+Lucerne Publishing Freight runs three platform teams. This role is on the
+governance team.
+
+Requirements:
+- Schema registry design, including compatibility rules
+- Column-level data lineage
+- Data quality rules with clear ownership routing
+
+Preferred: Kafka familiarity.
+
+The governance team owns the contract between producers and consumers and the
+tooling that proves it held. It is a small team and the work is mostly making
+other teams' changes safe before they ship.
+
+Remote within the United States. No visa sponsorship is available.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+lineage = "Contributed to the lineage service"
+quality = "Introduced data quality rules covering 1,400 columns"
+skills_governance = "dimensional modeling, schema registry design"
+
+[responses.jobspec]
+title = "Platform Engineer I, Governance"
+company = "Lucerne Publishing Freight"
+seniority = "mid"
+location = "Remote, United States"
+keywords = ["schema registry", "data lineage", "data quality rules", "compatibility"]
+
+[[responses.jobspec.requirements]]
+text = "Schema registry design including compatibility rules"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Column-level data lineage"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Data quality rules with ownership routing"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Kafka familiarity"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "sponsorship"
+text = "No visa sponsorship is available"
+blocking = true
+
+[[responses.match]]
+requirement = "Schema registry design including compatibility rules"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["registry", "skills_governance"]
+note = "Designed the registry and its rules."
+
+[[responses.match]]
+requirement = "Column-level data lineage"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["lineage"]
+note = "Contributed to a lineage service."
+
+[[responses.match]]
+requirement = "Data quality rules with ownership routing"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["quality"]
+note = "1,400 columns with failures routed to owners."
+
+[[responses.match]]
+requirement = "Kafka familiarity"
+classification = "DIRECT"
+strength = "moderate"
+evidence = ["kafka"]
+note = "Rebuilt an ingestion tier on it."
+
+[expect]
+must_have = [
+    "Schema registry design including compatibility rules",
+    "Column-level data lineage",
+    "Data quality rules with ownership routing",
+]
+hard_gates = ["No visa sponsorship is available"]
+blocking_gates = ["No visa sponsorship is available"]
+distinct_from = ["similar_posting_ingestion", "similar_posting_warehouse"]
+
+[expect.classifications]
+"Column-level data lineage" = "TRANSFERABLE"
+
+[expect.measured]
+model_calls = 2

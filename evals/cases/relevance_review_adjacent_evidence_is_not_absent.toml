@@ -1,0 +1,110 @@
+name = "relevance_review_adjacent_evidence_is_not_absent"
+proves = """
+An AI documentation content role whose work the record reaches through adjacent
+delivered work, documentation publishing and an ML-evaluation practice, has a
+reason class to land on that cites the ids it weighed: transferable core work, a
+partially established qualification, and investigate. The prompt rules out
+absent work with no cited id when related evidence exists.
+
+The provider is scripted, so this cannot show that the live model checks the
+supplied evidence before calling the work absent; only a live run measures
+that. It shows the contract and local checks accept the cited, non-absent
+answer for this shape.
+"""
+mode = "screen"
+cv = "platform_documentation.md"
+
+posting = """
+Documentation Lead, AI Content, Fabrikam Software
+
+Fabrikam Software publishes a developer reference for its platform and is
+building model-assisted reference pages on top of it.
+
+You would own the editorial standard for AI-drafted reference pages, review
+model output against the source code and specifications, and work with the
+engineering team on the evaluation set that decides what ships.
+
+Requirements:
+- Published developer documentation or API reference content
+- Hands-on work evaluating large language model output
+
+Remote within the United States.
+"""
+
+[evidence]
+guides = "Wrote and maintained forty reviewed API reference guides"
+llm_eval = "Built the evaluation set used to review model-drafted documentation pages"
+
+[responses.jobspec]
+title = "Documentation Lead, AI Content"
+company = "Fabrikam Software"
+seniority = "lead"
+location = "Remote, United States"
+keywords = ["developer documentation", "LLM evaluation"]
+
+[[responses.jobspec.requirements]]
+text = "Published developer documentation or API reference content"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Hands-on work evaluating large language model output"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Published developer documentation or API reference content"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["guides"]
+note = "Reviewed API reference guides."
+
+[[responses.match]]
+requirement = "Hands-on work evaluating large language model output"
+classification = "DIRECT"
+strength = "moderate"
+evidence = ["llm_eval"]
+note = "Evaluation set for model-drafted documentation pages."
+
+[relevance_review]
+search_context = """
+Opportunity thesis (person-stated preference, not evidence): Documentation platform and AI content work at a product-led employer
+Kinds of work this person does: technical writing (documentation, content evaluation)
+Places this person may work: Remote, United States (eligibility authorized)
+"""
+
+[[relevance_review.postings]]
+id = "pending-adjacent-evidence-a"
+employer = "Northwind Traders"
+title = "Editor, AI Documentation"
+location = "Remote, United States"
+body = """
+Northwind Traders maintains a developer help center and is adding model-drafted
+answers for integrators.
+
+You would edit and approve the drafted answers, keep the editorial style guide,
+and flag model output that departs from the cited specifications.
+
+Requirements:
+- Experience writing developer documentation or reference content
+- Familiarity with reviewing AI-generated text
+
+Remote within the United States.
+"""
+
+# The record shows publishing and ML-evaluation work next to this role, so the
+# answer cites them and lands on transferable rather than absent.
+[[relevance_review.results]]
+posting = "pending-adjacent-evidence-a"
+recommendation = "investigate"
+summary = "API reference guides and the model-page evaluation set transfer to AI documentation editing."
+core_work_alignment = "transferable"
+core_qualification_alignment = "partially_established"
+hard_condition = "passes"
+decisive_basis = "transferable_match"
+spans = [2, 3]
+evidence = ["guides", "llm_eval"]
+unresolved_questions = ["How much of the role is line editing rather than evaluation design?"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

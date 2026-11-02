@@ -1,0 +1,194 @@
+name = "jobspec_unstanced_qualifications"
+proves = """
+Qualification lines that state no stance of their own, in each place a posting
+puts them: a list under "Qualifications", a list under "Nice to have", a skill
+listed among the duties, and a skill mentioned in a paragraph about the role.
+The extraction prompt types each by its heading: `must_have` under a heading
+naming qualifications, `nice_to_have` under a preferred heading, and
+`nice_to_have` anywhere else. So the same shape types the same way on every
+posting.
+
+The scripted extraction answers that way, and the case declares each stance.
+The lines under the two headings are also measured as agreement: the
+deterministic reading of the raw posting infers the same stances from the same
+headings, so `model_rule_disagreements` stays at zero, and an extraction typing
+a line under "Qualifications" as `nice_to_have`, or one under "Nice to have" as
+`must_have`, would raise it. That reading gives the duty-listed SQL line and the
+paragraph dbt line no stance, so only the declared `nice_to_have` list fails an
+extraction typing either as `must_have`. Whether a model follows the rule is a
+live-run question this case cannot answer.
+
+The duties also hold an obligation every employee carries, to adhere to the
+company's security and confidentiality policies, which the prompt leaves out of
+requirements, beside compliance work the role performs, which stays a
+responsibility. The declared requirements omit the obligation, so an
+extraction that keeps it lowers `requirement_precision`.
+"""
+mode = "screen"
+
+posting = """
+Analytics Engineer, Northwind Traders
+
+About the role:
+You will own the reporting layer for the warehouse team. Working knowledge of
+dbt helps here.
+
+What you'll do:
+- Build and maintain dimensional models for finance reporting
+- Partner with analysts on metric definitions
+- Hands-on SQL experience
+- Audit access controls on the reporting layer for HIPAA compliance
+- Adhere to the company's security and confidentiality policies
+
+Qualifications:
+- 4+ years of analytics engineering experience
+- Experience with dimensional modeling
+- Familiarity with Python
+
+Nice to have:
+- Streaming work on Kafka
+"""
+
+[evidence]
+brokerage = "Built reporting pipelines for a freight brokerage"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+skills_governance = "dimensional modeling, schema registry design"
+kafka = "Rebuilt the ingestion tier on Kafka"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Analytics Engineer"
+company = "Northwind Traders"
+keywords = ["dimensional modeling", "SQL", "dbt", "Python", "Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Build and maintain dimensional models for finance reporting"
+importance = "responsibility"
+
+[[responses.jobspec.requirements]]
+text = "Partner with analysts on metric definitions"
+importance = "responsibility"
+
+[[responses.jobspec.requirements]]
+text = "Hands-on SQL experience"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "Audit access controls on the reporting layer for HIPAA compliance"
+importance = "responsibility"
+
+[[responses.jobspec.requirements]]
+text = "Working knowledge of dbt"
+importance = "nice_to_have"
+
+[[responses.jobspec.requirements]]
+text = "4+ years of analytics engineering experience"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Experience with dimensional modeling"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Familiarity with Python"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Streaming work on Kafka"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "minimum_years"
+text = "4+ years of analytics engineering experience"
+blocking = false
+
+[[responses.match]]
+requirement = "Build and maintain dimensional models for finance reporting"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["warehouse", "skills_governance"]
+note = "Dimensional modeling for clinical reporting, not finance."
+
+[[responses.match]]
+requirement = "Partner with analysts on metric definitions"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["context_adventure"]
+note = "Worked with analysts and clinicians on definitions."
+
+[[responses.match]]
+requirement = "Hands-on SQL experience"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse"]
+note = "Warehouse modeling in PostgreSQL."
+
+[[responses.match]]
+requirement = "Audit access controls on the reporting layer for HIPAA compliance"
+classification = "TRANSFERABLE"
+strength = "weak"
+evidence = ["terraform"]
+note = "Provisioned access policy in Terraform; no entry audits access controls or names HIPAA."
+
+[[responses.match]]
+requirement = "Working knowledge of dbt"
+classification = "GAP"
+strength = "none"
+note = "No entry names dbt."
+
+[[responses.match]]
+requirement = "4+ years of analytics engineering experience"
+classification = "TAILORING_ONLY"
+strength = "strong"
+evidence = ["brokerage", "warehouse"]
+note = "Analytics and data engineering roles dated 2013 to present."
+
+[[responses.match]]
+requirement = "Experience with dimensional modeling"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["skills_governance", "warehouse"]
+note = "Modeled the clinical reporting warehouse."
+
+[[responses.match]]
+requirement = "Familiarity with Python"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["skills_platform"]
+note = "Python is listed among platform skills."
+
+[[responses.match]]
+requirement = "Streaming work on Kafka"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[expect]
+requirements = [
+    "Build and maintain dimensional models for finance reporting",
+    "Partner with analysts on metric definitions",
+    "Hands-on SQL experience",
+    "Audit access controls on the reporting layer for HIPAA compliance",
+    "Working knowledge of dbt",
+    "4+ years of analytics engineering experience",
+    "Experience with dimensional modeling",
+    "Familiarity with Python",
+    "Streaming work on Kafka",
+]
+must_have = [
+    "4+ years of analytics engineering experience",
+    "Experience with dimensional modeling",
+    "Familiarity with Python",
+]
+nice_to_have = [
+    "Hands-on SQL experience",
+    "Working knowledge of dbt",
+    "Streaming work on Kafka",
+]
+hard_gates = ["4+ years of analytics engineering experience"]
+
+[expect.measured]
+model_calls = 2

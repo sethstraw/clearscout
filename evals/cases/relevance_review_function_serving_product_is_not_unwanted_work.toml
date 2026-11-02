@@ -1,0 +1,110 @@
+name = "relevance_review_function_serving_product_is_not_unwanted_work"
+proves = """
+A product role that builds pricing tools for a sales team is product work, not
+sales work, when the search lists sales negotiation as work this person does not
+want. The listed item is a function the product serves, so it is not the role's
+own core work and the unwanted-work route to core_gap does not apply; the role
+is judged by its own defining work and lands on core_match.
+
+The provider is scripted, so this cannot show that the live model separates the
+served function from the role's own work; only a live run measures that. It
+shows the contract and local checks accept the non-gap answer while the
+boundary line is present in the search context.
+"""
+mode = "screen"
+cv = "platform_documentation.md"
+
+posting = """
+Senior Product Manager, Sales Pricing Tools, Northwind Traders
+
+Northwind Traders builds internal software that its account teams use to price
+renewals and expansions.
+
+You would own the roadmap for the quote-pricing product, work with the sales
+operations and engineering teams on the pricing rules, and measure how account
+teams use what ships.
+
+Requirements:
+- Delivered a pricing or quoting product used by account teams
+- Experience working with documentation or content teams
+
+Remote within the United States.
+"""
+
+[evidence]
+pricing = "Delivered the quote-pricing tool"
+llm_eval = "Built the evaluation set used to review model-drafted documentation pages"
+
+[responses.jobspec]
+title = "Senior Product Manager, Sales Pricing Tools"
+company = "Northwind Traders"
+seniority = "senior"
+location = "Remote, United States"
+keywords = ["pricing tools", "quoting"]
+
+[[responses.jobspec.requirements]]
+text = "Delivered a pricing or quoting product used by account teams"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Experience working with documentation or content teams"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Delivered a pricing or quoting product used by account teams"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["pricing"]
+note = "Quote-pricing tool used by account teams in three regions."
+
+[[responses.match]]
+requirement = "Experience working with documentation or content teams"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["llm_eval"]
+note = "Release check adopted by a product team for documentation content."
+
+[relevance_review]
+search_context = """
+Opportunity thesis (person-stated preference, not evidence): Internal tools product work at a product-led employer
+Kinds of work this person does: product management (internal tools, pricing)
+Work this person does not want:
+- sales negotiation and account management
+Places this person may work: Remote, United States (eligibility authorized)
+"""
+
+[[relevance_review.postings]]
+id = "pending-sales-product-a"
+employer = "Northwind Traders"
+title = "Product Lead, Quote Pricing Tools"
+location = "Remote, United States"
+body = """
+Northwind Traders sells through account teams and is hiring a product lead for
+the pricing tools those teams use every day.
+
+You would own the roadmap, write the requirements for the pricing rules with
+sales operations, and run the release reviews with engineering.
+
+Requirements:
+- Shipped a pricing product used by account teams
+
+Remote within the United States.
+"""
+
+# The product serves sales; negotiation is the listed boundary and is not this
+# role's own work, so the boundary does not decide the basis.
+[[relevance_review.results]]
+posting = "pending-sales-product-a"
+recommendation = "review"
+summary = "The quote-pricing tool is this product's own work; sales negotiation is not."
+core_work_alignment = "direct"
+core_qualification_alignment = "established"
+hard_condition = "passes"
+decisive_basis = "core_match"
+spans = [2, 3]
+evidence = ["pricing"]
+
+[expect.measured]
+model_calls = 3
+relevance_review_valid = 1
+relevance_review_missing_rules = 0

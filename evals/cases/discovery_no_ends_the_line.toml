@@ -1,0 +1,74 @@
+name = "discovery_no_ends_the_line"
+proves = """
+"No" is a complete answer, and nothing follows it.
+
+One question is asked, the person says no, and the line of questioning closes.
+No second wording of the same question, no "are you sure", and no third angle on
+the same subject. A questionnaire that rephrases a refusal teaches somebody that
+no is not an accepted answer, and the answers it eventually extracts are the
+ones this feature exists to prevent.
+
+Measured as a count of questions asked, which is one, and an outcome of
+unanswered rather than refused: nothing was proposed, so nothing was refused.
+"""
+mode = "screen"
+
+posting = """
+Systems Engineer, Rust Platform, Litware Instruments
+
+Litware Instruments is rewriting its instrument control layer and wants somebody
+who has written Rust in anger.
+
+Requirements:
+- Production Rust, including async runtimes
+- Terraform for environment provisioning
+
+Remote within the United States.
+Benefits and legal:
+- We offer paid time off, a 401(k) with matching, and a home office allowance.
+- Applicants will receive consideration without regard to any protected status.
+- This posting is not an offer of employment and the range is not a commitment.
+"""
+
+[evidence]
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Systems Engineer, Rust Platform"
+company = "Litware Instruments"
+location = "Remote, United States"
+keywords = ["Rust", "async", "Terraform"]
+
+[[responses.jobspec.requirements]]
+text = "Production Rust, including async runtimes"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for environment provisioning"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Production Rust, including async runtimes"
+classification = "GAP"
+note = "The record has no Rust."
+
+[[responses.match]]
+requirement = "Terraform for environment provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Wrote the provisioning modules."
+
+[discovery]
+about = "production Rust"
+gap = "r01"
+replies = ["No.", "I would have said if I had."]
+
+[expect]
+gaps = ["Production Rust, including async runtimes"]
+discovery = "unanswered"
+
+[expect.measured]
+model_calls = 2
+discovery_questions_asked = 1
+discovery_unclosed_gaps = 1

@@ -1,0 +1,163 @@
+name = "posting_language_echo"
+proves = """
+The posting describes the employer: the scale it operates at, the customers it
+serves, the mission it has. The model reads that as material and writes it back
+as though it described the candidate.
+
+Nothing in ``application/tailoring/stages/verify/`` can see this. Every line
+cites a real, selected
+entry. There is no invented figure, because the borrowed sentences carry no
+number. The document structure is right and the character policy holds. It is a
+fabrication that is invisible to every shipped check, and the only reason it is
+visible here is the eval-only ``posting_language_echoed`` scorer, which checks a
+list of phrases the case first verifies are absent from the CV.
+
+That scorer is the strongest candidate in this file for promotion into a shipped
+check, and the reason it has not been promoted is that a phrase list assembled
+from one case is not a rule that should be allowed to fail somebody's run.
+"""
+mode = "draft"
+
+posting = """
+Staff Data Engineer, Contoso Pharmaceuticals Supply
+
+Contoso Pharmaceuticals Supply serves eleven thousand pharmacies across four
+continents, and our mission is to keep every one of them stocked. Our data
+platform is the backbone of a supply network that never stops moving.
+
+Requirements:
+- Kafka in production
+- Schema governance
+- PostgreSQL data modeling
+
+The data platform team is six engineers and sits between the supply planning
+group and the warehouse operations group. Most of the work is making the two
+agree about what a shipment is.
+
+Remote within the United States.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+skills_governance = "dimensional modeling, schema registry design"
+context_fabrikam = "Worked on platform architecture within a team of six"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+
+[responses.jobspec]
+title = "Staff Data Engineer"
+company = "Contoso Pharmaceuticals Supply"
+seniority = "staff"
+location = "Remote, United States"
+keywords = ["Kafka", "schema governance", "PostgreSQL"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema governance"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "PostgreSQL data modeling"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier."
+
+[[responses.match]]
+requirement = "Schema governance"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["registry", "skills_governance"]
+note = "Designed the registry and its rules."
+
+[[responses.match]]
+requirement = "PostgreSQL data modeling"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse", "skills_platform"]
+note = "Modeled a reporting warehouse."
+
+# The employer's own description, returned as the candidate's record.
+[responses.draft.summary]
+text = """
+Platform engineer whose work is the backbone of a supply network that never \
+stops moving, serving eleven thousand pharmacies across four continents.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go"
+evidence = ["skills_platform"]
+
+[[responses.draft.skills]]
+label = "Governance"
+text = "schema registry, data lineage, data quality rules"
+evidence = ["skills_governance"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team, keeping every pharmacy stocked."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+[[responses.draft.roles.bullets]]
+text = "Designed the schema registry and its compatibility rules with two other engineers, stopping 31 breaking changes before release."
+evidence = ["registry"]
+
+[[responses.draft.roles]]
+role = "Adventure Works"
+
+[responses.draft.roles.context]
+text = "Clinical reporting warehouse and its nightly load."
+evidence = ["context_adventure"]
+
+[[responses.draft.roles.bullets]]
+text = "Modeled the clinical reporting warehouse in PostgreSQL, reducing the nightly load window from 7 hours to 95 minutes."
+evidence = ["warehouse"]
+
+[responses.critic]
+alignment = 5
+preservation = 5
+specificity = 5
+readability = 5
+ats_clarity = 5
+human_voice = 5
+guidance = "A scripted critic. It approves whatever this file tells it to."
+
+[expect]
+immutable = ["Fabrikam Data Works", "Adventure Works Health", "Bachelor of Science, Computer Science"]
+posting_only = [
+    "backbone of a supply network",
+    "eleven thousand pharmacies",
+    "four continents",
+    "keeping every pharmacy stocked",
+]
+
+# Every shipped check passes on a summary describing the employer's business as
+# though it were the candidate's. That is the finding.
+[expect.checks]
+"sources cited" = "pass"
+"numbers traced" = "pass"
+"document structure" = "pass"
+"first person" = "pass"
+"critic" = "pass"
+
+[expect.measured]
+model_calls = 4
+posting_language_echoed = 4

@@ -1,0 +1,67 @@
+name = "derived_boilerplate_requirements"
+proves = """
+A negative control for boilerplate. Every sentence in the requirements block of
+this posting is legal or benefits language: an equal opportunity statement, a
+retirement plan, an accommodation notice, a salary range, and a compliance
+training obligation. Between them they contain "must", "require", "employees",
+and a dollar figure.
+
+A naive extractor reads four or five requirements out of it. The rules read
+none, and then abstain on every question that would have been answered from
+them: which sections are requirements, how many lines are must-have, how many
+are preferred, what degree is asked for, and how many years.
+
+The scripted model does what a model plausibly does with a page like this and
+reports a requirement anyway. That answer is recorded rather than corrected;
+the two readings are printed side by side and the person decides.
+"""
+mode = "screen"
+
+posting = """
+Team Member, Riverbend Site, Woodgrove Industries
+
+Woodgrove Industries is a good place to work and we are always interested in
+hearing from people who want to join us at the Riverbend site.
+
+Benefits and legal:
+- We offer a 401(k) with company match and paid time off from your first day
+- All employees must complete annual compliance training within thirty days
+- Woodgrove is an equal opportunity employer and all qualified applicants will
+  receive consideration for employment without regard to race, religion, sex,
+  national origin, disability, or veteran status
+- Reasonable accommodation is available on request at any stage of the process
+- The salary range for this position is posted at the bottom of this listing
+"""
+
+[responses.jobspec]
+title = "Team Member"
+company = "Woodgrove Industries"
+seniority = "not stated"
+location = "Riverbend"
+keywords = ["compliance training"]
+
+[[responses.jobspec.requirements]]
+text = "Complete annual compliance training within thirty days"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Complete annual compliance training within thirty days"
+classification = "GAP"
+strength = "none"
+note = "Nothing in the record speaks to this employer's own training."
+
+[expect.derived]
+role_family = "not stated"
+specialty = "not stated"
+orientation = "not stated"
+seniority = "not stated"
+years = "not stated"
+education = "not stated"
+location = "not stated"
+authorization = "not stated"
+sections = "not stated"
+must_have = "not stated"
+preferred = "not stated"
+
+[expect.measured]
+model_calls = 2

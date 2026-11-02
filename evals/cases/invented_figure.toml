@@ -1,0 +1,159 @@
+name = "invented_figure"
+proves = """
+The most damaging thing a resume can carry and the easiest to catch. The model
+cites real evidence and then changes its numbers: 90 seconds becomes 30, 212
+feeds become 500, and a figure appears that is in no cited entry at all.
+
+The deterministic catch is ``verify.checks.figures``, which checks each figure against
+each cited entry individually rather than against their pooled text. The run
+fails, the critic is never asked, and the package is written with the failure
+labelled rather than withheld. Three separate facts, all of which a change to
+verification would move.
+"""
+mode = "draft"
+
+posting = """
+Senior Data Platform Engineer, Alpine Ridge Freight
+
+Alpine Ridge Freight is hiring a senior engineer for the ingestion platform.
+
+Requirements:
+- Kafka in production at meaningful feed counts
+- Terraform for environment provisioning
+- Measurable latency and reliability improvements
+- PostgreSQL data modeling
+
+Preferred: schema registry design, data quality tooling.
+
+Remote within the United States. No visa sponsorship is available.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+registry = "Designed the schema registry and its compatibility rules"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+context_fabrikam = "Worked on platform architecture within a team of six"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+
+[responses.jobspec]
+title = "Senior Data Platform Engineer"
+company = "Alpine Ridge Freight"
+seniority = "senior"
+location = "Remote, United States"
+keywords = ["Kafka", "Terraform", "PostgreSQL", "latency"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production at meaningful feed counts"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for environment provisioning"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Measurable latency and reliability improvements"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "PostgreSQL data modeling"
+importance = "must_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "sponsorship"
+text = "No visa sponsorship is available"
+blocking = true
+
+[[responses.match]]
+requirement = "Kafka in production at meaningful feed counts"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier."
+
+[[responses.match]]
+requirement = "Terraform for environment provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform", "skills_platform"]
+note = "Wrote the provisioning modules."
+
+[[responses.match]]
+requirement = "Measurable latency and reliability improvements"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "warehouse"]
+note = "Latency and load window reductions are both stated with figures."
+
+[[responses.match]]
+requirement = "PostgreSQL data modeling"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["warehouse", "skills_platform"]
+note = "Modeled a reporting warehouse."
+
+[responses.draft.summary]
+text = """
+Platform engineer working on streaming ingestion, provisioning, and the data \
+models underneath them.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go"
+evidence = ["skills_platform"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team."
+evidence = ["context_fabrikam"]
+
+# Three figures, none of them in the cited entry. The entry says 40 minutes to
+# 90 seconds across 212 feeds.
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 30 seconds across 500 source feeds and saving roughly 2.4 million dollars a year."
+evidence = ["kafka"]
+
+[[responses.draft.roles.bullets]]
+text = "Wrote the Terraform modules that provision every environment, replacing a two-day runbook."
+evidence = ["terraform"]
+
+[[responses.draft.roles]]
+role = "Adventure Works"
+
+[responses.draft.roles.context]
+text = "Clinical reporting warehouse and its nightly load."
+evidence = ["context_adventure"]
+
+[[responses.draft.roles.bullets]]
+text = "Modeled the clinical reporting warehouse in PostgreSQL, reducing the nightly load window from 7 hours to 95 minutes."
+evidence = ["warehouse"]
+
+[responses.critic]
+alignment = 5
+preservation = 5
+specificity = 5
+readability = 5
+ats_clarity = 5
+human_voice = 5
+guidance = "Never reached. The critic runs only after the free checks pass."
+
+[expect]
+immutable = ["Fabrikam Data Works", "Adventure Works Health", "July 2017 to March 2021"]
+
+[expect.checks]
+"numbers traced" = "fail"
+"sources cited" = "pass"
+"document structure" = "pass"
+
+[expect.measured]
+# Three calls, not four: the critic is never asked about a draft the free
+# checks already rejected, which is what stops a run paying for judgment on a
+# document a regular expression could refuse.
+model_calls = 3
+unsupported_figures = 3

@@ -1,0 +1,84 @@
+name = "structure_fabricated_summary_refused"
+proves = """
+A scripted CV-import extraction whose summary text is absent from the uploaded
+source document fails the shipped importer's guarantees: `_authentic` finds
+words in the summary that trace to no cited source line, `_preserved` finds
+the cited line's wording changed, and `_lossless` finds the omitted role and
+education content nowhere in the result and nowhere in a dropped list.
+
+Proves the importer's checks compute fail against a fabricated extraction. It
+says nothing about whether a live model would ever produce one.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[structure]
+source = """
+Jordan Rivera
+jordan.rivera@example.com
+
+Summary
+Manages procurement contracts for regional retailers.
+
+Experience
+Vertex Systems
+Data Analyst
+2018 to Present
+Migrated reporting pipelines to a new warehouse.
+
+Education
+Bachelor of Arts, Economics, Example State University, 2014 to 2018
+"""
+
+[structure.name]
+text = "Jordan Rivera"
+lines = [1]
+
+[[structure.contact]]
+text = "jordan.rivera@example.com"
+lines = [2]
+
+[[structure.summary]]
+# Cites the real summary line but reports invented wording that appears
+# nowhere on it, so authentic and preserved both fail on the same field.
+text = "Directed a nationwide sales transformation program."
+lines = [4]
+
+[expect.checks]
+authentic = "fail"
+preserved = "fail"
+lossless = "fail"

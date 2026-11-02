@@ -1,0 +1,76 @@
+name = "batch_shared_requirement_a"
+proves = """
+Two postings in one batch ask for the same thing in words that barely overlap,
+and the batch comparison finds it.
+
+This posting and `batch_shared_requirement_b` are screened separately and then
+compared. They share one word out of eight in the requirement that matters, so
+the wording threshold `application/tailoring/stages/match.py` uses to pair a
+gate with a requirement
+finds nothing; a term the batch does not use everywhere is what joins them.
+Both state it as a gap, so its leverage is two, which is a count of documents
+and not a prediction about anything.
+
+Two more counts are the reason this pair exists at all, and both must be zero.
+No request built while screening this posting carries the other posting's
+marker phrase, and no cache key is shared between them. Those are what "postings
+are never combined" and "a cached answer cannot cross" mean when they are
+measured rather than asserted.
+"""
+mode = "screen"
+
+posting = """
+Data Platform Engineer, Volt Harbour Freight
+
+Volt Harbour Freight moves refrigerated cargo and runs its scheduling on a
+platform the team is rebuilding this year.
+
+Requirements:
+- Experience running Kubernetes in production
+- Kafka schema governance across teams
+
+Remote within the United States.
+Benefits and legal:
+- We offer paid time off, a 401(k) with matching, and a home office allowance.
+- Applicants will receive consideration without regard to any protected status.
+- This posting is not an offer of employment and the range is not a commitment.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+
+[responses.jobspec]
+title = "Data Platform Engineer"
+company = "Volt Harbour Freight"
+location = "Remote, United States"
+keywords = ["Kubernetes", "Kafka", "schema governance"]
+
+[[responses.jobspec.requirements]]
+text = "Experience running Kubernetes in production"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Kafka schema governance across teams"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Experience running Kubernetes in production"
+classification = "GAP"
+note = "Nothing in the record mentions it."
+
+[[responses.match]]
+requirement = "Kafka schema governance across teams"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "registry"]
+note = "Rebuilt the ingestion tier and designed the registry."
+
+[expect]
+gaps = ["Experience running Kubernetes in production"]
+batch = ["batch_shared_requirement_b"]
+batch_marker = "Volt Harbour Freight"
+
+[expect.measured]
+model_calls = 2
+batch_shared_requirements = 1

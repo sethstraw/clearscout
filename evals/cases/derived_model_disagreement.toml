@@ -1,0 +1,95 @@
+name = "derived_model_disagreement"
+proves = """
+The output worth having: the model and the rules read one posting differently in
+three places at once, and the run reports all three rather than picking a
+winner.
+
+The posting is an associate finance role, on site, whose "Preferred
+qualifications" block includes a modeling requirement. The scripted extraction
+reads it as senior, remote, and treats the preferred line as essential, which is
+a plausible set of mistakes and the reason this feature exists.
+
+It is also a confident classification in a market nothing else in this suite
+touches, which is the property that separates a role taxonomy from one person's
+configuration file.
+
+Nothing here decides which reading is right. Both are printed, and a person
+settles it by looking at the posting for thirty seconds.
+"""
+mode = "screen"
+
+posting = """
+Associate Financial Analyst, Corporate FP&A, Proseware Group
+
+Proseware is hiring an associate financial analyst into the corporate FP&A team
+at our Riverbend headquarters.
+
+Responsibilities:
+- Own the month end close checklist and the budget forecast for two cost centers
+- Present variance analysis to the business each month
+- Reconcile the general ledger extract before it reaches the reporting pack
+
+Requirements:
+- 4 years of experience in a finance team
+- Comfort reading a cash flow statement without help
+
+Preferred qualifications:
+- Building a financial model from scratch rather than inheriting one
+
+This position is on site in Riverbend five days a week.
+"""
+
+[responses.jobspec]
+title = "Associate Financial Analyst"
+company = "Proseware Group"
+seniority = "senior"
+location = "Remote"
+keywords = ["month end close", "variance analysis", "budget forecast"]
+
+[[responses.jobspec.requirements]]
+text = "4 years of experience in a finance team"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Comfort reading a cash flow statement without help"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Building a financial model from scratch rather than inheriting one"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "4 years of experience in a finance team"
+classification = "GAP"
+strength = "none"
+note = "No finance role is in the record."
+
+[[responses.match]]
+requirement = "Comfort reading a cash flow statement without help"
+classification = "GAP"
+strength = "none"
+note = "No financial statement work is in the record."
+
+[[responses.match]]
+requirement = "Building a financial model from scratch rather than inheriting one"
+classification = "TAILORING_ONLY"
+strength = "weak"
+note = "Modeling in the record is data modeling, which is a different craft."
+
+[expect]
+gaps = ["4 years of experience in a finance team"]
+
+[expect.derived]
+role_family = "Finance and accounting"
+seniority = "associate"
+years = "4"
+location = "on site"
+sections = "Requirements, Preferred qualifications"
+must_have = "2"
+preferred = "1"
+
+[expect.measured]
+model_calls = 2
+# Three, deliberately: the model read the level, the working arrangement, and the
+# third requirement's importance differently from the posting's own words.
+model_rule_disagreements = 3

@@ -1,0 +1,103 @@
+name = "similar_posting_ingestion"
+proves = """
+One of three near-identical postings from the same employer, run against the same
+record. This one is about the ingestion tier.
+
+Three cases rather than one file with three variants, because that is what
+batch screening actually looks like: a slate of postings, each screened on its
+own, compared afterwards. What is measured across them is that selection reached
+a different answer for each, which is deterministic Python reading requirement
+weights, not a model deciding. Two postings that differ only in emphasis and
+select identical evidence would mean the emphasis reached nothing.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer I, Ingestion, Lucerne Publishing Freight
+
+Lucerne Publishing Freight runs three platform teams. This role is on the
+ingestion team.
+
+Requirements:
+- Kafka in production, partitioning and consumer group management
+- Terraform for environment provisioning
+- Latency work you can describe with numbers
+
+Preferred: schema registry familiarity.
+
+Remote within the United States. No visa sponsorship is available.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+terraform = "Wrote the Terraform modules that provision every environment"
+registry = "Designed the schema registry and its compatibility rules"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+
+[responses.jobspec]
+title = "Platform Engineer I, Ingestion"
+company = "Lucerne Publishing Freight"
+seniority = "mid"
+location = "Remote, United States"
+keywords = ["Kafka", "Terraform", "latency", "consumer groups"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production with partitioning and consumer groups"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for environment provisioning"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Latency work described with numbers"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema registry familiarity"
+importance = "nice_to_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "sponsorship"
+text = "No visa sponsorship is available"
+blocking = true
+
+[[responses.match]]
+requirement = "Kafka in production with partitioning and consumer groups"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka", "skills_platform"]
+note = "Rebuilt the ingestion tier."
+
+[[responses.match]]
+requirement = "Terraform for environment provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform", "skills_platform"]
+note = "Wrote the provisioning modules."
+
+[[responses.match]]
+requirement = "Latency work described with numbers"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "40 minutes to 90 seconds."
+
+[[responses.match]]
+requirement = "Schema registry familiarity"
+classification = "DIRECT"
+strength = "moderate"
+evidence = ["registry"]
+note = "Designed one."
+
+[expect]
+must_have = [
+    "Kafka in production with partitioning and consumer groups",
+    "Terraform for environment provisioning",
+]
+hard_gates = ["No visa sponsorship is available"]
+blocking_gates = ["No visa sponsorship is available"]
+distinct_from = ["similar_posting_governance", "similar_posting_warehouse"]
+
+[expect.measured]
+model_calls = 2

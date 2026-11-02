@@ -1,0 +1,35 @@
+# A posting declared in linked data whose description is HTML with each list
+# item on its own source line. Source line breaks are layout, so the reading
+# comes from the elements: one "- " line per item, and a blank line after the
+# section label that introduces them.
+source = "posting.html"
+url = "https://jobs.example.com/northwind-rail/postings/2290"
+method = "publisher markup"
+
+lines = [
+    "As a Senior Technical Product Manager, Scheduling Platform, you will be a key member of the team that owns the timetable four regional operators publish from, and the platform the depot teams plan their day against.",
+    "",
+    "In this role you will partner with operations owners, data analysts, engineers and scheduling specialists to turn a messy planning problem into something a depot team can run without a phone call.",
+    "",
+    "Primary Duties:",
+    "",
+    "- Partner with operations owners to build a shared view of the problem space, the constraints and the order things should be fixed in.",
+    "- Keep live planning workflows healthy, including watching the measures that say whether a depot trusts the schedule.",
+    "- Work with internal teams and depot users to understand what they actually need, and test that understanding before anyone builds.",
+    "- Write user stories that carry the reasoning as well as the requirement, so an engineer can tell when the requirement is met.",
+    "- Develop short and long term roadmaps that deliver value early and assume the plan will change.",
+    "",
+    "Minimum Qualifications:",
+    "",
+    "- 8 or more years of product management experience in transport technology or technology enabled services.",
+    "- Experience using operational data and primary research to inform how a solution is designed.",
+    "- Experience with the software development lifecycle and the methods teams actually use day to day.",
+    "- Product development experience in a business where the schedule is the product.",
+    "",
+    "Preferred Knowledge, Skills and Abilities",
+    "",
+    "- Excellent organisational and communication skills, with an emphasis on problem solving.",
+    "- Working understanding of scheduling data standards and how operators exchange a timetable.",
+    "- Knowledge of depot and dispatch data sets, including rosters, vehicles and service patterns.",
+    "- Proficient in SQL, with experience querying large operational datasets.",
+]

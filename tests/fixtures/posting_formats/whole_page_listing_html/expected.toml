@@ -1,0 +1,44 @@
+# A search results page with no JobPosting markup, read by whole-page
+# extraction. Navigation and the cookie banner arrive as body text, each result
+# card states its title twice, and no posting body is present at all.
+source = "posting.html"
+url = "https://boards.example.com/search?q=director"
+method = "page extraction"
+
+lines = [
+    "Home",
+    "Jobs",
+    "Companies",
+    "We use cookies to improve your experience on this site.",
+    "1,000+ Director Scheduling Platform Jobs in Calderfield",
+    "Director, Scheduling Platform and Depot Transformation",
+    "Director, Scheduling Platform and Depot Transformation",
+    "Northwind Regional Freight",
+    "Marrow Hollow, Calderfield",
+    "Posted 3 days ago",
+    "Director Timetable Applications - Depot Experience - Community Planning Team",
+    "Director Timetable Applications - Depot Experience - Community Planning Team",
+    "Northwind Rail",
+    "Thistledown Quay",
+    "Posted 5 days ago",
+    "PROGRAMME DIRECTOR, SCHEDULE MANAGEMENT, BRAMBLEWICK DEPOT PROGRAMME",
+    "PROGRAMME DIRECTOR, SCHEDULE MANAGEMENT, BRAMBLEWICK DEPOT PROGRAMME",
+    "Globex Freight - North",
+    "Bramblewick",
+    "Posted 1 week ago",
+    "Director Consulting, Scheduling Technology and Transformation",
+    "Director Consulting, Scheduling Technology and Transformation",
+    "Initrode Freight",
+    "Remote, Calderfield",
+    "Posted 2 weeks ago",
+    "Timetable Information System Delivery Lead",
+    "Timetable Information System Delivery Lead",
+    "Acme Logistics",
+    "Calderfield",
+    "Posted 2 weeks ago",
+    "Technical Programme Director - Depot Systems",
+    "Technical Programme Director - Depot Systems",
+    "Initech Transit",
+    "Marrow Hollow",
+    "Posted 3 weeks ago",
+]

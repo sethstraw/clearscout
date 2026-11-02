@@ -1,0 +1,195 @@
+# Synthetic resume lines and letter sentences shaped like drafted model output.
+# Each item cites one evidence text (or company research), and `expect` labels the
+# outcome every check it touches should give; `honest` items must pass every check.
+
+[[item]]
+name = "resume leading dated clause"
+kind = "resume"
+honest = true
+text = "In 2021, moved receiving, putaway, picking, and packing onto one scanning app."
+evidence = "Moved receiving, putaway, picking, and packing onto a single scanning app in 2021."
+expect = { "numbers traced" = "pass", "sources cited" = "pass" }
+
+[[item]]
+name = "resume figures with units restated"
+kind = "resume"
+honest = true
+text = "Cut average dock-to-stock time from 14 hours to 6 hours across 3 distribution centers."
+evidence = "Reduced dock-to-stock time at 3 distribution centers from 14 hours to 6 hours."
+expect = { "numbers traced" = "pass", "sources cited" = "pass" }
+
+[[item]]
+name = "resume figure absent from evidence"
+kind = "resume"
+honest = false
+text = "Cut dock-to-stock time from 14 hours to 5 hours."
+evidence = "Reduced dock-to-stock time from 14 hours to 6 hours."
+expect = { "numbers traced" = "fail", "sources cited" = "pass" }
+
+[[item]]
+name = "resume acronyms and product names"
+kind = "resume"
+honest = true
+text = "Integrated the WMS with the TMS and the Globex Parcel API for 2 regional hubs."
+evidence = "Connected the warehouse WMS to the TMS and the Globex Parcel API at 2 regional hubs."
+expect = { "numbers traced" = "pass", "sources cited" = "pass" }
+
+[[item]]
+name = "resume dated role fact"
+kind = "resume"
+honest = true
+text = "Since 2019, ran inbound planning for a 40-door cross-dock."
+evidence = "Ran inbound planning for a 40-door cross-dock from 2019 onward."
+expect = { "numbers traced" = "pass", "sources cited" = "pass" }
+
+[[item]]
+name = "resume grouped numbers"
+kind = "resume"
+honest = true
+text = "Scaled pick paths to 1,200 SKUs, 3,400 bins, and 8,000 daily orders."
+evidence = "Scaled pick paths to 1,200 SKUs, 3,400 bins, and 8,000 daily orders."
+expect = { "numbers traced" = "pass", "sources cited" = "pass" }
+
+[[item]]
+name = "resume figure borrowed from nowhere"
+kind = "resume"
+honest = false
+text = "Scaled pick paths to 1,200 SKUs and 9,500 daily orders."
+evidence = "Scaled pick paths to 1,200 SKUs, 3,400 bins, and 8,000 daily orders."
+expect = { "numbers traced" = "fail", "sources cited" = "pass" }
+
+[[item]]
+name = "resume span spelled in words and evidenced in digits"
+kind = "resume"
+honest = true
+text = "Eleven years of inbound planning for a 40-door cross-dock."
+evidence = "Ran inbound planning for a 40-door cross-dock for 11 years."
+expect = { "numbers traced" = "pass", "sources cited" = "pass" }
+
+[[item]]
+name = "resume span spelled in words and absent from evidence"
+kind = "resume"
+honest = false
+text = "Eleven years of inbound planning for a 40-door cross-dock."
+evidence = "Ran inbound planning for a 40-door cross-dock."
+expect = { "numbers traced" = "fail", "sources cited" = "pass" }
+
+[[item]]
+name = "resume span spelled in decades and evidenced in years"
+kind = "resume"
+honest = true
+text = "Two decades of inbound planning for a 40-door cross-dock."
+evidence = "Ran inbound planning for a 40-door cross-dock for 20 years."
+expect = { "numbers traced" = "pass", "sources cited" = "pass" }
+
+[[item]]
+name = "resume span spelled in decades and absent from evidence"
+kind = "resume"
+honest = false
+text = "Two decades of inbound planning for a 40-door cross-dock."
+evidence = "Ran inbound planning for a 40-door cross-dock."
+expect = { "numbers traced" = "fail", "sources cited" = "pass" }
+
+[[item]]
+name = "letter figures kept from evidence around restated prose"
+kind = "letter"
+honest = true
+text = "My feed, supporting more than 400 retailers and 90 carriers, refreshed stock counts every night."
+evidence = "Built the product catalog feed supporting more than 400 retailers and 90 carriers with refreshed stock counts posted nightly."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter acronym crosswalk kept from evidence"
+kind = "letter"
+honest = true
+text = "I maintained SKU-level UPC crosswalks covering roughly 4,800 GTIN codes for the returns team."
+evidence = "Maintained SKU-level UPC crosswalks covering roughly 4,800 GTIN codes across the returns catalog."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter restates a figure and a product name"
+kind = "letter"
+honest = true
+text = "At Northwind I cut label reprints by 30 percent after moving printing onto the Globex Label Service."
+evidence = "Moved label printing to the Globex Label Service, reducing reprints 30 percent."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter copies eight ordinary words"
+kind = "letter"
+honest = false
+text = "I rebuilt the returns intake flow so that damaged items reached grading on the same shift."
+evidence = "Rebuilt the returns intake flow so that damaged items reached grading on the same shift."
+expect = { "letter echo" = "warn", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter copies a sentence around a figure"
+kind = "letter"
+honest = false
+text = "I moved the nightly carrier invoice export onto a streaming job that posts 900 updates every hour."
+evidence = "Moved the nightly carrier invoice export onto a streaming job that posts 900 updates every hour."
+expect = { "letter echo" = "warn", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter copies a task list behind one verb"
+kind = "letter"
+honest = true
+text = "I also used scanning tools across receiving and putaway and picking and packing and shipping."
+evidence = "Used scanning tools across receiving and putaway and picking and packing and shipping at two sites."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter first-person claim citing company research"
+kind = "letter"
+honest = false
+text = "I run 12 fulfillment centers across the Midwest."
+company = "Globex runs 12 fulfillment centers across the Midwest."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "fail" }
+
+[[item]]
+name = "letter company paragraph about the role"
+kind = "letter"
+honest = true
+text = "Globex runs 12 fulfillment centers, and this role owns the slotting logic that feeds them."
+company = "Globex operates 12 fulfillment centers across the Midwest and is hiring to own its slotting logic."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter figure absent from evidence"
+kind = "letter"
+honest = false
+text = "I cut mispicks by 45 percent across the east building."
+evidence = "Cut mispicks by 40 percent in the east building."
+expect = { "letter echo" = "pass", "letter numbers" = "fail", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter dated role fact"
+kind = "letter"
+honest = true
+text = "Since 2020 I have run the inbound desk for two cross-docks."
+evidence = "Ran the inbound desk for two cross-docks from 2020."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter seven ordinary words near miss"
+kind = "letter"
+honest = true
+text = "I rebuilt the returns intake flow so that grading moved faster."
+evidence = "Rebuilt the returns intake flow so that damaged items reached grading on the same shift."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter such-as tail with a figure"
+kind = "letter"
+honest = true
+text = "I tuned wave planning for 3 buildings, used for peak events such as holiday drops, flash sales, and recalls."
+evidence = "Tuned wave planning across 3 buildings for holiday drops, flash sales, and recalls."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }
+
+[[item]]
+name = "letter names a tool list and restates the work"
+kind = "letter"
+honest = true
+text = "With Python, dbt, and Airflow I kept the returns catalog current while the carrier feeds changed."
+evidence = "Kept the returns catalog current in Python, dbt, and Airflow as carrier feeds changed format."
+expect = { "letter echo" = "pass", "letter numbers" = "pass", "letter provenance" = "pass", "claim ownership" = "pass" }

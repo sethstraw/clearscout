@@ -1,0 +1,77 @@
+name = "guided_campaign_reachable"
+proves = """
+Moves `guided_campaign` off the unevaluated list: a scripted answer is
+dispatched and collected through the shipped background-search client, and
+the same `captured_url_rows` and `matched_queries` projections the durable
+campaign runner uses credit the capture, offline.
+
+Titles and identities are synthetic and fixed; only the search's capture and
+the model's answer are the case's own script. It says nothing about whether a
+live model would ask a query naming every branch.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[guided_campaign.search]
+queries = ["Clinical Data Steward remote jobs"]
+
+[[guided_campaign.search.sources]]
+url = "https://clinicaldata.example.test/jobs/steward"
+title = "Clinical Data Steward"
+
+[[guided_campaign.search.sources]]
+url = "https://clinicaldata.example.test/jobs/second-posting"
+title = "Program Coordinator"
+
+[[guided_campaign.picks]]
+url = "https://clinicaldata.example.test/jobs/steward"
+why = "Named clinical data stewardship directly."
+
+[[guided_campaign.picks]]
+url = "https://otherboard.example.test/jobs/uncaptured-posting"
+why = "Written in without a captured source behind it."
+
+[[guided_campaign.picks]]
+url = "https://[::1"
+why = "Unparseable pick the admission layer must count, not admit."
+
+[expect.measured]
+campaign_captured_rows = 3
+campaign_model_selected_rows = 2
+campaign_invalid_model_urls = 1
+campaign_branches_credited = 1
+campaign_branch_labels_missing_from_task = 0

@@ -1,0 +1,237 @@
+# A long Markdown CV: eight roles with their bullets, a grouped skills
+# block, four education entries, and an eighty-five item publication list.
+source = "cv.md"
+name = "Rowan Example"
+contact = [
+    "rowan.example@example.org | Springfield | 555-0164",
+]
+summary = [
+    "Research software leader who builds the data platforms that clinical and laboratory teams depend on, with fifteen years spent between instrument acquisition, regulated data capture, and the analytics that read from both, and a consistent record of shipping systems that outlive the grants and programmes that first funded them.",
+    "Works in the seam between scientific method and production engineering, turning protocol requirements into schemas, validation rules, and release processes that survive an audit without slowing down the people actually running the studies, and that a new team can still operate two years after handover.",
+    "Has led distributed groups of up to twenty-six engineers, analysts, and data managers across four sites, and has taken four platforms from a single-site pilot through multi-site rollout, regulatory review, and long-term custodianship by a team other than the one that built it.",
+]
+skills = [
+    "**Languages:** Python, SQL, TypeScript, R, Rust, and Bash, plus a working reading knowledge of the Fortran that still sits underneath a good deal of instrument firmware and numerical analysis code.",
+    "**Data platforms:** PostgreSQL, ClickHouse, DuckDB, Apache Arrow, Parquet, dbt, Airflow, and Dagster, with particular depth in schema migration against tables that cannot be taken offline.",
+    "**Instrument integration:** vendor acquisition APIs, serial and socket capture, HL7 and DICOM transport, file watchers with exactly-once semantics, and reconciliation against the instrument's own audit log.",
+    "**Regulated data practice:** electronic records and signatures, audit trails, computerised system validation, installation and operational qualification, and the evidence packages that accompany each of them.",
+    "**Statistics and analysis:** survival analysis, mixed-effects modelling, multiple imputation for missing laboratory values, and the reproducible reporting pipelines that render them for a study report.",
+    "**Distributed systems:** idempotent message consumers, outbox and change-data-capture patterns, backpressure design, and the operational runbooks that make an on-call rotation survivable for a small team.",
+    "**Storage and retention:** object storage lifecycle policy, immutable archives, cryptographic manifests, restore rehearsal, and retention schedules written against the actual regulatory obligation rather than a guess.",
+    "**Security practice:** threat modelling for scientific systems, least-privilege service accounts, secret rotation, de-identification and re-identification risk assessment, and access review that a data protection officer will accept.",
+    "**Interfaces:** React and TypeScript for review and adjudication screens, accessible data tables for very large result sets, and the keyboard-first workflows that laboratory staff genuinely prefer.",
+    "**Testing:** property-based testing of parsers, golden-file corpora for instrument output, contract tests across service boundaries, and deterministic fixtures for time-dependent and timezone-sensitive behaviour.",
+    "**Infrastructure:** Terraform, Kubernetes, and a strong preference for boring deployments, blue-green cutovers, and rollback paths that have actually been exercised rather than merely documented somewhere.",
+    "**Data governance:** controlled vocabularies, terminology mapping to standard code systems, master data management for sites and investigators, and provenance that survives a transformation chain six steps deep.",
+    "**Collaboration:** protocol review with clinical investigators, specification workshops with data managers, vendor technical negotiation, and written design documents that a reviewer can disagree with precisely.",
+    "**Teaching:** graduate teaching in scientific computing, an internal engineering curriculum for scientists who write code, and code review practice aimed at raising a team rather than gating its output.",
+]
+education = [
+    "**PhD, Computational Biology**, Example University, 2003 to 2007, thesis on record linkage and provenance in multi-site laboratory data.",
+    "**MSc, Statistics**, Example University, 2002 to 2003, distinction, dissertation on missing-value imputation for longitudinal laboratory measurements.",
+    "**BSc, Biochemistry**, Example College, 1999 to 2002, first class, with a final-year project on assay calibration modelling.",
+    "**Certificate in Regulated Systems Validation**, Aster Systems Professional Education, 2016.",
+]
+publications = [
+    "Example R, Roe B. Provenance-preserving record linkage across laboratory systems. J Ex Med Inform. 2008;3(1):11-24.",
+    "Example R. Imputation strategies for irregularly sampled laboratory series. Ex Stat Med. 2009;7(2):101-117.",
+    "Example R, Doe J, Roe B. A reproducible environment standard for translational research groups. Ex Comput Sci. 2010;2(4):55-68.",
+    "Roe B, Example R. Controlled access processes for longitudinal cohort data. J Ex Res Ethics. 2010;5(3):200-214.",
+    "Example R. Calibration drift detection in routine immunoassay quality control. Ex Clin Chem. 2011;14(1):30-42.",
+    "Example R, Noakes P. A golden-file approach to instrument parser regression testing. Ex Softw Pract. 2012;9(2):88-99.",
+    "Doe J, Example R. Method transfer comparability analysis without a shared reference. Ex Lab Methods. 2012;6(4):310-322.",
+    "Example R. Reproducible figure generation for regulated study reports. J Ex Comput. 2013;1(1):5-19.",
+    "Example R, Roe B, Doe J. Tenant isolation failures in multi-tenant laboratory systems. Ex Secur Health. 2014;4(2):77-90.",
+    "Example R. Set-based reconciliation for nightly laboratory batch processing. Ex Data Eng. 2014;8(3):140-152.",
+    "Noakes P, Example R. Chain-of-custody ledgers for specimen tracking. J Ex Lab Manag. 2015;11(1):20-33.",
+    "Example R. Declarative edit checks in electronic data capture. Ex Clin Trials. 2016;13(2):119-131.",
+    "Example R, Doe J. Query management workflow and time-to-resolution in multi-site trials. J Ex Trial Ops. 2016;10(4):255-268.",
+    "Roe B, Noakes P, Example R. Terminology mapping for central laboratory result integration. Ex Health Terminol. 2017;5(1):44-59.",
+    "Example R. Protocol amendment migration with meaning-preserving history. Ex Clin Data. 2017;12(3):176-190.",
+    "Example R, Roe B. Offline-tolerant data entry for sites with intermittent connectivity. J Ex Glob Health Inform. 2018;2(2):60-73.",
+    "Example R. Computerised system validation evidence as a software artefact. Ex Regul Sci. 2018;7(4):288-301.",
+    "Doe J, Example R, Noakes P. Exactly-once file ingestion for instrument output. Ex Distrib Syst. 2019;3(1):15-29.",
+    "Example R. Columnar storage for customer-facing scientific result archives. J Ex Data Syst. 2019;6(2):95-110.",
+    "Example R, Roe B. Zero-downtime migration of a 340 terabyte results archive. Ex Oper Eng. 2020;4(3):201-215.",
+    "Noakes P, Example R. Backpressure design for scientific telemetry pipelines. Ex Syst Pract. 2020;9(4):330-344.",
+    "Example R. Reconciling captured runs against instrument audit logs. J Ex Instrum. 2021;8(1):22-37.",
+    "Example R, Doe J. Event-sourced ingestion for multi-laboratory research platforms. Ex Res Comput. 2021;5(2):108-124.",
+    "Roe B, Example R, Noakes P. A shared assay data standard across four research institutes. Ex Consortium Rep. 2021;1(1):3-18.",
+    "Example R. Restore rehearsal as a routine control for scientific archives. J Ex Arch Sci. 2022;7(1):40-54.",
+    "Example R, Noakes P. Silent corruption detection in immutable object archives. Ex Storage Res. 2022;11(2):130-145.",
+    "Doe J, Example R. Declarative transformation layers and readable data lineage. Ex Data Lineage. 2022;3(3):188-203.",
+    "Example R. Design review as a teaching artefact in research engineering teams. J Ex Eng Cult. 2023;2(1):9-21.",
+    "Example R, Roe B. Traceability matrices that survive a regulatory inspection. Ex Regul Pract. 2023;10(2):144-158.",
+    "Noakes P, Doe J, Example R. De-identification risk assessment for multi-site cohort releases. Ex Priv Health. 2023;6(3):210-226.",
+    "Example R. Keyboard-first review interfaces for high-volume laboratory work. J Ex Human Factors. 2024;4(1):33-47.",
+    "Example R, Doe J. Accessible data tables for very large scientific result sets. Ex Interact Comput. 2024;8(2):101-115.",
+    "Roe B, Example R. Contract testing across scientific service boundaries. Ex Softw Qual. 2024;12(3):240-255.",
+    "Example R. Deterministic fixtures for timezone-sensitive laboratory workflows. J Ex Test Eng. 2024;5(4):300-312.",
+    "Example R, Noakes P. Outbox patterns for regulated event publication. Ex Distrib Health. 2025;2(1):18-32.",
+    "Doe J, Example R, Roe B. Master data management for sites and investigators. Ex Trial Infrastruct. 2025;7(2):90-106.",
+    "Example R. Retention schedules written against the obligation, not the guess. J Ex Inf Gov. 2025;3(2):121-134.",
+    "Example R, Roe B. Teaching version control to scientists who already write code. Ex Comput Educ. 2025;9(3):177-190.",
+    "Noakes P, Example R. Threat modelling for instrument-connected research networks. Ex Secur Res. 2025;6(4):255-270.",
+    "Example R. Fifteen years of platform custodianship after the grant ends. J Ex Res Softw. 2026;1(1):1-16.",
+    "Example R, Doe J. Schema migration against tables that cannot be taken offline. Ex Data Eng. 2015;9(1):12-27.",
+    "Roe B, Example R. Serial protocol recovery for interrupted benchtop acquisitions. J Ex Instrum. 2007;2(1):44-57.",
+    "Example R. Structured results storage for small accredited laboratories. Ex Lab Manag. 2007;4(2):70-83.",
+    "Noakes P, Example R. Trend reporting that laboratory directors actually act on. J Ex Qual Assur. 2008;1(2):90-101.",
+    "Example R, Roe B. Barcode workflows and the limits of scan-time validation. Ex Lab Methods. 2014;7(1):25-39.",
+    "Doe J, Example R. Forward-only migrations and the end of environment drift. Ex Softw Pract. 2015;12(2):115-128.",
+    "Example R. Observation-led design for high-volume result review. J Ex Human Factors. 2015;3(3):160-174.",
+    "Example R, Noakes P. Comparability analysis for method transfer between sites. Ex Clin Chem. 2012;15(4):280-294.",
+    "Roe B, Example R, Doe J. Quality control review without removing the human decision. Ex Assay Sci. 2011;6(2):66-79.",
+    "Example R. Malformed instrument output as a first-class test case. J Ex Test Eng. 2012;2(1):8-22.",
+    "Example R, Doe J. Re-running a published analysis two years later. Ex Reprod Res. 2009;1(1):3-17.",
+    "Noakes P, Example R. Controlled vocabularies for multi-vendor laboratory results. Ex Health Terminol. 2016;4(3):140-155.",
+    "Example R. Residual error rates in identifier-free record linkage. J Ex Med Inform. 2009;4(2):88-103.",
+    "Example R, Roe B. Teaching reproducibility to graduate scientists. Ex Comput Educ. 2010;3(1):20-34.",
+    "Doe J, Example R. Retiring a single-maintainer analysis codebase. Ex Res Softw. 2010;2(2):55-69.",
+    "Example R. Code review as teaching rather than gating. J Ex Eng Cult. 2011;1(1):5-18.",
+    "Example R, Noakes P. Idempotent consumers for laboratory event streams. Ex Distrib Syst. 2020;5(2):130-144.",
+    "Roe B, Example R. Cryptographic manifests for immutable scientific archives. Ex Storage Res. 2021;10(1):40-55.",
+    "Example R. Lifecycle policy for object storage under a retention obligation. J Ex Inf Gov. 2021;2(1):15-29.",
+    "Doe J, Example R, Noakes P. Least-privilege service accounts in instrument networks. Ex Secur Health. 2022;8(2):100-115.",
+    "Example R. Access review a data protection officer will accept. J Ex Priv Pract. 2022;4(3):175-189.",
+    "Example R, Roe B. Provenance through a six-step transformation chain. Ex Data Lineage. 2023;4(1):30-45.",
+    "Noakes P, Example R. Vendor technical negotiation for scientific platforms. J Ex Proc Eng. 2023;3(2):110-124.",
+    "Example R. Written design documents a reviewer can disagree with precisely. Ex Eng Pract. 2024;6(1):18-31.",
+    "Example R, Doe J. Survival analysis reporting pipelines for study reports. Ex Stat Med. 2013;11(2):145-160.",
+    "Roe B, Example R. Mixed-effects models for repeated laboratory measurement. J Ex Biostat. 2014;9(3):210-225.",
+    "Example R. Multiple imputation for missing analyte values. Ex Stat Med. 2011;9(1):33-48.",
+    "Doe J, Example R. Multiple-comparison correction in target discovery screens. Ex Bioinform. 2005;1(1):1-15.",
+    "Example R, Noakes P. Self-service compound and assay browsing for chemists. J Ex Chem Inform. 2005;2(2):60-74.",
+    "Example R. Normalising external reference datasets into an internal schema. Ex Data Curation. 2006;1(2):25-39.",
+    "Roe B, Example R, Doe J. Annotated candidate lists and what chemistry does with them. Ex Drug Discov Inform. 2006;3(1):10-24.",
+    "Example R. Sequence analysis pipelines at modest scale. J Ex Bioinform. 2004;1(1):1-13.",
+    "Example R, Roe B. Offline entry clients and the recruitment they protect. Ex Clin Trials. 2019;15(1):40-55.",
+    "Noakes P, Example R. Edit checks maintained by clinical staff, not engineers. J Ex Trial Ops. 2017;12(1):22-36.",
+    "Example R. Amendment-aware history in electronic data capture. Ex Clin Data. 2018;14(2):130-145.",
+    "Doe J, Example R. Auditor-ready qualification evidence from a build pipeline. Ex Regul Sci. 2019;9(2):95-110.",
+    "Example R, Noakes P. Reconciling paper and electronic laboratory records. J Ex Lab Manag. 2008;3(1):15-28.",
+    "Example R. Operating procedures written for accreditation and used after it. Ex Qual Syst. 2009;2(3):115-129.",
+    "Roe B, Example R. Blue-green cutover for a regulated scientific platform. Ex Oper Eng. 2024;9(1):20-34.",
+    "Example R, Doe J. Rollback paths that have actually been exercised. J Ex Reliab Eng. 2024;5(2):80-95.",
+    "Noakes P, Example R. Runbooks that make a small on-call rotation survivable. Ex Syst Pract. 2025;11(1):30-44.",
+    "Example R. Property-based testing of vendor instrument parsers. J Ex Test Eng. 2025;7(1):10-25.",
+    "Example R, Roe B. Golden-file corpora as institutional memory. Ex Softw Qual. 2025;14(2):120-135.",
+    "Doe J, Example R, Noakes P. Handover of a platform to a team that did not build it. Ex Res Softw. 2026;2(1):5-20.",
+    "Example R. What fifteen years of instrument data taught one engineering team. J Ex Res Comput. 2026;3(1):1-19.",
+]
+dropped = [
+    "## Profile",
+    "## Skills",
+    "## Experience",
+    "## Education",
+    "## Publications",
+]
+
+[[roles]]
+employer = "Northwind Research Institute"
+title = "Director of Research Data Engineering"
+dates = "March 2021 to Present"
+location = "Springfield"
+bullets = [
+    "Rebuilt the institute's research data platform around an event-sourced ingestion layer, cutting the time from instrument capture to analysable dataset from 11 days to under 4 hours across 38 laboratories, and holding that figure through two subsequent instrument fleet replacements.",
+    "Led a team of 26 engineers, analysts, and data managers spread across 4 sites, introducing a written design review that halved the number of changes reverted after release and gave junior engineers a durable record of how decisions were argued.",
+    "Took the platform through its first regulatory inspection with no critical findings, producing the validation evidence, audit trail specification, and traceability matrix that the inspector asked for within the 3 days allowed for the response.",
+    "Replaced 14 bespoke per-study extract scripts with one declarative transformation layer, which removed roughly twenty-two thousand lines of duplicated logic and made a study's data lineage readable by the statisticians who relied on it.",
+    "Negotiated a shared instrument data standard with 3 peer institutes, which now covers 91 percent of the assay types the consortium runs and has removed the per-partner translation work that consumed a full engineer's time each quarter.",
+    "Established a restore rehearsal programme that exercises the archive quarterly against a randomly chosen study, which surfaced 2 silent corruption defects in the first year and reduced the measured recovery time from 31 hours to 90 minutes.",
+]
+
+[[roles]]
+employer = "Globex Instruments"
+title = "Principal Data Platform Engineer"
+dates = "June 2018 to February 2021"
+location = "Riverside"
+bullets = [
+    "Designed the acquisition gateway that 6 instrument families report through, reconciling every captured run against the instrument's own audit log and raising a discrepancy rather than accepting a file whose provenance could not be established.",
+    "Cut median query latency on the customer-facing results archive from 8.2 seconds to 340 milliseconds by moving the read path onto a columnar store and rewriting the 9 slowest reports against it without changing their outputs.",
+    "Wrote the exactly-once file ingestion path that replaced a watcher losing roughly one run in every four thousand under load, and proved the replacement with a property-based test suite that reproduced the original defect in 3 lines.",
+    "Led the migration of 340 terabytes of historical results into the new archive over 7 months with no read downtime, running old and new paths in parallel and comparing checksums on every object before retiring the original.",
+    "Introduced backpressure and a bounded outbox to the telemetry pipeline, ending a recurring incident class that had paged the on-call engineer 19 times in the preceding year and had never once been resolved by the paged engineer.",
+    "Mentored 5 engineers through their first production-facing designs, 3 of whom now lead platform areas, and wrote the onboarding path that reduced the time to a first independent release from about 11 weeks to 4.",
+]
+
+[[roles]]
+employer = "Initech Clinical Systems"
+title = "Lead Software Engineer, Trial Data"
+dates = "August 2015 to May 2018"
+location = "Lakeside"
+bullets = [
+    "Built the electronic data capture layer used by 52 investigator sites across 4 trials, including the offline-tolerant entry client that let sites continue enrolling through the connectivity outages that had previously halted recruitment.",
+    "Specified and implemented the query management workflow that took the median time from a raised data query to its resolution from 19 days to 6, and gave data managers a queue they could actually work through in a morning.",
+    "Wrote the validation rule engine that expressed protocol constraints declaratively, which let clinical staff change an edit check themselves rather than waiting an average of 3 weeks for an engineering release.",
+    "Led the response to a mid-study protocol amendment that changed 31 collected fields, designing the migration so that already-entered data retained its original meaning and every changed value carried the amendment that caused it.",
+    "Integrated central laboratory results from 3 vendors under a single normalised schema, mapping roughly fourteen hundred distinct analyte codes to a controlled vocabulary and documenting every mapping decision for the statistical reviewer.",
+    "Ran the computerised system validation effort for 2 releases, producing installation and operational qualification evidence that the sponsor's auditor accepted without a single follow-up request.",
+]
+
+[[roles]]
+employer = "Aster Systems"
+title = "Senior Software Engineer"
+dates = "January 2013 to July 2015"
+location = "Fairhaven"
+bullets = [
+    "Rewrote the tenant isolation model for a multi-tenant laboratory information system after a design review found that 3 reporting paths could read across tenant boundaries, and added the contract tests that would catch a regression.",
+    "Delivered the specimen chain-of-custody feature end to end, from the barcode scanning workflow through to the immutable custody ledger, which became the feature most cited in the following year's renewals.",
+    "Reduced the nightly batch window from 6 hours to 40 minutes by replacing a row-at-a-time reconciliation with a set-based one, which let the support team stop scheduling their own work around the batch.",
+    "Introduced database migration tooling and a forward-only migration discipline to a codebase that had been applying schema changes by hand, eliminating a class of environment drift that had caused 4 failed releases.",
+    "Built the accessible result review interface used by laboratory technicians for 8 hours a day, working from observation sessions rather than assumptions, and moved the keyboard-only path from unusable to the default.",
+    "Served as the engineering contact for 2 enterprise implementations, translating between the customer's laboratory practice and the product's model without promising configuration that did not exist.",
+]
+
+[[roles]]
+employer = "Acme Diagnostics"
+title = "Software Engineer, Assay Informatics"
+dates = "September 2010 to December 2012"
+location = "Marlowe Bay"
+bullets = [
+    "Wrote the parser and calibration pipeline for a new immunoassay platform, taking it from vendor documentation and 200 sample runs to a validated production path in 5 months.",
+    "Found and corrected a calibration drift defect that had been quietly widening the acceptable range on 3 assays, then built the monitoring that would have caught it within a week rather than the 14 months it actually took.",
+    "Automated the assay quality control review that 2 scientists had been performing by eye, keeping the human decision point but removing the transcription step that accounted for most of the disagreements between reviewers.",
+    "Built a golden-file corpus of 380 real instrument outputs, including the malformed ones, which became the regression suite for every subsequent parser change and is still in use.",
+    "Contributed the laboratory's first reproducible analysis pipeline, which replaced a spreadsheet chain nobody could re-run with a versioned pipeline that regenerated every figure in a submitted manuscript.",
+    "Supported 3 method transfers to partner laboratories, writing the transfer documentation and running the comparability analysis that each receiving site needed before it could report results.",
+]
+
+[[roles]]
+employer = "Example University Center for Translational Computing"
+title = "Research Software Engineer"
+dates = "July 2007 to August 2010"
+location = "Springfield"
+bullets = [
+    "Built and maintained the shared analysis environment used by 17 research groups, standardising on reproducible environments after a year in which 4 published analyses could not be re-run from their own code.",
+    "Led the data management plan and its implementation for a 5-year longitudinal cohort study, covering collection, de-identification, retention, and the controlled access process that governed 60 external requests.",
+    "Wrote the record linkage pipeline that matched participants across 3 institutional systems without a shared identifier, and documented the residual error rate rather than presenting the match as exact.",
+    "Taught the graduate scientific computing course for 3 cohorts, roughly 90 students in total, rebuilding it around version control, testing, and the habits that make an analysis survive its author leaving.",
+    "Converted 9 legacy analysis scripts into a documented, tested library that the centre still uses, which removed the standing dependency on the single postdoctoral researcher who had written all of them.",
+    "Ran the centre's code review practice, reviewing roughly 400 changes over 3 years, with an explicit aim of teaching rather than gating and a written standard that new reviewers could apply consistently.",
+]
+
+[[roles]]
+employer = "Initrode Laboratories"
+title = "Scientific Programmer"
+dates = "March 2005 to June 2007"
+location = "Ashford Vale"
+bullets = [
+    "Automated the sample tracking that had been maintained in a shared spreadsheet, eliminating a mislabelling class that had forced 6 repeat runs in the preceding year and had no way of being detected before results were reported.",
+    "Wrote the instrument control and capture software for 4 benchtop analysers, including the serial protocol handling and the recovery path for a run interrupted mid-acquisition.",
+    "Built the laboratory's first structured results database, migrating 6 years of historical files into it and reconciling three thousand historical records whose paper and electronic versions disagreed.",
+    "Produced the monthly quality reporting that the laboratory director had previously assembled by hand over 2 days, and added the trend view that turned a backward-looking report into something the team acted on.",
+    "Trained 8 laboratory staff on the new systems and wrote the operating procedures, which were adopted unchanged when the laboratory was accredited the following year.",
+]
+
+[[roles]]
+employer = "Gamma Therapeutics"
+title = "Research Assistant, Bioinformatics"
+dates = "September 2003 to February 2005"
+location = "Riverside"
+bullets = [
+    "Implemented the sequence analysis pipeline for a target discovery programme, processing twelve hundred samples and delivering the annotated candidate list that the medicinal chemistry group worked from.",
+    "Built the internal browser for the compound and assay database, which replaced a query-by-request arrangement that had a 2-day turnaround with a self-service interface the scientists used daily.",
+    "Curated and normalised 4 external reference datasets into the internal schema, documenting every transformation so that a later reviewer could establish where a given annotation had come from.",
+    "Wrote the statistical analysis for 2 published studies, including the multiple-comparison correction that a reviewer specifically asked to see justified.",
+]

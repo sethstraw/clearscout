@@ -1,0 +1,139 @@
+name = "match_rule_shapes"
+proves = """
+Four of the five requirements each carry one shape the match prompt rules on.
+
+- An "including" list is illustrative: data platform work answers "data
+  platforms, including Snowflake, Databricks, and BigQuery" without any of the
+  three named products.
+- So is a list after "e.g." in parentheses: Terraform work answers
+  "infrastructure as code (e.g., Terraform, Pulumi, CloudFormation)" at
+  `strong`, and the note does not name the two examples the record lacks.
+- A minimum of years the record's dated roles meet is answered and lowers
+  nothing, so it is `DIRECT` at `strong`, not `TAILORING_ONLY` at `moderate`
+  and not `DIRECT` at `weak`.
+- A named tool the record lacks, beside related work in a language outside
+  that tool's ecosystem, is a `GAP`, not `TRANSFERABLE` citing that work.
+
+The applicant asserts a travel line of up to 10%, and the run measures that the
+match request carries it beside the requirement it answers. The scripted match
+answers each way, and the run measures what the program does with them: three
+evidence-backed rows, one gap, and one self-attested row. Whether a model
+returns these answers, or words an `ASSERTED` note as a comparison rather than
+a shortfall, is a live-run question this case cannot answer.
+"""
+mode = "screen"
+asserted = ["Open to travel up to 10% of the time"]
+
+posting = """
+Senior Data Engineer, Proseware
+
+Proseware builds billing software for regional utilities. The data team moves
+meter readings and invoices into a shared platform that finance and customer
+operations both report from, and it visits utility sites during each
+migration to confirm the numbers match what the customer sees.
+
+Requirements:
+- Experience with data platforms, including Snowflake, Databricks, and BigQuery
+- 3+ years of experience with Python
+- Airflow for pipeline scheduling
+- Infrastructure as code (e.g., Terraform, Pulumi, CloudFormation)
+- Willingness to travel 10-15% of the time
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+warehouse = "Modeled the clinical reporting warehouse in PostgreSQL"
+orchestration = "Rewrote the load orchestration in Python"
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Senior Data Engineer"
+company = "Proseware"
+seniority = "senior"
+keywords = [
+    "data platforms",
+    "Snowflake",
+    "Databricks",
+    "BigQuery",
+    "Python",
+    "Airflow",
+    "Infrastructure as code",
+    "Terraform",
+    "Pulumi",
+    "CloudFormation",
+]
+
+[[responses.jobspec.requirements]]
+text = "Experience with data platforms, including Snowflake, Databricks, and BigQuery"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "3+ years of experience with Python"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Airflow for pipeline scheduling"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Infrastructure as code (e.g., Terraform, Pulumi, CloudFormation)"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Willingness to travel 10-15% of the time"
+importance = "must_have"
+
+[[responses.jobspec.hard_gates]]
+kind = "minimum_years"
+text = "3+ years of experience with Python"
+blocking = false
+
+[[responses.match]]
+requirement = "Experience with data platforms, including Snowflake, Databricks, and BigQuery"
+classification = "TAILORING_ONLY"
+strength = "strong"
+evidence = ["kafka", "warehouse"]
+note = "Data platform work in Kafka and PostgreSQL; the listed products are examples."
+
+[[responses.match]]
+requirement = "3+ years of experience with Python"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["orchestration"]
+note = "Python load orchestration in a role dated July 2017 to March 2021 meets the three-year minimum."
+
+[[responses.match]]
+requirement = "Airflow for pipeline scheduling"
+classification = "GAP"
+strength = "none"
+note = "No entry names Airflow or a scheduler of its ecosystem."
+
+[[responses.match]]
+requirement = "Infrastructure as code (e.g., Terraform, Pulumi, CloudFormation)"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Wrote the Terraform modules that provision every environment."
+
+[[responses.match]]
+requirement = "Willingness to travel 10-15% of the time"
+classification = "ASSERTED"
+strength = "none"
+note = "The stated line allows travel up to a tenth of the time, and the posting asks for 10 to 15 percent."
+
+[expect]
+gaps = ["Airflow for pipeline scheduling"]
+
+[expect.classifications]
+"Experience with data platforms, including Snowflake, Databricks, and BigQuery" = "TAILORING_ONLY"
+"3+ years of experience with Python" = "DIRECT"
+"Airflow for pipeline scheduling" = "GAP"
+"Infrastructure as code (e.g., Terraform, Pulumi, CloudFormation)" = "DIRECT"
+"Willingness to travel 10-15% of the time" = "ASSERTED"
+
+[expect.strengths]
+"3+ years of experience with Python" = "strong"
+"Infrastructure as code (e.g., Terraform, Pulumi, CloudFormation)" = "strong"
+
+[expect.measured]
+model_calls = 2

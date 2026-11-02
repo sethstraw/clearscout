@@ -1,0 +1,178 @@
+name = "adjacent_defensible_fit"
+proves = """
+A posting the record answers sideways rather than head on. The work is real and
+related, but the posting asks for a scale, a domain, and an ownership level the
+evidence does not carry, so the honest answer is TRANSFERABLE with the missing
+qualifier stated rather than DIRECT.
+
+What is measured is that a weaker classification survives the whole run: it is
+still weaker in the evidence map, it still earns less selection weight than a
+direct answer, and the qualifier the record does not support does not appear on
+the page. The model's willingness to classify honestly is scripted and is not
+what this proves.
+"""
+mode = "draft"
+
+posting = """
+Principal Streaming Architect, Woodgrove Payments
+
+Woodgrove Payments settles card transactions for regional banks. We are looking
+for a principal architect to set the direction of our event streaming estate.
+
+Responsibilities:
+- Set multi-region streaming architecture across more than 400 topics
+- Own the schema contract between payment producers and downstream consumers
+- Lead a platform group of twelve engineers across three time zones
+- Carry the payments domain knowledge that keeps settlement correct
+
+Requirements:
+- Kafka at multi-region scale
+- Schema governance for financial transaction data
+- Prior experience leading a platform organization
+- Payments or settlement domain background
+
+Remote within the United States.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+registry = "Designed the schema registry and its compatibility rules"
+summary_recent = "Recent work centers on streaming ingestion"
+skills_platform = "Python, Go, PostgreSQL, Kafka, Terraform, Docker"
+skills_governance = "dimensional modeling, schema registry design"
+context_fabrikam = "Worked on platform architecture within a team of six"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+
+[responses.jobspec]
+title = "Principal Streaming Architect"
+company = "Woodgrove Payments"
+seniority = "principal"
+location = "Remote, United States"
+keywords = ["Kafka", "schema governance", "streaming architecture", "multi-region"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka at multi-region scale"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Schema governance for financial transaction data"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Prior experience leading a platform organization"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Payments or settlement domain background"
+importance = "nice_to_have"
+
+[[responses.match]]
+requirement = "Kafka at multi-region scale"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["kafka", "skills_platform"]
+note = "Production Kafka across 212 feeds. The record does not describe multi-region operation."
+
+[[responses.match]]
+requirement = "Schema governance for financial transaction data"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["registry", "skills_governance"]
+note = "Registry and compatibility rules, in clinical and freight data rather than payments."
+
+[[responses.match]]
+requirement = "Prior experience leading a platform organization"
+classification = "TRANSFERABLE"
+strength = "weak"
+evidence = ["context_fabrikam"]
+note = "Worked within a six-engineer team. No organizational leadership is evidenced."
+
+[[responses.match]]
+requirement = "Payments or settlement domain background"
+classification = "GAP"
+strength = "none"
+note = "The record covers clinical and freight data, not payments."
+
+[responses.draft.summary]
+text = """
+Platform engineer working on streaming ingestion and schema governance in \
+regulated clinical and freight data.
+"""
+evidence = ["summary_recent"]
+
+[[responses.draft.skills]]
+label = "Platforms"
+text = "Kafka, Terraform, PostgreSQL, Python, Go"
+evidence = ["skills_platform"]
+
+[[responses.draft.skills]]
+label = "Governance"
+text = "schema registry, data lineage, data quality rules"
+evidence = ["skills_governance"]
+
+[[responses.draft.roles]]
+role = "Fabrikam"
+
+[responses.draft.roles.context]
+text = "Platform architecture within a six-engineer team, with analytics and compliance on every schema change."
+evidence = ["context_fabrikam"]
+
+[[responses.draft.roles.bullets]]
+text = "Rebuilt the ingestion tier on Kafka, cutting median end to end latency from 40 minutes to 90 seconds across 212 source feeds."
+evidence = ["kafka"]
+
+[[responses.draft.roles.bullets]]
+text = "Designed the schema registry and its compatibility rules with two other engineers, stopping 31 breaking changes before release."
+evidence = ["registry"]
+
+[[responses.draft.roles]]
+role = "Adventure Works"
+
+[responses.draft.roles.context]
+text = "Clinical reporting warehouse and its nightly load."
+evidence = ["context_adventure"]
+
+[responses.critic]
+alignment = 4
+preservation = 5
+specificity = 4
+readability = 4
+ats_clarity = 4
+human_voice = 4
+guidance = "Honest about the domain and scale the record does not cover."
+
+[expect]
+requirements = [
+    "Kafka at multi-region scale",
+    "Schema governance for financial transaction data",
+    "Prior experience leading a platform organization",
+    "Payments or settlement domain background",
+]
+must_have = [
+    "Kafka at multi-region scale",
+    "Schema governance for financial transaction data",
+    "Prior experience leading a platform organization",
+]
+gaps = ["Payments or settlement domain background"]
+# The qualifiers the posting asks for and the record does not carry. None of
+# them may appear anywhere in a document written from that record.
+absent = ["multi-region", "payments", "settlement", "twelve engineers"]
+immutable = ["Fabrikam Data Works", "Staff Platform Engineer", "April 2021 to Present"]
+
+[expect.classifications]
+"Kafka at multi-region scale" = "TRANSFERABLE"
+"Schema governance for financial transaction data" = "TRANSFERABLE"
+"Prior experience leading a platform organization" = "TRANSFERABLE"
+"Payments or settlement domain background" = "GAP"
+
+[expect.checks]
+"sources cited" = "pass"
+"numbers traced" = "pass"
+"document structure" = "pass"
+"critic" = "pass"
+
+[expect.measured]
+model_calls = 4
+# The model called r04 preferred, but the posting lists it under "Requirements".
+# The deterministic reading disagrees rather than deferring; a person settles it.
+model_rule_disagreements = 1

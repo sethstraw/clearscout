@@ -1,0 +1,45 @@
+# A posting whose body runs beside an at-a-glance sidebar, written row by row.
+# Only a reader that cuts the gutter keeps either column whole.
+source = "posting.pdf"
+faithful = "columns"
+
+lines = [
+    "Integration Engineer at Initrode Freight",
+    "Initrode Freight moves freight across four",
+    "regions and needs an integration engineer",
+    "to keep its carrier contracts in step with",
+    "each other. You will own the message",
+    "contract shared by nine carrier",
+    "integrations and the nightly suite that",
+    "holds it steady.",
+    "WHAT YOU WILL DO",
+    "Extend the shared contract as carriers join.",
+    "Keep the integration suite green each night.",
+    "Review the schedule the dispatch team runs.",
+    "AT A GLANCE",
+    "Location",
+    "Marrow Hollow",
+    "Employment type",
+    "Full time, permanent",
+    "Pay",
+    "Band 4, reviewed yearly",
+    "Apply by",
+    "14 March",
+]
+
+# Following the stream reads across the gutter, so each sidebar line arrives
+# stuck to the end of an unrelated sentence.
+stream = [
+    "Integration Engineer at Initrode Freight AT A GLANCE",
+    "Initrode Freight moves freight across four Location",
+    "regions and needs an integration engineer Marrow Hollow",
+    "to keep its carrier contracts in step with Employment type",
+    "each other. You will own the message Full time, permanent",
+    "contract shared by nine carrier Pay",
+    "integrations and the nightly suite that Band 4, reviewed yearly",
+    "holds it steady. Apply by",
+    "WHAT YOU WILL DO 14 March",
+    "Extend the shared contract as carriers join.",
+    "Keep the integration suite green each night.",
+    "Review the schedule the dispatch team runs.",
+]

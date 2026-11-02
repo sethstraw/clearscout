@@ -1,0 +1,86 @@
+name = "match_disposition_behavioral"
+proves = """
+Two requirements that name a disposition and no action: emotional intelligence
+and energy. The match prompt's rule that a different behavioral action is a gap
+compares actions, so it does not apply to either. The record narrates one
+behavior a reviewer would read as the first, a review split that kept the load
+off any one teammate, and nothing that reads as the second.
+
+So the first is `TAILORING_ONLY`, narrated without the label, and the second is
+a `GAP` because no behavior shows it, not because an entry's action differs from
+one the requirement never named.
+
+Both requirements are marked `behavioral`, so extraction carries the dimension
+and the match request asks each one as behavioral, which is the rule's scope.
+The scripted match answers as above, and the run measures what the program
+carries forward: one answered requirement and one gap that stays a gap. Whether
+a model applies the rule is a live-run question.
+"""
+mode = "screen"
+
+posting = """
+Data Engineer, Wingtip Toys
+
+Wingtip Toys runs a small data team that ships the reporting behind its stores.
+The team is four people, sits with the merchandising group, and owns every
+pipeline from the point-of-sale feeds to the weekly store scorecards. Most weeks
+bring a new request from a store manager and a deadline that does not move.
+
+About you:
+- Experience building data pipelines in Python
+- Emotional intelligence in a small, close-knit team
+- High energy
+"""
+
+[evidence]
+orchestration = "Rewrote the load orchestration in Python"
+assistant = "keeping the review burden on the team rather than on one person"
+
+[responses.jobspec]
+title = "Data Engineer"
+company = "Wingtip Toys"
+keywords = ["data pipelines", "Python"]
+
+[[responses.jobspec.requirements]]
+text = "Experience building data pipelines in Python"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Emotional intelligence in a small, close-knit team"
+importance = "must_have"
+dimension = "behavioral"
+
+[[responses.jobspec.requirements]]
+text = "High energy"
+importance = "must_have"
+dimension = "behavioral"
+
+[[responses.match]]
+requirement = "Experience building data pipelines in Python"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["orchestration"]
+note = "Rewrote load orchestration in Python."
+
+[[responses.match]]
+requirement = "Emotional intelligence in a small, close-knit team"
+classification = "TAILORING_ONLY"
+strength = "moderate"
+evidence = ["assistant"]
+note = "Split review work so no one teammate carried it; the disposition is not labeled."
+
+[[responses.match]]
+requirement = "High energy"
+classification = "GAP"
+strength = "none"
+note = "No entry narrates behavior a reviewer would read as energy."
+
+[expect]
+gaps = ["High energy"]
+
+[expect.classifications]
+"Emotional intelligence in a small, close-knit team" = "TAILORING_ONLY"
+"High energy" = "GAP"
+
+[expect.measured]
+model_calls = 2

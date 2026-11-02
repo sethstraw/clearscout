@@ -1,0 +1,80 @@
+name = "discovery_exposure_not_ownership"
+proves = """
+An answer describing exposure cannot become a claim of ownership.
+
+This is the one failure discovery exists to prevent. A gap is found, the person
+is asked about it, and what they describe is sitting in on other people's design
+reviews. The wording proposed from that answer claims they owned the thing. The
+refusal quotes both phrases, so the disagreement is about two sentences rather
+than about a verdict, and the gap stays a gap.
+
+What it does not prove: that the reading of a rung is right in general. It is a
+word list, and an answer saying somebody else owned the thing would read as
+ownership. That is why the level is confirmed explicitly and the phrase it was
+read from is printed beside it.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Container Platform, Contoso Freight Systems
+
+Contoso Freight Systems is rebuilding the platform that runs its scheduling
+services. This role is on the container platform team.
+
+Requirements:
+- Kubernetes in production, including upgrades and capacity work
+- Terraform for environment provisioning
+
+Remote within the United States.
+Benefits and legal:
+- We offer paid time off, a 401(k) with matching, and a home office allowance.
+- Applicants will receive consideration without regard to any protected status.
+- This posting is not an offer of employment and the range is not a commitment.
+"""
+
+[evidence]
+terraform = "Wrote the Terraform modules that provision every environment"
+
+[responses.jobspec]
+title = "Platform Engineer, Container Platform"
+company = "Contoso Freight Systems"
+location = "Remote, United States"
+keywords = ["Kubernetes", "Terraform"]
+
+[[responses.jobspec.requirements]]
+text = "Kubernetes in production, including upgrades and capacity work"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Terraform for environment provisioning"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kubernetes in production, including upgrades and capacity work"
+classification = "GAP"
+note = "Nothing in the record mentions it."
+
+[[responses.match]]
+requirement = "Terraform for environment provisioning"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["terraform"]
+note = "Wrote the provisioning modules."
+
+[discovery]
+about = "Kubernetes in production"
+gap = "r01"
+replies = ["I sat in on the design reviews for it, nothing more than that."]
+claim = "Owned the design reviews."
+scope = "the platform team"
+placement = "Fabrikam"
+ambiguous = "which quarter it was"
+
+[expect]
+gaps = ["Kubernetes in production, including upgrades and capacity work"]
+discovery = "refused"
+
+[expect.measured]
+model_calls = 2
+discovery_questions_asked = 1
+discovery_unclosed_gaps = 1

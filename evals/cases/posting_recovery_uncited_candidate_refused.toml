@@ -1,0 +1,70 @@
+name = "posting_recovery_uncited_candidate_refused"
+proves = """
+A candidate URL the hosted search never captured is refused before any page is
+read: `_require_cited_candidate` rejects a URL that is neither the known
+posting nor a captured source, and the harness records the deterministic
+refusal as "response_refused" rather than treating the model's claim as
+evidence. It does not show that the candidate would otherwise resolve; only
+that this specific gate is what stops it.
+"""
+mode = "screen"
+
+posting = """
+Platform Engineer, Contoso Rail Freight
+
+Contoso Rail Freight runs its scheduling estate on an event stream. The
+platform group owns the ingestion tier and the schema contract between the
+yard systems and the reporting warehouse, keeping a breaking change from
+reaching a consumer without any warning at all.
+
+Requirements:
+- Kafka in production
+
+Remote within the United States. We review applications weekly.
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+
+[responses.jobspec]
+title = "Platform Engineer"
+company = "Contoso Rail Freight"
+seniority = "not stated"
+location = "Remote, United States"
+keywords = ["Kafka"]
+
+[[responses.jobspec.requirements]]
+text = "Kafka in production"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Kafka in production"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt the ingestion tier on Kafka."
+
+[posting_recovery]
+employer = "Contoso Rail Freight"
+title = "Platform Engineer"
+known_url = "https://boards.example.test/postings/original-platform-engineer"
+candidate_urls = ["https://uncited.example.test/careers/platform-engineer"]
+
+[posting_recovery.search]
+queries = ["Contoso Rail Freight platform engineer posting"]
+
+[[posting_recovery.search.sources]]
+url = "https://contoso-rail-freight.example.test/careers/platform-engineer"
+title = "Platform Engineer - Contoso Rail Freight"
+
+[[posting_recovery.observations]]
+url = "https://contoso-rail-freight.example.test/careers/platform-engineer"
+authority = "publisher_body"
+completeness = "complete"
+identity = "exact"
+posting_status = "active"
+note = "Matches the known posting on employer and title."
+
+[expect]
+posting_recovery = "response_refused"
+posting_recovery_refusal = "uncited candidate URL"

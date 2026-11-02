@@ -1,0 +1,94 @@
+name = "match_partner_functions"
+proves = """
+A requirement whose only object is the functions the candidate would work with:
+design, UX research, and data science. The record shows work across functions,
+with analytics, compliance, and clinicians, and never names any of the three.
+The match prompt says the partner functions are not a qualification the
+candidate lacks, so the requirement is answered by the cross-functional work and
+no gap is reported for it.
+
+The scripted match answers that way. What the run measures is that the answer
+reaches the verdict as an answered requirement rather than a gap; it does not
+measure whether a model reads the requirement this way, which only a live run
+can.
+"""
+mode = "screen"
+
+posting = """
+Senior Data Engineer, Product Analytics, Litware
+
+Litware builds scheduling software for clinics. The product analytics group
+turns appointment and booking events into the measures product teams plan
+against, and it is replacing a nightly batch with streaming pipelines so those
+measures arrive the same day.
+
+What you'll do:
+- Build the event pipelines behind product analytics
+- Partner with design, UX research, and data science to shape new features
+
+Requirements:
+- Experience building production data pipelines
+- Experience partnering with design, UX research, and data science teams
+"""
+
+[evidence]
+kafka = "Rebuilt the ingestion tier on Kafka"
+context_fabrikam = "Worked on platform architecture within a team of six"
+context_adventure = "Ran the clinical reporting warehouse and its nightly load"
+
+[responses.jobspec]
+title = "Senior Data Engineer, Product Analytics"
+company = "Litware"
+seniority = "senior"
+keywords = ["data pipelines", "product analytics"]
+
+[[responses.jobspec.requirements]]
+text = "Build the event pipelines behind product analytics"
+importance = "responsibility"
+
+[[responses.jobspec.requirements]]
+text = "Partner with design, UX research, and data science to shape new features"
+importance = "responsibility"
+
+[[responses.jobspec.requirements]]
+text = "Experience building production data pipelines"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Experience partnering with design, UX research, and data science teams"
+importance = "must_have"
+
+[[responses.match]]
+requirement = "Build the event pipelines behind product analytics"
+classification = "TRANSFERABLE"
+strength = "moderate"
+evidence = ["kafka"]
+note = "Streaming ingestion pipelines, not product event analytics."
+
+[[responses.match]]
+requirement = "Partner with design, UX research, and data science to shape new features"
+classification = "TAILORING_ONLY"
+strength = "strong"
+evidence = ["context_fabrikam", "context_adventure"]
+note = "Works across functions with analytics, compliance, and clinicians."
+
+[[responses.match]]
+requirement = "Experience building production data pipelines"
+classification = "DIRECT"
+strength = "strong"
+evidence = ["kafka"]
+note = "Rebuilt a production ingestion tier across 212 feeds."
+
+[[responses.match]]
+requirement = "Experience partnering with design, UX research, and data science teams"
+classification = "TAILORING_ONLY"
+strength = "strong"
+evidence = ["context_fabrikam", "context_adventure"]
+note = "Cross-functional work with analytics, compliance, and clinicians."
+
+[expect.classifications]
+"Experience partnering with design, UX research, and data science teams" = "TAILORING_ONLY"
+"Partner with design, UX research, and data science to shape new features" = "TAILORING_ONLY"
+
+[expect.measured]
+model_calls = 2

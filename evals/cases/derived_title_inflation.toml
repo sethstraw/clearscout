@@ -1,0 +1,73 @@
+name = "derived_title_inflation"
+proves = """
+A negative control for title inflation. The title says Senior Director; the
+responsibilities are assisting under close supervision and the posting asks for
+two years. A reading that took the title at its word would report a director
+role, and a person triaging a slate on that answer would skip this posting for
+the wrong reason, or take it for the wrong reason.
+
+The rule is that a conflict is an abstention rather than an average. Both sides
+of it are quoted in the note, so the reader can see what contradicted what. The
+years are still reported, because the posting genuinely states them; it is the
+level that nothing in the text supports.
+"""
+mode = "screen"
+
+posting = """
+Senior Director of Data Strategy, Litware Group
+
+Join Litware Group as a Senior Director of Data Strategy. This is a great
+opportunity to grow with a fast moving team in a supportive environment.
+
+What you will do:
+- Assist the analytics team under close supervision from the group lead
+- Help maintain the weekly reports and the spreadsheets behind them
+- Take notes in the data strategy forum and circulate them afterwards
+- Learn our tools and grow into more responsibility over time
+
+Requirements:
+- 2 years of experience in an office setting
+- Willingness to learn
+
+Preferred qualifications:
+- Attention to detail
+"""
+
+[responses.jobspec]
+title = "Senior Director of Data Strategy"
+company = "Litware Group"
+seniority = "director"
+location = "Not stated"
+keywords = ["data strategy", "reporting"]
+
+[[responses.jobspec.requirements]]
+text = "2 years of experience in an office setting"
+importance = "must_have"
+
+[[responses.jobspec.requirements]]
+text = "Attention to detail"
+importance = "nice_to_have"
+
+[[responses.match]]
+requirement = "2 years of experience in an office setting"
+classification = "DIRECT"
+strength = "strong"
+note = "The record covers far more than two years."
+
+[[responses.match]]
+requirement = "Attention to detail"
+classification = "TAILORING_ONLY"
+strength = "weak"
+note = "Unevidenceable by construction."
+
+[expect.derived]
+seniority = "not stated"
+years = "2"
+orientation = "not stated"
+education = "not stated"
+
+[expect.measured]
+model_calls = 2
+# The model reported a director role; the rules refused to place a level at all.
+# One of the two is wrong, which the disagreement section puts before a person.
+model_rule_disagreements = 1
