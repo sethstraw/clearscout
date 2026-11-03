@@ -4,7 +4,7 @@ Status: accepted
 
 ## Decision
 
-TailorCV mounts `starlette-admin` at `/admin` from `bootstrap/api.py`, generating
+ClearScout mounts `starlette-admin` at `/admin` from `bootstrap/api.py`, generating
 one view per mapped model from the SQLAlchemy registry. Every view offers no
 create, edit, or delete, so the admin declines the write in Python before any
 handler reaches the database. The `IMMUTABLE_TABLES` triggers still refuse

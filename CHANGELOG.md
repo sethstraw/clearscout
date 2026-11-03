@@ -24,8 +24,9 @@ Entries start with the first change after this release.
   system keyring.
 - Backups, the database, and artifacts are written owner-private.
 - robots.txt decides every read except the first read of a posting URL you
-  enter yourself, which still stops when robots.txt names TailorCV. Board
+  enter yourself, which still stops when robots.txt names ClearScout or its
+  former name, TailorCV. Board
   and listing reads, refreshes, and every later read of a stored URL honor a
   robots disallow.
 
-[Unreleased]: https://github.com/sethstraw/tailorcv/commits/main
+[Unreleased]: https://github.com/sethstraw/clearscout/commits/main

@@ -1,6 +1,6 @@
 # Design decisions
 
-Why TailorCV is built this way, one architecture decision record per decision
+Why ClearScout is built this way, one architecture decision record per decision
 that would be expensive to reverse, each describing the rule the code follows.
 Product rules for evaluation, drafting, model calls, and discovery are in
 [ARCHITECTURE.md](../../ARCHITECTURE.md).

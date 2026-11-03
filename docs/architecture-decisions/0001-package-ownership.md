@@ -4,7 +4,7 @@ Status: accepted
 
 ## Decision
 
-TailorCV has six top-level Python boundaries under `src/tailorcv`:
+ClearScout has six top-level Python boundaries under `src/clearscout`:
 
 - `bootstrap` composes the API, CLI, worker, and runtime setup;
 - `domain` owns framework-free vocabulary, identity, and invariants;

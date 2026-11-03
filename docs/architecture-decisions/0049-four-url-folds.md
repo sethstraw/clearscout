@@ -4,7 +4,7 @@ Status: accepted
 
 ## Decision
 
-A posting URL answers five different questions. So TailorCV keeps five
+A posting URL answers five different questions. So ClearScout keeps five
 transforms and improvises no sixth.
 
 Publisher text is the column value itself: `discovery_url`, `canonical_url`,

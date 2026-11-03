@@ -30,11 +30,12 @@ rows, guided campaign captures, relevance-review preparation, assisted
 recovery, and the rendered browser tier. Any read after a person-added row's
 first content read, including its next refresh, is a crawl.
 
-The exempt read is refused in three cases: a robots group names TailorCV's user
-agent explicitly, robots.txt cannot be read, or the page answers 401 or 403. The
+The exempt read is refused in three cases: a robots group names ClearScout's user
+agent, or its former name `tailorcv`, explicitly; robots.txt cannot be read; or
+the page answers 401 or 403. The
 exemption follows the whole redirect chain the client itself follows, up to the
 redirect limit. Each hop still resolves a public address and loads that host's
-own robots, and still refuses a group naming TailorCV's user agent. An exempt
+own robots, and still refuses a group naming either agent. An exempt
 read is never retried on Retry-After. The precheck a posting read runs before
 its request applies the same rule as the request.
 

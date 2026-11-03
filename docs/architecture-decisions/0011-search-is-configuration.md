@@ -8,7 +8,7 @@ Where somebody may work, which arrangement they will accept, and what a role has
 to pay are facts about a person's search. They are not facts about their career
 record. They live in `search_parameters/` as one validated model, not as
 literals in `src/`. A file-based command reads `[job_search]` from
-`tailorcv.toml`. A workspace copies it at creation, then reads and edits its
+`clearscout.toml`. A workspace copies it at creation, then reads and edits its
 versioned database record. The same seed-once boundary applies to guardrails.
 
 Writes append, and the browser sends the version it started from. Two tabs
