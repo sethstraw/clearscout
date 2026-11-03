@@ -405,7 +405,7 @@ def _lever(
     url: str, *, client: PoliteHttpClient, intent: PostingReadIntent = PostingReadIntent.CRAWL
 ) -> Answer:
     """Read a Lever posting from its public postings API, and its apply page's form."""
-    checked = check_lever(url, client=client, gone_is_closure=True, intent=intent)
+    checked = check_lever(url, client=client, intent=intent)
     match = host_match(LEVER, url)
     if match is not None and checked is not None:
         checked = _with_form(checked, partial(_lever_form, match, client=client, intent=intent))
@@ -454,7 +454,6 @@ def check_lever(
     url: str,
     *,
     client: PoliteHttpClient,
-    gone_is_closure: bool = False,
     intent: PostingReadIntent = PostingReadIntent.CRAWL,
 ) -> PostingCheck | None:
     """Check whether a Lever posting URL still names an open posting."""
@@ -469,7 +468,7 @@ def check_lever(
         intent=intent,
     )
     if payload is None:
-        return _unavailable_lever(note, gone_is_closure=gone_is_closure, basis=basis)
+        return _unavailable_lever(note, basis=basis)
     return replace(
         posting_check(
             LEVER_MAPPING, Posting(payload), note="Lever published this posting metadata."
@@ -478,11 +477,9 @@ def check_lever(
     )
 
 
-def _unavailable_lever(
-    note: str, *, gone_is_closure: bool, basis: RobotsReadBasis | None
-) -> PostingCheck:
-    """Treat a direct gone response as a closure only on the liveness path."""
-    if gone_is_closure and note in GONE_ENDPOINT_NOTES:
+def _unavailable_lever(note: str, *, basis: RobotsReadBasis | None) -> PostingCheck:
+    """Treat the postings API's own 404 or 410 as a closure; anything else is unreadable."""
+    if note in GONE_ENDPOINT_NOTES:
         return PostingCheck(
             status="closed",
             note="Lever no longer lists this posting, so it has closed.",

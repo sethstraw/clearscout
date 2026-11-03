@@ -250,10 +250,10 @@ def test_lever_410_gone_also_reads_as_closed() -> None:
     assert checked.status == "closed"
 
 
-def test_lever_transient_503_is_not_closed_even_on_a_liveness_fetch() -> None:
+def test_lever_transient_503_is_not_closed() -> None:
     """A 503 is a transient read; only 404/410 from the canonical endpoint closes."""
     client = _Router([("api.lever.co/v0/postings", 503, None)])
-    checked = check_lever(_LEVER_URL, client=client, gone_is_closure=True)  # type: ignore[arg-type]
+    checked = check_lever(_LEVER_URL, client=client)  # type: ignore[arg-type]
     assert checked is not None and checked.status == "unreadable"
 
 

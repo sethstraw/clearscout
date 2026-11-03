@@ -74,7 +74,7 @@ def _check_posting(url: str, *, http: PoliteHttpClient, intent: PostingReadInten
     """Run the liveness readers within the check's shared deadline."""
     checked = (
         check_greenhouse(url, client=http, intent=intent)
-        or check_lever(url, client=http, gone_is_closure=True, intent=intent)
+        or check_lever(url, client=http, intent=intent)
         or check_workday(url, client=http, gone_is_closure=True, intent=intent)
         or check_ashby(url, client=http, intent=intent)
         or check_oracle(url, client=http, intent=intent)
