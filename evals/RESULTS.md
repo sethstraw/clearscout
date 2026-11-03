@@ -199,9 +199,12 @@ launch-alignment case `weak` on all three, and the held-out scale case `weak`
 on two.
 
 Manifest `c5bd1b5b` is the 2026-09-25 labeling round, 19 development cases.
-The round is now sealed under the ClearScout domains as manifest `8cfe9e02`.
-Hashing under the new domains replaced one development case, so no row above
-scores `8cfe9e02`.
+Sealed under the ClearScout hash domains, the same round is manifest
+`8cfe9e02`. The selection order changed, and one development case changed
+with it. A TAILORING_ONLY production-readiness case that passed strength on
+every run left. A TRANSFERABLE event-ingestion case that missed strength on
+two runs entered. No row above scores `8cfe9e02`, and its first strength count
+does not compare with the `c5bd1b5b` rows.
 Strength on evidence-backed labels was 40 of 40, 42 of 42, and 41 of 41 on the
 three gpt-6-sol rows of September. The 2026-09-25 misses were one
 partner-collaboration case read DIRECT on two trials, a boundary no rule

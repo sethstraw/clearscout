@@ -953,3 +953,21 @@ def test_live_identity_refuses_scope_outside_the_selection_manifest(
 
     with pytest.raises(RuntimeError, match=message):
         clearscout_live._selection_manifest_identity(**approved_scope)
+
+
+def test_the_round_in_force_reproduces_the_tracked_match_dataset() -> None:
+    golden = Path(__file__).resolve().parents[2] / "evals/golden"
+    receipts = golden / "receipts/match-labeling-2026-09-25"
+
+    def receipt(name: str, field: str | None = None) -> str:
+        text = (receipts / name).read_text(encoding="utf-8")
+        return text if field is None else json.dumps(json.loads(text)[field])
+
+    dataset = project_match_dataset(
+        SelectionManifest.model_validate_json(receipt("selection-manifest.json")),
+        CandidatePool.model_validate_json(receipt("candidates.json", "candidate_pool")),
+        ExtractionQaSet.model_validate_json(receipt("extraction-qa.json")),
+        ResolutionSet.model_validate_json(receipt("resolution-bundle.json", "resolution_set")),
+    )
+
+    assert dataset == (golden / "match.jsonl").read_bytes()

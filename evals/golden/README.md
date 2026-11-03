@@ -56,7 +56,9 @@ runner serves a held-out row only to a run that names `--split holdout`.
 chain behind it: the source mapping, candidates, extraction QA, both reviewer
 packets, raw reviews and proposals, the adjudication, the per-case rulings, and
 the frozen bundles whose digests the manifest pins. Every receipt names the
-model its agent's launch result resolved. Only the round in force is kept here,
+model its agent's launch result resolved. The receipts are re-derived from the
+2026-09-25 reviews under the ClearScout hash domains. The packets those agents
+read were the same cases in another order, and they stay in the private archive. Only the round in force is kept here,
 so the receipts behind an `evals/RESULTS.md` row on an earlier manifest are not
 in the repository.
 
