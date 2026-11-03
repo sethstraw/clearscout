@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 384 96">
   <title>ClearScout</title>
-  <rect x="8" y="8" width="80" height="80" rx="18" fill="#0E1720" />
-  <path d="M29 54c-6-23 16-42 36-29 22 15 12 48-13 47-19 0-31-20-21-36" fill="none" stroke="#0E9888" stroke-linecap="round" stroke-width="7.4" />
-  <path d="M30 58c18-22 30 19 48-6" fill="none" stroke="#F8FAFC" stroke-dasharray="0.2 10" stroke-linecap="round" stroke-width="5.8" />
-  <circle cx="30" cy="58" r="4.4" fill="#0E9888" />
-  <circle cx="78" cy="52" r="4.4" fill="#7462FF" />
-  <path d="M39 34h24M51 35.5v35" fill="none" stroke="#F8FAFC" stroke-linecap="round" stroke-width="8" />
+  <g transform="translate(8 8) scale(1.25)">
+    <rect width="64" height="64" rx="14" fill="#0E1720" />
+    <rect x="16" y="37.5" width="32" height="12" rx="6" fill="#0E9888" />
+    <rect x="20.5" y="26" width="23" height="10" rx="5" fill="#F8FAFC" transform="rotate(-5 32 31)" />
+    <rect x="25" y="15" width="14" height="9.5" rx="4.75" fill="#7462FF" transform="rotate(4 32 19.75)" />
+  </g>
   <text x="112" y="49" fill="#0E1720" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="36" font-weight="800">ClearScout</text>
   <text x="113" y="72" fill="#5D6772" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="560">Follow the evidence path.</text>
 </svg>

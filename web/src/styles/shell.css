@@ -91,34 +91,16 @@
 	fill: #0e1720;
 }
 
-.brand-mark__arc {
-	fill: none;
-	stroke: #0e9888;
-	stroke-linecap: round;
-	stroke-width: 5.4;
-}
-
-.brand-mark__thread {
-	fill: none;
-	stroke: #f8fafc;
-	stroke-dasharray: 0.2 8.1;
-	stroke-linecap: round;
-	stroke-width: 4.2;
-}
-
-.brand-mark__start {
+.brand-mark__base {
 	fill: #0e9888;
 }
 
-.brand-mark__end {
-	fill: #7462ff;
+.brand-mark__middle {
+	fill: #f8fafc;
 }
 
-.brand-mark__letter {
-	fill: none;
-	stroke: #f8fafc;
-	stroke-linecap: round;
-	stroke-width: 6.2;
+.brand-mark__top {
+	fill: #7462ff;
 }
 
 .brand-mark--large {
