@@ -1,6 +1,6 @@
 # What live validation found
 
-TailorCV calls paid models at five stages: requirement extraction (jobspec), evidence matching (match), relevance review, drafting, and critique. Between August and November 2026 the maintainer ran about 170 dated paid runs against those stages and kept a private ledger of each. This file publishes what those runs taught, because a claim like "the model never cites evidence it was not given" is only worth what the evidence behind it is worth.
+ClearScout calls paid models at five stages: requirement extraction (jobspec), evidence matching (match), relevance review, drafting, and critique. Between August and November 2026 the maintainer ran about 170 dated paid runs against those stages and kept a private ledger of each. This file publishes what those runs taught, because a claim like "the model never cites evidence it was not given" is only worth what the evidence behind it is worth.
 
 Read these as defect discovery on small samples, not as accuracy claims. Most runs cover 4 to 19 synthetic cases or a handful of real postings, with 1 to 5 draws each. A number here says a behavior happened at least that often under one prompt and one model. It does not carry to real postings in general. [inspect/METHODOLOGY.md](inspect/METHODOLOGY.md) explains what each eval family measures and what it cannot. [RESULTS.md](RESULTS.md) holds the tables; this file is the narrative.
 
@@ -91,7 +91,7 @@ The cases became a permanent eval of eight synthetic postings. Its first run (81
 
 ## Structured outputs
 
-- OpenAI strict mode allows 1000 enum values per schema, and 15,000 characters across string enums over 250 values. Match closes cited ids over the CV's entries, so a CV past about 870 entries would fail every call. `src/tailorcv/infrastructure/providers/base.py` now refuses such a schema before any request. Whether a shared `$defs` enum counts once is undocumented.
+- OpenAI strict mode allows 1000 enum values per schema, and 15,000 characters across string enums over 250 values. Match closes cited ids over the CV's entries, so a CV past about 870 entries would fail every call. `src/clearscout/infrastructure/providers/base.py` now refuses such a schema before any request. Whether a shared `$defs` enum counts once is undocumented.
 - A Pydantic docstring on a response model reaches the wire schema, the request digest, and the cassette. A docstring edit is a request change.
 - A closed enum is a grounding tool and a caching hazard at once. Closing over per-run ids broke the cache prefix (above). Close over stable sets and check per-run ids in code.
 

@@ -12,8 +12,8 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.domain.records import PostingReadIntent, RobotsReadBasis
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.domain.records import PostingReadIntent, RobotsReadBasis
+from clearscout.infrastructure.web_fetch.policy import (
     MAX_REDIRECTS,
     MAX_ROBOTS_BYTES,
     ROBOTS_BASIS_EXTENSION,
@@ -45,7 +45,7 @@ def _pinned_transport(
     """Replace the real transport, returning the addresses it was asked to reach."""
     attempts: list[str] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(attempts=attempts, unreachable=unreachable),
     )
     return attempts
@@ -61,7 +61,7 @@ def test_every_request_waits_after_robots_and_uses_an_honest_identity() -> None:
         return _response(url, 404 if url.endswith("/robots.txt") else 200)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: events.append(("sleep", seconds)),
         jitter=lambda low, high: 0.5,
         getter=get,
@@ -73,11 +73,11 @@ def test_every_request_waits_after_robots_and_uses_an_honest_identity() -> None:
     client.get("https://example.test/jobs/2")
 
     assert events == [
-        ("get", ("https://example.test/robots.txt", "tailorcv/test")),
+        ("get", ("https://example.test/robots.txt", "clearscout/test")),
         ("sleep", 0.5),
-        ("get", ("https://example.test/jobs/1", "tailorcv/test")),
+        ("get", ("https://example.test/jobs/1", "clearscout/test")),
         ("sleep", 0.5),
-        ("get", ("https://example.test/jobs/2", "tailorcv/test")),
+        ("get", ("https://example.test/jobs/2", "clearscout/test")),
     ]
 
 
@@ -97,7 +97,7 @@ def _timed_client(
         now[0] += seconds
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=sleep,
         jitter=lambda low, high: 0.5,
         getter=get,
@@ -214,7 +214,7 @@ def test_a_registered_floor_preserves_a_stronger_retry_after() -> None:
         now[0] += seconds
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         sleeper=sleep,
         jitter=lambda _low, _high: 0.5,
@@ -262,10 +262,10 @@ def test_pinned_deadline_metadata_keeps_physical_attempts_separate_from_robots(
             return httpx.Response(200, request=request, stream=SlowStream())
 
         monkeypatch.setattr(client_type, "send", send_robots)
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.httpx.Client", client_type)
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.httpx.Client", client_type)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         jitter=lambda _low, _high: 0.0,
         resolver=_resolving("93.184.216.34", "93.184.216.35"),
@@ -306,9 +306,9 @@ def test_deadline_metadata_distinguishes_a_dispatch_from_only_policy_work(
             )
         return _response(address)
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         resolver=public_resolver,
         jitter=lambda _low, _high: 0.0,
@@ -346,9 +346,9 @@ def test_a_registered_floor_cannot_send_a_request_after_its_deadline(
     def sleep(seconds: float) -> None:
         now[0] += seconds
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         sleeper=sleep,
         jitter=lambda _low, _high: 0.5,
@@ -370,7 +370,7 @@ def test_requests_to_one_host_reuse_one_connection_pinned_to_its_address(
     clients: list[Any] = []
     sent: list[tuple[str, str, object]] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(
             expected_init_kwargs={"follow_redirects": False},
             forward_extensions=True,
@@ -381,7 +381,7 @@ def test_requests_to_one_host_reuse_one_connection_pinned_to_its_address(
         ),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda seconds: None, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda seconds: None, resolver=public_resolver
     )
 
     client.get("https://example.test/jobs/1")
@@ -400,11 +400,11 @@ def test_two_hosts_behind_one_address_never_share_a_connection(
 ) -> None:
     clients: list[Any] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(clients=clients),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda seconds: None, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda seconds: None, resolver=public_resolver
     )
 
     client.get("https://one.example.test/jobs/1")
@@ -419,11 +419,11 @@ def test_closing_the_client_closes_every_pooled_connection(
 ) -> None:
     clients: list[Any] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(clients=clients),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda seconds: None, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda seconds: None, resolver=public_resolver
     )
     client.get("https://one.example.test/jobs/1")
     client.get("https://two.example.test/jobs/1")
@@ -448,11 +448,11 @@ def test_a_host_whose_record_order_rotates_keeps_one_connection(
 ) -> None:
     clients: list[Any] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(clients=clients),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=_answering(("93.184.216.34", "93.184.216.35"), ("93.184.216.35", "93.184.216.34")),
     )
@@ -469,11 +469,11 @@ def test_a_connection_idle_past_keep_alive_is_closed_when_another_opens(
     now = [100.0]
     clients: list[Any] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(clients=clients),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=_answering(*((f"93.184.216.{suffix}",) for suffix in range(10, 14))),
         clock=lambda: now[0],
@@ -497,11 +497,11 @@ def test_a_reused_connection_the_server_closed_is_retried_on_a_fresh_one(
             raise error("Server disconnected without sending a response.", request=request)
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(clients=clients, before_send=first_connection_went_stale),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda seconds: None, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda seconds: None, resolver=public_resolver
     )
 
     response = client.get("https://example.test/jobs/1")
@@ -536,9 +536,9 @@ def test_a_reused_connection_that_fails_partway_through_a_reply_is_not_retried(
 
             return httpx.Response(200, request=request, content=cut_short())
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.httpx.Client", Client)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.httpx.Client", Client)
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda seconds: None, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda seconds: None, resolver=public_resolver
     )
 
     with pytest.raises(httpx.ReadError):
@@ -558,11 +558,11 @@ def test_a_connection_that_fails_after_its_retry_is_not_retried_again(
             raise httpx.ReadError("connection reset", request=request)
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(before_send=every_page_read_fails),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda seconds: None, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda seconds: None, resolver=public_resolver
     )
 
     with pytest.raises(httpx.ReadError):
@@ -611,7 +611,7 @@ def test_two_hosts_do_not_wait_for_each_other() -> None:
         return _response(url)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         jitter=lambda low, high: 0.0,
         getter=get,
@@ -655,9 +655,9 @@ def test_a_bounded_page_read_stops_after_the_bytes_the_caller_can_use(
                 return httpx.Response(404, request=request)
             return httpx.Response(200, request=request, content=b"useful-excess-body")
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.httpx.Client", Client)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.httpx.Client", Client)
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=public_resolver,
     )
@@ -696,9 +696,9 @@ def test_an_oversized_streamed_robots_policy_fails_closed(
                 content=b"x" * (MAX_ROBOTS_BYTES + 2),
             )
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.httpx.Client", Client)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.httpx.Client", Client)
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=public_resolver,
     )
@@ -717,7 +717,7 @@ def test_an_oversized_injected_robots_policy_fails_closed() -> None:
         return _response(url, text="x" * (MAX_ROBOTS_BYTES + 2))
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -765,10 +765,10 @@ def test_a_bounded_page_read_has_a_total_deadline(
                 return httpx.Response(404, request=request)
             return httpx.Response(200, request=request, stream=SlowStream())
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.httpx.Client", Client)
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.httpx.Client", Client)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=public_resolver,
     )
@@ -814,10 +814,10 @@ def test_each_network_attempt_uses_only_the_logical_deadline_remaining(
                 return httpx.Response(404, request=request)
             return httpx.Response(200, request=request, content=b"posting")
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.httpx.Client", Client)
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.httpx.Client", Client)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: now[0])
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=public_resolver,
     )
@@ -853,9 +853,9 @@ def test_a_host_lane_wait_cannot_outlive_the_callers_deadline(
 ) -> None:
     lane = _HeldLane()
     monkeypatch.setitem(PoliteHttpClient._host_locks, "lane-timeout.example.test", lane)
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: 100.0)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: 100.0)
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=public_resolver,
     )
@@ -874,7 +874,7 @@ def test_robots_denial_prevents_the_target_request() -> None:
         return _response(url, text="User-agent: *\nDisallow: /jobs/\n")
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: pytest.fail(f"unexpected wait: {seconds}"),
         getter=get,
         resolver=public_resolver,
@@ -909,7 +909,7 @@ def test_expired_robots_cache_observes_policy_changes_in_the_same_client(
         return _response(url, text=text)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -947,7 +947,7 @@ def test_a_policy_the_host_declines_to_serve_is_read_as_no_policy(status: int) -
         return _response(url, status if url.endswith("/robots.txt") else 200)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -964,7 +964,7 @@ def test_a_policy_that_may_still_exist_refuses_the_read(status: int) -> None:
         return _response(url, status if url.endswith("/robots.txt") else 200)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -978,7 +978,7 @@ def test_non_http_and_credentialed_urls_are_refused_without_a_request() -> None:
     def get(url: str, **kwargs: object) -> httpx.Response:
         pytest.fail(f"refused URL reached the network: {url}")
 
-    client = PoliteHttpClient(user_agent="tailorcv/test", getter=get, resolver=public_resolver)
+    client = PoliteHttpClient(user_agent="clearscout/test", getter=get, resolver=public_resolver)
 
     for url in ("file:///etc/passwd", "https://user:secret@example.test/jobs/1"):
         with pytest.raises(InvalidFetchUrlError):
@@ -998,7 +998,7 @@ def test_json_posts_use_the_same_robots_and_rate_policy() -> None:
         return httpx.Response(200, request=httpx.Request("POST", url), json={})
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=pauses.append,
         jitter=lambda low, high: 0.5,
         getter=get,
@@ -1037,11 +1037,11 @@ def test_requests_to_one_host_are_serialized_across_clients(
     # Each deadline reading advances a second, so a held lane is tried without waiting.
     ticks = itertools.count(100.0)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: next(ticks)
+        "clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: next(ticks)
     )
     clients = [
         PoliteHttpClient(
-            user_agent="tailorcv/test",
+            user_agent="clearscout/test",
             sleeper=lambda seconds: None,
             jitter=lambda low, high: 0.0,
             getter=get,
@@ -1068,7 +1068,7 @@ def test_private_destinations_are_refused_before_a_request(address: str) -> None
         family = AF_INET if ":" not in address else 10
         return [(family, SOCK_STREAM, 6, "", (address, port))]
 
-    client = PoliteHttpClient(user_agent="tailorcv/test", getter=get, resolver=resolve)
+    client = PoliteHttpClient(user_agent="clearscout/test", getter=get, resolver=resolve)
 
     with pytest.raises(DestinationUnresolvableError, match="public network address"):
         client.get("https://example.test/jobs/1")
@@ -1081,7 +1081,7 @@ def test_unresolvable_destinations_are_refused_before_a_request() -> None:
     def resolve(host: str, port: int) -> list[tuple[object, ...]]:
         raise gaierror("synthetic DNS failure")
 
-    client = PoliteHttpClient(user_agent="tailorcv/test", getter=get, resolver=resolve)
+    client = PoliteHttpClient(user_agent="clearscout/test", getter=get, resolver=resolve)
 
     with pytest.raises(DestinationUnresolvableError, match="could not be resolved"):
         client.get("https://missing.test/jobs/1")
@@ -1105,7 +1105,7 @@ def test_redirects_are_rechecked_before_the_next_host_is_contacted() -> None:
         return [(AF_INET, SOCK_STREAM, 6, "", (address, port))]
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=resolve,
@@ -1137,7 +1137,7 @@ def test_each_public_redirect_hop_gets_robots_and_rate_checks() -> None:
         return _response(url)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=pauses.append,
         jitter=lambda low, high: 0.5,
         getter=get,
@@ -1172,7 +1172,7 @@ def test_default_transport_connects_to_the_validated_address(
         )
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client",
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client",
         fake_httpx_client(
             expected_init_kwargs={"follow_redirects": False},
             forward_extensions=True,
@@ -1180,7 +1180,7 @@ def test_default_transport_connects_to_the_validated_address(
         ),
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=public_resolver,
     )
@@ -1210,7 +1210,7 @@ def test_a_redirected_robots_policy_is_followed_to_the_page_that_holds_it() -> N
         return _response(url)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -1236,7 +1236,7 @@ def test_a_caller_user_agent_is_replaced_rather_than_sent_alongside_ours() -> No
         return _response(url)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -1248,7 +1248,7 @@ def test_a_caller_user_agent_is_replaced_rather_than_sent_alongside_ours() -> No
     )
 
     identities = [value for key, value in sent[0] if key.lower() == b"user-agent"]
-    assert identities == [b"tailorcv/test"]
+    assert identities == [b"clearscout/test"]
 
 
 def test_a_cold_fetch_resolves_the_host_once_for_robots_and_the_target() -> None:
@@ -1259,7 +1259,7 @@ def test_a_cold_fetch_resolves_the_host_once_for_robots_and_the_target() -> None
         return [(AF_INET, SOCK_STREAM, 6, "", ("93.184.216.34", port))]
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=lambda url, **kwargs: _response(url, 404 if url.endswith("robots.txt") else 200),
         resolver=resolve,
@@ -1275,7 +1275,7 @@ def test_an_unroutable_address_falls_back_to_the_rest_of_the_record(
 ) -> None:
     attempts = _pinned_transport(monkeypatch, unreachable=frozenset({"2606:2800:220::1"}))
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=_resolving("2606:2800:220::1", "93.184.216.34"),
     )
@@ -1294,7 +1294,7 @@ def test_a_private_record_beside_a_public_one_is_skipped_not_fatal(
 ) -> None:
     attempts = _pinned_transport(monkeypatch)
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         resolver=_resolving("10.0.0.8", "93.184.216.34"),
     )
@@ -1310,7 +1310,7 @@ def test_ensure_allowed_rechecks_the_address_behind_a_cached_robots_policy() -> 
         return [(AF_INET, SOCK_STREAM, 6, "", (address[0], port))]
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=lambda url, **kwargs: _response(url, 404),
         resolver=resolve,
@@ -1338,7 +1338,7 @@ def test_a_redirect_chain_is_capped_rather_than_followed_forever() -> None:
         )
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -1368,7 +1368,7 @@ def test_credentials_are_not_carried_onto_a_redirect_target() -> None:
         return _response(url)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -1408,7 +1408,7 @@ def test_a_cookie_jar_carries_a_cookie_set_on_a_redirect_only_to_its_own_host() 
         return _response(url)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -1447,7 +1447,7 @@ def test_a_see_other_downgrades_the_post_and_drops_the_body_it_described() -> No
         )
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         poster=post,
@@ -1480,7 +1480,7 @@ def test_a_temporary_redirect_keeps_the_method_and_the_body() -> None:
         return httpx.Response(200, request=httpx.Request("POST", url), json={})
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=lambda url, **kwargs: _response(url, 404),
         poster=post,
@@ -1499,7 +1499,7 @@ def test_an_out_of_range_port_is_refused_without_a_request() -> None:
     def get(url: str, **kwargs: object) -> httpx.Response:
         pytest.fail(f"invalid URL reached the network: {url}")
 
-    client = PoliteHttpClient(user_agent="tailorcv/test", getter=get, resolver=public_resolver)
+    client = PoliteHttpClient(user_agent="clearscout/test", getter=get, resolver=public_resolver)
 
     with pytest.raises(InvalidFetchUrlError, match="valid network port"):
         client.get("https://example.test:99999/jobs/1")
@@ -1518,7 +1518,7 @@ def _policy_client(
         return _response(url, page_status, text="<html>posting</html>")
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
 
@@ -1563,10 +1563,11 @@ def test_a_crawl_of_either_address_is_refused_by_that_policy(target: str) -> Non
         client.get(target)
 
 
-def test_a_robots_group_that_names_this_client_refuses_even_a_single_read() -> None:
+@pytest.mark.parametrize("named", ["clearscout", "tailorcv"])
+def test_a_robots_group_that_names_this_client_refuses_even_a_single_read(named: str) -> None:
     requested: list[str] = []
     client = _policy_client(
-        {"example.test": "User-agent: tailorcv\nDisallow: /\n\nUser-agent: *\nAllow: /\n"},
+        {"example.test": f"User-agent: {named}\nDisallow: /\n\nUser-agent: *\nAllow: /\n"},
         requested,
     )
 
@@ -1574,6 +1575,25 @@ def test_a_robots_group_that_names_this_client_refuses_even_a_single_read() -> N
         client.get("https://example.test/jobs/1", intent=PostingReadIntent.SINGLE_POSTING)
 
     assert requested == ["https://example.test/robots.txt"]
+
+
+def test_a_group_for_the_former_name_refuses_a_crawl_the_wildcard_allows() -> None:
+    client = _policy_client(
+        {"example.test": "User-agent: tailorcv\nDisallow: /jobs/\n\nUser-agent: *\nAllow: /\n"},
+        [],
+    )
+
+    with pytest.raises(RobotsDeniedError):
+        client.get("https://example.test/jobs/1")
+
+
+def test_a_group_for_the_current_name_wins_over_one_for_the_former_name() -> None:
+    client = _policy_client(
+        {"example.test": "User-agent: tailorcv\nDisallow: /\n\nUser-agent: clearscout\nAllow: /\n"},
+        [],
+    )
+
+    client.get("https://example.test/jobs/1")
 
 
 def test_a_robots_file_that_starts_with_a_byte_order_mark_still_applies_its_first_group() -> None:
@@ -1592,7 +1612,7 @@ def test_a_robots_file_that_starts_with_a_byte_order_mark_still_applies_its_firs
         ("User-agent: *\nDisallow: /\n", PostingReadIntent.CRAWL, True),
         ("User-agent: *\nDisallow: /\n", PostingReadIntent.SINGLE_POSTING, False),
         (
-            "User-agent: tailorcv\nDisallow: /\n\nUser-agent: *\nAllow: /\n",
+            "User-agent: clearscout\nDisallow: /\n\nUser-agent: *\nAllow: /\n",
             PostingReadIntent.SINGLE_POSTING,
             True,
         ),
@@ -1642,7 +1662,7 @@ def test_a_group_matching_only_the_user_agent_comment_does_not_name_this_client(
         return _response(url, text="<html>posting</html>")
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/0.1 (+https://github.com/sethstraw/tailorcv)",
+        user_agent="clearscout/0.1 (+https://github.com/sethstraw/clearscout)",
         sleeper=lambda _: None,
         getter=get,
         resolver=public_resolver,
@@ -1667,12 +1687,12 @@ _JOB_BOARD = "https://example.test/ACME1001/JobBoard/0000-uuid"
         ("User-agent: *\nDisallow: /*.pdf$\n", "https://example.test/a.pdf?x=1", True),
         ("User-agent: *\nDisallow: /jobs\nAllow: /jobs\n", "https://example.test/jobs/1", True),
         (
-            "User-agent: *\nDisallow: /\n\nUser-agent: tailorcv\nDisallow: /\nAllow: /jobs/\n",
+            "User-agent: *\nDisallow: /\n\nUser-agent: clearscout\nDisallow: /\nAllow: /jobs/\n",
             "https://example.test/jobs/1",
             True,
         ),
         (
-            "User-agent: tailorcv\nDisallow: /jobs/\n\nUser-agent: *\nAllow: /\n",
+            "User-agent: clearscout\nDisallow: /jobs/\n\nUser-agent: *\nAllow: /\n",
             "https://example.test/jobs/1",
             False,
         ),
@@ -1701,7 +1721,7 @@ def test_a_single_read_is_not_retried_when_the_host_asks_for_a_wait() -> None:
         return httpx.Response(429, request=httpx.Request("GET", url), headers={"Retry-After": "1"})
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     response = client.get("https://example.test/jobs/1", intent=PostingReadIntent.SINGLE_POSTING)
@@ -1739,7 +1759,7 @@ def test_a_single_read_follows_a_redirect_into_another_hosts_blanket_disallow() 
         target="https://other.test/jobs/1",
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     response = client.get("https://example.test/jobs/1", intent=PostingReadIntent.SINGLE_POSTING)
@@ -1755,12 +1775,12 @@ def test_a_redirect_target_naming_this_client_refuses_the_single_read() -> None:
         requested,
         robots={
             "example.test": "User-agent: *\nDisallow: /\n",
-            "other.test": "User-agent: tailorcv\nDisallow: /\n\nUser-agent: *\nAllow: /\n",
+            "other.test": "User-agent: clearscout\nDisallow: /\n\nUser-agent: *\nAllow: /\n",
         },
         target="https://other.test/jobs/1",
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     with pytest.raises(RobotsDeniedError):
@@ -1780,7 +1800,7 @@ def test_a_crawl_redirected_into_another_hosts_disallow_is_still_refused() -> No
         target="https://other.test/jobs/1",
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     with pytest.raises(RobotsDeniedError):
@@ -1806,7 +1826,7 @@ def test_an_allowed_single_posting_read_still_retries_a_retry_after_wait() -> No
         return _response(url, status)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     response = client.get("https://example.test/jobs/1", intent=PostingReadIntent.SINGLE_POSTING)
@@ -1824,7 +1844,7 @@ def test_a_same_host_redirect_from_a_single_read_stays_exempt() -> None:
         target="https://example.test/careers",
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     response = client.get("https://example.test/jobs/1", intent=PostingReadIntent.SINGLE_POSTING)
@@ -1853,7 +1873,7 @@ def test_an_exempt_redirect_to_a_retryable_host_is_not_retried() -> None:
         return httpx.Response(503, request=httpx.Request("GET", url), headers={"Retry-After": "1"})
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     response = client.get("https://example.test/jobs/1", intent=PostingReadIntent.SINGLE_POSTING)
@@ -1870,7 +1890,7 @@ def test_an_unreadable_robots_policy_still_refuses_a_single_read() -> None:
         pytest.fail(f"page read without a readable policy: {url}")
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
+        user_agent="clearscout/test", sleeper=lambda _: None, getter=get, resolver=public_resolver
     )
 
     with pytest.raises(RobotsUnavailableError):
@@ -1914,9 +1934,9 @@ def test_a_hold_past_the_read_deadline_names_pacing_apart_from_a_backoff(
             status, request=httpx.Request("GET", url), headers={"Retry-After": retry_after}
         )
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.monotonic", lambda: 50.0)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.monotonic", lambda: 50.0)
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         sleeper=lambda seconds: None,
         jitter=lambda _low, _high: 0.0,

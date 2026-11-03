@@ -4,9 +4,9 @@ from typing import Any
 
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import Posting, map_posting
-from tailorcv.infrastructure.web_fetch.board_mappings.page_posting import page_posting_declaration
-from tailorcv.infrastructure.web_fetch.board_reads import page_posting_detail
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import Posting, map_posting
+from clearscout.infrastructure.web_fetch.board_mappings.page_posting import page_posting_declaration
+from clearscout.infrastructure.web_fetch.board_reads import page_posting_detail
 
 _ROW = {"id": "42", "url": "https://jobs.acme.example/postings/42", "places": ["Leeds, UK"]}
 _PAGE = """<html><head><script type="application/ld+json">

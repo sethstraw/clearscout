@@ -6,10 +6,15 @@ states something false about the candidate whenever a model result goes missing.
 
 from __future__ import annotations
 
-from tailorcv.application.tailoring.batch.analysis import Verdict, recommend
-from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.domain import EvidenceStatus, GapClass
+from clearscout.application.tailoring.batch.analysis import Verdict, recommend
+from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.domain import EvidenceStatus, GapClass
 from tests.support.reports import rendered_report, report_section
 
 

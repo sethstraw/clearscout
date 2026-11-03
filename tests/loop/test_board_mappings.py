@@ -8,39 +8,39 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery.screening import (
     ScreeningCode,
     ScreeningDimension,
     screen_discovery,
 )
-from tailorcv.application.discovery.source_lifecycle import employer_name_is_authoritative
-from tailorcv.application.discovery.source_reading import SourceRead
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.search_parameters import JobSearchParameters, Location
-from tailorcv.domain.staged_facts import FreshnessState, ListingIdentityTrust, PostedDateGrade
-from tailorcv.infrastructure.web_fetch.application_form import required_residence_question
-from tailorcv.infrastructure.web_fetch.board_mappings.ashby import ASHBY_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.greenhouse import GREENHOUSE_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.lever import LEVER_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import (
+from clearscout.application.discovery.source_lifecycle import employer_name_is_authoritative
+from clearscout.application.discovery.source_reading import SourceRead
+from clearscout.domain import SourceReadOutcome
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.search_parameters import JobSearchParameters, Location
+from clearscout.domain.staged_facts import FreshnessState, ListingIdentityTrust, PostedDateGrade
+from clearscout.infrastructure.web_fetch.application_form import required_residence_question
+from clearscout.infrastructure.web_fetch.board_mappings.ashby import ASHBY_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.greenhouse import GREENHOUSE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.lever import LEVER_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     posting_check,
     source_listing,
     source_listings,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.schema_org import (
+from clearscout.infrastructure.web_fetch.board_mappings.schema_org import (
     declared_check,
     declared_listing,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.workday import WORKDAY_DETAIL_MAPPING
-from tailorcv.infrastructure.web_fetch.ingest.job_posting_markup import (
+from clearscout.infrastructure.web_fetch.board_mappings.workday import WORKDAY_DETAIL_MAPPING
+from clearscout.infrastructure.web_fetch.ingest.job_posting_markup import (
     BaseSalaryMarkup,
     JobPostingMarkup,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import lever_arrangement_values
-from tailorcv.infrastructure.web_fetch.platforms.lever import lever_form_cards
+from clearscout.infrastructure.web_fetch.listing_facts import lever_arrangement_values
+from clearscout.infrastructure.web_fetch.platforms.lever import lever_form_cards
 from tests.support.application_forms import (
     FORM_PLATFORMS,
     FormPlatform,
@@ -1584,8 +1584,8 @@ def test_the_careers_page_is_read_once_however_it_ends_up_being_used() -> None:
 def test_a_board_search_carries_only_its_explicit_protocol_headers() -> None:
     import httpx
 
-    from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-    from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+    from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+    from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
     from tests.support.http import public_resolver
 
     received: list[dict[str, str]] = []
@@ -1598,7 +1598,7 @@ def test_a_board_search_carries_only_its_explicit_protocol_headers() -> None:
         return httpx.Response(200, request=httpx.Request("POST", url), json={"jobs": []})
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         poster=post,
         resolver=public_resolver,

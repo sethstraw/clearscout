@@ -10,18 +10,18 @@ from typing import Any
 
 from sqlalchemy import event
 
-from tailorcv import __version__
-from tailorcv.application import prompts
-from tailorcv.application.discovery import posting_identity as posting
-from tailorcv.application.master_cv import cv
-from tailorcv.application.tailoring import runs
-from tailorcv.application.tailoring.workflows import TailorOutput, WorkflowService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.domain import TailoringOutcome
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import BackgroundTask, TailoringRun
-from tailorcv.infrastructure.web_fetch.company_research import fingerprint
-from tailorcv.shared.costs import Ledger
+from clearscout import __version__
+from clearscout.application import prompts
+from clearscout.application.discovery import posting_identity as posting
+from clearscout.application.master_cv import cv
+from clearscout.application.tailoring import runs
+from clearscout.application.tailoring.workflows import TailorOutput, WorkflowService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.domain import TailoringOutcome
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import BackgroundTask, TailoringRun
+from clearscout.infrastructure.web_fetch.company_research import fingerprint
+from clearscout.shared.costs import Ledger
 from tests.support.artifacts import runtime_storage
 from tests.support.runners import ScriptedPipelineRunner, serialized_artifacts
 from tests.support.scenarios import studio_workspace
@@ -50,7 +50,7 @@ def test_preflight_bounds_completed_run_loading_without_hiding_an_older_reusable
             "research_hash": fingerprint(()),
             "trimmed": 0,
             "approval": "",
-            "tailorcv": __version__,
+            "clearscout": __version__,
         },
         "run": {"outcome": "passed"},
     }

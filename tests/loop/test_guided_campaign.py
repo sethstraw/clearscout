@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from tailorcv.application.discovery.guided_campaign import (
+from clearscout.application.discovery.guided_campaign import (
     BranchKind,
     CampaignBounds,
     CampaignBranch,
@@ -17,11 +17,11 @@ from tailorcv.application.discovery.guided_campaign import (
     _ordered_protected_branches,
     compile_campaign,
 )
-from tailorcv.application.discovery.guided_campaign_request import (
+from clearscout.application.discovery.guided_campaign_request import (
     attempt_request_plan,
     campaign_response_schema,
 )
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     Cluster,
@@ -33,7 +33,7 @@ from tailorcv.domain.search_parameters import (
     Seniority,
     TargetTitle,
 )
-from tailorcv.infrastructure.providers.plan import SearchPolicy
+from clearscout.infrastructure.providers.plan import SearchPolicy
 
 ATS_SITE_CLAUSE = (
     "(site:boards.greenhouse.io OR site:job-boards.greenhouse.io OR site:jobs.lever.co"

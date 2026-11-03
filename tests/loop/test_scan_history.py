@@ -6,12 +6,12 @@ from datetime import timedelta
 
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.discovery.source_reading import SourceRead
-from tailorcv.domain import SourceReadOutcome, utc_now
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.discovery.source_reading import SourceRead
+from clearscout.domain import SourceReadOutcome, utc_now
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
     PendingDiscovery,
     SourceScan,

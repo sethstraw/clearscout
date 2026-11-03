@@ -1,4 +1,4 @@
-# How TailorCV works
+# How ClearScout works
 
 Notes for whoever maintains this, me included. [README.md](README.md) is the
 public front door. [SECURITY.md](SECURITY.md) owns the threat boundary.
@@ -115,7 +115,7 @@ they rule out as for what they add.
 Anthropic's
 [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
 separates workflows, where code decides the path, from agents, which direct
-themselves. It recommends the simplest one that works. TailorCV is a workflow.
+themselves. It recommends the simplest one that works. ClearScout is a workflow.
 `pipeline/service.py` calls ingest, extraction, the deterministic reading,
 matching, and selection in a fixed order, and each stage reads the structured
 output of the one before it. That is prompt chaining in the same guide's terms.
@@ -273,7 +273,7 @@ _Traced from `Worker.run_forever`, `dispatch`, `_run_slot`, and
 `application/workspaces/scan_schedule.py`._
 
 The worker runs other tasks one at a time, and runs `source.continue` tasks on
-up to `TAILORCV_CONTINUATION_SLOTS` slots, four by default. The busy-host guard
+up to `CLEARSCOUT_CONTINUATION_SLOTS` slots, four by default. The busy-host guard
 keys only on the board source's host, not on the handoff hosts a chunk may also
 read, so per-host politeness rests on `PoliteHttpClient`'s per-host lock, which
 every slot shares because they run in one process with one fetch client.
@@ -287,7 +287,7 @@ automatic content resolution, which reads bodies on its own pool of four lanes
 and stores them as they arrive. Those writes, and those of other inline tasks
 such as a guided campaign, meet at SQLite, where the connection's busy timeout
 absorbs them. A worker stopped with Ctrl-C stops new claims and waits for running
-slots before it withdraws its presence and closes the fetch client. `tailorcv stop`
+slots before it withdraws its presence and closes the fetch client. `clearscout stop`
 sends SIGTERM, which also drains running slots. A worker that outlasts the stop
 wait is killed only when every task it is running is in `KILL_SAFE_TASK_TYPES`,
 whose work lease recovery resumes; paid handlers file their spend on exit, so
@@ -330,7 +330,7 @@ What follows is why the seams are where they are.
 
 ### One seed and one workspace authority
 
-`tailorcv.toml` is what a file-based command reads, because that run has no
+`clearscout.toml` is what a file-based command reads, because that run has no
 workspace selected. Creating a workspace copies its path-free run settings,
 job-search parameters, and configured guardrails into the database once. From
 then on, workspace operations read the database. The browser edits the
@@ -460,7 +460,7 @@ invitation to send unmetered traffic.
 
 robots.txt decides every read but one. A single posting URL a person enters
 may be read past a disallow aimed at all crawlers, because a person asked for
-that page. A robots group that names TailorCV still refuses it
+that page. A robots group that names ClearScout still refuses it
 (`_robots_basis_locked` in `infrastructure/web_fetch/policy.py`). Board sweeps,
 continuations, and refreshes never get the exemption.
 
@@ -478,7 +478,7 @@ flowchart TD
     allowed -->|no| single{"single_posting intent?"}
     single -->|no| denied["refused: RobotsDeniedError"]
     single -->|yes| group{"applying group is the * group?"}
-    group -->|"no, it names TailorCV"| denied
+    group -->|"no, it names ClearScout"| denied
     group -->|yes| heldq
     heldq -->|yes| held["refused: HostHeldError"]
     heldq -->|no| wait["wait the jittered interval or Crawl-delay, then send"]
@@ -1226,7 +1226,7 @@ somebody reviewed is not returned by the reuse check for a run nobody did. Two
 different approvals of one draft are two different runs.
 
 Text the master CV does not support is still refused, and the refusal names the
-route: `tailorcv discover`, described next. It is the one place the program
+route: `clearscout discover`, described next. It is the one place the program
 itself creates a new claim. Every other CV version holds text a person
 imported or edited.
 
@@ -1367,12 +1367,12 @@ as a probability whatever it is labeled. The person's own priority orders the
 report and never touches a recommendation.
 
 The two features meet at one seam. A batch writes its ranked gaps into
-`batch.json` as a shared discovery queue. `tailorcv discover --queue` reads the
+`batch.json` as a shared discovery queue. `clearscout discover --queue` reads the
 subjects out of it. What crosses is a list of things to ask about. What the
 posting said cannot become a claim. A claim has to survive the rules above, and
 those are about the words the person typed.
 
-`tailorcv import` applies the same idea to a different vocabulary. A Word file,
+`clearscout import` applies the same idea to a different vocabulary. A Word file,
 PDF, image, or text file is reduced to numbered lines. The structuring schema is
 built over the line numbers in that document, so a field cannot cite a line that
 is not there. The model may join wrapped lines, split packed fields, remove
@@ -1769,7 +1769,7 @@ and provenance. They do not support a universal ATS percentage or a keyword
 density target, so the program does not claim one.
 
 Primary references change as models and provider guidance do. Recheck them
-during a model upgrade. Trust measured behavior in TailorCV's own cases over a
+during a model upgrade. Trust measured behavior in ClearScout's own cases over a
 generic claim in any of them.
 
 - [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
@@ -1784,7 +1784,7 @@ generic claim in any of them.
 
 ## Scope
 
-TailorCV writes reviewable local packages. It maintains a local, append-only
+ClearScout writes reviewable local packages. It maintains a local, append-only
 job-search and application-history ledger. It can track user-recorded
 application state and files. It does not contact employers, submit an
 application, or infer that a generated package was sent. Length is budgeted from

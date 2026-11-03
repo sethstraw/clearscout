@@ -12,9 +12,9 @@ import re
 
 import pytest
 
-import tailorcv.application.prompts as prompts_module
-from tailorcv.application.discovery import search_vocabulary
-from tailorcv.application.prompts import (
+import clearscout.application.prompts as prompts_module
+from clearscout.application.discovery import search_vocabulary
+from clearscout.application.prompts import (
     FIELDS,
     PLACEHOLDER,
     PROMPT_NAMES,
@@ -30,13 +30,13 @@ from tailorcv.application.prompts import (
     render,
     suite_fingerprint,
 )
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.stages import draft as draft_stage
-from tailorcv.application.tailoring.stages import jobspec as jobspec_stage
-from tailorcv.application.tailoring.stages import verify as verify_stage
-from tailorcv.application.tailoring.stages.verify import critic as critic_stage
-from tailorcv.domain import ClaimBoundary
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.stages import draft as draft_stage
+from clearscout.application.tailoring.stages import jobspec as jobspec_stage
+from clearscout.application.tailoring.stages import verify as verify_stage
+from clearscout.application.tailoring.stages.verify import critic as critic_stage
+from clearscout.domain import ClaimBoundary
+from clearscout.shared.errors import ConfigError
 
 EXPECTED = list(PROMPT_NAMES)
 SYSTEM_PROMPTS = [name for name in PROMPT_NAMES if name.endswith("_system")]
@@ -1068,9 +1068,9 @@ def test_a_docstring_on_a_response_model_is_prompt_text() -> None:
     on purpose, so editing one of these sentences alters what the model is told,
     invalidates every cached answer, and misses the recorded cassette.
     """
-    from tailorcv.application.tailoring.stages.jobspec import JobSpecExtraction
-    from tailorcv.application.tailoring.stages.match import Classification
-    from tailorcv.infrastructure.providers.base import json_schema
+    from clearscout.application.tailoring.stages.jobspec import JobSpecExtraction
+    from clearscout.application.tailoring.stages.match import Classification
+    from clearscout.infrastructure.providers.base import json_schema
 
     described = _descriptions(json_schema(JobSpecExtraction))
 
@@ -1096,8 +1096,8 @@ def test_a_shared_vocabulary_docstring_is_prompt_text_too() -> None:
     reads it, and search vocabulary puts it in a response schema, so the
     sentence is pinned here.
     """
-    from tailorcv.application.discovery.search_vocabulary import response_schema
-    from tailorcv.infrastructure.providers.base import json_schema
+    from clearscout.application.discovery.search_vocabulary import response_schema
+    from clearscout.infrastructure.providers.base import json_schema
 
     described = _descriptions(json_schema(response_schema(("entry-1",))))
 

@@ -7,8 +7,8 @@ import html
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
-from tailorcv.infrastructure.web_fetch.boards import board_identity
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
+from clearscout.infrastructure.web_fetch.boards import board_identity
 from tests.support.http import policy_client
 
 _ROOT = "https://acme.tbe.taleo.net/acme01/ats"

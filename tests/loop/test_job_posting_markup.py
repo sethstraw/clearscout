@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import plain_description
-from tailorcv.infrastructure.web_fetch.ingest.job_posting_markup import (
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import plain_description
+from clearscout.infrastructure.web_fetch.ingest.job_posting_markup import (
     MAX_DESCRIPTION_CHARACTERS,
     MAX_POSTINGS,
     BaseSalaryMarkup,

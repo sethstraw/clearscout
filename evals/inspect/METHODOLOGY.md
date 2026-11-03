@@ -352,7 +352,7 @@ kept the answer, and, on a row whose axes the two labeller passes agreed,
 returned all four frozen `expected_axes`.
 
 The axes are scored because the recommendation does not stand in for them. The
-class definitions in `src/tailorcv/application/discovery/relevance_review.py`
+class definitions in `src/clearscout/application/discovery/relevance_review.py`
 allow 57 axis combinations, and 56 of them permit exactly one recommendation, so
 the recommendation is close to a function of the axes rather than an independent
 fact. It is also not a tight one: every one of the 16 frozen rows has at least

@@ -1,6 +1,6 @@
 """Scripted-provider critic task loaded by the bespoke runner.
 
-Runs the shipped ``tailorcv.application.tailoring.stages.verify.critique`` against a
+Runs the shipped ``clearscout.application.tailoring.stages.verify.critique`` against a
 canned provider and records the outcome ``verify.critic_finding`` assigns that
 verdict. The sample declares that outcome, so this catches a stale rubric template
 or a change to the shipped floors; it does not test critic judgment.

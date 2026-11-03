@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.prompts import (
+from clearscout.application.prompts import (
     INVARIANT_CLOSE,
     INVARIANT_OPEN,
     PROMPT_NAMES,
@@ -17,7 +17,7 @@ from tailorcv.application.prompts import (
     render,
     without_markers,
 )
-from tailorcv.shared.errors import ConfigError
+from clearscout.shared.errors import ConfigError
 
 # Prompts stating a rule from the invariant list, so a release that drops a
 # region's markers is caught rather than quietly making the region editable.

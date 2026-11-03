@@ -16,21 +16,21 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from evals.support.inventory import synthetic_inventory
-from tailorcv.application.discovery.relevance_review import (
+from clearscout.application.discovery.relevance_review import (
     RelevanceReviewItemFailure,
     RelevanceReviewService,
     review_batches,
 )
-from tailorcv.application.discovery.relevance_review_records import (
+from clearscout.application.discovery.relevance_review_records import (
     RelevanceReviewPostingInput,
     ValidatedRelevanceReview,
 )
-from tailorcv.application.discovery.relevance_review_spans import RelevanceReviewPostingSpan
-from tailorcv.application.job_search.models import RelevanceReviewBatchResponse
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring.stages.context import citable_entries
-from tailorcv.infrastructure.persistence.models import PendingDiscovery
+from clearscout.application.discovery.relevance_review_spans import RelevanceReviewPostingSpan
+from clearscout.application.job_search.models import RelevanceReviewBatchResponse
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring.stages.context import citable_entries
+from clearscout.infrastructure.persistence.models import PendingDiscovery
+from evals.support.inventory import synthetic_inventory
 
 # A fetch time and source method the rows carry but no reviewed path reads, held
 # fixed so two runs of one case are identical.

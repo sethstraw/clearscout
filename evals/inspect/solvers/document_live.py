@@ -4,7 +4,7 @@ Only ``scripts/eval.sh --live`` should reach these solvers, because they are the
 only document modes that spend money. Each refuses to launch unless the
 environment carries the complete approved run identity, and each records the
 prompt snapshot and dataset identity the run was bound to. Credentials load
-through ``tailorcv.infrastructure.providers.credentials.find``; nothing here prompts.
+through ``clearscout.infrastructure.providers.credentials.find``; nothing here prompts.
 
 Only the family's own stage is paid. The posting, the evidence map, and the
 plan are the deterministic ones ``evals.support.documents`` builds, and the
@@ -20,7 +20,14 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
-from evals.inspect.solvers.tailorcv_live import (
+from clearscout.application.config import ProviderName, Settings, Stage
+from clearscout.application.prompts import load, overriding
+from clearscout.application.tailoring.stages.draft import cover_letter, draft
+from clearscout.application.tailoring.stages.verify import check_letter, critique
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.costs import Ledger
+from clearscout.shared.costs.prices import table as price_table
+from evals.inspect.solvers.clearscout_live import (
     bill_sample,
     billing_target,
     credential_for,
@@ -39,13 +46,6 @@ from evals.support.documents import (
     fitted_resume,
     letter_result,
 )
-from tailorcv.application.config import ProviderName, Settings, Stage
-from tailorcv.application.prompts import load, overriding
-from tailorcv.application.tailoring.stages.draft import cover_letter, draft
-from tailorcv.application.tailoring.stages.verify import check_letter, critique
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.costs import Ledger
-from tailorcv.shared.costs.prices import table as price_table
 
 DRAFT_PROMPTS = ("draft_system", "draft_user")
 COVER_PROMPTS = ("cover_letter_system", "cover_letter_user")

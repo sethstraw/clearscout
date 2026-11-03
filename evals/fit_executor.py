@@ -13,6 +13,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, cast
 
+from clearscout.application.config import Settings
+from clearscout.application.tailoring.workflows.evaluation_policy import (
+    arrangement_cap,
+    compensation_score,
+    deterministic_scores,
+    eligibility_score,
+)
+from clearscout.application.tailoring.workflows.evaluation_policy import (
+    decision as ledger_decision,
+)
+from clearscout.application.tailoring.workflows.models import EvaluationOutput
+from clearscout.application.tailoring.workflows.runner import PipelineWorkflowRunner
+from clearscout.domain.records import EvaluationDecision
+from clearscout.shared.costs import ServiceTier
 from evals.dataset import AbstainedScore, FitAnnotation, SemanticAnnotation
 from evals.semantic import (
     DefectClass,
@@ -20,20 +34,6 @@ from evals.semantic import (
     SemanticCaseResult,
     StageMeasurement,
 )
-from tailorcv.application.config import Settings
-from tailorcv.application.tailoring.workflows.evaluation_policy import (
-    arrangement_cap,
-    compensation_score,
-    deterministic_scores,
-    eligibility_score,
-)
-from tailorcv.application.tailoring.workflows.evaluation_policy import (
-    decision as ledger_decision,
-)
-from tailorcv.application.tailoring.workflows.models import EvaluationOutput
-from tailorcv.application.tailoring.workflows.runner import PipelineWorkflowRunner
-from tailorcv.domain.records import EvaluationDecision
-from tailorcv.shared.costs import ServiceTier
 
 # A component this far from the adjudicated score counts as a disagreement.
 SCORE_TOLERANCE = 25

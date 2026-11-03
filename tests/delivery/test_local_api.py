@@ -7,13 +7,13 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain import (
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.domain import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -22,11 +22,11 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.records import PostingReadIntent, RobotsReadBasis
-from tailorcv.domain.search_parameters import CountryNames, JobSearchParameters, Location
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.records import PostingReadIntent, RobotsReadBasis
+from clearscout.domain.search_parameters import CountryNames, JobSearchParameters, Location
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     AuditEvent,
     BackgroundTask,
@@ -37,7 +37,7 @@ from tailorcv.infrastructure.persistence.models import (
     Source,
     SourceScan,
 )
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import (
     evaluation_commit,
@@ -784,7 +784,7 @@ def test_a_kept_pending_discovery_is_dismissed_over_http_only_when_confirmed(
                 },
             )
             assert changed_reason.status_code == 409, changed_reason.text
-            assert changed_reason.json()["type"] == "urn:tailorcv:problem:conflict"
+            assert changed_reason.json()["type"] == "urn:clearscout:problem:conflict"
             assert changed_reason.json()["detail"] == (
                 "That disposition preview is stale. Preview the selection again."
             )
@@ -1158,7 +1158,7 @@ def test_api_evaluation_application_and_task_flow(
         # author its own, so two overalls are not comparable without knowing
         # which policy produced each.
         row = jobs.json()["items"][0]
-        assert row["score_policy_name"] == "TailorCV default"
+        assert row["score_policy_name"] == "ClearScout default"
         assert row["score_policy_version"] == 1
         detail = client.get(f"/api/v1/jobs/{job_id}", params={"workspace_id": workspace_id}).json()
         assert {item["text"] for item in detail["evidence"]} == {

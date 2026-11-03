@@ -4,16 +4,16 @@ import itertools
 
 import pytest
 
-from tailorcv.infrastructure.web_fetch import board_adapters, boards
-from tailorcv.infrastructure.web_fetch.board_platform import host_match
-from tailorcv.infrastructure.web_fetch.boards import (
+from clearscout.infrastructure.web_fetch import board_adapters, boards
+from clearscout.infrastructure.web_fetch.board_platform import host_match
+from clearscout.infrastructure.web_fetch.boards import (
     board_identity,
     job_board_address,
     single_employer_detail_url,
     single_tenant_board,
     without_apply_suffix,
 )
-from tailorcv.infrastructure.web_fetch.platforms import adp, paylocity, workday
+from clearscout.infrastructure.web_fetch.platforms import adp, paylocity, workday
 
 
 def test_board_identity_matches_a_stored_root_and_a_detail_url_for_workday() -> None:

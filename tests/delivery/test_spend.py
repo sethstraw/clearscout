@@ -6,11 +6,11 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tailorcv.application.workspaces.spend import record_calls
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.costs import CallManifest, Ledger, ModelPrice, Usage
-from tailorcv.shared.costs.prices import snapshot_label
+from clearscout.application.workspaces.spend import record_calls
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.costs import CallManifest, Ledger, ModelPrice, Usage
+from clearscout.shared.costs.prices import snapshot_label
 
 
 def test_spend_reports_only_what_was_recorded(

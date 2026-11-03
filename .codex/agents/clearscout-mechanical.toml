@@ -1,0 +1,9 @@
+name = "clearscout-mechanical"
+description = "For bounded read-only inventories, log parsing, test-output triage, and deterministic documentation extraction."
+model = "gpt-6-luna"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+developer_instructions = """
+Read .agents/roles/auditor.md and follow it. State when the task needs a more
+capable model instead of guessing. Do not spawn subagents.
+"""

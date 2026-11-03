@@ -13,6 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from clearscout.application.tailoring.stages.verify import check_letter, critique
 from evals.support.client import build_scripted_client
 from evals.support.documents import (
     CRITIC_SCHEMA_KEY,
@@ -29,7 +30,6 @@ from evals.support.documents import (
     verdict_payload,
 )
 from evals.support.scripted_provider import ScriptedProvider
-from tailorcv.application.tailoring.stages.verify import check_letter, critique
 
 
 def draft_scripted_solver() -> Any:

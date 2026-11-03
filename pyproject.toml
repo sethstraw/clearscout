@@ -1,5 +1,5 @@
 [project]
-name = "tailorcv"
+name = "clearscout"
 version = "0.1.0"
 description = "Local, evidence-grounded job search and resume tailoring from one master CV."
 readme = "README.md"
@@ -79,27 +79,27 @@ dev = [
 ]
 
 [project.scripts]
-tailorcv = "tailorcv.bootstrap.cli:app"
+clearscout = "clearscout.bootstrap.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/sethstraw/tailorcv"
-Documentation = "https://github.com/sethstraw/tailorcv/blob/main/docs/user-guide.md"
-Source = "https://github.com/sethstraw/tailorcv"
-Issues = "https://github.com/sethstraw/tailorcv/issues"
-Changelog = "https://github.com/sethstraw/tailorcv/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/sethstraw/clearscout"
+Documentation = "https://github.com/sethstraw/clearscout/blob/main/docs/user-guide.md"
+Source = "https://github.com/sethstraw/clearscout"
+Issues = "https://github.com/sethstraw/clearscout/issues"
+Changelog = "https://github.com/sethstraw/clearscout/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tailorcv"]
+packages = ["src/clearscout"]
 
 # Prompts ship with the wheel so an installed tool behaves like the repository.
 [tool.hatch.build.targets.wheel.force-include]
-"prompts" = "tailorcv/prompts"
-"src/tailorcv/infrastructure/persistence/migrations/script.py.mako" = "tailorcv/infrastructure/persistence/migrations/script.py.mako"
-"web/dist" = "tailorcv/web"
+"prompts" = "clearscout/prompts"
+"src/clearscout/infrastructure/persistence/migrations/script.py.mako" = "clearscout/infrastructure/persistence/migrations/script.py.mako"
+"web/dist" = "clearscout/web"
 
 # List sdist contents explicitly so evaluations ship without entering the wheel.
 [tool.hatch.build.targets.sdist]
@@ -138,7 +138,7 @@ exclude = [
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
-extend-exclude = ["src/tailorcv/infrastructure/persistence/migrations/versions"]
+extend-exclude = ["src/clearscout/infrastructure/persistence/migrations/versions"]
 
 [tool.ruff.lint]
 select = [
@@ -184,7 +184,7 @@ ignore = ["D203", "D213", "UP046", "UP047", "PLR2004", "PLC0415"]
 "scripts/*" = ["S101"]
 # The ambiguous characters are the data: this module normalises them, and these
 # tests assert that it does, so the literals have to stay as written.
-"src/tailorcv/application/tailoring/pipeline/importer.py" = ["RUF001"]
+"src/clearscout/application/tailoring/pipeline/importer.py" = ["RUF001"]
 "tests/loop/test_import.py" = ["RUF001"]
 "tests/loop/test_verify.py" = ["RUF001"]
 
@@ -205,119 +205,119 @@ convention = "google"
 
 # Import Linter checks direct imports at the package boundaries.
 [tool.importlinter]
-root_packages = ["tailorcv"]
+root_packages = ["clearscout"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "domain does not import application, delivery, infrastructure or bootstrap"
 type = "forbidden"
-source_modules = ["tailorcv.domain"]
+source_modules = ["clearscout.domain"]
 forbidden_modules = [
-    "tailorcv.application",
-    "tailorcv.bootstrap",
-    "tailorcv.delivery",
-    "tailorcv.infrastructure",
+    "clearscout.application",
+    "clearscout.bootstrap",
+    "clearscout.delivery",
+    "clearscout.infrastructure",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "persistence does not import application code"
 type = "forbidden"
-source_modules = ["tailorcv.infrastructure.persistence"]
-forbidden_modules = ["tailorcv.application"]
+source_modules = ["clearscout.infrastructure.persistence"]
+forbidden_modules = ["clearscout.application"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "application does not import delivery or bootstrap"
 type = "forbidden"
-source_modules = ["tailorcv.application"]
+source_modules = ["clearscout.application"]
 forbidden_modules = [
-    "tailorcv.bootstrap",
-    "tailorcv.delivery",
+    "clearscout.bootstrap",
+    "clearscout.delivery",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "delivery imports bootstrap only to start processes and run setup"
 type = "forbidden"
-source_modules = ["tailorcv.delivery"]
-forbidden_modules = ["tailorcv.bootstrap"]
+source_modules = ["clearscout.delivery"]
+forbidden_modules = ["clearscout.bootstrap"]
 # The CLI entry point, `setup`, and `serve`/`worker`/`start`/`stop` compose the app.
 ignore_imports = [
-    "tailorcv.delivery.cli.__main__ -> tailorcv.bootstrap.cli",
-    "tailorcv.delivery.cli.workspace -> tailorcv.bootstrap.setup",
-    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.api",
-    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.local_runtime",
-    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.logging",
-    "tailorcv.delivery.cli.runtime -> tailorcv.bootstrap.worker",
+    "clearscout.delivery.cli.__main__ -> clearscout.bootstrap.cli",
+    "clearscout.delivery.cli.workspace -> clearscout.bootstrap.setup",
+    "clearscout.delivery.cli.runtime -> clearscout.bootstrap.api",
+    "clearscout.delivery.cli.runtime -> clearscout.bootstrap.local_runtime",
+    "clearscout.delivery.cli.runtime -> clearscout.bootstrap.logging",
+    "clearscout.delivery.cli.runtime -> clearscout.bootstrap.worker",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
-name = "shared primitives import no other tailorcv layer"
+name = "shared primitives import no other clearscout layer"
 type = "forbidden"
 source_modules = [
-    "tailorcv.shared.costs",
-    "tailorcv.shared.errors",
-    "tailorcv.shared.layout",
-    "tailorcv.shared.models",
-    "tailorcv.shared.quantities",
-    "tailorcv.shared.results",
-    "tailorcv.shared.text",
+    "clearscout.shared.costs",
+    "clearscout.shared.errors",
+    "clearscout.shared.layout",
+    "clearscout.shared.models",
+    "clearscout.shared.quantities",
+    "clearscout.shared.results",
+    "clearscout.shared.text",
 ]
 forbidden_modules = [
-    "tailorcv.application",
-    "tailorcv.bootstrap",
-    "tailorcv.delivery",
-    "tailorcv.domain",
-    "tailorcv.infrastructure",
+    "clearscout.application",
+    "clearscout.bootstrap",
+    "clearscout.delivery",
+    "clearscout.domain",
+    "clearscout.infrastructure",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "tailoring stages import no service or persistence code"
 type = "forbidden"
-source_modules = ["tailorcv.application.tailoring.stages"]
+source_modules = ["clearscout.application.tailoring.stages"]
 forbidden_modules = [
-    "tailorcv.application.discovery",
-    "tailorcv.application.documents",
-    "tailorcv.application.job_search",
-    "tailorcv.application.master_cv.artifacts",
-    "tailorcv.application.master_cv.commands",
-    "tailorcv.application.master_cv.intake",
-    "tailorcv.application.master_cv.queries",
-    "tailorcv.application.master_cv.service",
-    "tailorcv.application.portability",
-    "tailorcv.application.tasks",
-    "tailorcv.application.workspaces",
-    "tailorcv.infrastructure.persistence",
+    "clearscout.application.discovery",
+    "clearscout.application.documents",
+    "clearscout.application.job_search",
+    "clearscout.application.master_cv.artifacts",
+    "clearscout.application.master_cv.commands",
+    "clearscout.application.master_cv.intake",
+    "clearscout.application.master_cv.queries",
+    "clearscout.application.master_cv.service",
+    "clearscout.application.portability",
+    "clearscout.application.tasks",
+    "clearscout.application.workspaces",
+    "clearscout.infrastructure.persistence",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "delivery adapters do not import ORM models"
 type = "forbidden"
-source_modules = ["tailorcv.delivery.api", "tailorcv.delivery.cli"]
+source_modules = ["clearscout.delivery.api", "clearscout.delivery.cli"]
 forbidden_modules = [
-    "tailorcv.infrastructure.persistence.models",
+    "clearscout.infrastructure.persistence.models",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "master CV imports no other capability except document evidence"
 type = "forbidden"
-source_modules = ["tailorcv.application.master_cv"]
+source_modules = ["clearscout.application.master_cv"]
 forbidden_modules = [
-    "tailorcv.application.discovery",
-    "tailorcv.application.documents",
-    "tailorcv.application.job_search",
-    "tailorcv.application.portability",
-    "tailorcv.application.tasks",
+    "clearscout.application.discovery",
+    "clearscout.application.documents",
+    "clearscout.application.job_search",
+    "clearscout.application.portability",
+    "clearscout.application.tasks",
 ]
 # EvidenceArtifactService is the one documents port; master CV stores and reads files with it.
 ignore_imports = [
-    "tailorcv.application.master_cv.artifacts -> tailorcv.application.documents.evidence_artifacts",
-    "tailorcv.application.master_cv.service -> tailorcv.application.documents.evidence_artifacts",
+    "clearscout.application.master_cv.artifacts -> clearscout.application.documents.evidence_artifacts",
+    "clearscout.application.master_cv.service -> clearscout.application.documents.evidence_artifacts",
 ]
 allow_indirect_imports = true
 
@@ -328,21 +328,21 @@ allow_indirect_imports = true
 name = "search vocabulary does not import the campaign or the review"
 type = "forbidden"
 source_modules = [
-    "tailorcv.application.discovery.search_proposal_inbox",
-    "tailorcv.application.discovery.search_vocabulary",
+    "clearscout.application.discovery.search_proposal_inbox",
+    "clearscout.application.discovery.search_vocabulary",
 ]
 forbidden_modules = [
-    "tailorcv.application.discovery.guided_campaign",
-    "tailorcv.application.discovery.guided_campaign_admission",
-    "tailorcv.application.discovery.guided_campaign_ledger",
-    "tailorcv.application.discovery.guided_campaign_report",
-    "tailorcv.application.discovery.guided_campaign_request",
-    "tailorcv.application.discovery.guided_campaign_runner",
-    "tailorcv.application.discovery.relevance_review",
-    "tailorcv.application.discovery.relevance_review_preparation",
-    "tailorcv.application.discovery.relevance_review_queries",
-    "tailorcv.application.discovery.relevance_review_records",
-    "tailorcv.application.discovery.relevance_review_spans",
+    "clearscout.application.discovery.guided_campaign",
+    "clearscout.application.discovery.guided_campaign_admission",
+    "clearscout.application.discovery.guided_campaign_ledger",
+    "clearscout.application.discovery.guided_campaign_report",
+    "clearscout.application.discovery.guided_campaign_request",
+    "clearscout.application.discovery.guided_campaign_runner",
+    "clearscout.application.discovery.relevance_review",
+    "clearscout.application.discovery.relevance_review_preparation",
+    "clearscout.application.discovery.relevance_review_queries",
+    "clearscout.application.discovery.relevance_review_records",
+    "clearscout.application.discovery.relevance_review_spans",
 ]
 allow_indirect_imports = true
 
@@ -350,21 +350,21 @@ allow_indirect_imports = true
 name = "relevance review does not import the campaign or the vocabulary"
 type = "forbidden"
 source_modules = [
-    "tailorcv.application.discovery.relevance_review",
-    "tailorcv.application.discovery.relevance_review_preparation",
-    "tailorcv.application.discovery.relevance_review_queries",
-    "tailorcv.application.discovery.relevance_review_records",
-    "tailorcv.application.discovery.relevance_review_spans",
+    "clearscout.application.discovery.relevance_review",
+    "clearscout.application.discovery.relevance_review_preparation",
+    "clearscout.application.discovery.relevance_review_queries",
+    "clearscout.application.discovery.relevance_review_records",
+    "clearscout.application.discovery.relevance_review_spans",
 ]
 forbidden_modules = [
-    "tailorcv.application.discovery.guided_campaign",
-    "tailorcv.application.discovery.guided_campaign_admission",
-    "tailorcv.application.discovery.guided_campaign_ledger",
-    "tailorcv.application.discovery.guided_campaign_report",
-    "tailorcv.application.discovery.guided_campaign_request",
-    "tailorcv.application.discovery.guided_campaign_runner",
-    "tailorcv.application.discovery.search_proposal_inbox",
-    "tailorcv.application.discovery.search_vocabulary",
+    "clearscout.application.discovery.guided_campaign",
+    "clearscout.application.discovery.guided_campaign_admission",
+    "clearscout.application.discovery.guided_campaign_ledger",
+    "clearscout.application.discovery.guided_campaign_report",
+    "clearscout.application.discovery.guided_campaign_request",
+    "clearscout.application.discovery.guided_campaign_runner",
+    "clearscout.application.discovery.search_proposal_inbox",
+    "clearscout.application.discovery.search_vocabulary",
 ]
 allow_indirect_imports = true
 
@@ -372,54 +372,54 @@ allow_indirect_imports = true
 name = "guided campaign does not import the vocabulary or the review"
 type = "forbidden"
 source_modules = [
-    "tailorcv.application.discovery.guided_campaign",
-    "tailorcv.application.discovery.guided_campaign_admission",
-    "tailorcv.application.discovery.guided_campaign_ledger",
-    "tailorcv.application.discovery.guided_campaign_report",
-    "tailorcv.application.discovery.guided_campaign_request",
-    "tailorcv.application.discovery.guided_campaign_runner",
+    "clearscout.application.discovery.guided_campaign",
+    "clearscout.application.discovery.guided_campaign_admission",
+    "clearscout.application.discovery.guided_campaign_ledger",
+    "clearscout.application.discovery.guided_campaign_report",
+    "clearscout.application.discovery.guided_campaign_request",
+    "clearscout.application.discovery.guided_campaign_runner",
 ]
 forbidden_modules = [
-    "tailorcv.application.discovery.relevance_review",
-    "tailorcv.application.discovery.relevance_review_preparation",
-    "tailorcv.application.discovery.relevance_review_queries",
-    "tailorcv.application.discovery.relevance_review_records",
-    "tailorcv.application.discovery.relevance_review_spans",
-    "tailorcv.application.discovery.search_proposal_inbox",
-    "tailorcv.application.discovery.search_vocabulary",
+    "clearscout.application.discovery.relevance_review",
+    "clearscout.application.discovery.relevance_review_preparation",
+    "clearscout.application.discovery.relevance_review_queries",
+    "clearscout.application.discovery.relevance_review_records",
+    "clearscout.application.discovery.relevance_review_spans",
+    "clearscout.application.discovery.search_proposal_inbox",
+    "clearscout.application.discovery.search_vocabulary",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "infrastructure does not import delivery or bootstrap"
 type = "forbidden"
-source_modules = ["tailorcv.infrastructure"]
-forbidden_modules = ["tailorcv.bootstrap", "tailorcv.delivery"]
+source_modules = ["clearscout.infrastructure"]
+forbidden_modules = ["clearscout.bootstrap", "clearscout.delivery"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "web fetch does not import persistence"
 type = "forbidden"
-source_modules = ["tailorcv.infrastructure.web_fetch"]
-forbidden_modules = ["tailorcv.infrastructure.persistence"]
+source_modules = ["clearscout.infrastructure.web_fetch"]
+forbidden_modules = ["clearscout.infrastructure.persistence"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "providers do not import persistence"
 type = "forbidden"
-source_modules = ["tailorcv.infrastructure.providers"]
-forbidden_modules = ["tailorcv.infrastructure.persistence"]
+source_modules = ["clearscout.infrastructure.providers"]
+forbidden_modules = ["clearscout.infrastructure.persistence"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "pure evaluation modules import no SDK, database or infrastructure"
 type = "forbidden"
 source_modules = [
-    "tailorcv.application.job_search.fit_reports",
-    "tailorcv.application.tailoring.workflows.evaluation_commit",
-    "tailorcv.application.tailoring.workflows.evaluation_evidence",
-    "tailorcv.application.tailoring.workflows.evaluation_policy",
-    "tailorcv.application.tailoring.workflows.evaluation_report",
+    "clearscout.application.job_search.fit_reports",
+    "clearscout.application.tailoring.workflows.evaluation_commit",
+    "clearscout.application.tailoring.workflows.evaluation_evidence",
+    "clearscout.application.tailoring.workflows.evaluation_policy",
+    "clearscout.application.tailoring.workflows.evaluation_report",
 ]
 forbidden_modules = [
     "anthropic",
@@ -429,34 +429,34 @@ forbidden_modules = [
     "openai",
     "requests",
     "sqlalchemy",
-    "tailorcv.infrastructure",
+    "clearscout.infrastructure",
 ]
 allow_indirect_imports = true
 
-# `tailorcv.domain.identity` owns URL parsing and folding for the application.
+# `clearscout.domain.identity` owns URL parsing and folding for the application.
 [[tool.importlinter.contracts]]
 name = "application parses URLs only through domain identity"
 type = "forbidden"
-source_modules = ["tailorcv.application"]
+source_modules = ["clearscout.application"]
 forbidden_modules = ["urllib"]
 ignore_imports = [
     # Posting identity derives requisition keys and locale variants from the URL.
-    "tailorcv.application.discovery.posting_identity -> urllib",
+    "clearscout.application.discovery.posting_identity -> urllib",
     # Tenant slugs come percent-encoded from the board adapters' URL patterns.
-    "tailorcv.application.discovery.board_slugs -> urllib",
+    "clearscout.application.discovery.board_slugs -> urllib",
 ]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "fit package imports flow from the reader down to the lexicon"
 type = "layers"
-containers = ["tailorcv.application.tailoring.fit"]
+containers = ["clearscout.application.tailoring.fit"]
 layers = ["reader", "facts | preferences | gates", "structure", "lexicon"]
 
 [[tool.importlinter.contracts]]
 name = "fit structure package imports flow from blocks down to reading and quotes"
 type = "layers"
-containers = ["tailorcv.application.tailoring.fit.structure"]
+containers = ["clearscout.application.tailoring.fit.structure"]
 layers = [
     "blocks | requirements",
     "run_on | units",
@@ -467,13 +467,13 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "fit preferences imports flow from each fit reading down to clauses"
 type = "layers"
-containers = ["tailorcv.application.tailoring.fit.preferences"]
+containers = ["clearscout.application.tailoring.fit.preferences"]
 layers = ["place | travel | time_zone | level | pay", "pay_lines", "pay_periods", "clauses"]
 
 [[tool.importlinter.contracts]]
 name = "fit facts imports flow from the readers down to arrangement vocabulary"
 type = "layers"
-containers = ["tailorcv.application.tailoring.fit.facts"]
+containers = ["clearscout.application.tailoring.fit.facts"]
 layers = [
     "disagreements | arrangement | education | residence | roles",
     "arrangement_lines | seniority",
@@ -483,7 +483,7 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "verify package imports flow from the documents down to the lexicon"
 type = "layers"
-containers = ["tailorcv.application.tailoring.stages.verify"]
+containers = ["clearscout.application.tailoring.stages.verify"]
 layers = [
     "resume | letter",
     "report",
@@ -496,19 +496,19 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "careers package imports flow from classification down to the parser"
 type = "layers"
-containers = ["tailorcv.infrastructure.web_fetch.ingest.careers"]
+containers = ["clearscout.infrastructure.web_fetch.ingest.careers"]
 layers = ["classification", "parser"]
 
 [[tool.importlinter.contracts]]
 name = "url package imports flow from reading down to transport and results"
 type = "layers"
-containers = ["tailorcv.infrastructure.web_fetch.ingest.url"]
+containers = ["clearscout.infrastructure.web_fetch.ingest.url"]
 layers = ["reading", "checks", "platform_readers", "addresses | feeds", "page_text", "results | transport"]
 
 [[tool.importlinter.contracts]]
 name = "board reads package imports flow from listed pages down to results"
 type = "layers"
-containers = ["tailorcv.infrastructure.web_fetch.board_reads"]
+containers = ["clearscout.infrastructure.web_fetch.board_reads"]
 layers = [
     "listed_pages | publisher_search",
     "scope | sitemaps",
@@ -517,15 +517,15 @@ layers = [
 ]
 # Function-local imports whose chains run through posting_identity and platforms back into this facade.
 ignore_imports = [
-    "tailorcv.application.discovery.source_reading -> tailorcv.application.discovery.posting_identity",
-    "tailorcv.infrastructure.web_fetch.board_reads.scope -> tailorcv.infrastructure.web_fetch.boards",
-    "tailorcv.infrastructure.web_fetch.board_reads.scope -> tailorcv.infrastructure.web_fetch.platforms",
+    "clearscout.application.discovery.source_reading -> clearscout.application.discovery.posting_identity",
+    "clearscout.infrastructure.web_fetch.board_reads.scope -> clearscout.infrastructure.web_fetch.boards",
+    "clearscout.infrastructure.web_fetch.board_reads.scope -> clearscout.infrastructure.web_fetch.platforms",
 ]
 
 [[tool.importlinter.contracts]]
 name = "board adapters package imports flow from the fetcher down to read scope"
 type = "layers"
-containers = ["tailorcv.infrastructure.web_fetch.board_adapters"]
+containers = ["clearscout.infrastructure.web_fetch.board_adapters"]
 layers = [
     "fetcher",
     "continuation_merge | detail_reads",
@@ -536,7 +536,7 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "job search models import flow from the pending queue down to vocabulary"
 type = "layers"
-containers = ["tailorcv.application.job_search.models"]
+containers = ["clearscout.application.job_search.models"]
 layers = [
     "pending",
     "closures | relevance_reviews | workspace | sources | fit_reports | posting_diffs",
@@ -546,7 +546,7 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "screening package imports flow from the screen down to shared findings"
 type = "layers"
-containers = ["tailorcv.application.discovery.screening"]
+containers = ["clearscout.application.discovery.screening"]
 layers = [
     "screen | holdouts",
     "titles | location | arrangement",
@@ -557,13 +557,13 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "content resolution imports flow from the service down to read results"
 type = "layers"
-containers = ["tailorcv.application.discovery.content_resolution"]
+containers = ["clearscout.application.discovery.content_resolution"]
 layers = ["service", "store | reads", "retained", "targets | screen | current", "results"]
 
 [[tool.importlinter.contracts]]
 name = "scan queries package imports flow from the service down to wording"
 type = "layers"
-containers = ["tailorcv.application.discovery.scan_queries"]
+containers = ["clearscout.application.discovery.scan_queries"]
 layers = [
     "service",
     "queue_page",
@@ -576,7 +576,7 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "scan staging imports flow from the service down to matching and reasons"
 type = "layers"
-containers = ["tailorcv.application.discovery.scan_staging"]
+containers = ["clearscout.application.discovery.scan_staging"]
 layers = [
     "service",
     "rows | checks",
@@ -588,7 +588,7 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "scan sweep package imports flow from the sweep down to board models"
 type = "layers"
-containers = ["tailorcv.application.discovery.scan_sweep"]
+containers = ["clearscout.application.discovery.scan_sweep"]
 layers = [
     "sweep",
     "recording | rescreen",
@@ -599,7 +599,7 @@ layers = [
 [[tool.importlinter.contracts]]
 name = "source continuation imports flow from the handler down to limits"
 type = "layers"
-containers = ["tailorcv.application.discovery.source_continuation"]
+containers = ["clearscout.application.discovery.source_continuation"]
 layers = [
     "handler",
     "commands | coverage",
@@ -612,7 +612,7 @@ layers = [
 
 [tool.deptry]
 # DEP002 audits shipped dependencies.
-known_first_party = ["tailorcv"]
+known_first_party = ["clearscout"]
 
 [tool.deptry.per_rule_ignores]
 # `alembic` and `uvicorn` are invoked as programs.
@@ -674,12 +674,12 @@ filterwarnings = [
 # `evals` is deliberately absent: coverage measures the shipped program under the
 # unit suite, and the unit suite does not run the evaluations.
 [tool.coverage.run]
-source = ["tailorcv"]
+source = ["clearscout"]
 omit = [
     # Generated Alembic runtime and DDL are verified through upgrade/downgrade
     # behavior; line coverage of generated operations is not an application test.
-    "*/tailorcv/infrastructure/persistence/migrations/env.py",
-    "*/tailorcv/infrastructure/persistence/migrations/versions/*",
+    "*/clearscout/infrastructure/persistence/migrations/env.py",
+    "*/clearscout/infrastructure/persistence/migrations/versions/*",
 ]
 # Branch coverage: a line executed once is not a line whose conditions were both taken.
 branch = true

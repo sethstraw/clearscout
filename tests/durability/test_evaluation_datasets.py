@@ -11,7 +11,7 @@ from evals.dataset import (
     load_dataset,
 )
 
-from tailorcv.domain.records import EvaluationDecision
+from clearscout.domain.records import EvaluationDecision
 
 FIT_ANNOTATION = """
 annotation_id = "historical-fit"

@@ -12,26 +12,26 @@ from typing import Any
 
 import pytest
 from evals.inspect.scorers.match_classification import classification_match
-from evals.inspect.solvers import relevance_live, tailorcv_live
+from evals.inspect.solvers import clearscout_live, relevance_live
 from evals.support.inventory import synthetic_guardrails, synthetic_inventory
 from sqlalchemy import select
 
-from tailorcv.application.config import ProviderName, Settings
-from tailorcv.application.job_search.models import RelevanceReviewBatchResponse
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.prompts import load
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.stages.match import (
+from clearscout.application.config import ProviderName, Settings
+from clearscout.application.job_search.models import RelevanceReviewBatchResponse
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.prompts import load
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.stages.match import (
     Classification,
     EvidenceMap,
     Match,
     Strength,
 )
-from tailorcv.domain import EvidenceStatus, GapClass
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models.tailoring import CostRecord, ModelCall
-from tailorcv.infrastructure.persistence.models.workspaces import Workspace
-from tailorcv.shared.costs import CallManifest, Ledger, Usage
+from clearscout.domain import EvidenceStatus, GapClass
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models.tailoring import CostRecord, ModelCall
+from clearscout.infrastructure.persistence.models.workspaces import Workspace
+from clearscout.shared.costs import CallManifest, Ledger, Usage
 
 
 def _workspace(url: str, slugs: list[str]) -> None:
@@ -60,12 +60,12 @@ def _solver(
     ledger: Ledger | None = None,
     inventory: CvInventory | None = None,
     guardrails: Guardrails | None = None,
-) -> tailorcv_live._TailorCVLiveSolver:
-    return tailorcv_live._TailorCVLiveSolver(
+) -> clearscout_live._ClearScoutLiveSolver:
+    return clearscout_live._ClearScoutLiveSolver(
         run_metadata={
             "provider": "openai",
-            "prompt_suite_fingerprint": tailorcv_live._prompt_fingerprint(
-                {name: load(name) for name in tailorcv_live._MATCH_PROMPTS}
+            "prompt_suite_fingerprint": clearscout_live._prompt_fingerprint(
+                {name: load(name) for name in clearscout_live._MATCH_PROMPTS}
             ),
         },
         inventory=inventory,  # type: ignore[arg-type]
@@ -84,20 +84,20 @@ def test_billing_target_refuses_when_no_single_workspace_owns_the_spend(
 ) -> None:
     """Two workspaces give the run no unambiguous ledger, so it refuses rather than guess."""
     _workspace(durable_database_url, ["one", "two"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
 
     with pytest.raises(RuntimeError, match="one active workspace"):
-        tailorcv_live.billing_target()
+        clearscout_live.billing_target()
 
 
 def test_billing_target_refuses_without_a_database_to_bill(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A live run must name the ledger it spends against."""
-    monkeypatch.delenv("TAILORCV_EVAL_DATABASE_URL", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_EVAL_DATABASE_URL", raising=False)
 
     with pytest.raises(RuntimeError, match="workspace database to bill"):
-        tailorcv_live.billing_target()
+        clearscout_live.billing_target()
 
 
 def test_a_priced_call_reaches_the_workspace_ledger(
@@ -108,8 +108,8 @@ def test_a_priced_call_reaches_the_workspace_ledger(
     Without this the workspace's own total understates what left the account.
     """
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     sample = Ledger()
     sample.record(_manifest())
 
@@ -135,8 +135,8 @@ def test_a_live_requirement_the_run_never_established_is_not_credited(
 ) -> None:
     """A paid row carrying no outcome fails against a frozen GAP label."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     unestablished = EvidenceMap(
         matches=(
             Match(
@@ -149,10 +149,10 @@ def test_a_live_requirement_the_run_never_established_is_not_credited(
             ),
         )
     )
-    monkeypatch.setattr(tailorcv_live, "credential_for", lambda provider_name: "token")
-    monkeypatch.setattr(tailorcv_live, "build_live_client", lambda *args, **kwargs: object())
-    monkeypatch.setattr(tailorcv_live, "match", lambda *args, **kwargs: unestablished)
-    monkeypatch.setattr(tailorcv_live, "sample_provenance", lambda *args, **kwargs: {})
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(clearscout_live, "build_live_client", lambda *args, **kwargs: object())
+    monkeypatch.setattr(clearscout_live, "match", lambda *args, **kwargs: unestablished)
+    monkeypatch.setattr(clearscout_live, "sample_provenance", lambda *args, **kwargs: {})
     inventory = synthetic_inventory()
     solver = _solver(
         database,
@@ -213,8 +213,8 @@ def test_a_live_answer_keeps_the_models_note_whatever_its_class(
 ) -> None:
     """A reviewer reads why the model chose DIRECT, not only why it chose GAP."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     solver = _paid_match_solver(database, workspace_id, monkeypatch)
 
     try:
@@ -230,11 +230,11 @@ def test_a_live_answer_keeps_the_models_note_whatever_its_class(
 
 def _paid_match_solver(
     database: Database, workspace_id: str, monkeypatch: pytest.MonkeyPatch
-) -> tailorcv_live._TailorCVLiveSolver:
+) -> clearscout_live._ClearScoutLiveSolver:
     """Return a match solver whose paid call is answered without a provider."""
-    monkeypatch.setattr(tailorcv_live, "credential_for", lambda provider_name: "token")
-    monkeypatch.setattr(tailorcv_live, "build_live_client", _paid_client)
-    monkeypatch.setattr(tailorcv_live, "match", lambda *args, **kwargs: _answered())
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(clearscout_live, "build_live_client", _paid_client)
+    monkeypatch.setattr(clearscout_live, "match", lambda *args, **kwargs: _answered())
     return _solver(
         database,
         workspace_id,
@@ -290,11 +290,11 @@ def test_a_paid_sample_survives_a_ledger_write_that_failed(
 ) -> None:
     """The money is already spent, so a failed ledger write must not destroy the answer."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     solver = _paid_match_solver(database, workspace_id, monkeypatch)
     monkeypatch.setattr(
-        tailorcv_live, "record_calls", _refuse_billing(RuntimeError("database is locked"))
+        clearscout_live, "record_calls", _refuse_billing(RuntimeError("database is locked"))
     )
 
     try:
@@ -312,11 +312,11 @@ def test_an_unbilled_sample_names_the_row_a_reader_must_chase(
 ) -> None:
     """A spend the ledger refused is reported with the origin, amount, and failure."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     solver = _paid_match_solver(database, workspace_id, monkeypatch)
     monkeypatch.setattr(
-        tailorcv_live, "record_calls", _refuse_billing(RuntimeError("database is locked"))
+        clearscout_live, "record_calls", _refuse_billing(RuntimeError("database is locked"))
     )
 
     try:
@@ -335,8 +335,8 @@ def test_a_billed_sample_carries_no_billing_failure(
 ) -> None:
     """Billing that succeeded leaves the sample's provenance as it was."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     solver = _paid_match_solver(database, workspace_id, monkeypatch)
 
     try:
@@ -355,10 +355,10 @@ def test_an_interrupt_during_billing_still_stops_the_run(
 ) -> None:
     """Containing a ledger failure must not contain the operator's interrupt."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     solver = _paid_match_solver(database, workspace_id, monkeypatch)
-    monkeypatch.setattr(tailorcv_live, "record_calls", _refuse_billing(KeyboardInterrupt()))
+    monkeypatch.setattr(clearscout_live, "record_calls", _refuse_billing(KeyboardInterrupt()))
 
     try:
         with pytest.raises(KeyboardInterrupt):
@@ -372,14 +372,14 @@ def test_a_relevance_sample_survives_a_ledger_write_that_failed(
 ) -> None:
     """Every paid solver keeps its answer, so the relevance family reports its spend too."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
     monkeypatch.setattr(relevance_live, "credential_for", lambda provider_name: "token")
     monkeypatch.setattr(
         relevance_live, "build_live_client", lambda *args, **kwargs: _paid_relevance_client(kwargs)
     )
     monkeypatch.setattr(
-        tailorcv_live, "record_calls", _refuse_billing(RuntimeError("database is locked"))
+        clearscout_live, "record_calls", _refuse_billing(RuntimeError("database is locked"))
     )
     solver = relevance_live._RelevanceLiveSolver(
         run_metadata={"provider": "openai"},
@@ -405,8 +405,8 @@ def test_billing_nothing_writes_nothing(
 ) -> None:
     """A sample whose call was served from cache leaves the ledger alone."""
     _workspace(durable_database_url, ["only"])
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    database, workspace_id = tailorcv_live.billing_target()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
 
     _solver(database, workspace_id)._bill(Ledger())
 

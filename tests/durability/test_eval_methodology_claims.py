@@ -25,7 +25,7 @@ from evals.inspect.solvers.document_scripted import (
 from evals.runner import EvalError
 from evals.support.inventory import synthetic_inventory
 
-from tailorcv.application.tailoring.stages.verify import SUPPORT_CHECKS
+from clearscout.application.tailoring.stages.verify import SUPPORT_CHECKS
 
 FIXTURES = Path(__file__).resolve().parents[2] / "evals" / "fixtures"
 BASELINES = Path(__file__).resolve().parents[2] / "evals" / "baselines"

@@ -24,7 +24,7 @@ export function OpenAiActualSpendPanel() {
           <h2>Actual spend from OpenAI</h2>
           <p>
             OpenAI&apos;s Organization API reports what it actually billed. This compares that with
-            the cost TailorCV recorded over the same {WINDOW_DAYS}-day window, so charges that
+            the cost ClearScout recorded over the same {WINDOW_DAYS}-day window, so charges that
             cannot be estimated up front, such as retrieved web-search content, become visible.
           </p>
         </div>
@@ -33,7 +33,7 @@ export function OpenAiActualSpendPanel() {
         <p className="field-note">
           This is an organization-wide cross-check, not per task or per workspace. OpenAI reports
           the whole organization the admin key belongs to, while the recorded figure counts only the
-          OpenAI calls TailorCV priced in this database.
+          OpenAI calls ClearScout priced in this database.
         </p>
         <div className="button-row">
           <ConfirmedActionButton
@@ -80,7 +80,7 @@ function ReconciliationResult({ report }: { report: OpenAiActualSpend }) {
           <dd>{dollars(report.openai_actual_usd)}</dd>
         </div>
         <div>
-          <dt>Recorded by TailorCV</dt>
+          <dt>Recorded by ClearScout</dt>
           <dd>
             {report.recorded_usd == null
               ? "Withheld - a call had no configured price"
@@ -88,7 +88,7 @@ function ReconciliationResult({ report }: { report: OpenAiActualSpend }) {
           </dd>
         </div>
         <div>
-          <dt>Organization total minus TailorCV recorded cost</dt>
+          <dt>Organization total minus ClearScout recorded cost</dt>
           <dd>
             {report.drift_usd == null && report.unpriced_call_count > 0
               ? "Withheld - a call had no configured price"
@@ -109,7 +109,7 @@ function ReconciliationResult({ report }: { report: OpenAiActualSpend }) {
       <p className="field-note">{report.scope_note}</p>
       <p className="field-note">
         Amounts are rounded to cents. The difference can include other applications and projects,
-        billing delays, and price differences; it does not isolate TailorCV accounting errors.
+        billing delays, and price differences; it does not isolate ClearScout accounting errors.
       </p>
     </>
   );

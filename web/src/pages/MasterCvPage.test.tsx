@@ -221,7 +221,7 @@ function importFold() {
 }
 
 function renderPage() {
-  window.localStorage.setItem("tailorcv.workspace", "workspace-cv");
+  window.localStorage.setItem("clearscout.workspace", "workspace-cv");
   return render(
     <MemoryRouter>
       <AppProviders>

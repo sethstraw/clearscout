@@ -243,7 +243,7 @@ live_run() {
     printf 'Refused: --cv-version must be one master-CV version id.\n' >&2
     exit 64
   fi
-  local database_url="sqlite+pysqlite:///${data_root%/}/tailorcv.sqlite3"
+  local database_url="sqlite+pysqlite:///${data_root%/}/clearscout.sqlite3"
   if [[ -n "$render_dir" ]]; then
     # The render selects rows as the paid run would, so it proves that run's batches.
     local -a render_selection=()
@@ -254,11 +254,11 @@ live_run() {
     fi
     if [[ -n "$limit" ]]; then render_selection+=(--limit "$limit"); fi
     if [[ -n "$split" ]]; then render_selection+=(--split "$split"); fi
-    TAILORCV_EVAL_LIVE_MODEL="$model" \
-      TAILORCV_EVAL_LIVE_EFFORT="$effort" \
-      TAILORCV_EVAL_PROMPT_ARMS="$prompt_arms" \
-      TAILORCV_EVAL_CV_VERSION="$cv_version" \
-      TAILORCV_EVAL_DATABASE_URL="$database_url" \
+    CLEARSCOUT_EVAL_LIVE_MODEL="$model" \
+      CLEARSCOUT_EVAL_LIVE_EFFORT="$effort" \
+      CLEARSCOUT_EVAL_PROMPT_ARMS="$prompt_arms" \
+      CLEARSCOUT_EVAL_CV_VERSION="$cv_version" \
+      CLEARSCOUT_EVAL_DATABASE_URL="$database_url" \
       uv run python -m evals.inspect.solvers.relevance_live "$task_file" \
         --render-only "$render_dir" --provider "$provider" \
         ${render_selection[@]+"${render_selection[@]}"}
@@ -328,22 +328,22 @@ live_run() {
     estimated_cents="$(printf '%s' "$estimated" | awk '{printf "%.0f", $1 * 100}')"
   fi
 
-  TAILORCV_EVAL_LIVE_APPROVED_CENTS="$approved_cents" \
-    TAILORCV_EVAL_ESTIMATED_CENTS="$estimated_cents" \
-    TAILORCV_EVAL_LIVE_PROVIDER="$provider" \
-    TAILORCV_EVAL_LIVE_MODEL="$model" \
-    TAILORCV_EVAL_LIVE_EFFORT="$effort" \
-    TAILORCV_EVAL_DATASET_SPLIT="$split" \
-    TAILORCV_EVAL_SAMPLE_LIMIT="$limit" \
-    TAILORCV_EVAL_SAMPLE_IDS="$ids" \
-    TAILORCV_EVAL_TRIALS="$trials" \
-    TAILORCV_EVAL_PROMPT_ARMS="$prompt_arms" \
-    TAILORCV_EVAL_OUTPUT_DIR="$output_dir" \
-    TAILORCV_EVAL_SELECTION_MANIFEST="$selection_manifest" \
-    TAILORCV_EVAL_SELECTION_MANIFEST_SHA256="$selection_manifest_sha256" \
-    TAILORCV_EVAL_SELECTION_MANIFEST_BYTES_SHA256="$selection_manifest_bytes_sha256" \
-    TAILORCV_EVAL_CV_VERSION="$cv_version" \
-    TAILORCV_EVAL_DATABASE_URL="$database_url" \
+  CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS="$approved_cents" \
+    CLEARSCOUT_EVAL_ESTIMATED_CENTS="$estimated_cents" \
+    CLEARSCOUT_EVAL_LIVE_PROVIDER="$provider" \
+    CLEARSCOUT_EVAL_LIVE_MODEL="$model" \
+    CLEARSCOUT_EVAL_LIVE_EFFORT="$effort" \
+    CLEARSCOUT_EVAL_DATASET_SPLIT="$split" \
+    CLEARSCOUT_EVAL_SAMPLE_LIMIT="$limit" \
+    CLEARSCOUT_EVAL_SAMPLE_IDS="$ids" \
+    CLEARSCOUT_EVAL_TRIALS="$trials" \
+    CLEARSCOUT_EVAL_PROMPT_ARMS="$prompt_arms" \
+    CLEARSCOUT_EVAL_OUTPUT_DIR="$output_dir" \
+    CLEARSCOUT_EVAL_SELECTION_MANIFEST="$selection_manifest" \
+    CLEARSCOUT_EVAL_SELECTION_MANIFEST_SHA256="$selection_manifest_sha256" \
+    CLEARSCOUT_EVAL_SELECTION_MANIFEST_BYTES_SHA256="$selection_manifest_bytes_sha256" \
+    CLEARSCOUT_EVAL_CV_VERSION="$cv_version" \
+    CLEARSCOUT_EVAL_DATABASE_URL="$database_url" \
     uv run python -m evals.inspect.runner "$task_file" \
       --log-dir "$output_dir" "${selection[@]}" --split "$split" --trials "$trials" \
       --arms "$arms"

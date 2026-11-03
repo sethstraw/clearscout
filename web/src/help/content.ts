@@ -22,7 +22,8 @@ export interface HelpEntry {
   readonly docsAnchor?: string;
 }
 
-export const USER_GUIDE_URL = "https://github.com/sethstraw/tailorcv/blob/main/docs/user-guide.md";
+export const USER_GUIDE_URL =
+  "https://github.com/sethstraw/clearscout/blob/main/docs/user-guide.md";
 
 export const HELP = {
   home: {

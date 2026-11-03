@@ -8,24 +8,24 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.application.discovery.scan_queries import (
+from clearscout.application.discovery.scan_queries import (
     MAX_COLLATERAL_PHRASES,
     PENDING_PAGE_MAX_LIMIT,
 )
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain import SearchProposalState, new_id, utc_now
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.staged_facts import StagedListingFacts
-from tailorcv.domain.statements import derived_proposal_identity
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.domain import SearchProposalState, new_id, utc_now
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.staged_facts import StagedListingFacts
+from clearscout.domain.statements import derived_proposal_identity
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     CandidateProfile,
     DerivedSearchTitle,
     MasterCvVersion,
     PendingDiscovery,
 )
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import workspace_with_relevance_review
 

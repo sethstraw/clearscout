@@ -54,7 +54,7 @@ export function ApiPlaygroundPage() {
       <aside className="playground-warning" role="note">
         <strong>Local data boundary</strong>
         <p>
-          Requests stay on this loopback TailorCV server. Mutating operations require an extra
+          Requests stay on this loopback ClearScout server. Mutating operations require an extra
           acknowledgement and may append or archive local records. This playground is for
           integration work and debugging, not the normal path for creating a job.
         </p>

@@ -11,11 +11,11 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.tailoring.stages import jobspec, match
-from tailorcv.infrastructure.providers.cache import ResponseCache, cache_key
-from tailorcv.infrastructure.web_fetch.ingest import JDText
-from tailorcv.shared.costs import CallManifest, Ledger, ModelPrice, Usage
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.tailoring.stages import jobspec, match
+from clearscout.infrastructure.providers.cache import ResponseCache, cache_key
+from clearscout.infrastructure.web_fetch.ingest import JDText
+from clearscout.shared.costs import CallManifest, Ledger, ModelPrice, Usage
 from tests.support.payloads import script
 from tests.support.plans import plan_for
 
@@ -143,8 +143,8 @@ def test_the_discounted_tier_is_priced_from_what_served_the_call() -> None:
 
 
 def test_a_run_asks_every_stage_for_the_tier_the_client_was_given(client_factory) -> None:
-    from tailorcv.application.config import Stage
-    from tailorcv.shared.costs import ServiceTier
+    from clearscout.application.config import Stage
+    from clearscout.shared.costs import ServiceTier
 
     class Answer(BaseModel):
         text: str
@@ -164,9 +164,9 @@ def test_a_run_asks_every_stage_for_the_tier_the_client_was_given(client_factory
 
 def _refusing_the_discount(client: Any, refusals: int) -> list[Any]:
     """Refuse the first ``refusals`` flex requests, answer the rest, and return every tier asked."""
-    from tailorcv.infrastructure.providers.base import CallRecord
-    from tailorcv.shared.costs import ServiceTier
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.infrastructure.providers.base import CallRecord
+    from clearscout.shared.costs import ServiceTier
+    from clearscout.shared.errors import CapacityError
 
     scripted = client.provider.complete
     attempted: list[ServiceTier] = []
@@ -185,8 +185,8 @@ def _refusing_the_discount(client: Any, refusals: int) -> list[Any]:
 
 def test_a_refused_discount_waits_and_is_answered_at_the_discounted_tier(client_factory) -> None:
     """A refused flex request bills nothing, so waiting for capacity costs nothing extra."""
-    from tailorcv.application.config import Stage
-    from tailorcv.shared.costs import ServiceTier
+    from clearscout.application.config import Stage
+    from clearscout.shared.costs import ServiceTier
 
     class Answer(BaseModel):
         text: str
@@ -215,8 +215,8 @@ def test_a_discount_refused_on_every_retry_is_answered_at_the_standard_tier_and_
     client_factory,
 ) -> None:
     """Waits that grow give capacity a chance to return before the run pays full rate."""
-    from tailorcv.application.config import Stage
-    from tailorcv.shared.costs import ServiceTier
+    from clearscout.application.config import Stage
+    from clearscout.shared.costs import ServiceTier
 
     class Answer(BaseModel):
         text: str
@@ -237,8 +237,8 @@ def test_a_discount_refused_on_every_retry_is_answered_at_the_standard_tier_and_
 
 def test_clients_refused_together_wait_different_times(client_factory) -> None:
     """Jitter keeps workers refused at the same moment from retrying at the same moment."""
-    from tailorcv.application.config import Stage
-    from tailorcv.shared.costs import ServiceTier
+    from clearscout.application.config import Stage
+    from clearscout.shared.costs import ServiceTier
 
     class Answer(BaseModel):
         text: str
@@ -262,9 +262,9 @@ def test_clients_refused_together_wait_different_times(client_factory) -> None:
 
 def test_a_refusal_at_the_standard_tier_ends_the_run(client_factory) -> None:
     """The standard resend is one attempt, so a provider with no capacity at all stops the run."""
-    from tailorcv.application.config import Stage
-    from tailorcv.shared.costs import ServiceTier
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.application.config import Stage
+    from clearscout.shared.costs import ServiceTier
+    from clearscout.shared.errors import CapacityError
 
     class Answer(BaseModel):
         text: str
@@ -288,9 +288,9 @@ def test_a_refusal_at_the_standard_tier_ends_the_run(client_factory) -> None:
 
 
 def test_a_standard_tier_refusal_is_never_retried(client_factory) -> None:
-    from tailorcv.application.config import Stage
-    from tailorcv.shared.costs import ServiceTier
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.application.config import Stage
+    from clearscout.shared.costs import ServiceTier
+    from clearscout.shared.errors import CapacityError
 
     class Answer(BaseModel):
         text: str
@@ -315,9 +315,9 @@ def test_a_standard_tier_refusal_is_never_retried(client_factory) -> None:
 
 def test_the_ledger_carries_why_a_billed_call_stopped(client_factory) -> None:
     """A recorded call that dropped its finish reason cannot explain its own failure."""
-    from tailorcv.application.config import Stage
-    from tailorcv.infrastructure.providers.base import CallRecord, Finish
-    from tailorcv.infrastructure.providers.plan import RequestPlan
+    from clearscout.application.config import Stage
+    from clearscout.infrastructure.providers.base import CallRecord, Finish
+    from clearscout.infrastructure.providers.plan import RequestPlan
 
     class Answer(BaseModel):
         text: str
@@ -337,8 +337,8 @@ def test_the_ledger_carries_why_a_billed_call_stopped(client_factory) -> None:
 
 def test_a_cache_hit_records_no_finish_reason(client_factory, tmp_path: Path) -> None:
     """No provider spoke, so there is no reason generation stopped to record."""
-    from tailorcv.application.config import Stage
-    from tailorcv.infrastructure.providers.cache import ResponseCache
+    from clearscout.application.config import Stage
+    from clearscout.infrastructure.providers.cache import ResponseCache
 
     class Answer(BaseModel):
         text: str
@@ -361,7 +361,7 @@ def test_a_call_variant_stays_out_of_the_request(client_factory, tmp_path: Path)
     A discriminator that reached the request would change what the provider is
     sent and invalidate every recorded cassette.
     """
-    from tailorcv.application.config import Stage
+    from clearscout.application.config import Stage
 
     class Answer(BaseModel):
         text: str
@@ -382,7 +382,7 @@ def test_each_draw_of_one_request_replays_its_own_cached_answer(
     client_factory, tmp_path: Path
 ) -> None:
     """Draws that shared one entry would overwrite each other and re-bill on every run."""
-    from tailorcv.application.config import Stage
+    from clearscout.application.config import Stage
 
     class Answer(BaseModel):
         text: str
@@ -427,7 +427,7 @@ def test_the_client_keys_on_the_schema_it_actually_sends(client_factory, monkeyp
     through ``json_schema``, which withdraws defaults and shares repeated enums,
     so a key on the Pydantic model's own schema would miss a contract change.
     """
-    from tailorcv.application.config import Stage
+    from clearscout.application.config import Stage
 
     class Answer(BaseModel):
         text: str
@@ -439,7 +439,7 @@ def test_the_client_keys_on_the_schema_it_actually_sends(client_factory, monkeyp
         keys.append(str(kwargs["schema"]))
         return cache_key(**kwargs)
 
-    monkeypatch.setattr("tailorcv.infrastructure.providers.client.cache_key", spy)
+    monkeypatch.setattr("clearscout.infrastructure.providers.client.cache_key", spy)
     client.complete(plan_for(stage=Stage.DRAFT), Answer)
 
     assert keys, "the client did not derive a cache key"
@@ -451,7 +451,7 @@ def test_the_client_keys_on_the_schema_it_actually_sends(client_factory, monkeyp
 def test_cache_write_failure_preserves_billing_and_the_answer(client_factory, monkeypatch):
     from unittest.mock import Mock
 
-    from tailorcv.application.config import Stage
+    from clearscout.application.config import Stage
 
     class Answer(BaseModel):
         text: str
@@ -467,7 +467,7 @@ def test_cache_write_failure_preserves_billing_and_the_answer(client_factory, mo
 
 
 def test_cancellation_after_a_response_blocks_the_next_paid_stage(client_factory):
-    from tailorcv.application.config import Stage
+    from clearscout.application.config import Stage
 
     class Answer(BaseModel):
         text: str
@@ -492,7 +492,7 @@ def test_cancellation_after_a_response_blocks_the_next_paid_stage(client_factory
 
 
 def test_call_history_separates_source_identity_from_package_version(client_factory):
-    from tailorcv.infrastructure.build import BuildIdentity
+    from clearscout.infrastructure.build import BuildIdentity
 
     class Answer(BaseModel):
         text: str
@@ -505,7 +505,7 @@ def test_call_history_separates_source_identity_from_package_version(client_fact
 
 
 def test_cache_hits_preserve_the_original_build_identity(client_factory, tmp_path):
-    from tailorcv.infrastructure.build import BuildIdentity
+    from clearscout.infrastructure.build import BuildIdentity
 
     class Answer(BaseModel):
         text: str
@@ -528,7 +528,7 @@ def test_a_paid_call_carries_the_provider_envelopes_and_a_digest_of_the_answer(c
     """The envelopes are the only record of what was sent and what came back."""
     from dataclasses import replace
 
-    from tailorcv.infrastructure.providers.client import envelope_digest
+    from clearscout.infrastructure.providers.client import envelope_digest
 
     class Answer(BaseModel):
         text: str

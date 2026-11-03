@@ -7,15 +7,15 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.pending import set_pending_markers
-from tailorcv.application.discovery.scan_staging import FOUND_POSTING_REASON
-from tailorcv.application.failures import ConflictError, NotFoundError
-from tailorcv.application.job_search.models import PendingMarkersRequest
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.domain import new_id, utc_now
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.pending import set_pending_markers
+from clearscout.application.discovery.scan_staging import FOUND_POSTING_REASON
+from clearscout.application.failures import ConflictError, NotFoundError
+from clearscout.application.job_search.models import PendingMarkersRequest
+from clearscout.application.tasks import TaskQueueService
+from clearscout.domain import new_id, utc_now
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
     PendingDiscovery,
@@ -122,7 +122,7 @@ def test_resetting_the_pending_queue_forgets_machine_decisions_but_keeps_human_c
         created_at=utc_now(),
         source_id=source_id,
     )
-    from tailorcv.application.tasks.payloads import DiscoveryEvaluateBatchPayload
+    from clearscout.application.tasks.payloads import DiscoveryEvaluateBatchPayload
 
     TaskQueueService(durable_database).enqueue(
         workspace_id=workspace_id,
@@ -425,8 +425,8 @@ def test_reset_keeps_a_pending_row_guarded_by_paid_recovery(
     durable_database: Database,
     status: str,
 ) -> None:
-    from tailorcv.application.tasks.models import PostingRecoveryApprovalManifest
-    from tailorcv.application.tasks.payloads import PostingRecoverBatchPayload
+    from clearscout.application.tasks.models import PostingRecoveryApprovalManifest
+    from clearscout.application.tasks.payloads import PostingRecoverBatchPayload
 
     workspace_id = _workspace(durable_database)
     source_id = _source(

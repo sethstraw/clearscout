@@ -8,13 +8,13 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.infrastructure.web_fetch.board_adapters import (
     BoardApiFetcher,
     identify_board,
     identify_board_url,
 )
-from tailorcv.infrastructure.web_fetch.boards import board_identity
-from tailorcv.infrastructure.web_fetch.policy import RobotsDeniedError
+from clearscout.infrastructure.web_fetch.boards import board_identity
+from clearscout.infrastructure.web_fetch.policy import RobotsDeniedError
 from tests.support.http import policy_client
 
 _BOARD = "https://careers.example-ventures.com/jobs"

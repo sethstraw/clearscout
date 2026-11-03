@@ -55,8 +55,8 @@ describe("OpenAiActualSpendPanel", () => {
 
     expect(await screen.findByText("$6.50")).toBeTruthy();
     expect(screen.getByText("$1.50")).toBeTruthy();
-    expect(screen.getByText("Organization total minus TailorCV recorded cost")).toBeTruthy();
-    expect(screen.getByText(/does not isolate TailorCV accounting errors/)).toBeTruthy();
+    expect(screen.getByText("Organization total minus ClearScout recorded cost")).toBeTruthy();
+    expect(screen.getByText(/does not isolate ClearScout accounting errors/)).toBeTruthy();
     await waitFor(() => expect(posted).toEqual(["/api/v1/billing/openai/reconciliation"]));
   });
 

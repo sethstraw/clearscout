@@ -17,23 +17,23 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from tailorcv.application.config import Settings
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.spend import record_calls
-from tailorcv.application.workspaces.spend_reconciliation import SpendReconciliationService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.delivery.api.dependencies import provide_openai_billing, provide_price_catalog
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.providers.billing import (
+from clearscout.application.config import Settings
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.spend import record_calls
+from clearscout.application.workspaces.spend_reconciliation import SpendReconciliationService
+from clearscout.bootstrap.api import create_app
+from clearscout.delivery.api.dependencies import provide_openai_billing, provide_price_catalog
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.providers.billing import (
     BilledCost,
     OpenAIBillingClient,
     OpenAIBillingError,
 )
-from tailorcv.infrastructure.providers.credentials import (
+from clearscout.infrastructure.providers.credentials import (
     OPENAI_ADMIN_ENV,
     find_admin_key,
 )
-from tailorcv.shared.costs import CallManifest, Ledger, ModelPrice, Usage
+from clearscout.shared.costs import CallManifest, Ledger, ModelPrice, Usage
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import MemoryStore, ScriptedPriceCatalog
 

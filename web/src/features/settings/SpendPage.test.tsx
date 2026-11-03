@@ -20,7 +20,7 @@ const summary = {
 
 describe("SpendPage", () => {
   it("titles the route and reports the selected workspace's spend", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-spend");
+    window.localStorage.setItem("clearscout.workspace", "workspace-spend");
     const requested: string[] = [];
     server.use(
       http.get("*/api/v1/tasks", () => HttpResponse.json([])),

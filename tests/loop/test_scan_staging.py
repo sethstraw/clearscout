@@ -12,29 +12,29 @@ from typing import Any
 import pytest
 from sqlalchemy import event, select
 
-from tailorcv.application.discovery.board_scan import (
+from clearscout.application.discovery.board_scan import (
     DiscoveryRefreshBatchHandler,
     SourceScanService,
 )
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
     pending_discovery_readiness,
 )
-from tailorcv.application.discovery.dispositions import DiscoveryDispositionService
-from tailorcv.application.discovery.hints import PendingDiscoveryHintsService
-from tailorcv.application.discovery.pending import (
+from clearscout.application.discovery.dispositions import DiscoveryDispositionService
+from clearscout.application.discovery.hints import PendingDiscoveryHintsService
+from clearscout.application.discovery.pending import (
     dismissed_pending_discovery_ids,
     reset_pending_queue,
     set_pending_markers,
 )
-from tailorcv.application.discovery.posting_refresh import PostingRefreshService
-from tailorcv.application.discovery.posting_text import (
+from clearscout.application.discovery.posting_refresh import PostingRefreshService
+from clearscout.application.discovery.posting_text import (
     publisher_closing_date,
     publisher_posted_date,
 )
-from tailorcv.application.discovery.relevance_disputes import RelevanceDisputeService
-from tailorcv.application.discovery.scan_staging import (
+from clearscout.application.discovery.relevance_disputes import RelevanceDisputeService
+from clearscout.application.discovery.scan_staging import (
     CAMPAIGN_BOARD_LISTING_REASON,
     CAMPAIGN_FOUND_POSTING_REASON,
     FOUND_POSTING_REASON,
@@ -43,20 +43,20 @@ from tailorcv.application.discovery.scan_staging import (
     queue_absence_checks,
     staged_from_single_posting,
 )
-from tailorcv.application.discovery.source_reading import PostingCheck, SourceListing
-from tailorcv.application.failures import (
+from clearscout.application.discovery.source_reading import PostingCheck, SourceListing
+from clearscout.application.failures import (
     ConflictError,
     NotFoundError,
     PublisherUnverifiedRefreshError,
     ValidationError,
 )
-from tailorcv.application.job_search.models import DispositionApply, DispositionSelection
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.tasks.commands import TaskCommands
-from tailorcv.application.tasks.events import TaskEventLog
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.domain import (
+from clearscout.application.job_search.models import DispositionApply, DispositionSelection
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.tasks.commands import TaskCommands
+from clearscout.application.tasks.events import TaskEventLog
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.domain import (
     PendingDiscoveryReadiness,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
@@ -65,19 +65,19 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.identity import normalize_url, url_sha256
-from tailorcv.domain.records import PostingReadIntent, SourceReadOutcome
-from tailorcv.domain.staged_facts import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.identity import normalize_url, url_sha256
+from clearscout.domain.records import PostingReadIntent, SourceReadOutcome
+from clearscout.domain.staged_facts import (
     FreshnessState,
     ListingIdentityTrust,
     PostedDateGrade,
     PublishedFact,
     StagedListingFacts,
 )
-from tailorcv.infrastructure.artifacts.store import file_uri_path
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.infrastructure.artifacts.store import file_uri_path
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     AuditEvent,
     BackgroundTask,
@@ -90,7 +90,7 @@ from tailorcv.infrastructure.persistence.models import (
     RelevanceReviewDispute,
     SourceScan,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import (
     ScriptedPage,
@@ -1906,7 +1906,7 @@ def test_correcting_an_archived_pending_discovery_raises_conflict(
 def test_correcting_a_pending_with_an_active_evaluation_task_raises_conflict(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.tasks import EvaluationWorkflowPayload, TaskQueueService
+    from clearscout.application.tasks import EvaluationWorkflowPayload, TaskQueueService
 
     workspace_id = scan_workspace(durable_database)
     service = SourceScanService(
@@ -1932,7 +1932,7 @@ def test_correcting_a_pending_with_an_active_evaluation_task_raises_conflict(
 def test_correcting_a_pending_with_an_active_guided_campaign_raises_conflict(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.tasks import TaskQueueService
+    from clearscout.application.tasks import TaskQueueService
 
     workspace_id = scan_workspace(durable_database)
     service = SourceScanService(
@@ -1958,7 +1958,7 @@ def test_correcting_a_pending_with_an_active_guided_campaign_raises_conflict(
 def test_correcting_a_pending_named_in_an_active_evaluate_batch_raises_conflict(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.tasks.payloads import DiscoveryEvaluateBatchPayload
+    from clearscout.application.tasks.payloads import DiscoveryEvaluateBatchPayload
 
     workspace_id = scan_workspace(durable_database)
     service = SourceScanService(
@@ -2005,7 +2005,7 @@ def test_correcting_a_title_writes_a_hint_corrected_audit_event(
         workspace_id, pending_id, "New Title", actor="local_user", correlation_id="corr-2"
     )
 
-    from tailorcv.infrastructure.persistence.models import AuditEvent
+    from clearscout.infrastructure.persistence.models import AuditEvent
 
     with durable_database.session() as session:
         events = list(
@@ -4070,7 +4070,7 @@ _CLOSING_URL = "https://jobs.lever.co/globex/0b6f3c2e-5a41-4d8e-9c7a-2f1e8d4b6a1
 
 
 def _enqueue_evaluation(database: Database, workspace_id: str, pending_id: str) -> None:
-    from tailorcv.application.tasks import EvaluationWorkflowPayload
+    from clearscout.application.tasks import EvaluationWorkflowPayload
 
     TaskQueueService(database).enqueue(
         workspace_id=workspace_id,

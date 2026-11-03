@@ -10,9 +10,9 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import SourceReadOptions
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.application.discovery.source_reading import SourceReadOptions
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 from tests.loop.test_board_mappings_declared_search import _SearchSite
 from tests.support.http import public_resolver
 
@@ -315,7 +315,7 @@ def _public_search_fetcher(
         return httpx.Response(200, request=httpx.Request("POST", url), json=payload(page))
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=answer,
         poster=post,
         resolver=public_resolver,

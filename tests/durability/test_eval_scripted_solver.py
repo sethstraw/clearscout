@@ -9,23 +9,23 @@ from __future__ import annotations
 
 import pytest
 from evals.inspect.scorers.match_classification import scripted_classification_contract
-from evals.inspect.solvers.tailorcv_scripted import tailorcv_scripted_solver
+from evals.inspect.solvers.clearscout_scripted import clearscout_scripted_solver
 from evals.support.inventory import (
     SYNTHETIC_ENTRY_TEXTS,
     synthetic_guardrails,
     synthetic_inventory,
 )
 
-from tailorcv.application.tailoring.stages.context import asserted_text, record_block
-from tailorcv.application.tailoring.stages.jobspec import Dimension
-from tailorcv.application.tailoring.stages.match import (
+from clearscout.application.tailoring.stages.context import asserted_text, record_block
+from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.match import (
     Classification,
     EvidenceMap,
     Match,
     Strength,
 )
-from tailorcv.application.tailoring.stages.match import match as production_match
-from tailorcv.domain import EvidenceStatus, GapClass
+from clearscout.application.tailoring.stages.match import match as production_match
+from clearscout.domain import EvidenceStatus, GapClass
 
 
 def _run(expected: str) -> dict[str, object]:
@@ -37,7 +37,7 @@ def _run(expected: str) -> dict[str, object]:
         "cv_hash": synthetic_inventory().content_hash,
         "metadata": {"scripted_classification": expected},
     }
-    return dict(tailorcv_scripted_solver()(sample))
+    return dict(clearscout_scripted_solver()(sample))
 
 
 @pytest.mark.parametrize("classification", ["DIRECT", "TAILORING_ONLY", "TRANSFERABLE"])
@@ -88,7 +88,7 @@ def test_an_unestablished_scripted_requirement_is_not_credited_as_a_gap(
         )
     )
     monkeypatch.setattr(
-        "evals.inspect.solvers.tailorcv_scripted.match",
+        "evals.inspect.solvers.clearscout_scripted.match",
         lambda *args, **kwargs: unestablished,
     )
     result = _run("GAP")
@@ -118,7 +118,7 @@ def test_scripted_solver_refuses_a_missing_or_unknown_script(metadata: dict[str,
     }
 
     with pytest.raises(ValueError, match="scripted.classification"):
-        tailorcv_scripted_solver()(sample)
+        clearscout_scripted_solver()(sample)
 
 
 def test_synthetic_context_carries_an_assertable_status_fact() -> None:
@@ -174,7 +174,7 @@ def test_scripted_solver_propagates_behavioral_dimension(
         observed.append(spec.requirements[0].dimension)  # type: ignore[attr-defined]
         return production_match(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr("evals.inspect.solvers.tailorcv_scripted.match", observe_dimension)
+    monkeypatch.setattr("evals.inspect.solvers.clearscout_scripted.match", observe_dimension)
     sample = {
         "input": "Collaborate across teams.",
         "dimension": "behavioral",
@@ -182,7 +182,7 @@ def test_scripted_solver_propagates_behavioral_dimension(
         "metadata": {"scripted_classification": "GAP"},
     }
 
-    tailorcv_scripted_solver()(sample)
+    clearscout_scripted_solver()(sample)
 
     assert observed == [Dimension.BEHAVIORAL]
 
@@ -205,7 +205,7 @@ def test_scripted_solver_rejects_invalid_sample_identity(
     }
 
     with pytest.raises(ValueError, match=message):
-        tailorcv_scripted_solver()(sample)
+        clearscout_scripted_solver()(sample)
 
 
 def _multi_job_spec() -> dict[str, object]:
@@ -240,8 +240,8 @@ def test_multi_requirement_sample_matches_the_whole_spec_in_one_call(
         observed.append(args[2])
         return production_match(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr("evals.inspect.solvers.tailorcv_scripted.match", observe)
-    output = tailorcv_scripted_solver()(
+    monkeypatch.setattr("evals.inspect.solvers.clearscout_scripted.match", observe)
+    output = clearscout_scripted_solver()(
         {
             "id": "multi",
             "cv_hash": synthetic_inventory().content_hash,
@@ -320,4 +320,4 @@ def test_multi_requirement_sample_refuses_an_ambiguous_contract(
     mutate(sample)  # type: ignore[operator]
 
     with pytest.raises(ValueError, match=message):
-        tailorcv_scripted_solver()(sample)
+        clearscout_scripted_solver()(sample)

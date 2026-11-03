@@ -6,8 +6,8 @@ import pytest
 from hypothesis import example, given
 from hypothesis import strategies as st
 
-from tailorcv.shared import text
-from tailorcv.shared.text import sanitize, sanitize_with_offsets
+from clearscout.shared import text
+from clearscout.shared.text import sanitize, sanitize_with_offsets
 
 
 def test_smart_quotes_fold_to_straight() -> None:

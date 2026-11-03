@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.domain.requirements import is_boilerplate_requirement
+from clearscout.domain.requirements import is_boilerplate_requirement
 
 BOILERPLATE = (
     "PUBLIC BURDEN STATEMENT: According to the Paperwork Reduction Act of 1995"

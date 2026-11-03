@@ -9,12 +9,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
     JobPosting,
@@ -564,7 +564,7 @@ def test_personal_closing_date_edits_preserve_publisher_evidence_and_manual_revi
     seeded = workspace_with_committed_evaluation(database, tmp_path, "closing-edit")
     workspace_id, job_id = seeded.workspace_id, seeded.detail.job_posting_id
     moment = datetime(2026, 10, 8, 12, tzinfo=UTC)
-    monkeypatch.setattr("tailorcv.application.job_search.commands.utc_now", lambda: moment)
+    monkeypatch.setattr("clearscout.application.job_search.commands.utc_now", lambda: moment)
     with TestClient(
         create_app(durable_database_url, tmp_path / "artifacts"), base_url="http://localhost"
     ) as client:
@@ -678,7 +678,7 @@ def test_personal_closing_date_refuses_missing_or_non_date_values(
             json=body,
         )
     assert response.status_code == 422, response.text
-    assert response.json()["type"] == "urn:tailorcv:problem:request-validation"
+    assert response.json()["type"] == "urn:clearscout:problem:request-validation"
     with database.session() as session:
         job = session.get(JobPosting, seeded.detail.job_posting_id)
         assert job is not None and job.closing_date_override_updated_at is None

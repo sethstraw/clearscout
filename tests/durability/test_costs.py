@@ -8,12 +8,12 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.spend import record_calls
-from tailorcv.bootstrap.logging import StructuredLogFormatter
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.costs import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.spend import record_calls
+from clearscout.bootstrap.logging import StructuredLogFormatter
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.costs import (
     CallManifest,
     Ledger,
     ModelPrice,
@@ -30,9 +30,9 @@ def test_every_call_of_a_paid_run_is_filed_with_its_cost_record(
     from pydantic import BaseModel
     from sqlalchemy import select
 
-    from tailorcv.application.config import Stage
-    from tailorcv.application.discovery.paid_task import billed_run
-    from tailorcv.infrastructure.persistence.models import CostRecord, ModelCall
+    from clearscout.application.config import Stage
+    from clearscout.application.discovery.paid_task import billed_run
+    from clearscout.infrastructure.persistence.models import CostRecord, ModelCall
     from tests.support.doubles import ScriptedProvider
     from tests.support.plans import plan_for
 
@@ -77,8 +77,8 @@ def test_every_call_of_a_paid_run_is_filed_with_its_cost_record(
 def test_long_context_prices_all_input_classes_and_output_at_the_published_rates(
     tier: str, input_tokens: int
 ) -> None:
-    from tailorcv.shared.costs import ServiceTier
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs import ServiceTier
+    from clearscout.shared.costs.prices import table
 
     ledger = Ledger(prices=table())
     usage = Usage(
@@ -100,7 +100,7 @@ def test_long_context_prices_all_input_classes_and_output_at_the_published_rates
 
 
 def test_price_overrides_keep_the_models_long_context_policy() -> None:
-    from tailorcv.shared.costs.prices import PriceOverride, table
+    from clearscout.shared.costs.prices import PriceOverride, table
 
     prices = table({"gpt-5.6-terra": PriceOverride(input=4, output=24)})
     assert prices["gpt-5.6-terra"].cost(
@@ -110,7 +110,7 @@ def test_price_overrides_keep_the_models_long_context_policy() -> None:
 
 def test_a_partial_price_override_leaves_the_rates_it_does_not_mention() -> None:
     """A user who retypes the token rates has not said cached reads cost that much."""
-    from tailorcv.shared.costs.prices import PriceOverride, table
+    from clearscout.shared.costs.prices import PriceOverride, table
 
     shipped = table()["claude-opus-5"]
     retyped = table({"claude-opus-5": PriceOverride(input=shipped.input, output=shipped.output)})[
@@ -127,7 +127,7 @@ def test_a_partial_price_override_leaves_the_rates_it_does_not_mention() -> None
 
 def test_a_call_priced_from_a_users_own_rate_records_that_the_rate_was_an_override() -> None:
     """A record reading "configured" credits the catalog with a number it never set."""
-    from tailorcv.shared.costs.prices import PriceOverride, ledger_for, snapshot_label
+    from clearscout.shared.costs.prices import PriceOverride, ledger_for, snapshot_label
 
     ledger = ledger_for({"claude-opus-5": PriceOverride(input=1.0, output=2.0)})
     million = Usage(input_tokens=1_000_000)
@@ -144,7 +144,7 @@ def test_a_call_priced_from_a_users_own_rate_records_that_the_rate_was_an_overri
 
 def test_a_dated_snapshot_of_an_overridden_model_is_recorded_as_an_override_too() -> None:
     """The user set the base model's rate, and the dated name bills from it."""
-    from tailorcv.shared.costs.prices import PriceOverride, ledger_for
+    from clearscout.shared.costs.prices import PriceOverride, ledger_for
 
     ledger = ledger_for({"claude-opus-5": PriceOverride(input=1.0, output=2.0)})
 
@@ -162,7 +162,7 @@ def test_a_dated_snapshot_of_an_overridden_model_is_recorded_as_an_override_too(
 
 def test_a_dated_served_snapshot_prices_from_its_base_model() -> None:
     """The provider answers with a dated name for the model that was pinned."""
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     prices = table()
     usage = Usage(input_tokens=1000, output_tokens=1000)
@@ -180,7 +180,7 @@ def test_the_dated_snapshot_openai_answers_an_alias_with_prices_from_that_alias(
 
     The models listing carries both names, so the snapshot prices from the alias.
     """
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     prices = table()
     usage = Usage(input_tokens=1000, output_tokens=1000)
@@ -201,7 +201,7 @@ def test_the_dated_snapshot_openai_answers_an_alias_with_prices_from_that_alias(
 
 def test_a_sibling_model_name_is_not_priced_at_the_base_models_rate() -> None:
     """The catalog resolves claude-opus-5-mini onto claude-opus-5, which never ran."""
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     entry = Ledger(prices=table()).record(
         CallManifest("draft", "claude-opus-5-mini", Usage(input_tokens=1000, output_tokens=1000))
@@ -213,7 +213,7 @@ def test_a_sibling_model_name_is_not_priced_at_the_base_models_rate() -> None:
 
 def test_a_substitution_to_another_model_is_left_unpriced() -> None:
     """A redirect to another tier must not be priced at the tier that answered."""
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     entry = Ledger(prices=table()).record(
         CallManifest(
@@ -243,7 +243,7 @@ def test_the_recorded_reason_says_why_a_call_carries_no_price(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A page that prints "configured" beside a blank cost states something untrue."""
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -301,7 +301,7 @@ def test_bundled_prices_preserve_catalog_cache_and_search_costs(
     from genai_prices import Usage as CatalogUsage
     from genai_prices import calc_price
 
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     usage = Usage(
         input_tokens=input_tokens - 300,
@@ -324,7 +324,7 @@ def test_bundled_prices_preserve_catalog_cache_and_search_costs(
 
 
 def test_sol_uses_current_rates_without_accepting_catalog_prefix_matches() -> None:
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     prices = table()
     assert prices["gpt-5.6-sol"].cost(
@@ -349,7 +349,7 @@ def test_a_newly_shipped_model_bills_at_its_published_rates(
     model: str, rates: tuple[float, float, float, float], threshold: int | None
 ) -> None:
     """Rates per million tokens: input, output, cache read, five-minute cache write."""
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     price = table()[model]
 
@@ -367,7 +367,7 @@ def test_a_newly_shipped_model_bills_at_its_published_rates(
 )
 def test_every_published_snapshot_form_prices_from_its_base_model(served: str) -> None:
     """Providers date a snapshot three ways, including Google Cloud's "@" form."""
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     entry = Ledger(prices=table()).record(
         CallManifest(
@@ -397,7 +397,7 @@ def test_a_suffix_that_is_not_a_published_snapshot_date_is_left_unpriced(served:
     The catalog resolves all four onto claude-sonnet-5, and a sibling model is
     named the same ways, so none of them may be billed at that model's rate.
     """
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     entry = Ledger(prices=table()).record(
         CallManifest(
@@ -435,7 +435,7 @@ def test_a_suffix_that_is_not_a_published_snapshot_date_is_left_unpriced(served:
 def test_the_pinned_catalog_resolves_these_names_onto_these_models(
     provider: str, name: str, resolves_to: str
 ) -> None:
-    """Pins a third-party convention: genai-prices decides these, not TailorCV.
+    """Pins a third-party convention: genai-prices decides these, not ClearScout.
 
     A failure says the catalog changed, not that the application broke.
     """
@@ -477,7 +477,7 @@ def test_the_pinned_catalog_refuses_these_names_outright(provider: str, name: st
 )
 def test_a_name_the_catalog_widens_onto_a_shipped_model_is_still_unpriced(name: str) -> None:
     """The catalog resolving a name is never on its own permission to bill it."""
-    from tailorcv.shared.costs.prices import priced_model, table
+    from clearscout.shared.costs.prices import priced_model, table
 
     assert priced_model(table(), name) is None
 
@@ -495,7 +495,7 @@ def test_current_prices_identifies_the_rate_source_and_the_bundled_table_date(
     source_kind: str,
     table_date: date | None,
 ) -> None:
-    from tailorcv.shared.costs.prices import current_prices, snapshot_label, table
+    from clearscout.shared.costs.prices import current_prices, snapshot_label, table
 
     snapshot = current_prices()
     provenance = snapshot.provenance[model]
@@ -515,7 +515,7 @@ def test_the_bundled_table_date_is_the_pinned_genai_prices_release_date() -> Non
     import tomllib
     from pathlib import Path
 
-    from tailorcv.shared.costs.prices import BUNDLED_TABLE_DATE, BUNDLED_TABLE_VERSION
+    from clearscout.shared.costs.prices import BUNDLED_TABLE_DATE, BUNDLED_TABLE_VERSION
 
     lock = tomllib.loads((Path(__file__).parents[2] / "uv.lock").read_text())
     (pinned,) = [package for package in lock["package"] if package["name"] == "genai-prices"]
@@ -525,7 +525,7 @@ def test_the_bundled_table_date_is_the_pinned_genai_prices_release_date() -> Non
 
 
 def test_current_prices_keeps_partial_override_rates_and_their_base_source() -> None:
-    from tailorcv.shared.costs.prices import PriceOverride, current_prices
+    from clearscout.shared.costs.prices import PriceOverride, current_prices
 
     original = current_prices()
     snapshot = current_prices({"gpt-5.6-terra": PriceOverride(input=4, output=24)})
@@ -568,13 +568,13 @@ def test_current_prices_resolves_only_models_from_the_matching_provider(
     provider: str,
     expected: str | None,
 ) -> None:
-    from tailorcv.shared.costs.prices import current_prices
+    from clearscout.shared.costs.prices import current_prices
 
     assert current_prices().priced_model(model, provider=provider) == expected
 
 
 def test_an_unknown_model_can_use_its_configured_price_without_claiming_a_catalog_source() -> None:
-    from tailorcv.shared.costs.prices import PriceOverride, current_prices
+    from clearscout.shared.costs.prices import PriceOverride, current_prices
 
     snapshot = current_prices({"unknown-model": PriceOverride(input=7, output=9)})
     provenance = snapshot.provenance["unknown-model"]
@@ -593,7 +593,7 @@ def test_a_refreshed_current_price_names_the_accepted_source_and_fetch_date(
 ) -> None:
     from datetime import UTC, datetime
 
-    from tailorcv.shared.costs.prices import current_prices, refresh_prices
+    from clearscout.shared.costs.prices import current_prices, refresh_prices
     from tests.support.doubles import ScriptedPriceCatalog
 
     catalog = ScriptedPriceCatalog(rates={"gpt-5.6-terra": 9.0})
@@ -626,7 +626,7 @@ def test_a_failed_refresh_keeps_current_prices_and_their_provenance(
     refreshable_prices: None,
     failure: str,
 ) -> None:
-    from tailorcv.shared.costs.prices import current_prices, refresh_prices
+    from clearscout.shared.costs.prices import current_prices, refresh_prices
     from tests.support.doubles import ScriptedPriceCatalog
 
     assert refresh_prices(ScriptedPriceCatalog(rates={"gpt-5.6-terra": 9})).available
@@ -649,7 +649,7 @@ def test_a_failed_refresh_keeps_current_prices_and_their_provenance(
 def test_a_dropped_model_keeps_the_source_of_its_retained_rate(
     refreshable_prices: None,
 ) -> None:
-    from tailorcv.shared.costs.prices import current_prices, refresh_prices
+    from clearscout.shared.costs.prices import current_prices, refresh_prices
     from tests.support.doubles import ScriptedPriceCatalog
 
     before = current_prices()
@@ -666,7 +666,7 @@ def test_a_dropped_model_keeps_the_source_of_its_retained_rate(
 def test_a_current_price_snapshot_keeps_alias_resolution_when_the_catalog_changes(
     refreshable_prices: None,
 ) -> None:
-    from tailorcv.shared.costs.prices import current_prices, refresh_prices
+    from clearscout.shared.costs.prices import current_prices, refresh_prices
     from tests.support.doubles import ScriptedPriceCatalog
 
     before = current_prices()
@@ -682,7 +682,7 @@ def test_a_current_price_snapshot_keeps_alias_resolution_when_the_catalog_change
 def test_a_price_refresh_reports_the_rates_that_moved_and_the_snapshot_now_in_force(
     refreshable_prices: None,
 ) -> None:
-    from tailorcv.shared.costs.prices import refresh_prices, snapshot_label, table
+    from clearscout.shared.costs.prices import refresh_prices, snapshot_label, table
     from tests.support.doubles import ScriptedPriceCatalog
 
     before = snapshot_label()
@@ -709,7 +709,7 @@ def test_a_refresh_that_cannot_read_the_prices_leaves_the_previous_ones_in_force
     refreshable_prices: None,
 ) -> None:
     """No network, a timeout, and bad data all arrive here as a failed fetch."""
-    from tailorcv.shared.costs.prices import refresh_prices, snapshot_label, table
+    from clearscout.shared.costs.prices import refresh_prices, snapshot_label, table
     from tests.support.doubles import ScriptedPriceCatalog
 
     shipped = table()["gpt-5.6-terra"]
@@ -729,7 +729,7 @@ def test_prices_that_install_but_cannot_be_read_are_put_back(
     refreshable_prices: None,
 ) -> None:
     """A payload that validates and then breaks pricing must not stay installed."""
-    from tailorcv.shared.costs.prices import (
+    from clearscout.shared.costs.prices import (
         PRICES,
         priced_model,
         refresh_prices,
@@ -754,7 +754,7 @@ def test_a_ledger_prices_and_labels_from_the_same_data_across_a_refresh(
     refreshable_prices: None,
 ) -> None:
     """The snapshot on a record names the data that produced its amount."""
-    from tailorcv.shared.costs.prices import ledger_for, refresh_prices, snapshot_label
+    from clearscout.shared.costs.prices import ledger_for, refresh_prices, snapshot_label
     from tests.support.doubles import ScriptedPriceCatalog
 
     ledger = ledger_for()
@@ -772,7 +772,7 @@ def test_a_ledger_prices_and_labels_from_the_same_data_across_a_refresh(
 def test_a_price_source_that_published_nothing_reads_differently_from_a_failure(
     refreshable_prices: None,
 ) -> None:
-    from tailorcv.shared.costs.prices import refresh_prices, table
+    from clearscout.shared.costs.prices import refresh_prices, table
     from tests.support.doubles import ScriptedPriceCatalog
 
     shipped = table()["gpt-5.6-terra"]
@@ -787,7 +787,7 @@ def test_a_price_source_that_published_nothing_reads_differently_from_a_failure(
 def test_a_refresh_names_a_model_the_prices_dropped_rather_than_unpricing_it(
     refreshable_prices: None,
 ) -> None:
-    from tailorcv.shared.costs.prices import refresh_prices, table
+    from clearscout.shared.costs.prices import refresh_prices, table
     from tests.support.doubles import ScriptedPriceCatalog
 
     shipped = table()["gpt-5.6-luna"]
@@ -803,7 +803,7 @@ def test_a_refresh_prices_no_model_the_application_could_not_bill_before(
     refreshable_prices: None,
 ) -> None:
     """Refreshed rates for a closed set of models, not a wider one."""
-    from tailorcv.shared.costs.prices import SHIPPED_MODELS, refresh_prices, table
+    from clearscout.shared.costs.prices import SHIPPED_MODELS, refresh_prices, table
     from tests.support.doubles import ScriptedPriceCatalog
 
     refresh_prices(ScriptedPriceCatalog(rates={"gpt-5.6-terra": 9.0}))
@@ -815,8 +815,8 @@ def test_a_recorded_cost_names_the_price_data_that_produced_it(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A refresh moves the rates, so a past amount is only attributable with its source."""
-    from tailorcv.application.workspaces.spend import SpendService
-    from tailorcv.shared.costs.prices import snapshot_label, table
+    from clearscout.application.workspaces.spend import SpendService
+    from clearscout.shared.costs.prices import snapshot_label, table
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -850,7 +850,7 @@ def test_every_billed_token_class_appears_in_the_summary() -> None:
     Cache writes are charged at the write rate, so a summary that omits them
     prints numbers that account for only part of the charge.
     """
-    from tailorcv.shared.costs import CallManifest, Ledger, ModelPrice, Usage
+    from clearscout.shared.costs import CallManifest, Ledger, ModelPrice, Usage
 
     ledger = Ledger(
         prices={"m": ModelPrice(input=2.0, output=12.0, cache_read=0.2, cache_write=2.5)}
@@ -883,7 +883,7 @@ def test_the_controls_a_call_ran_under_survive_into_the_workspace_record(
     """A control recorded in the ledger and dropped here is unmeasurable later."""
     from sqlalchemy import select
 
-    from tailorcv.infrastructure.persistence.models import ModelCall
+    from clearscout.infrastructure.persistence.models import ModelCall
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -952,7 +952,7 @@ def test_recorded_model_calls_emit_privacy_safe_cost_telemetry(
     )
 
     with (
-        caplog.at_level(logging.INFO, logger="tailorcv.application.workspaces.spend"),
+        caplog.at_level(logging.INFO, logger="clearscout.application.workspaces.spend"),
         durable_database.session() as session,
     ):
         record_calls(
@@ -995,7 +995,7 @@ def _paid_run(
     cached: bool = False,
 ) -> str:
     """Leave the task row and cost records one finished paid run leaves behind."""
-    from tailorcv.infrastructure.persistence.models import BackgroundTask
+    from clearscout.infrastructure.persistence.models import BackgroundTask
 
     prices = {model: ModelPrice(input=1_000_000.0, output=0.0)} if priced else {}
     ledger = Ledger(prices=prices)
@@ -1031,9 +1031,9 @@ def _paid_run(
 def test_task_billing_distinguishes_no_calls_priced_and_unpriced_runs(
     durable_database: Database, tmp_path: Path
 ) -> None:
-    from tailorcv.application.failures import NotFoundError
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.failures import NotFoundError
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1103,7 +1103,7 @@ def test_task_billing_contract_rejects_inconsistent_states(
 ) -> None:
     from pydantic import ValidationError
 
-    from tailorcv.application.tasks import TaskBillingResponse
+    from clearscout.application.tasks import TaskBillingResponse
 
     with pytest.raises(ValidationError):
         TaskBillingResponse.model_validate(
@@ -1121,7 +1121,7 @@ def test_a_kind_of_run_nobody_has_made_is_listed_with_nothing_measured(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """Every paid kind is listed whether or not it has been run, so the blanks show."""
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1174,7 +1174,7 @@ def test_a_review_is_priced_per_model_call_and_an_unpriced_run_is_counted_not_av
     """
     from decimal import Decimal
 
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1218,7 +1218,7 @@ def test_a_wholly_replayed_run_measures_nothing_rather_than_zero(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A run served from the response cache did not do the work, so it costs nothing to report."""
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1243,7 +1243,7 @@ def test_a_median_is_drawn_from_the_runs_that_paid_a_provider(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A replayed zero beside real runs drags down the figure a paid run is approved against."""
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1270,7 +1270,7 @@ def test_a_wholly_replayed_run_is_counted_rather_than_dropped_without_a_reason(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A run left out of the sample with no count shows neither the run nor why."""
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1298,7 +1298,7 @@ def test_a_rate_can_be_read_for_one_provider_and_model_rather_than_the_whole_wor
     """A model priced differently would carry its rate into an estimate for another."""
     from decimal import Decimal
 
-    from tailorcv.application.workspaces.spend import per_unit_costs
+    from clearscout.application.workspaces.spend import per_unit_costs
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1322,7 +1322,7 @@ def test_a_run_that_never_completed_is_left_out_of_the_per_unit_sample(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A canceled or failed run spent what it spent on work it did not finish."""
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1348,7 +1348,7 @@ def test_each_paid_kind_is_divided_by_the_work_its_own_run_recorded(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """The unit of a run differs by kind, so each kind reads its own count."""
-    from tailorcv.application.workspaces.spend import SpendService
+    from clearscout.application.workspaces.spend import SpendService
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1427,9 +1427,9 @@ def test_a_missed_call_and_its_replay_both_record_the_key_that_names_their_answe
     from pydantic import BaseModel
     from sqlalchemy import select
 
-    from tailorcv.application.config import Stage
-    from tailorcv.infrastructure.persistence.models import ModelCall
-    from tailorcv.infrastructure.providers.cache import ResponseCache
+    from clearscout.application.config import Stage
+    from clearscout.infrastructure.persistence.models import ModelCall
+    from clearscout.infrastructure.providers.cache import ResponseCache
     from tests.support.plans import plan_for
 
     class Answer(BaseModel):
@@ -1470,8 +1470,8 @@ def test_a_response_envelope_is_stored_beside_its_call_under_a_digest_that_names
     """A run keeps the envelope itself and a digest that tells two answers apart."""
     from sqlalchemy import select
 
-    from tailorcv.infrastructure.persistence.models import ModelCall, ModelCallEnvelope
-    from tailorcv.infrastructure.providers.client import envelope_digest
+    from clearscout.infrastructure.persistence.models import ModelCall, ModelCallEnvelope
+    from clearscout.infrastructure.providers.client import envelope_digest
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -1521,9 +1521,9 @@ def test_the_response_cache_archive_rescues_answers_it_cannot_attribute_to_a_cal
     """The cache overwrites itself on every rerun, so a copy is the only way to keep one."""
     from sqlalchemy import select
 
-    from tailorcv.application.workspaces.spend import archive_response_cache
-    from tailorcv.infrastructure.persistence.models import ResponseCacheArchive
-    from tailorcv.infrastructure.providers.cache import ResponseCache
+    from clearscout.application.workspaces.spend import archive_response_cache
+    from clearscout.infrastructure.persistence.models import ResponseCacheArchive
+    from clearscout.infrastructure.providers.cache import ResponseCache
 
     directory = tmp_path / "responses"
     with ResponseCache(enabled=True, directory=directory) as cache:
@@ -1558,8 +1558,8 @@ def test_the_response_cache_archive_reads_a_file_written_before_source_identity_
 
     from sqlalchemy import select
 
-    from tailorcv.application.workspaces.spend import archive_response_cache
-    from tailorcv.infrastructure.persistence.models import ResponseCacheArchive
+    from clearscout.application.workspaces.spend import archive_response_cache
+    from clearscout.infrastructure.persistence.models import ResponseCacheArchive
 
     directory = tmp_path / "responses"
     directory.mkdir()
@@ -1586,9 +1586,9 @@ def test_the_response_cache_archive_rescues_an_answer_still_only_in_the_write_ah
     """A rescue runs against a cache nobody has checkpointed, which is every live one."""
     from sqlalchemy import select
 
-    from tailorcv.application.workspaces.spend import archive_response_cache
-    from tailorcv.infrastructure.persistence.models import ResponseCacheArchive
-    from tailorcv.infrastructure.providers.cache import ResponseCache
+    from clearscout.application.workspaces.spend import archive_response_cache
+    from clearscout.infrastructure.persistence.models import ResponseCacheArchive
+    from clearscout.infrastructure.providers.cache import ResponseCache
 
     directory = tmp_path / "responses"
     with ResponseCache(enabled=True, directory=directory) as holder:
@@ -1612,9 +1612,9 @@ def test_the_archive_cache_command_rescues_the_cached_answers_and_says_how_many(
     from sqlalchemy import select
     from typer.testing import CliRunner
 
-    from tailorcv.bootstrap.cli import app
-    from tailorcv.infrastructure.persistence.models import ResponseCacheArchive
-    from tailorcv.infrastructure.providers.cache import ResponseCache
+    from clearscout.bootstrap.cli import app
+    from clearscout.infrastructure.persistence.models import ResponseCacheArchive
+    from clearscout.infrastructure.providers.cache import ResponseCache
 
     directory = tmp_path / "responses"
     with ResponseCache(enabled=True, directory=directory) as cache:
@@ -1652,9 +1652,9 @@ def test_running_the_archive_cache_command_again_adds_nothing(
     from sqlalchemy import select
     from typer.testing import CliRunner
 
-    from tailorcv.bootstrap.cli import app
-    from tailorcv.infrastructure.persistence.models import ResponseCacheArchive
-    from tailorcv.infrastructure.providers.cache import ResponseCache
+    from clearscout.bootstrap.cli import app
+    from clearscout.infrastructure.persistence.models import ResponseCacheArchive
+    from clearscout.infrastructure.providers.cache import ResponseCache
 
     directory = tmp_path / "responses"
     with ResponseCache(enabled=True, directory=directory) as cache:
@@ -1685,7 +1685,7 @@ def test_the_archive_cache_command_reports_zero_for_a_cache_that_holds_nothing(
 ) -> None:
     from typer.testing import CliRunner
 
-    from tailorcv.bootstrap.cli import app
+    from clearscout.bootstrap.cli import app
 
     directory = tmp_path / "responses"
     if present:

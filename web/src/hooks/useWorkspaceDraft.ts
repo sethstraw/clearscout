@@ -24,7 +24,7 @@ function readDraft<T>(key: string): SavedDraft<T> | null {
 
 /** Keep unsaved workspace forms and their original concurrency version in this tab. */
 export function useWorkspaceDraft<T>(workspaceId: string, form: string, version: number) {
-  const key = `tailorcv.draft.v1.${workspaceId}.${form}`;
+  const key = `clearscout.draft.v1.${workspaceId}.${form}`;
   const [drafts, setDrafts] = useState<Record<string, SavedDraft<T> | null>>({});
   const [storageError, setStorageError] = useState(false);
   const edits = key in drafts ? (drafts[key] ?? null) : readDraft<T>(key);

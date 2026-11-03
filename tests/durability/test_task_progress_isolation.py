@@ -11,20 +11,20 @@ from collections.abc import Callable
 
 import pytest
 
-from tailorcv.application.tasks import (
+from clearscout.application.tasks import (
     BatchStepContext,
     ShieldedTaskContext,
     TaskContext,
     TaskQueueService,
 )
-from tailorcv.application.tasks.models import ClaimedTask
-from tailorcv.bootstrap.worker import (
+from clearscout.application.tasks.models import ClaimedTask
+from clearscout.bootstrap.worker import (
     LeaseRenewalError,
     TaskCancelledError,
     _LeaseKeeper,
     _WorkerTaskContext,
 )
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.scenarios import scan_workspace as _workspace
 from tests.support.scenarios import state_target_titles
 

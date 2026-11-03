@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.domain.arrangement_grammar import attendance_statement, remote_offer_statement
-from tailorcv.domain.staged_facts import FreshnessState, PublishedFact
-from tailorcv.infrastructure.web_fetch.board_mappings import BOARD_DECLARATIONS
-from tailorcv.infrastructure.web_fetch.listing_facts import (
+from clearscout.domain.arrangement_grammar import attendance_statement, remote_offer_statement
+from clearscout.domain.staged_facts import FreshnessState, PublishedFact
+from clearscout.infrastructure.web_fetch.board_mappings import BOARD_DECLARATIONS
+from clearscout.infrastructure.web_fetch.listing_facts import (
     EXHAUSTIVE_LOCATION_PROVIDERS,
     NON_EXHAUSTIVE_LOCATION_PROVIDERS,
     exhaustive_location_provider,
@@ -21,9 +21,9 @@ from tailorcv.infrastructure.web_fetch.listing_facts import (
     market_count,
     published_listing_facts,
 )
-from tailorcv.shared.layout import plain_layout
+from clearscout.shared.layout import plain_layout
 
-SRC_ROOT = Path(__file__).resolve().parents[2] / "src" / "tailorcv"
+SRC_ROOT = Path(__file__).resolve().parents[2] / "src" / "clearscout"
 
 
 def _provenance_literals() -> set[str]:

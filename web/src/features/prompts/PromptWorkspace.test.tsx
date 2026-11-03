@@ -48,7 +48,7 @@ function detailFor(key: string): PromptDetail {
 /** Every prompt read the workspace makes, and the keys it opened. */
 function installPrompts(): string[] {
   const opened: string[] = [];
-  window.localStorage.setItem("tailorcv.workspace", "workspace-prompts");
+  window.localStorage.setItem("clearscout.workspace", "workspace-prompts");
   server.use(
     http.get("*/api/v1/prompts/:key/versions", () => HttpResponse.json([])),
     http.get("*/api/v1/prompts/:key", ({ params }) => {

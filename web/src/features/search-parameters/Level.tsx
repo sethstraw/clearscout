@@ -144,7 +144,7 @@ export function Level({
               </span>
             </summary>
             <TokenField
-              hint="Guides discovery and evaluation. TailorCV only treats it as a hard rule when the posting states its payroll arrangement."
+              hint="Guides discovery and evaluation. ClearScout only treats it as a hard rule when the posting states its payroll arrangement."
               label="Payroll arrangements you can accept"
               onChange={(values) =>
                 patch({ employment: { ...draft.employment, payroll_arrangements: values } })
@@ -399,7 +399,7 @@ function EmploymentTypes({
         </ul>
       )}
       <small className="field-note">
-        Selecting more than one widens the posting labels TailorCV will accept as a match.
+        Selecting more than one widens the posting labels ClearScout will accept as a match.
       </small>
     </div>
   );

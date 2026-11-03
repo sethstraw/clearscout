@@ -17,15 +17,11 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from evals.case import CVS, resolve_evidence
-from evals.support.client import build_scripted_client
-from evals.support.jobspec import canonical_job_spec, numbered_job_spec
-from evals.support.scripted_provider import ScriptedProvider
-from tailorcv.application.config import Settings
-from tailorcv.application.master_cv.cv import CvInventory, parse_cv
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.pipeline.rewrite import fitted_and_checked
-from tailorcv.application.tailoring.stages.draft import (
+from clearscout.application.config import Settings
+from clearscout.application.master_cv.cv import CvInventory, parse_cv
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.pipeline.rewrite import fitted_and_checked
+from clearscout.application.tailoring.stages.draft import (
     CoverLetter,
     Fitted,
     ResumeDraft,
@@ -34,10 +30,15 @@ from tailorcv.application.tailoring.stages.draft import (
     fit,
     skills_are_headed,
 )
-from tailorcv.application.tailoring.stages.jobspec import JobSpec
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Strength, match
-from tailorcv.application.tailoring.stages.select import Plan, build_plan
-from tailorcv.application.tailoring.stages.verify import (
+from clearscout.application.tailoring.stages.jobspec import JobSpec
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Strength,
+    match,
+)
+from clearscout.application.tailoring.stages.select import Plan, build_plan
+from clearscout.application.tailoring.stages.verify import (
     CRITIC_CHECK,
     LETTER_CRITIC,
     CriticVerdict,
@@ -45,7 +46,11 @@ from tailorcv.application.tailoring.stages.verify import (
     critic_finding,
     line_citations,
 )
-from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
+from clearscout.infrastructure.web_fetch.company_research import ResearchSource
+from evals.case import CVS, resolve_evidence
+from evals.support.client import build_scripted_client
+from evals.support.jobspec import canonical_job_spec, numbered_job_spec
+from evals.support.scripted_provider import ScriptedProvider
 
 # Recency scoring reads the calendar, so a fixed date keeps two runs of one sample identical.
 PLANNING_DATE = date(2026, 6, 1)

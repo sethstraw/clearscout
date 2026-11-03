@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.documents.rendered_text import rendered_text
+from clearscout.application.documents.rendered_text import rendered_text
 
 SCRIPT = "<p>Lead the platform.</p><script>alert('x')</script><p>Remote.</p>"
 

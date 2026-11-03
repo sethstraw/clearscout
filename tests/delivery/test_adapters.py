@@ -13,7 +13,7 @@ import pytest
 from evals.support.inventory import synthetic_inventory
 from pydantic import BaseModel
 
-from tailorcv.application.config import (
+from clearscout.application.config import (
     FLEX_TIMEOUT_FLOOR,
     Effort,
     ImageDetail,
@@ -21,18 +21,18 @@ from tailorcv.application.config import (
     Settings,
     Verbosity,
 )
-from tailorcv.application.discovery.relevance_review import review_plan
-from tailorcv.application.prompts import kernel
-from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
-from tailorcv.infrastructure.providers.openai import OpenAIProvider
-from tailorcv.infrastructure.providers.plan import (
+from clearscout.application.discovery.relevance_review import review_plan
+from clearscout.application.prompts import kernel
+from clearscout.infrastructure.providers.anthropic import AnthropicProvider
+from clearscout.infrastructure.providers.openai import OpenAIProvider
+from clearscout.infrastructure.providers.plan import (
     Image,
     SearchDepth,
     SearchLocation,
     SearchPolicy,
 )
-from tailorcv.shared.costs import ServiceTier
-from tailorcv.shared.errors import AuthError, ConfigError, ProviderError
+from clearscout.shared.costs import ServiceTier
+from clearscout.shared.errors import AuthError, ConfigError, ProviderError
 from tests.support.plans import plan_for
 
 
@@ -202,7 +202,7 @@ class FakeOpenAI:
 
     def _parse(self, **kwargs: Any) -> Any:
         self.kwargs = kwargs
-        # Shaped like a real Responses object, including the fields tailorcv
+        # Shaped like a real Responses object, including the fields clearscout
         # reads to decide whether the answer is usable at all.
         return SimpleNamespace(
             output_text=_json(self.parsed),
@@ -531,7 +531,7 @@ def test_anthropic_searches_directly_rather_than_through_code_execution() -> Non
 
 
 def test_anthropic_web_search_caps_repeated_pause_turns() -> None:
-    from tailorcv.infrastructure.providers.base import UnusableResponseError
+    from clearscout.infrastructure.providers.base import UnusableResponseError
 
     client = anthropic_saying("pause_turn")
     original = client.messages.stream
@@ -556,10 +556,10 @@ def test_anthropic_web_search_caps_repeated_pause_turns() -> None:
 
 
 def test_anthropic_continuation_failure_retains_returned_usage(settings) -> None:
-    from tailorcv.infrastructure.providers.base import UnusableResponseError
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger
+    from clearscout.infrastructure.providers.base import UnusableResponseError
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger
 
     ledger = Ledger()
     with ResponseCache(enabled=False) as cache:
@@ -1090,7 +1090,7 @@ def test_a_failed_response_is_blamed_on_the_provider() -> None:
 
 def test_reasoning_tokens_are_carried_but_never_double_counted() -> None:
     """Both vendors report reasoning inside output_tokens, not beside it."""
-    from tailorcv.shared.costs import Usage
+    from clearscout.shared.costs import Usage
 
     usage = Usage(input_tokens=100, output_tokens=4000, reasoning_tokens=3200)
     assert usage.answer_tokens == 800
@@ -1125,7 +1125,7 @@ def test_both_providers_are_sent_the_same_schema_with_the_same_contract() -> Non
     """
     from pydantic import Field
 
-    from tailorcv.infrastructure.providers.base import json_schema
+    from clearscout.infrastructure.providers.base import json_schema
 
     class Verdict(BaseModel):
         score: int = Field(ge=1, le=5)
@@ -1164,9 +1164,9 @@ def test_the_finish_vocabulary_is_normalized_but_not_symmetric() -> None:
     reason behind them, so the OpenAI adapter can produce them and the Anthropic
     adapter never can.
     """
-    from tailorcv.infrastructure.providers.anthropic import _finish as anthropic_finish
-    from tailorcv.infrastructure.providers.base import Finish
-    from tailorcv.infrastructure.providers.openai import _finish as openai_finish
+    from clearscout.infrastructure.providers.anthropic import _finish as anthropic_finish
+    from clearscout.infrastructure.providers.base import Finish
+    from clearscout.infrastructure.providers.openai import _finish as openai_finish
 
     anthropic_reasons = [
         None,
@@ -1200,7 +1200,7 @@ def test_the_finish_vocabulary_is_normalized_but_not_symmetric() -> None:
 
 def test_one_reader_pulls_model_identifiers_out_of_either_vendors_listing() -> None:
     """Both adapters read model identifiers through one shared function."""
-    from tailorcv.infrastructure.providers.base import model_identifiers
+    from clearscout.infrastructure.providers.base import model_identifiers
 
     listing = SimpleNamespace(data=[SimpleNamespace(id="a"), SimpleNamespace(id="b")])
     assert model_identifiers(listing) == frozenset({"a", "b"})
@@ -1210,7 +1210,7 @@ def test_one_reader_pulls_model_identifiers_out_of_either_vendors_listing() -> N
 
 def test_a_nested_object_is_made_strict_too() -> None:
     """Strictness has to reach every object, not just the top one."""
-    from tailorcv.infrastructure.providers.base import json_schema
+    from clearscout.infrastructure.providers.base import json_schema
 
     class Inner(BaseModel):
         a: str
@@ -1238,7 +1238,7 @@ def test_a_repeated_vocabulary_is_emitted_once() -> None:
 
     from pydantic import create_model
 
-    from tailorcv.infrastructure.providers.base import json_schema
+    from clearscout.infrastructure.providers.base import json_schema
 
     # Two distinct models sharing one vocabulary, as the drafting schema has. One
     # model used twice would not show the problem, since pydantic already
@@ -1252,7 +1252,7 @@ def test_a_repeated_vocabulary_is_emitted_once() -> None:
     document = create_model("D", summary=(line, ...), skills=(list[skill], ...))  # type: ignore[valid-type]
 
     schema = json_schema(document)
-    shared = [name for name in schema["$defs"] if name.startswith("tailorcv_enum")]
+    shared = [name for name in schema["$defs"] if name.startswith("clearscout_enum")]
     assert len(shared) == 1
     # The vocabulary survives intact, and is not a reference to itself.
     assert schema["$defs"][shared[0]]["enum"] == list(ids)
@@ -1291,8 +1291,8 @@ def test_an_adapter_builds_a_client_with_the_retry_count_it_declares(no_proxy: N
     300 seconds becomes 900 in the worst case, and somebody watching a stalled
     run should be able to work that out from what the program asked for.
     """
-    from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
-    from tailorcv.infrastructure.providers.openai import OpenAIProvider
+    from clearscout.infrastructure.providers.anthropic import AnthropicProvider
+    from clearscout.infrastructure.providers.openai import OpenAIProvider
 
     anthropic = AnthropicProvider(api_key="not-a-real-key", timeout=300.0)
     openai = OpenAIProvider(api_key="not-a-real-key", timeout=300.0)
@@ -1307,8 +1307,8 @@ def test_no_configured_timeout_leaves_the_sdk_default_alone(no_proxy: None) -> N
     from anthropic import Anthropic
     from openai import OpenAI
 
-    from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
-    from tailorcv.infrastructure.providers.openai import OpenAIProvider
+    from clearscout.infrastructure.providers.anthropic import AnthropicProvider
+    from clearscout.infrastructure.providers.openai import OpenAIProvider
 
     assert (
         AnthropicProvider(api_key="not-a-real-key")._client.timeout
@@ -1323,9 +1323,9 @@ def test_no_configured_timeout_leaves_the_sdk_default_alone(no_proxy: None) -> N
 @pytest.mark.parametrize("vendor", ["openai", "anthropic"])
 @pytest.mark.parametrize("damage", ["missing", "none", "negative", "bool", "text", "reasoning"])
 def test_incomplete_usage_keeps_answers_and_continuation_unpriced(vendor, damage, settings):
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger, ModelPrice
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger, ModelPrice
 
     sdk: Any = FakeOpenAI() if vendor == "openai" else FakeAnthropic()
     parse = sdk._parse
@@ -1362,9 +1362,9 @@ def test_incomplete_usage_keeps_answers_and_continuation_unpriced(vendor, damage
 
 @pytest.mark.parametrize("served_price", [None, 20])
 def test_returned_model_prices_the_answer_without_rejecting_it(settings, served_price):
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger, ModelPrice
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger, ModelPrice
 
     class SubstitutedModel(FakeOpenAI):
         def _parse(self, **kwargs):
@@ -1397,7 +1397,7 @@ def answering(vendor: str, body: dict[str, Any]) -> Any:
     """Return the real SDK adapter answering one canned body over a mock transport."""
     import httpx
 
-    from tailorcv.application.config import ProviderName
+    from clearscout.application.config import ProviderName
     from tests.support.fake_provider import anthropic_events, openai_events
     from tests.support.provider_clients import provider_for_http
 
@@ -1537,7 +1537,7 @@ def test_a_continued_search_turn_records_a_request_that_still_serializes() -> No
 
 def test_a_failed_continuation_records_the_paused_turn_as_it_was_sent() -> None:
     """The record for the paused turn is evidence of one request, not of the next one."""
-    from tailorcv.infrastructure.providers.base import UnusableResponseError
+    from clearscout.infrastructure.providers.base import UnusableResponseError
 
     provider = AnthropicProvider(api_key="x", client=cast(Any, InterruptedAnthropic()))
 
@@ -1569,7 +1569,7 @@ def _stalling_openai(
     """Return the real OpenAI adapter whose stream stops mid-read on the named tiers."""
     import httpx
 
-    from tailorcv.application.config import ProviderName
+    from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
     from tests.support.provider_clients import provider_for_http
 
@@ -1590,7 +1590,7 @@ def _stalling_openai(
 
 
 def test_a_flex_stream_that_stalls_mid_read_is_a_capacity_refusal() -> None:
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     provider = _stalling_openai(frozenset({"flex"}))
 
@@ -1601,7 +1601,7 @@ def test_a_flex_stream_that_stalls_mid_read_is_a_capacity_refusal() -> None:
 
 
 def test_a_standard_stream_that_stalls_mid_read_is_a_provider_error_not_a_refusal() -> None:
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     provider = _stalling_openai(frozenset({"default"}))
 
@@ -1620,7 +1620,7 @@ def test_an_openai_connection_dropped_mid_stream_is_translated_on_either_tier(
 ) -> None:
     import httpx
 
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     failure = getattr(httpx, dropped)
     flex = _stalling_openai(frozenset({"flex"}), failure=failure)
@@ -1638,8 +1638,8 @@ def test_an_openai_connection_dropped_mid_stream_is_translated_on_either_tier(
 def test_a_standard_server_error_is_a_provider_error_not_a_refusal() -> None:
     import httpx
 
-    from tailorcv.application.config import ProviderName
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.application.config import ProviderName
+    from clearscout.shared.errors import CapacityError
     from tests.support.provider_clients import provider_for_http
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -1658,8 +1658,8 @@ def test_a_standard_server_error_is_a_provider_error_not_a_refusal() -> None:
 def test_a_flex_request_that_times_out_before_its_headers_is_a_capacity_refusal() -> None:
     import httpx
 
-    from tailorcv.application.config import ProviderName
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.application.config import ProviderName
+    from clearscout.shared.errors import CapacityError
     from tests.support.provider_clients import provider_for_http
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -1692,9 +1692,9 @@ def test_a_stalled_flex_call_is_answered_and_recorded_at_the_standard_tier(setti
 
 def _ledgered(provider: Any, settings: Any, slept: list[float]) -> tuple[Answer, Any]:
     """Complete one flex-first call through the client and return its value and ledger."""
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger
 
     ledger = Ledger(prices={})
     with ResponseCache(enabled=False) as cache:
@@ -1713,7 +1713,7 @@ def test_a_flex_request_that_fails_before_answering_goes_to_standard_without_sdk
 
     import httpx
 
-    from tailorcv.application.config import ProviderName
+    from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
     from tests.support.provider_clients import provider_for_http
 
@@ -1750,7 +1750,7 @@ def test_a_flex_request_that_fails_before_answering_goes_to_standard_without_sdk
 def test_a_flex_capacity_refusal_still_backs_off_before_standard(settings) -> None:
     import httpx
 
-    from tailorcv.application.config import ProviderName
+    from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
     from tests.support.provider_clients import provider_for_http
 
@@ -1788,7 +1788,7 @@ def test_a_flex_rate_limit_timeout_or_conflict_backs_off_and_is_answered_on_flex
 ) -> None:
     import httpx
 
-    from tailorcv.application.config import ProviderName
+    from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
     from tests.support.provider_clients import provider_for_http
 
@@ -1834,7 +1834,7 @@ def _refusing_openai(
     """
     import httpx
 
-    from tailorcv.application.config import ProviderName
+    from clearscout.application.config import ProviderName
     from tests.support.fake_provider import _frames, openai_events
     from tests.support.provider_clients import provider_for_http
 
@@ -1899,7 +1899,7 @@ def _failed_response(
 def test_a_flex_refusal_inside_the_stream_backs_off_rather_than_failing(
     refused: dict[str, Any],
 ) -> None:
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     provider = _refusing_openai(refused, [])
 
@@ -1919,7 +1919,7 @@ def test_a_flex_refusal_inside_the_stream_backs_off_rather_than_failing(
 def test_a_standard_refusal_inside_the_stream_is_translated_and_not_resent(
     refused: dict[str, Any],
 ) -> None:
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     requests: list[str] = []
     provider = _refusing_openai(refused, requests, frozenset({"default"}), max_retries=2)
@@ -1955,9 +1955,9 @@ def test_a_flex_refusal_inside_the_stream_is_answered_on_standard(
 def test_a_task_whose_flex_call_was_resent_on_standard_reports_how_many_were(
     settings, durable_database, tmp_path
 ) -> None:
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.application.workspaces import WorkspaceService
-    from tailorcv.application.workspaces.spend import SpendService, record_calls
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.application.workspaces import WorkspaceService
+    from clearscout.application.workspaces.spend import SpendService, record_calls
     from tests.support.artifacts import runtime_storage
 
     workspace_id = str(
@@ -1994,7 +1994,7 @@ def test_a_task_whose_flex_call_was_resent_on_standard_reports_how_many_were(
 
 
 def test_a_billed_flex_failure_is_never_resent(settings) -> None:
-    from tailorcv.infrastructure.providers.base import UnusableResponseError
+    from clearscout.infrastructure.providers.base import UnusableResponseError
 
     requests: list[str] = []
     billed = _failed_response(OPENAI_BODY["usage"])
@@ -2011,7 +2011,7 @@ def test_a_billed_flex_failure_is_never_resent(settings) -> None:
 def test_a_flex_refusal_after_output_began_is_never_resent(
     settings, refused: dict[str, Any]
 ) -> None:
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     requests: list[str] = []
     provider = _refusing_openai(refused, requests, before=(OUTPUT_ADDED,))
@@ -2047,7 +2047,7 @@ def test_a_flex_refusal_after_output_began_is_never_resent(
 def test_a_flex_stream_error_that_is_not_about_capacity_is_never_resent(
     settings, refused: dict[str, Any]
 ) -> None:
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     requests: list[str] = []
     slept: list[float] = []
@@ -2073,7 +2073,7 @@ def test_a_flex_stream_error_that_is_not_about_capacity_is_never_resent(
 def test_an_unbilled_flex_failure_is_resent_only_for_capacity_before_output(
     settings, before: tuple[dict[str, Any], ...], failed: dict[str, Any]
 ) -> None:
-    from tailorcv.shared.errors import CapacityError
+    from clearscout.shared.errors import CapacityError
 
     requests: list[str] = []
     slept: list[float] = []
@@ -2113,7 +2113,7 @@ def _stalling_anthropic(answered_turns: int, failure: type[Exception] | None = N
     """Return the real Anthropic adapter that pauses for some turns, then stalls mid-read."""
     import httpx
 
-    from tailorcv.application.config import ProviderName
+    from clearscout.application.config import ProviderName
     from tests.support.fake_provider import anthropic_events
     from tests.support.provider_clients import provider_for_http
 
@@ -2135,7 +2135,7 @@ def _stalling_anthropic(answered_turns: int, failure: type[Exception] | None = N
 
 
 def test_an_anthropic_stream_that_stalls_mid_read_is_a_provider_error() -> None:
-    from tailorcv.infrastructure.providers.base import UnusableResponseError
+    from clearscout.infrastructure.providers.base import UnusableResponseError
 
     with pytest.raises(ProviderError) as raised:
         _stalling_anthropic(0).complete(plan_for(), Answer, CHOICE)
@@ -2147,7 +2147,7 @@ def test_an_anthropic_stream_that_stalls_mid_read_is_a_provider_error() -> None:
 def test_an_anthropic_connection_dropped_mid_stream_is_a_provider_error(dropped: str) -> None:
     import httpx
 
-    from tailorcv.infrastructure.providers.base import UnusableResponseError
+    from clearscout.infrastructure.providers.base import UnusableResponseError
 
     with pytest.raises(ProviderError) as raised:
         _stalling_anthropic(0, getattr(httpx, dropped)).complete(plan_for(), Answer, CHOICE)
@@ -2156,7 +2156,7 @@ def test_an_anthropic_connection_dropped_mid_stream_is_a_provider_error(dropped:
 
 
 def test_an_anthropic_continuation_that_stalls_keeps_the_paused_turn_record() -> None:
-    from tailorcv.infrastructure.providers.base import UnusableResponseError
+    from clearscout.infrastructure.providers.base import UnusableResponseError
 
     with pytest.raises(UnusableResponseError) as raised:
         _stalling_anthropic(1).complete_with_web_search(

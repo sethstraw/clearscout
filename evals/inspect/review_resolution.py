@@ -17,6 +17,16 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from clearscout.application.discovery.relevance_review import ALLOWED_VERDICTS
+from clearscout.application.job_search.models import (
+    RelevanceReviewCoreWorkAlignment,
+    RelevanceReviewDecisiveBasis,
+    RelevanceReviewHardCondition,
+    RelevanceReviewQualificationAlignment,
+    RelevanceReviewVerdict,
+)
+from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.match import Classification, Strength
 from evals.inspect.labeling import (
     PACKETED_FAMILIES,
     BoundedText,
@@ -34,16 +44,6 @@ from evals.inspect.labeling import (
     protocol_version,
     require_frozen_rubric,
 )
-from tailorcv.application.discovery.relevance_review import ALLOWED_VERDICTS
-from tailorcv.application.job_search.models import (
-    RelevanceReviewCoreWorkAlignment,
-    RelevanceReviewDecisiveBasis,
-    RelevanceReviewHardCondition,
-    RelevanceReviewQualificationAlignment,
-    RelevanceReviewVerdict,
-)
-from tailorcv.application.tailoring.stages.jobspec import Dimension
-from tailorcv.application.tailoring.stages.match import Classification, Strength
 
 if TYPE_CHECKING:
     from evals.inspect.selection import SelectionManifest
@@ -68,7 +68,7 @@ class ReviewArtifact(StrEnum):
 
 def review_domain(family: ReviewFamily, artifact: ReviewArtifact) -> str:
     """Return the hash domain one artifact kind uses inside one family."""
-    return f"tailorcv-{family.value}-{artifact.value}-v1"
+    return f"clearscout-{family.value}-{artifact.value}-v1"
 
 
 class _ArtifactModel(BaseModel):

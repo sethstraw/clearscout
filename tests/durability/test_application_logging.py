@@ -6,11 +6,11 @@ import io
 import json
 import logging
 
-from tailorcv.bootstrap.logging import StructuredLogFormatter, configure_application_logging
+from clearscout.bootstrap.logging import StructuredLogFormatter, configure_application_logging
 
 
 def test_application_logging_is_structured_and_idempotent() -> None:
-    application = logging.getLogger("tailorcv")
+    application = logging.getLogger("clearscout")
     original_handlers = list(application.handlers)
     original_level = application.level
     original_propagate = application.propagate
@@ -20,7 +20,7 @@ def test_application_logging_is_structured_and_idempotent() -> None:
         configure_application_logging(stream=stream)
         configure_application_logging(stream=stream)
 
-        logging.getLogger("tailorcv.test").info(
+        logging.getLogger("clearscout.test").info(
             "guided_board_check",
             extra={
                 "task_id": "task-example",
@@ -34,7 +34,7 @@ def test_application_logging_is_structured_and_idempotent() -> None:
         assert len(lines) == 1
         payload = json.loads(lines[0])
         assert payload["level"] == "INFO"
-        assert payload["logger"] == "tailorcv.test"
+        assert payload["logger"] == "clearscout.test"
         assert payload["event"] == "guided_board_check"
         assert payload["task_id"] == "task-example"
         assert payload["host"] == "jobs.example.test"
@@ -48,7 +48,7 @@ def test_application_logging_is_structured_and_idempotent() -> None:
 
 
 def test_application_logging_excludes_other_namespaces_and_owns_one_output() -> None:
-    application = logging.getLogger("tailorcv")
+    application = logging.getLogger("clearscout")
     root = logging.getLogger()
     original_application_handlers = list(application.handlers)
     original_application_level = application.level
@@ -63,7 +63,7 @@ def test_application_logging_excludes_other_namespaces_and_owns_one_output() -> 
         root.setLevel(logging.INFO)
         configure_application_logging(stream=structured)
 
-        logging.getLogger("tailorcv.worker").info("task_started", extra={"task_id": "task-1"})
+        logging.getLogger("clearscout.worker").info("task_started", extra={"task_id": "task-1"})
         logging.getLogger("httpx").info("GET https://user:secret@example.test/?token=secret")
 
         assert len(structured.getvalue().splitlines()) == 1
@@ -78,7 +78,7 @@ def test_application_logging_excludes_other_namespaces_and_owns_one_output() -> 
 
 
 def test_application_logging_reserves_core_metadata() -> None:
-    record = logging.LogRecord("tailorcv.test", logging.INFO, __file__, 1, "actual", (), None)
+    record = logging.LogRecord("clearscout.test", logging.INFO, __file__, 1, "actual", (), None)
     record.event = "overridden"
     record.timestamp = "not-a-time"
 

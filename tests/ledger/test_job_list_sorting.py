@@ -8,11 +8,11 @@ from typing import NamedTuple
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import EvaluationScores, ScoreComponentInput
-from tailorcv.application.job_search.models import JobListQuery
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application import job_search
+from clearscout.application.contracts import EvaluationScores, ScoreComponentInput
+from clearscout.application.job_search.models import JobListQuery
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.database import clone
 from tests.support.scenarios import evaluation_commit

@@ -1,0 +1,83 @@
+"""Durable task contracts, registry, and queue coordination."""
+
+from clearscout.application.tasks.models import (
+    ClaimedTask,
+    TaskBillingResponse,
+    TaskEventResponse,
+    TaskResponse,
+    TaskTypeResponse,
+)
+from clearscout.application.tasks.nested import BatchStepContext, ShieldedTaskContext
+from clearscout.application.tasks.payloads import (
+    ApprovalWorkflowPayload,
+    ArtifactVerifyPayload,
+    BatchWorkflowPayload,
+    DiscoveryProposalPayload,
+    DiscoveryWorkflowPayload,
+    DocumentRenderPayload,
+    EvaluationWorkflowPayload,
+    GuidedCampaignPayload,
+    GuidedCampaignRetryPayload,
+    PostingRefreshBatchPayload,
+    PostingRefreshFilter,
+    PostingRefreshPayload,
+    RelevanceReviewPayload,
+    SearchVocabularyPayload,
+    SourceContinuationPayload,
+    SourceScanPayload,
+    TailoringPayload,
+    TaskPayload,
+    WorkflowJobPayload,
+)
+from clearscout.application.tasks.protocols import TaskContext, TaskHandler
+from clearscout.application.tasks.queue import TaskQueueService
+from clearscout.application.tasks.registry import (
+    TASK_SPECS,
+    UNPAID,
+    TaskSpec,
+    task_is_paid,
+    task_type_catalog,
+    task_types,
+    validate_task_payload,
+)
+from clearscout.domain import TaskType
+
+__all__ = [
+    "TASK_SPECS",
+    "UNPAID",
+    "ApprovalWorkflowPayload",
+    "ArtifactVerifyPayload",
+    "BatchStepContext",
+    "BatchWorkflowPayload",
+    "ClaimedTask",
+    "DiscoveryProposalPayload",
+    "DiscoveryWorkflowPayload",
+    "DocumentRenderPayload",
+    "EvaluationWorkflowPayload",
+    "GuidedCampaignPayload",
+    "GuidedCampaignRetryPayload",
+    "PostingRefreshBatchPayload",
+    "PostingRefreshFilter",
+    "PostingRefreshPayload",
+    "RelevanceReviewPayload",
+    "SearchVocabularyPayload",
+    "ShieldedTaskContext",
+    "SourceContinuationPayload",
+    "SourceScanPayload",
+    "TailoringPayload",
+    "TaskBillingResponse",
+    "TaskContext",
+    "TaskEventResponse",
+    "TaskHandler",
+    "TaskPayload",
+    "TaskQueueService",
+    "TaskResponse",
+    "TaskSpec",
+    "TaskType",
+    "TaskTypeResponse",
+    "WorkflowJobPayload",
+    "task_is_paid",
+    "task_type_catalog",
+    "task_types",
+    "validate_task_payload",
+]

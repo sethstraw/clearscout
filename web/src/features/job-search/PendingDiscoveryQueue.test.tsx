@@ -884,7 +884,7 @@ describe("PendingDiscoveryQueue re-screen", () => {
 
   it("prints the server's own sentence when no worker can run the re-screen", async () => {
     const sentence =
-      "The worker is not running. Start it with 'tailorcv worker' and queue the work again.";
+      "The worker is not running. Start it with 'clearscout worker' and queue the work again.";
     installHandlers([]);
     server.use(
       http.post("*/api/v1/tasks", () => HttpResponse.json({ detail: sentence }, { status: 503 })),

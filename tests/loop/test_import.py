@@ -13,16 +13,16 @@ from xml.sax.saxutils import escape
 
 import pytest
 
-from tailorcv.application.config import (
+from clearscout.application.config import (
     Effort,
     ProviderName,
     SectionNames,
     Settings,
     Stage,
 )
-from tailorcv.application.master_cv import parse_canonical_source
-from tailorcv.application.master_cv.sources import SourceDocument, read
-from tailorcv.application.tailoring.pipeline.importer import (
+from clearscout.application.master_cv import parse_canonical_source
+from clearscout.application.master_cv.sources import SourceDocument, read
+from clearscout.application.tailoring.pipeline.importer import (
     Assembled,
     assemble,
     content_tokens,
@@ -30,15 +30,15 @@ from tailorcv.application.tailoring.pipeline.importer import (
     verify,
     write_report,
 )
-from tailorcv.application.tailoring.stages.structure import (
+from clearscout.application.tailoring.stages.structure import (
     Dropped,
     ImportedCv,
     ImportedRole,
     ImportedSection,
     Sourced,
 )
-from tailorcv.shared.errors import IngestError
-from tailorcv.shared.results import Finding, Outcome
+from clearscout.shared.errors import IngestError
+from clearscout.shared.results import Finding, Outcome
 from tests.support.imported_cv import MESSY_CV, source_from, tidy_extraction
 from tests.support.suite import FIXTURES
 
@@ -254,7 +254,7 @@ def test_tokens_are_compared_case_insensitively() -> None:
 
 
 def test_run_together_bullets_fail_compliance() -> None:
-    from tailorcv.application.tailoring.pipeline.importer import _compliant
+    from clearscout.application.tailoring.pipeline.importer import _compliant
 
     run_on = (
         "# Jane\n\njane@example.com\n\n## Professional Experience\n\n"
@@ -366,7 +366,7 @@ def test_a_nearly_empty_file_is_refused(tmp_path: Path) -> None:
 def test_the_schema_cannot_cite_a_line_that_does_not_exist() -> None:
     from pydantic import ValidationError
 
-    from tailorcv.application.tailoring.stages.structure import response_schema
+    from clearscout.application.tailoring.stages.structure import response_schema
 
     schema = response_schema(source_from(MESSY_CV))
     with pytest.raises(ValidationError):
@@ -377,7 +377,7 @@ def test_the_schema_rejects_an_answer_with_an_undeclared_key() -> None:
     """An answer carrying a field this schema never declared is refused, not dropped."""
     from pydantic import ValidationError
 
-    from tailorcv.application.tailoring.stages.structure import response_schema
+    from clearscout.application.tailoring.stages.structure import response_schema
 
     schema = response_schema(source_from(MESSY_CV))
     with pytest.raises(ValidationError):
@@ -385,7 +385,7 @@ def test_the_schema_rejects_an_answer_with_an_undeclared_key() -> None:
 
 
 def test_the_report_shows_where_every_field_came_from(tmp_path: Path) -> None:
-    from tailorcv.application.tailoring.pipeline.importer import ImportResult
+    from clearscout.application.tailoring.pipeline.importer import ImportResult
 
     source = source_from(MESSY_CV)
     extracted = tidy_extraction()
@@ -407,8 +407,8 @@ def test_an_imported_cv_can_then_be_tailored(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The point of importing is that the rest of the tool then works."""
-    from tailorcv.application.config import Settings
-    from tailorcv.application.tailoring.pipeline import RunCommand, import_cv, run
+    from clearscout.application.config import Settings
+    from clearscout.application.tailoring.pipeline import RunCommand, import_cv, run
     from tests.support.doubles import ScriptedProvider
     from tests.support.payloads import script
     from tests.support.suite import POSTING, SUITE_KEY_VARIABLE
@@ -418,7 +418,7 @@ def test_an_imported_cv_can_then_be_tailored(
     extracted = tidy_extraction()
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(
             {"ImportedCv": lambda schema: extracted.model_dump(mode="json")}
         ),
@@ -430,7 +430,7 @@ def test_an_imported_cv_can_then_be_tailored(
     assert imported.passed
 
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(script({})),
     )
     posting = tmp_path / "posting.txt"
@@ -456,8 +456,8 @@ def test_an_import_writes_both_files_owner_only_and_the_report_first(
     the failure it was, rather than a converted CV with no record of what was
     dropped, which reads as a finished import.
     """
-    from tailorcv.application.config import Settings
-    from tailorcv.application.tailoring.pipeline import import_cv
+    from clearscout.application.config import Settings
+    from clearscout.application.tailoring.pipeline import import_cv
     from tests.support.doubles import ScriptedProvider
     from tests.support.suite import SUITE_KEY_VARIABLE
 
@@ -466,13 +466,13 @@ def test_an_import_writes_both_files_owner_only_and_the_report_first(
     extracted = tidy_extraction()
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(
             {"ImportedCv": lambda schema: extracted.model_dump(mode="json")}
         ),
     )
 
-    from tailorcv.infrastructure.artifacts.files import write_private
+    from clearscout.infrastructure.artifacts.files import write_private
 
     order: list[str] = []
 
@@ -480,8 +480,8 @@ def test_an_import_writes_both_files_owner_only_and_the_report_first(
         order.append(path.name)
         return write_private(path, text)
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.importer.write_private", noting)
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.service.write_private", noting)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.importer.write_private", noting)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.service.write_private", noting)
 
     destination = tmp_path / "CV_Master.md"
     result = import_cv(
@@ -496,20 +496,20 @@ def test_an_import_writes_both_files_owner_only_and_the_report_first(
 
 def test_straightening_a_curly_apostrophe_does_not_look_like_a_lost_name() -> None:
     """The importer folds typographic punctuation, so a curly O'Brien is no lost name."""
-    from tailorcv.application.tailoring.pipeline.importer import content_tokens
+    from clearscout.application.tailoring.pipeline.importer import content_tokens
 
     assert content_tokens("O’Brien") == content_tokens("O'Brien")
 
 
 def test_folding_punctuation_does_not_hide_a_genuinely_lost_word() -> None:
     """The fold must be narrow: punctuation only, never letters."""
-    from tailorcv.application.tailoring.pipeline.importer import content_tokens
+    from clearscout.application.tailoring.pipeline.importer import content_tokens
 
     assert content_tokens("Neo4j and Cypher") != content_tokens("Neo4j")
 
 
 def test_every_dash_a_word_processor_writes_folds_to_a_hyphen() -> None:
-    from tailorcv.application.tailoring.pipeline.importer import plain
+    from clearscout.application.tailoring.pipeline.importer import plain
 
     assert plain("2021–2024") == "2021-2024"
     assert plain("scope — wide") == "scope - wide"
@@ -520,7 +520,7 @@ def test_every_dash_a_word_processor_writes_folds_to_a_hyphen() -> None:
 
 def test_an_accent_is_folded_by_the_importer_rather_than_by_the_model() -> None:
     """A transliteration a model performed is a word in no cited source line."""
-    from tailorcv.application.tailoring.pipeline.importer import plain
+    from clearscout.application.tailoring.pipeline.importer import plain
 
     assert plain("Zoë Müller") == "Zoe Muller"
     assert tokens("Zoë Müller") == tokens("Zoe Muller")
@@ -528,7 +528,7 @@ def test_an_accent_is_folded_by_the_importer_rather_than_by_the_model() -> None:
 
 def test_a_character_with_no_ascii_form_is_kept_rather_than_guessed_at() -> None:
     """Inventing a spelling for somebody's name is worse than reporting it."""
-    from tailorcv.application.tailoring.pipeline.importer import plain
+    from clearscout.application.tailoring.pipeline.importer import plain
 
     assert plain("Straße") == "Straße"
 
@@ -589,7 +589,7 @@ def test_reading_a_screenshot_with_no_model_available_says_what_to_check(
     """It needs a paid call, so the failure names the command that diagnoses it."""
     path = tmp_path / "cv.png"
     path.write_bytes(b"x")
-    with pytest.raises(IngestError, match="tailorcv doctor"):
+    with pytest.raises(IngestError, match="clearscout doctor"):
         read(path)
 
 

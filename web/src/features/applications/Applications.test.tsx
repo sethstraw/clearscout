@@ -10,7 +10,7 @@ import { ApplicationsPage } from "./Applications";
 
 describe("ApplicationsPage", () => {
   it("links each application from the job projection's stored identity", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-applications");
+    window.localStorage.setItem("clearscout.workspace", "workspace-applications");
     server.use(
       http.get("*/api/v1/jobs", () =>
         HttpResponse.json(
@@ -52,7 +52,7 @@ describe("ApplicationsPage", () => {
   });
 
   it("shows and sorts by the same human-overridden fit score", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-application-review");
+    window.localStorage.setItem("clearscout.workspace", "workspace-application-review");
     server.use(
       http.get("*/api/v1/jobs", () =>
         HttpResponse.json(

@@ -1,6 +1,6 @@
 # Evaluations
 
-Contributor tooling. It is not in the wheel, there is no `tailorcv` subcommand
+Contributor tooling. It is not in the wheel, there is no `clearscout` subcommand
 for it, and `pytest` will not run it.
 
 ```bash

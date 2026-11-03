@@ -38,23 +38,23 @@ case "$*" in
     printf 'Estimated cost: $0.56\\n'
     ;;
   *evals.inspect.runner*)
-    printf 'split=%s\\n' "$TAILORCV_EVAL_DATASET_SPLIT"
-    printf 'limit=%s\\n' "$TAILORCV_EVAL_SAMPLE_LIMIT"
-    printf 'sample_ids=%s\\n' "$TAILORCV_EVAL_SAMPLE_IDS"
-    printf 'trials=%s\\n' "$TAILORCV_EVAL_TRIALS"
-    printf 'model=%s\\n' "$TAILORCV_EVAL_LIVE_MODEL"
-    printf 'effort=%s\\n' "$TAILORCV_EVAL_LIVE_EFFORT"
-    printf 'prompt_arms=%s\\n' "$TAILORCV_EVAL_PROMPT_ARMS"
-    printf 'cv_version=%s\\n' "$TAILORCV_EVAL_CV_VERSION"
-    printf 'manifest=%s\\n' "$TAILORCV_EVAL_SELECTION_MANIFEST_SHA256"
-    printf 'manifest_bytes=%s\\n' "$TAILORCV_EVAL_SELECTION_MANIFEST_BYTES_SHA256"
+    printf 'split=%s\\n' "$CLEARSCOUT_EVAL_DATASET_SPLIT"
+    printf 'limit=%s\\n' "$CLEARSCOUT_EVAL_SAMPLE_LIMIT"
+    printf 'sample_ids=%s\\n' "$CLEARSCOUT_EVAL_SAMPLE_IDS"
+    printf 'trials=%s\\n' "$CLEARSCOUT_EVAL_TRIALS"
+    printf 'model=%s\\n' "$CLEARSCOUT_EVAL_LIVE_MODEL"
+    printf 'effort=%s\\n' "$CLEARSCOUT_EVAL_LIVE_EFFORT"
+    printf 'prompt_arms=%s\\n' "$CLEARSCOUT_EVAL_PROMPT_ARMS"
+    printf 'cv_version=%s\\n' "$CLEARSCOUT_EVAL_CV_VERSION"
+    printf 'manifest=%s\\n' "$CLEARSCOUT_EVAL_SELECTION_MANIFEST_SHA256"
+    printf 'manifest_bytes=%s\\n' "$CLEARSCOUT_EVAL_SELECTION_MANIFEST_BYTES_SHA256"
     printf 'task=%s\\n' "$*"
     ;;
   *evals.inspect.solvers.relevance_live*)
     printf 'render=%s\\n' "$*"
-    printf 'cv_version=%s\\n' "$TAILORCV_EVAL_CV_VERSION"
-    printf 'prompt_arms=%s\\n' "$TAILORCV_EVAL_PROMPT_ARMS"
-    printf 'database=%s\\n' "$TAILORCV_EVAL_DATABASE_URL"
+    printf 'cv_version=%s\\n' "$CLEARSCOUT_EVAL_CV_VERSION"
+    printf 'prompt_arms=%s\\n' "$CLEARSCOUT_EVAL_PROMPT_ARMS"
+    printf 'database=%s\\n' "$CLEARSCOUT_EVAL_DATABASE_URL"
     ;;
   *) exit 2 ;;
 esac
@@ -502,7 +502,7 @@ def test_live_shell_renders_without_an_estimate_an_approval_or_a_run(tmp_path: P
     assert f"--render-only {tmp_path / 'render'} --provider openai" in render
     assert "cv_version=cv-7f3a" in result.stdout
     assert f"prompt_arms=baseline={tmp_path / 'baseline'}" in result.stdout
-    assert f"database=sqlite+pysqlite:///{tmp_path / 'workspace'}/tailorcv.sqlite3" in (
+    assert f"database=sqlite+pysqlite:///{tmp_path / 'workspace'}/clearscout.sqlite3" in (
         result.stdout
     )
 

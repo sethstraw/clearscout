@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from tailorcv.application.config import (
+from clearscout.application.config import (
     ANTHROPIC_EFFORT,
     MODEL_EFFORT,
     Effort,
@@ -18,7 +18,7 @@ from tailorcv.application.config import (
     Settings,
     Stage,
 )
-from tailorcv.shared.costs import Usage
+from clearscout.shared.costs import Usage
 
 # Lowest rung first, which is the order a comparison steps down.
 LADDER: tuple[Effort, ...] = (

@@ -7,11 +7,11 @@ from decimal import Decimal
 
 import pytest
 
-from tailorcv.application.discovery.screening import ScreeningCode, screen_discovery
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.tailoring.fit import Standing, gates, read, refusal, unanswered
-from tailorcv.application.tailoring.workflows.evaluation_policy import compensation_score
-from tailorcv.domain.search_parameters import (
+from clearscout.application.discovery.screening import ScreeningCode, screen_discovery
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.tailoring.fit import Standing, gates, read, refusal, unanswered
+from clearscout.application.tailoring.workflows.evaluation_policy import compensation_score
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     CompensationBand,
@@ -22,7 +22,7 @@ from tailorcv.domain.search_parameters import (
     WorkEligibility,
     WorkingTimeZone,
 )
-from tailorcv.domain.staged_facts import StagedListingFacts
+from clearscout.domain.staged_facts import StagedListingFacts
 from tests.support.suite import FIXTURES
 
 POSTING = """Staff Data Platform Engineer, Toronto

@@ -149,7 +149,7 @@ function installAddFlow(
 
 describe("PendingDiscoveries", () => {
   it("keeps uncertainty group focus while counts load and ignores repeat activation", async () => {
-    window.localStorage.setItem("tailorcv.pendingStrictUncertainty.workspace-1", "true");
+    window.localStorage.setItem("clearscout.pendingStrictUncertainty.workspace-1", "true");
     let releaseInitial = () => {};
     let releaseGroup = () => {};
     let initialStarted = () => {};
@@ -351,7 +351,7 @@ describe("PendingDiscoveries", () => {
   });
 
   it("opens on Screened out from the address and shows the refusal patterns there", async () => {
-    window.localStorage.setItem("tailorcv.pendingStrictUncertainty.workspace-1", "true");
+    window.localStorage.setItem("clearscout.pendingStrictUncertainty.workspace-1", "true");
     const reads: URL[] = [];
     const refused = pendingDiscoveryRow({
       ...pendingDiscoveryRows(2)[1],
@@ -450,7 +450,7 @@ describe("PendingDiscoveries", () => {
     const first = render(view("workspace-1"));
     await screen.findByText("Role 0");
     fireEvent.click(screen.getByRole("checkbox", { name: "Separate uncertain postings" }));
-    expect(window.localStorage.getItem("tailorcv.pendingStrictUncertainty.workspace-1")).toBe(
+    expect(window.localStorage.getItem("clearscout.pendingStrictUncertainty.workspace-1")).toBe(
       "true",
     );
     first.rerender(view("workspace-2"));
@@ -477,11 +477,13 @@ describe("PendingDiscoveries", () => {
     const getItem = window.localStorage.getItem.bind(window.localStorage);
     const setItem = window.localStorage.setItem.bind(window.localStorage);
     const get = vi.spyOn(window.localStorage, "getItem").mockImplementation((key) => {
-      if (key.startsWith("tailorcv.pendingStrictUncertainty.")) throw new Error("Storage blocked");
+      if (key.startsWith("clearscout.pendingStrictUncertainty."))
+        throw new Error("Storage blocked");
       return getItem(key);
     });
     const set = vi.spyOn(window.localStorage, "setItem").mockImplementation((key, value) => {
-      if (key.startsWith("tailorcv.pendingStrictUncertainty.")) throw new Error("Storage blocked");
+      if (key.startsWith("clearscout.pendingStrictUncertainty."))
+        throw new Error("Storage blocked");
       setItem(key, value);
     });
     try {
@@ -1086,7 +1088,7 @@ describe("PendingDiscoveries", () => {
   });
 
   it("reveals an added posting explicitly and returns to the saved strict view", async () => {
-    window.localStorage.setItem("tailorcv.pendingStrictUncertainty.workspace-1", "true");
+    window.localStorage.setItem("clearscout.pendingStrictUncertainty.workspace-1", "true");
     installAddFlow({ constraintConfidence: "excluded" });
     render(
       <MemoryRouter>
@@ -1117,7 +1119,7 @@ describe("PendingDiscoveries", () => {
       screen.getByRole<HTMLInputElement>("checkbox", { name: "Separate uncertain postings" })
         .checked,
     ).toBe(true);
-    expect(window.localStorage.getItem("tailorcv.pendingStrictUncertainty.workspace-1")).toBe(
+    expect(window.localStorage.getItem("clearscout.pendingStrictUncertainty.workspace-1")).toBe(
       "true",
     );
     const main = screen.getByRole("button", { name: "Main queue (0)" });
@@ -1675,7 +1677,7 @@ describe("PendingDiscoveries", () => {
 
     expect(await screen.findByText("Role 199")).toBeTruthy();
     expect(requestedLimits.at(-1)).toBe(2000);
-    expect(window.localStorage.getItem("tailorcv.pendingPageSize")).toBe("all");
+    expect(window.localStorage.getItem("clearscout.pendingPageSize")).toBe("all");
   });
 
   it("drops a row the finished re-screen held out from the queue", async () => {
@@ -1775,7 +1777,7 @@ describe("PendingDiscoveries", () => {
   });
 
   it("starts at the page size the person last chose", async () => {
-    window.localStorage.setItem("tailorcv.pendingPageSize", "100");
+    window.localStorage.setItem("clearscout.pendingPageSize", "100");
     const requestedLimits = installQueuePage(pendingDiscoveryRows(200));
     render(
       <MemoryRouter>

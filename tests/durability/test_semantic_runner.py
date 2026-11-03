@@ -38,8 +38,8 @@ from evals.semantic import (
     validate_evaluation_history,
 )
 
-from tailorcv.domain.records import EvaluationDecision
-from tailorcv.shared.costs import Usage
+from clearscout.domain.records import EvaluationDecision
+from clearscout.shared.costs import Usage
 
 
 def _annotation(

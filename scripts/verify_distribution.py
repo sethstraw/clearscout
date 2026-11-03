@@ -38,7 +38,7 @@ def verify_archive(path: Path) -> None:
     indexes = [
         name
         for name in files
-        if name == "tailorcv/web/index.html" or name.endswith("/web/dist/index.html")
+        if name == "clearscout/web/index.html" or name.endswith("/web/dist/index.html")
     ]
     if len(indexes) != 1:
         raise DistributionError(f"{path.name}: expected one production index, found {len(indexes)}")

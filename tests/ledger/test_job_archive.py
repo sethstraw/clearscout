@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import ApplicationEventInput
-from tailorcv.application.failures import NotFoundError, ValidationError
-from tailorcv.application.job_search.models import JobListQuery
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import ApplicationStatus
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application import job_search
+from clearscout.application.contracts import ApplicationEventInput
+from clearscout.application.failures import NotFoundError, ValidationError
+from clearscout.application.job_search.models import JobListQuery
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import ApplicationStatus
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import NOW, evaluation_commit
 

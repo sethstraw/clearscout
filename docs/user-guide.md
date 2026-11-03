@@ -1,4 +1,4 @@
-# Use TailorCV locally
+# Use ClearScout locally
 
 Start small. Create one workspace and add a posting you want to consider.
 Discovery and manual tracking need no CV or provider key.
@@ -6,18 +6,18 @@ Discovery and manual tracking need no CV or provider key.
 For model assistance, import a master CV, evaluate one posting, and read the
 cited evidence and unanswered requirements before asking for a draft. Approve
 only a document proposal you have read. Checking what it says takes attention.
-TailorCV records that work. It does not submit anything.
+ClearScout records that work. It does not submit anything.
 
 The [synthetic product tour](product-tour.md) shows the complete evidence path
 without requiring an installation. Exact flags and less common commands belong
-to `tailorcv --help` and `tailorcv <command> --help`.
+to `clearscout --help` and `clearscout <command> --help`.
 
 ## Install the release before using real data
 
 Version 0.1.0 is an alpha. When a tagged alpha is published, verify and install
 its wheel as described in the [README](../README.md#install-a-tagged-release). The contributor setup in
-[CONTRIBUTING.md](../CONTRIBUTING.md) is for changing TailorCV; do not treat a
-development checkout as a release artifact. TailorCV is not published to PyPI and
+[CONTRIBUTING.md](../CONTRIBUTING.md) is for changing ClearScout; do not treat a
+development checkout as a release artifact. ClearScout is not published to PyPI and
 a direct Git install does not contain the production web client.
 
 ## Initialize one workspace
@@ -25,8 +25,8 @@ a direct Git install does not contain the production web client.
 For free discovery, initialize the database and start the local application:
 
 ```bash
-tailorcv db upgrade
-tailorcv start
+clearscout db upgrade
+clearscout start
 ```
 
 Open the printed URL. Create a workspace without a provider key or CV.
@@ -39,10 +39,10 @@ says which provider has run live, and
 [CV ingestion](validation.md#cv-ingestion-remains-a-limitation) is not yet well
 tested across real-world layouts and formats.
 
-The evidence source is a master CV in TailorCV's standardized Markdown format,
+The evidence source is a master CV in ClearScout's standardized Markdown format,
 not an arbitrary uploaded resume. Its structure determines what the parser
 makes available for downstream evaluation, selection, and drafting. Use
-`tailorcv template` as the starting format. An accepted file type or a completed
+`clearscout template` as the starting format. An accepted file type or a completed
 import is not proof that all your evidence is available to those stages.
 
 Choose a private location for the source CV. Word, PDF, Markdown, plain text,
@@ -53,10 +53,10 @@ with an ordinary CV starts paid restructuring without a separate cost
 confirmation. Keep the key out of commands you share.
 
 ```bash
-tailorcv init --cv ./Existing_CV.docx --name "My Job Search" --slug my-search
+clearscout init --cv ./Existing_CV.docx --name "My Job Search" --slug my-search
 ```
 
-A canonical TailorCV Markdown CV is adopted without a model call. Other formats
+A canonical ClearScout Markdown CV is adopted without a model call. Other formats
 are extracted, sent to the configured provider for restructuring, then checked
 for provenance and lost content. Read both the resulting master CV and the
 import report. A successful import does not prove that a model assigned every
@@ -64,7 +64,7 @@ line correctly. A section the parser does not recognize, such as `## Projects`,
 stays in the master CV. Its lines are never cited or printed. Put project work
 under the role it belongs to.
 
-`tailorcv init --help` shows the data-root, workspace-root, provider, and
+`clearscout init --help` shows the data-root, workspace-root, provider, and
 configuration overrides. Keep the database and its artifact root together
 unless you have a deliberate storage boundary; backup and relocation depend on
 both. [Storage and portability](storage-and-portability.md) explains those
@@ -82,7 +82,7 @@ machine. Paid stages send their selected input to your configured provider.
 | Task                                                       | Provider charge | What to expect                                                |
 | ---------------------------------------------------------- | --------------- | ------------------------------------------------------------- |
 | Open the synthetic demo                                    | None            | Invented records, without any external request                |
-| Adopt a canonical Markdown or text CV                      | None            | Existing TailorCV structure is retained                       |
+| Adopt a canonical Markdown or text CV                      | None            | Existing ClearScout structure is retained                     |
 | Import Word, PDF, images, or non-canonical text            | Paid            | STRUCTURE and INGEST calls, then an import report             |
 | Save a master CV edit the canonical parser accepts         | None            | A new version with your text                                  |
 | Save a master CV edit the canonical parser rejects         | Paid            | A STRUCTURE call with no dialog; fails with no key set        |
@@ -108,14 +108,14 @@ machine. Paid stages send their selected input to your configured provider.
 | Retry a failed paid task                                   | Paid            | The same stages again                                         |
 | Record review decisions or download stored Markdown        | None            | An existing draft; this does not build an approved derivative |
 
-The CLI follows the same line. `tailorcv discover`, `template`, `doctor`,
+The CLI follows the same line. `clearscout discover`, `template`, `doctor`,
 `report`, `search show`, `db`, `auth`, `start`, `stop`, `status`, `serve`, and
-`worker` are free. `tailorcv run`, `screen`, and `batch` call models and are
+`worker` are free. `clearscout run`, `screen`, and `batch` call models and are
 paid. Background tasks run on the OpenAI flex tier and the Anthropic standard
 tier. The CLI and master CV import run on the standard tier.
 
 A paid task with no key set is accepted into the queue and fails when it runs.
-Evaluation and `tailorcv run` need a key even when the response cache would
+Evaluation and `clearscout run` need a key even when the response cache would
 answer.
 
 Nothing the program schedules by itself is paid. Scheduled scans, catch-up
@@ -139,7 +139,7 @@ a permitted or complete read. Check the source's actual coverage and recovery
 action, and use individual-link or published-text intake where allowed.
 
 A CV is optional for discovery. For later evaluation, start with a canonical CV. The
-`tailorcv template` command creates its structure; `tailorcv template --help`
+`clearscout template` command creates its structure; `clearscout template --help`
 shows the output argument. Fill it with your own evidence before importing it.
 Register boards, scan, and inspect listings. On a pending row, select
 **Track job (free)** to add it to Tracked postings without a model evaluation.
@@ -177,17 +177,17 @@ spend report records calls that ran, their usage, and their costs; missing
 prices remain unknown. Selecting a previously reviewed row again can incur
 another charge.
 
-## Start TailorCV
+## Start ClearScout
 
 Start the local application and its one durable worker:
 
 ```bash
-tailorcv start
+clearscout start
 ```
 
 It binds the API to loopback, starts the worker against the same resolved data
-root, waits for local health, and prints the URL to open. Use `tailorcv status`
-to check both processes and `tailorcv stop` to stop only the processes started
+root, waits for local health, and prints the URL to open. Use `clearscout status`
+to check both processes and `clearscout stop` to stop only the processes started
 by this command. `stop` allows up to 60 seconds for active worker tasks to finish,
 with the API still available. A worker still busy after that with only source
 scans or artifact checks is killed. The interrupted task resumes on the next
@@ -199,15 +199,15 @@ ownership and names the process still stopping. Queued tasks remain queued.
 The next `start` reconciles staged artifacts before launching either process.
 `start` does not run migrations; if the schema is behind, run
 the explicit database command the error names first. Server and worker output is
-appended to `tailorcv-serve.log` and `tailorcv-worker.log` in the ignored
-`.tailorcv-runtime` directory under the data root.
+appended to `clearscout-serve.log` and `clearscout-worker.log` in the ignored
+`.clearscout-runtime` directory under the data root.
 
 For development or separate process supervision, you can still run the two
 services individually:
 
 ```bash
-tailorcv serve
-tailorcv worker
+clearscout serve
+clearscout worker
 ```
 
 The worker leases queued work from the same database. Use the same
@@ -218,15 +218,15 @@ any bounded error.
 
 Inside that one worker, board continuations for boards on different hosts read
 at the same time, four at once by default. Two continuations for boards on the
-same host still take turns. Set `TAILORCV_CONTINUATION_SLOTS` (1 to 8) before
-`tailorcv start` or `just dev-start`, or pass `--continuation-slots` to
-`tailorcv worker`, to change that number. Ctrl-C on `tailorcv worker` lets the
+same host still take turns. Set `CLEARSCOUT_CONTINUATION_SLOTS` (1 to 8) before
+`clearscout start` or `just dev-start`, or pass `--continuation-slots` to
+`clearscout worker`, to change that number. Ctrl-C on `clearscout worker` lets the
 running continuations finish first; a second Ctrl-C stops without waiting.
 
 ## Finish the setup walkthrough
 
 The browser opens the setup walkthrough on its own only when no workspace exists.
-If you ran `tailorcv init`, you already have one, and the application opens
+If you ran `clearscout init`, you already have one, and the application opens
 directly. Free setup has three steps, and it starts at the first one not yet
 done:
 
@@ -299,7 +299,7 @@ posting URL, or several with one link per line. The optional title and
 Each added link gets a free content read under the source policy. The publisher
 check made while adding, and the first content read after it, read the link you
 entered even where robots.txt disallows crawling. They stop only when robots.txt
-names TailorCV. Every later refresh honors a robots disallow. Results name
+names ClearScout. Every later refresh honors a robots disallow. Results name
 added, duplicate, invalid or unsupported, and failed links separately. Invalid
 and failed links stay editable for correction or retry. A saved link whose read
 could not be queued stays saved; use its free refresh action to retry the read.
@@ -314,12 +314,12 @@ An applicant tracking system (ATS) is the hiring software an employer uses to
 list openings and collect applications. You do not need to identify the vendor.
 A board can live on the employer's domain or the software provider's domain.
 
-| Example                                                               | Page purpose and where to use it                                                                                                        |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `https://www.example.com/careers/`                                    | An employer careers landing page. It introduces working there and links to openings. It is not one job. Follow its open-positions link. |
-| `https://ats.example.net/example-co`                                  | A job board listing several openings, hosted by the employer's hiring software. Add this as a source.                                   |
-| `https://ats.example.net/example-co/jobs/4815162342`                  | One posting that describes a single role. Paste it into posting-link intake.                                                            |
-| [TailorCV software repository](https://github.com/sethstraw/tailorcv) | Holds this project's code. Its repository URL is not a job posting.                                                                     |
+| Example                                                                   | Page purpose and where to use it                                                                                                        |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `https://www.example.com/careers/`                                        | An employer careers landing page. It introduces working there and links to openings. It is not one job. Follow its open-positions link. |
+| `https://ats.example.net/example-co`                                      | A job board listing several openings, hosted by the employer's hiring software. Add this as a source.                                   |
+| `https://ats.example.net/example-co/jobs/4815162342`                      | One posting that describes a single role. Paste it into posting-link intake.                                                            |
+| [ClearScout software repository](https://github.com/sethstraw/clearscout) | Holds this project's code. Its repository URL is not a job posting.                                                                     |
 
 These addresses show the shapes only; they do not lead to real openings. A role
 can expire. If a posting closes, choose another individual opening from its
@@ -368,7 +368,7 @@ use it.
 Select only postings worth evaluating. Evaluation is queued, may call the
 provider, and commits the posting, requirements, evidence links, factors, and
 verdict together. Open that result before configuring a broader search. A
-refusal is not a low score: it means TailorCV could not make the claim under the
+refusal is not a low score: it means ClearScout could not make the claim under the
 applicable rule.
 
 ![Redacted live workspace: the review queue showing retained posting facts and relevance decisions](images/pending-discoveries.png)
@@ -496,7 +496,7 @@ calls no model.
    **Board or careers address**. A posting link from the board also works as a
    starting point; [How to choose a link](#how-to-choose-a-link) shows the
    shapes.
-3. Choose **Validate** to preview what TailorCV can read there.
+3. Choose **Validate** to preview what ClearScout can read there.
 4. Enter the employer name. Record any published **Condition on reading it**.
    Then choose **Add source**.
 5. Switch on **Swept**. A source that states a condition shows it first and
@@ -555,7 +555,7 @@ not one job's application form.
 1. Under **Add a source**, paste its **Board or careers address**.
 2. Choose **Employer board** for one employer, or **Aggregator** for a site
    listing several employers.
-3. Choose **Validate**. TailorCV checks the address and reports what it can
+3. Choose **Validate**. ClearScout checks the address and reports what it can
    read. Changing the address or kind requires validation again.
 4. Enter a name under **Step 2: Name and terms evidence**. Record any published
    reading condition and its address in **Condition on reading it** and
@@ -718,9 +718,9 @@ wording, but the same evidence checks run again and a reviewer cannot widen the
 selected evidence set. Approval names the exact proposal digest. If the bytes
 change afterward, that approval no longer applies.
 
-The approved Markdown is TailorCV's deliverable. Rendering is an external
+The approved Markdown is ClearScout's deliverable. Rendering is an external
 authority: an explicit render request can invoke a compatible external command
-and verify the returned artifact, but TailorCV does not bundle or depend on
+and verify the returned artifact, but ClearScout does not bundle or depend on
 `pressume`.
 
 ## Check cost before approving work
@@ -729,7 +729,7 @@ Read the estimated cost history beside each paid action. Past costs help plan
 a run; they do not authorize it. A missing price is not a free call.
 
 In the web client, paid background tasks ask first. Other paths do not.
-`tailorcv tasks tailor`, a direct `POST /api/v1/tasks`, and an API retry of a
+`clearscout tasks tailor`, a direct `POST /api/v1/tasks`, and an API retry of a
 failed paid task enqueue paid work with no confirmation. CLI initialization
 with an ordinary CV begins paid intake when invoked, as explained above. Check
 provider billing before running any of them.
@@ -795,7 +795,7 @@ change, so treat the figures as orders of magnitude, not quotes.
 
 The table covers two weeks of that search, start to finish: research,
 scanning, review, evaluation, and tailoring. The same weeks also carried the
-maintainer's testing of TailorCV itself, and its recorded spend was several
+maintainer's testing of ClearScout itself, and its recorded spend was several
 times this. So each posting counts once, priced at its measured unit cost, and
 campaigns run only to prove a change are left out.
 
@@ -859,8 +859,8 @@ retention](privacy-and-retention.md) before using a real CV.
 
 ## Diagnose before changing storage
 
-`tailorcv doctor` checks configuration, the master CV, credentials, and durable
-storage without running a model. `tailorcv db status` reports whether the
+`clearscout doctor` checks configuration, the master CV, credentials, and durable
+storage without running a model. `clearscout db status` reports whether the
 database matches the installed build. Database creation, upgrade, import,
 backup, and downgrade are explicit commands because startup must not mutate
 durable state.

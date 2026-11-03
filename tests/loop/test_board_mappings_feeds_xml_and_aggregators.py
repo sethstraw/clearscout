@@ -10,16 +10,16 @@ import httpx
 import pytest
 from defusedxml.ElementTree import fromstring
 
-from tailorcv.domain.staged_facts import PostedDateGrade
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.board_mappings.arbeitnow import ARBEITNOW_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.comeet import COMEET_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.himalayas import HIMALAYAS_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.icims import ICIMS_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import Posting, source_listing
-from tailorcv.infrastructure.web_fetch.board_mappings.personio import PERSONIO_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.phenom import PHENOM_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.teamtailor import TEAMTAILOR_MAPPING
+from clearscout.domain.staged_facts import PostedDateGrade
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_mappings.arbeitnow import ARBEITNOW_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.comeet import COMEET_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.himalayas import HIMALAYAS_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.icims import ICIMS_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import Posting, source_listing
+from clearscout.infrastructure.web_fetch.board_mappings.personio import PERSONIO_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.phenom import PHENOM_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.teamtailor import TEAMTAILOR_MAPPING
 from tests.support.doubles import ScriptedPage
 from tests.support.http import policy_client
 

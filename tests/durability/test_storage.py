@@ -10,12 +10,12 @@ import pytest
 from sqlalchemy.orm import Session
 from typer.testing import CliRunner
 
-from tailorcv.application.workspaces import StagedWorkspaceLayout, WorkspaceService
-from tailorcv.bootstrap.cli import app
-from tailorcv.bootstrap.setup import run_application_setup
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage, WorkspaceRootPolicy
-from tailorcv.infrastructure.persistence.database import sqlite_path
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.workspaces import StagedWorkspaceLayout, WorkspaceService
+from clearscout.bootstrap.cli import app
+from clearscout.bootstrap.setup import run_application_setup
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage, WorkspaceRootPolicy
+from clearscout.infrastructure.persistence.database import sqlite_path
+from clearscout.shared.errors import ConfigError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedPrompter
 
@@ -35,12 +35,12 @@ def test_custom_sqlite_keeps_every_implicit_root_beside_the_database(tmp_path: P
 def test_data_root_is_a_coherent_zero_configuration_override(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("TAILORCV_DATABASE_URL", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_DATABASE_URL", raising=False)
     root = tmp_path / "all-data"
 
     storage = RuntimeStorage.resolve(data_root=root)
 
-    assert storage.database_url == f"sqlite+pysqlite:///{root.resolve() / 'tailorcv.sqlite3'}"
+    assert storage.database_url == f"sqlite+pysqlite:///{root.resolve() / 'clearscout.sqlite3'}"
     assert storage.artifact_root == root.resolve() / "artifacts"
     assert storage.workspaces_root == root.resolve() / "workspaces"
 
@@ -80,7 +80,7 @@ def test_serve_creates_api_workspaces_under_an_explicit_workspaces_root(
 def test_init_creates_its_workspace_under_an_explicit_workspaces_root(
     tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("TAILORCV_DATABASE_URL", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_DATABASE_URL", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setattr("keyring.get_password", lambda service, name: None)
@@ -108,10 +108,10 @@ def test_init_creates_its_workspace_under_an_explicit_workspaces_root(
 
 def test_non_sqlite_requires_an_explicit_local_artifact_boundary(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="no local filesystem boundary"):
-        RuntimeStorage.resolve("postgresql://localhost/tailorcv")
+        RuntimeStorage.resolve("postgresql://localhost/clearscout")
 
     storage = RuntimeStorage.resolve(
-        "postgresql://localhost/tailorcv", artifact_root=tmp_path / "artifacts"
+        "postgresql://localhost/clearscout", artifact_root=tmp_path / "artifacts"
     )
     assert sqlite_path(storage.database_url) is None
     assert storage.artifact_root == (tmp_path / "artifacts").resolve()
@@ -126,14 +126,14 @@ def test_custom_database_setup_never_touches_the_default_documents_tree(
     default_documents = fake_home / "Documents"
     monkeypatch.setenv("HOME", str(fake_home))
     monkeypatch.setattr(
-        "tailorcv.infrastructure.persistence.database.user_documents_path",
+        "clearscout.infrastructure.persistence.database.user_documents_path",
         lambda: default_documents,
     )
-    monkeypatch.delenv("TAILORCV_DATABASE_URL", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_DATABASE_URL", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setattr("keyring.get_password", lambda service, name: None)
-    custom = tmp_path / "portable" / "tailorcv.sqlite3"
+    custom = tmp_path / "portable" / "clearscout.sqlite3"
 
     result = run_application_setup(
         ScriptedPrompter(interactive=False),
@@ -145,7 +145,7 @@ def test_custom_database_setup_never_touches_the_default_documents_tree(
 
     assert result.workspace_root == custom.parent / "workspaces" / "portable"
     assert (custom.parent / "artifacts").is_dir()
-    assert not (default_documents / "TailorCV").exists()
+    assert not (default_documents / "ClearScout").exists()
 
 
 def test_database_commands_share_data_root_without_touching_documents(
@@ -157,10 +157,10 @@ def test_database_commands_share_data_root_without_touching_documents(
     backup = tmp_path / "backups" / "portable.sqlite3"
     monkeypatch.setenv("HOME", str(fake_home))
     monkeypatch.setattr(
-        "tailorcv.infrastructure.persistence.database.user_documents_path",
+        "clearscout.infrastructure.persistence.database.user_documents_path",
         lambda: default_documents,
     )
-    monkeypatch.delenv("TAILORCV_DATABASE_URL", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_DATABASE_URL", raising=False)
     cli = CliRunner()
 
     upgraded = cli.invoke(app, ["db", "upgrade", "--data-root", str(data_root)])
@@ -173,14 +173,14 @@ def test_database_commands_share_data_root_without_touching_documents(
     assert upgraded.exit_code == 0, upgraded.output
     assert status.exit_code == 0 and "Schema current: yes" in status.output
     assert backed_up.exit_code == 0, backed_up.output
-    assert (data_root / "tailorcv.sqlite3").is_file()
+    assert (data_root / "clearscout.sqlite3").is_file()
     assert backup.is_file()
-    assert not (default_documents / "TailorCV").exists()
+    assert not (default_documents / "ClearScout").exists()
 
 
 def test_database_status_reports_missing_tables_at_the_current_revision(tmp_path: Path) -> None:
     data_root = tmp_path / "pre-release-data"
-    database = data_root / "tailorcv.sqlite3"
+    database = data_root / "clearscout.sqlite3"
     cli = CliRunner()
     upgraded = cli.invoke(app, ["db", "upgrade", "--data-root", str(data_root)])
     assert upgraded.exit_code == 0, upgraded.output
@@ -201,7 +201,7 @@ def test_database_status_reports_missing_tables_at_the_current_revision(tmp_path
 
 def test_database_status_reports_missing_columns_at_the_current_revision(tmp_path: Path) -> None:
     data_root = tmp_path / "pre-release-data"
-    database = data_root / "tailorcv.sqlite3"
+    database = data_root / "clearscout.sqlite3"
     cli = CliRunner()
     upgraded = cli.invoke(app, ["db", "upgrade", "--data-root", str(data_root)])
     assert upgraded.exit_code == 0, upgraded.output
@@ -226,7 +226,7 @@ def test_database_status_reports_changed_constraints_at_the_current_revision(
     tmp_path: Path,
 ) -> None:
     data_root = tmp_path / "pre-release-data"
-    database = data_root / "tailorcv.sqlite3"
+    database = data_root / "clearscout.sqlite3"
     cli = CliRunner()
     upgraded = cli.invoke(app, ["db", "upgrade", "--data-root", str(data_root)])
     assert upgraded.exit_code == 0, upgraded.output
@@ -267,7 +267,7 @@ def test_workspace_database_failure_discards_private_directory_stage(
         )
 
     assert not root.exists()
-    assert not list(root.parent.glob(".faulted.tailorcv-stage-*"))
+    assert not list(root.parent.glob(".faulted.clearscout-stage-*"))
 
 
 def test_workspace_stage_is_reconciled_by_idempotent_retry(
@@ -287,7 +287,7 @@ def test_workspace_stage_is_reconciled_by_idempotent_retry(
             slug="recoverable", name="Recoverable", root_path=str(root)
         )
     assert not root.exists()
-    assert list(root.parent.glob(".recoverable.tailorcv-stage-*"))
+    assert list(root.parent.glob(".recoverable.clearscout-stage-*"))
 
     monkeypatch.setattr(StagedWorkspaceLayout, "finalize", original)
     recovered = WorkspaceService(durable_database, runtime_storage(durable_database)).create(

@@ -7,11 +7,11 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain import SearchProposalState, new_id
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import MasterCvProposal
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.domain import SearchProposalState, new_id
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import MasterCvProposal
 from tests.support.artifacts import runtime_storage
 
 

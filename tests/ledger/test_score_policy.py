@@ -13,20 +13,20 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import (
+from clearscout.application import job_search
+from clearscout.application.contracts import (
     SCORE_COMPONENTS,
     EvaluationCommit,
     EvaluationScores,
     ScoreComponentInput,
     score_weight_digest,
 )
-from tailorcv.application.job_search.models import JobListQuery
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.migrations.versions import v0001_schema
-from tailorcv.infrastructure.persistence.models import ScoreWeightComponent, ScoreWeightSet
+from clearscout.application.job_search.models import JobListQuery
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.migrations.versions import v0001_schema
+from clearscout.infrastructure.persistence.models import ScoreWeightComponent, ScoreWeightSet
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import evaluation_commit
 
@@ -227,7 +227,7 @@ def test_policies_are_appended_never_edited(durable_database_url: str, tmp_path:
 
         after = client.get(f"/api/v1/workspaces/{workspace_id}/score-weight-sets").json()
         assert len(after) == len(shipped) + 1
-        assert {item["name"] for item in after} == {"TailorCV default", "Pay first"}
+        assert {item["name"] for item in after} == {"ClearScout default", "Pay first"}
 
         # Authoring a policy makes it this workspace's own, so it takes over
         # from the shipped default without anybody naming it anywhere.
@@ -265,7 +265,7 @@ def test_a_policy_that_could_not_score_an_evaluation_is_refused(
             json={"name": "Missing a component", "weights": {"fit": "1.00"}},
         )
         assert missing.status_code == 422
-        assert missing.json()["type"] == "urn:tailorcv:problem:request-validation"
+        assert missing.json()["type"] == "urn:clearscout:problem:request-validation"
 
         unexpected = client.post(
             endpoint,
@@ -278,7 +278,7 @@ def test_a_policy_that_could_not_score_an_evaluation_is_refused(
             },
         )
         assert unexpected.status_code == 422
-        assert unexpected.json()["type"] == "urn:tailorcv:problem:request-validation"
+        assert unexpected.json()["type"] == "urn:clearscout:problem:request-validation"
 
         unnamed = client.post(
             endpoint,
@@ -318,4 +318,4 @@ def test_identical_weights_are_the_same_policy(durable_database_url: str, tmp_pa
         )
         assert clash.status_code == 409
         assert "already exist" in clash.json()["detail"]
-        assert "TailorCV default" in clash.json()["detail"]
+        assert "ClearScout default" in clash.json()["detail"]

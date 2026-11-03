@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_mappings import plain_description
-from tailorcv.shared.layout import plain_layout
+from clearscout.infrastructure.web_fetch.board_mappings import plain_description
+from clearscout.shared.layout import plain_layout
 
 REQUIRED_HEADING, PREFERRED_HEADING = "Requirements", "Preferred Qualifications"
 

@@ -6,18 +6,18 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.documents import DocumentService
-from tailorcv.application.documents.approvals import ApprovalService
-from tailorcv.application.documents.commands import DocumentVersionCommands
-from tailorcv.application.documents.promotion import DocumentArtifactPromotion
-from tailorcv.application.documents.queries import DocumentQueries
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.tasks import TaskQueueService, validate_task_payload
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import ArtifactLogicalType
-from tailorcv.infrastructure.artifacts import rendering
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.documents import DocumentService
+from clearscout.application.documents.approvals import ApprovalService
+from clearscout.application.documents.commands import DocumentVersionCommands
+from clearscout.application.documents.promotion import DocumentArtifactPromotion
+from clearscout.application.documents.queries import DocumentQueries
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.tasks import TaskQueueService, validate_task_payload
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import ArtifactLogicalType
+from clearscout.infrastructure.artifacts import rendering
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     ApprovalDecision,
     BackgroundTask,
     JobEvaluation,
@@ -600,7 +600,7 @@ def test_document_render_task_indexes_pressume_outputs(
             warnings=("pressume warned: readability: the final page is lightly filled",),
         )
 
-    monkeypatch.setattr("tailorcv.application.documents.render.rendering.render", fake_render)
+    monkeypatch.setattr("clearscout.application.documents.render.rendering.render", fake_render)
     queue = TaskQueueService(durable_database)
     task = queue.enqueue(
         workspace_id=workspace_id,
@@ -628,7 +628,7 @@ def test_document_render_task_indexes_pressume_outputs(
     )
 
     monkeypatch.setattr(
-        "tailorcv.application.documents.render.rendering.render",
+        "clearscout.application.documents.render.rendering.render",
         lambda _document, letter=False: rendering.Rendered(
             attempted=False, ok=False, message="pressume unavailable"
         ),
@@ -750,7 +750,7 @@ def test_document_render_names_outputs_as_a_package_and_renders_letters_as_lette
             path.write_bytes(b"rendered")
         return rendering.Rendered(attempted=True, ok=True, message="Rendered", produced=produced)
 
-    monkeypatch.setattr("tailorcv.application.documents.render.rendering.render", fake_render)
+    monkeypatch.setattr("clearscout.application.documents.render.rendering.render", fake_render)
     queue = TaskQueueService(durable_database)
     worker = Worker(
         durable_database,
@@ -806,7 +806,7 @@ def test_a_rendered_file_joins_the_family_of_the_document_it_renders(
         pdf.write_bytes(b"%PDF-" + document.read_bytes())
         return rendering.Rendered(attempted=True, ok=True, message="Rendered", produced=(pdf,))
 
-    monkeypatch.setattr("tailorcv.application.documents.render.rendering.render", fake_render)
+    monkeypatch.setattr("clearscout.application.documents.render.rendering.render", fake_render)
     queue = TaskQueueService(durable_database)
     worker = Worker(
         durable_database,
@@ -909,7 +909,7 @@ def test_a_render_numbers_past_every_version_its_family_already_holds(
         pdf.write_bytes(b"%PDF-rerendered")
         return rendering.Rendered(attempted=True, ok=True, message="Rendered", produced=(pdf,))
 
-    monkeypatch.setattr("tailorcv.application.documents.render.rendering.render", fake_render)
+    monkeypatch.setattr("clearscout.application.documents.render.rendering.render", fake_render)
     queue = TaskQueueService(durable_database)
     task = queue.enqueue(
         workspace_id=workspace_id,

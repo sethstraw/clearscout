@@ -4,10 +4,10 @@
 
 This repository holds product code and invented fixtures, nothing else. Your
 durable database, saved postings, workspace artifacts, backups, logs, exports,
-uploads, and personal settings live under `~/Documents/TailorCV` by default or
+uploads, and personal settings live under `~/Documents/ClearScout` by default or
 wherever private you point the data root. File-pipeline inputs and `--out`
 packages live at the paths you choose. Raw provider-response caches default to
-the operating system cache directory under `tailorcv/responses`.
+the operating system cache directory under `clearscout/responses`.
 
 Documents is a deliberate default for durable workspace state: you and ordinary
 backup tools can reach it without needing access to an
@@ -42,7 +42,7 @@ is append-only, and its database triggers refuse a delete.
 
 ## Retention is yours
 
-Nothing is deleted for you. TailorCV does not expire longitudinal records,
+Nothing is deleted for you. ClearScout does not expire longitudinal records,
 artifacts, backups, or cache entries on a timer. Immutable evaluations and
 append-only histories stay. There is no export-and-archive workflow. Records you
 are allowed to retire get soft archived; retained records are never quietly
@@ -51,7 +51,7 @@ rewritten.
 So it is worth going through your private backups, generated packages, and
 provider caches from time to time and removing what you no longer want, in
 whatever way suits your situation. If you delete an artifact from outside
-TailorCV, its metadata and hash stay behind on purpose, so the gap is visible
+ClearScout, its metadata and hash stay behind on purpose, so the gap is visible
 rather than silent.
 
 ## What leaves the machine

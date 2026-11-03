@@ -7,18 +7,23 @@ from datetime import date
 
 import pytest
 
-from tailorcv.application.master_cv.cv import CvInventory, Entry, EntryKind
-from tailorcv.application.tailoring.layout import Budget, wrapped_lines
-from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.stages.select import (
+from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind
+from clearscout.application.tailoring.layout import Budget, wrapped_lines
+from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.stages.select import (
     MEASURED_OUTCOME_BONUS,
     TopUpStop,
     _outcome_bonus,
     _within,
     build_plan,
 )
-from tailorcv.domain import EvidenceStatus
+from clearscout.domain import EvidenceStatus
 
 TODAY = date(2026, 8, 4)
 
@@ -96,7 +101,7 @@ def test_a_bullet_costs_the_lines_its_details_add(settings) -> None:
 
 
 def test_a_nested_line_under_a_degree_or_publication_is_reserved_its_own_line(settings) -> None:
-    from tailorcv.application.tailoring.layout import BLOCK_GAP_LINES
+    from clearscout.application.tailoring.layout import BLOCK_GAP_LINES
     from tests.support.resumes import must_haves, nested_copies_record
 
     one_publication = settings.model_copy(update={"min_publications": 1})
@@ -521,8 +526,8 @@ def test_leftover_budget_is_spent_rather_than_left_as_white_space(inventory, set
     Without a second pass the leftover lines are claimed by nobody and the page
     ends half empty with cited bullets unused.
     """
-    from tailorcv.application.master_cv.cv import EntryKind
-    from tailorcv.application.tailoring.layout import wrapped_lines
+    from clearscout.application.master_cv.cv import EntryKind
+    from clearscout.application.tailoring.layout import wrapped_lines
 
     bullets = [entry for entry in inventory.entries if entry.kind is EntryKind.BULLET]
     spec = make_spec(

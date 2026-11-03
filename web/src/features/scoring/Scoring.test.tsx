@@ -26,7 +26,7 @@ const WEIGHTS = [
 const POLICIES = [
   {
     id: "policy-1",
-    name: "TailorCV default",
+    name: "ClearScout default",
     version: 1,
     effective_at: "2026-08-07T00:00:00Z",
     is_shipped_default: true,
@@ -63,7 +63,7 @@ function stored(version: number, thesis: string, policy = ""): SearchParametersS
 
 /** The policy list as the server marks it when the search names `named`. */
 function policiesFor(named: string): ScoreWeightSet[] {
-  const active = named || "TailorCV default";
+  const active = named || "ClearScout default";
   return POLICIES.map((item) => ({ ...item, is_active: item.name === active }));
 }
 
@@ -72,7 +72,7 @@ function installApi(
   put: Parameters<typeof http.put>[1],
   policies: () => ScoreWeightSet[] = () => policiesFor(read().parameters.score_weight_set ?? ""),
 ) {
-  window.localStorage.setItem("tailorcv.workspace", "policy-test");
+  window.localStorage.setItem("clearscout.workspace", "policy-test");
   server.use(
     http.get("*/api/v1/workspaces/:workspaceId/score-weight-sets", () =>
       HttpResponse.json(policies()),
@@ -110,7 +110,7 @@ async function keepAfterConflict(
   policies: () => Response = () => HttpResponse.json(policiesFor("Pay first")),
 ) {
   let conflicted = false;
-  window.localStorage.setItem("tailorcv.workspace", "policy-test");
+  window.localStorage.setItem("clearscout.workspace", "policy-test");
   server.use(
     http.get("*/api/v1/workspaces/:workspaceId/score-weight-sets", () =>
       conflicted ? policies() : HttpResponse.json(policiesFor("")),
@@ -296,10 +296,10 @@ describe("scoring policy in force for the search", () => {
     renderPage();
 
     const lines = await screen.findAllByText(
-      "In force now: the default policy, which resolves to TailorCV default v1 (shipped default).",
+      "In force now: the default policy, which resolves to ClearScout default v1 (shipped default).",
     );
     expect(lines).toHaveLength(1);
-    expect(screen.getByText("In force now: TailorCV default v1 (shipped default).")).toBeTruthy();
+    expect(screen.getByText("In force now: ClearScout default v1 (shipped default).")).toBeTruthy();
     expect(screen.getByRole("option", { name: /^Default policy/ })).toBeTruthy();
   });
 

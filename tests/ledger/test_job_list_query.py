@@ -9,20 +9,20 @@ from pathlib import Path
 import pytest
 from sqlalchemy import event, select
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import (
+from clearscout.application import job_search
+from clearscout.application.contracts import (
     CompensationInput,
     EligibilityInput,
     EvaluationScores,
     ScoreComponentInput,
 )
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.job_search.models import JobListQuery, ManualJobReviewInput
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.domain.search_parameters import JobSearchParameters, Location, WorkEligibility
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import AuditEvent, JobPosting, PostingObservation
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.failures import ValidationError
+from clearscout.application.job_search.models import JobListQuery, ManualJobReviewInput
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.domain.search_parameters import JobSearchParameters, Location, WorkEligibility
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import AuditEvent, JobPosting, PostingObservation
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import NOW, evaluation_commit, workspace_with_committed_evaluation
 

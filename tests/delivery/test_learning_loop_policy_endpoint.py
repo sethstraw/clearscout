@@ -6,9 +6,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import runtime_storage
 
 

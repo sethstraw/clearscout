@@ -128,7 +128,7 @@ function TermsFields({ source, workspaceId }: { source: Source; workspaceId: str
       <label htmlFor={conditionId}>Condition on reading it</label>
       <p className="field-note" id={conditionNote.noteId}>
         What the operator published about automated reading. A condition that refuses reading is a
-        reason not to sweep this board; TailorCV asks you to confirm one before it turns the sweep
+        reason not to sweep this board; ClearScout asks you to confirm one before it turns the sweep
         on.
       </p>
       <textarea

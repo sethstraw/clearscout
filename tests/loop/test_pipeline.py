@@ -12,21 +12,21 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.master_cv.cv import EntryKind
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.layout import markdown_lines
-from tailorcv.application.tailoring.pipeline import (
+from clearscout.application.master_cv.cv import EntryKind
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.layout import markdown_lines
+from clearscout.application.tailoring.pipeline import (
     MaterializedRun,
     RunCommand,
     RunResult,
     run,
 )
-from tailorcv.application.tailoring.pipeline.models import PageSelection
-from tailorcv.application.tailoring.stages.jobspec import StoredPostingName
-from tailorcv.application.tailoring.stages.select import TopUpStop
-from tailorcv.application.tailoring.stages.verify import SCORED_AXES
-from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
-from tailorcv.shared.results import Finding, Outcome
+from clearscout.application.tailoring.pipeline.models import PageSelection
+from clearscout.application.tailoring.stages.jobspec import StoredPostingName
+from clearscout.application.tailoring.stages.select import TopUpStop
+from clearscout.application.tailoring.stages.verify import SCORED_AXES
+from clearscout.infrastructure.web_fetch.company_research import ResearchSource
+from clearscout.shared.results import Finding, Outcome
 from tests.support.doubles import ScriptedPrompter, ScriptedProvider
 from tests.support.payloads import script
 from tests.support.schema import literals
@@ -50,7 +50,7 @@ def scripted(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     sources: dict[str, Any] = {}
     provider = ScriptedProvider(script(sources))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -143,7 +143,7 @@ def test_a_non_materialized_run_returns_serialized_artifacts_without_an_output_t
 def test_rendering_a_non_materialized_run_is_refused_before_provider_work(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
-    from tailorcv.shared.errors import ConfigError
+    from clearscout.shared.errors import ConfigError
 
     settings = settings_for(master_cv, tmp_path)
 
@@ -236,7 +236,7 @@ def test_the_run_notes_a_must_have_tool_no_cited_evidence_names(
     scripted_run["EvidenceMap"] = lists_the_tool
     provider = ScriptedProvider(scripted_run)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -256,7 +256,7 @@ def test_a_draft_that_runs_out_of_cited_evidence_says_so_rather_than_filling(
     assert len(short) == 1, result.notes
     assert "Every cited bullet from the recent roles (the last" in short[0]
     assert "re-run with --pages 1" in short[0]
-    assert "tailorcv.toml" not in short[0]
+    assert "clearscout.toml" not in short[0]
     report = written_run(result).report.read_text(encoding="utf-8")
     length = report[report.index("## Length") :]
     assert "The resume is estimated at" in length
@@ -369,7 +369,7 @@ def test_the_deliverable_carries_no_annotation(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
     markdown = written_run(go(master_cv, tmp_path)).document.read_text(encoding="utf-8")
-    for marker in ("tailorcv", "<!--", "Tailoring report", "Run date"):
+    for marker in ("clearscout", "<!--", "Tailoring report", "Run date"):
         assert marker not in markdown
 
 
@@ -399,9 +399,9 @@ def test_a_run_without_a_key_and_without_a_terminal_fails_early(
 ) -> None:
     monkeypatch.delenv(SUITE_KEY_VARIABLE, raising=False)
     monkeypatch.setattr("keyring.get_password", lambda service, name: None)
-    from tailorcv.shared.errors import AuthError
+    from clearscout.shared.errors import AuthError
 
-    with pytest.raises(AuthError, match="tailorcv auth set"):
+    with pytest.raises(AuthError, match="clearscout auth set"):
         run(
             RunCommand(
                 source=posting(tmp_path),
@@ -416,13 +416,13 @@ def test_a_fabricated_figure_is_caught_before_the_critic_runs(
     master_cv: Path, tmp_path: Path
 ) -> None:
     """A drafter that invents a number must not reach the critic at all."""
-    from tailorcv.application.master_cv.cv import parse_cv
-    from tailorcv.application.tailoring.guardrails import Guardrails
-    from tailorcv.application.tailoring.stages.draft import DraftedLine, ResumeDraft
-    from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-    from tailorcv.application.tailoring.stages.match import EvidenceMap
-    from tailorcv.application.tailoring.stages.select import build_plan
-    from tailorcv.application.tailoring.stages.verify import check
+    from clearscout.application.master_cv.cv import parse_cv
+    from clearscout.application.tailoring.guardrails import Guardrails
+    from clearscout.application.tailoring.stages.draft import DraftedLine, ResumeDraft
+    from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+    from clearscout.application.tailoring.stages.match import EvidenceMap
+    from clearscout.application.tailoring.stages.select import build_plan
+    from clearscout.application.tailoring.stages.verify import check
 
     inventory = parse_cv(master_cv)
     settings = settings_for(master_cv, tmp_path)
@@ -456,14 +456,14 @@ def test_a_posting_that_matches_nothing_is_refused_rather_than_half_written(
     master_cv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """An empty experience section passes every check, which is the danger."""
-    from tailorcv.shared.errors import BudgetError
+    from clearscout.shared.errors import BudgetError
 
     sources: dict[str, Any] = {}
     script_with_no_matches = script(sources)
     script_with_no_matches["EvidenceMap"] = lambda schema: {"matches": []}
     provider = ScriptedProvider(script_with_no_matches)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -529,7 +529,7 @@ def test_an_interrupted_run_leaves_nothing_behind(
     def explode(*args: Any, **kwargs: Any) -> None:
         raise RuntimeError("interrupted")
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.service.render_report", explode)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.service.render_report", explode)
     with pytest.raises(RuntimeError):
         go(master_cv, tmp_path)
 
@@ -559,7 +559,7 @@ def test_screening_answers_without_drafting_anything(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
     """The cheapest and most decision-relevant output, available on its own."""
-    from tailorcv.application.tailoring.pipeline import screen
+    from clearscout.application.tailoring.pipeline import screen
 
     result = screen(
         posting(tmp_path), settings_for(master_cv, tmp_path), cache_enabled=False, out=tmp_path
@@ -574,7 +574,7 @@ def test_screening_answers_without_drafting_anything(
 def test_screening_costs_a_fraction_of_a_run(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
-    from tailorcv.application.tailoring.pipeline import screen
+    from clearscout.application.tailoring.pipeline import screen
 
     screened = screen(posting(tmp_path), settings_for(master_cv, tmp_path), cache_enabled=False)
     ran = go(master_cv, tmp_path)
@@ -585,9 +585,9 @@ def test_a_discounted_screen_builds_its_client_with_the_longer_wait(
     master_cv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The raised flex wait has to reach the client, not only the settings that state it."""
-    from tailorcv.application.config import FLEX_TIMEOUT_FLOOR
-    from tailorcv.application.tailoring.pipeline import screen
-    from tailorcv.shared.costs import ServiceTier
+    from clearscout.application.config import FLEX_TIMEOUT_FLOOR
+    from clearscout.application.tailoring.pipeline import screen
+    from clearscout.shared.costs import ServiceTier
 
     sources: dict[str, Any] = {}
     provider = ScriptedProvider(script(sources))
@@ -597,7 +597,7 @@ def test_a_discounted_screen_builds_its_client_with_the_longer_wait(
         waits.append(timeout)
         return provider
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.service.provider_for", building)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.service.provider_for", building)
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
     settings = settings_for(master_cv, tmp_path)
 
@@ -705,7 +705,7 @@ def test_tailoring_only_evidence_worded_as_taking_part_is_sent_to_the_critic(
     criticised: bool,
 ) -> None:
     """Participation wording is the claim a draft most readily upgrades to ownership."""
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     record = tmp_path / "master_cv.md"
     record.write_text(
@@ -789,7 +789,7 @@ def test_the_recorded_critic_finding_names_evidence_and_requirements_by_their_wo
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
     """The tailoring review shows the recorded findings; the redraft keeps the ids."""
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     provider = scripted["provider"]
     leaning_on_transferable(provider.script)
@@ -841,12 +841,12 @@ def test_force_asks_the_model_again_rather_than_replaying_the_cache(
     leaning_on_transferable(answers)
     provider = ScriptedProvider(answers)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     # Keep the cache in the test's own directory rather than the machine's.
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.cache.user_cache_dir",
+        "clearscout.infrastructure.providers.cache.user_cache_dir",
         lambda _name: str(tmp_path / "cache"),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -876,12 +876,12 @@ def test_default_settings_reuse_persisted_responses_before_redrawing(
     leaning_on_transferable(answers)
     provider = ScriptedProvider(answers)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     # Keep the cache in the test's own directory rather than the machine's.
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.cache.user_cache_dir",
+        "clearscout.infrastructure.providers.cache.user_cache_dir",
         lambda _name: str(tmp_path / "cache"),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -966,7 +966,7 @@ def test_the_saved_letter_opens_on_the_letterhead_the_critic_never_reads(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
     """The renderer's letter policy needs a name heading; the critic judges only the letter."""
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     heading = f"# {parse_cv(master_cv).name}"
     result = go(master_cv, tmp_path, want_cover_letter=True)
@@ -1026,11 +1026,11 @@ def test_a_cached_extraction_still_carries_the_stored_name(
     reading_a_placeholder_name(answers)
     provider = ScriptedProvider(answers)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.cache.user_cache_dir",
+        "clearscout.infrastructure.providers.cache.user_cache_dir",
         lambda _name: str(tmp_path / "cache"),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -1182,8 +1182,8 @@ def test_a_truncated_manifest_is_an_error_rather_than_a_traceback(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
     """An empty manifest reuses with a note, and an unreadable one raises ConfigError."""
-    from tailorcv.application.tailoring.pipeline.reuse import _load_manifest, _reuse
-    from tailorcv.shared.errors import ConfigError
+    from clearscout.application.tailoring.pipeline.reuse import _load_manifest, _reuse
+    from clearscout.shared.errors import ConfigError
 
     first = go(master_cv, tmp_path, force=False)
     directory = written_run(first).directory
@@ -1219,7 +1219,7 @@ def test_the_run_date_is_one_utc_value_rather_than_three_local_reads(
         def now(cls, tz: object = None) -> datetime:  # type: ignore[override]  # noqa: ARG003
             return pinned
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.service.datetime", Frozen)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.service.datetime", Frozen)
     result = go(master_cv, tmp_path)
 
     written = written_run(result)
@@ -1325,9 +1325,9 @@ def test_a_letter_is_not_redrafted_over_a_finding_no_rewrite_could_clear(
     Driven through the shared loop rather than `check_letter`, because every
     check a letter answers today is redraftable.
     """
-    from tailorcv.application.tailoring.pipeline.progress import _Progress
-    from tailorcv.application.tailoring.pipeline.rewrite import _until_clean
-    from tailorcv.application.tailoring.stages.verify import KeywordCoverage, Report
+    from clearscout.application.tailoring.pipeline.progress import _Progress
+    from clearscout.application.tailoring.pipeline.rewrite import _until_clean
+    from clearscout.application.tailoring.stages.verify import KeywordCoverage, Report
 
     attempts = 0
 
@@ -1348,9 +1348,9 @@ def test_a_letter_is_not_redrafted_over_a_finding_no_rewrite_could_clear(
 
 def test_a_check_that_fails_again_stops_the_loop_though_its_wording_moved() -> None:
     """Rewording a failure is not progress on it, and the budget bought three of them."""
-    from tailorcv.application.tailoring.pipeline.progress import _Progress
-    from tailorcv.application.tailoring.pipeline.rewrite import _until_clean
-    from tailorcv.application.tailoring.stages.verify import KeywordCoverage, Report
+    from clearscout.application.tailoring.pipeline.progress import _Progress
+    from clearscout.application.tailoring.pipeline.rewrite import _until_clean
+    from clearscout.application.tailoring.stages.verify import KeywordCoverage, Report
 
     attempts = 0
 
@@ -1463,9 +1463,9 @@ def test_a_clean_second_letter_is_kept_and_ends_the_loop(
 def test_a_repeated_check_continues_only_while_its_offenders_shrink(
     counts: tuple[int, ...], kept: int, drafted: int
 ) -> None:
-    from tailorcv.application.tailoring.pipeline.progress import _Progress
-    from tailorcv.application.tailoring.pipeline.rewrite import _until_clean
-    from tailorcv.application.tailoring.stages.verify import KeywordCoverage, Report
+    from clearscout.application.tailoring.pipeline.progress import _Progress
+    from clearscout.application.tailoring.pipeline.rewrite import _until_clean
+    from clearscout.application.tailoring.stages.verify import KeywordCoverage, Report
 
     def produce(feedback: str, attempt: int) -> tuple[int, Report]:
         count = counts[attempt - 1]
@@ -1486,9 +1486,9 @@ def test_a_repeated_check_continues_only_while_its_offenders_shrink(
 
 def test_a_run_clearing_one_check_only_to_fail_another_stops_at_the_budget() -> None:
     """The attempt budget is the ceiling when every attempt fails something new."""
-    from tailorcv.application.tailoring.pipeline.progress import _Progress
-    from tailorcv.application.tailoring.pipeline.rewrite import _until_clean
-    from tailorcv.application.tailoring.stages.verify import KeywordCoverage, Report
+    from clearscout.application.tailoring.pipeline.progress import _Progress
+    from clearscout.application.tailoring.pipeline.rewrite import _until_clean
+    from clearscout.application.tailoring.stages.verify import KeywordCoverage, Report
 
     attempts = 0
 
@@ -1780,8 +1780,8 @@ def test_an_empty_letter_stays_failed_when_rewrites_are_exhausted(
 def test_a_long_hybrid_career_reaches_a_reviewable_package_across_job_families(
     family, fragments, tmp_path, monkeypatch
 ):
-    from tailorcv.application.master_cv import parse_canonical_source
-    from tailorcv.application.master_cv.cv import EntryKind
+    from clearscout.application.master_cv import parse_canonical_source
+    from clearscout.application.master_cv.cv import EntryKind
 
     fixture = Path(__file__).parents[2] / "evals" / "cvs" / "hybrid_career.md"
     inventory = parse_canonical_source(fixture, fixture.read_bytes())
@@ -1834,7 +1834,7 @@ def test_a_long_hybrid_career_reaches_a_reviewable_package_across_job_families(
     }
     provider = ScriptedProvider(answers)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -1864,7 +1864,7 @@ def test_the_vision_transcript_rejects_an_answer_with_an_undeclared_key() -> Non
     """An answer carrying a field this schema never declared is refused, not dropped."""
     from pydantic import ValidationError
 
-    from tailorcv.application.tailoring.pipeline.models import VisionTranscript
+    from clearscout.application.tailoring.pipeline.models import VisionTranscript
 
     with pytest.raises(ValidationError):
         VisionTranscript.model_validate({"text": "posting text", "extra_field": "x"})
@@ -1881,13 +1881,13 @@ def test_retained_posting_export_names_publisher_and_effective_settings(
     assert "https://jobs.example/roles/platform" in report
     assert manifest["inputs"]["settings_hash"] in report
     assert manifest["inputs"]["code_revision"] in report
-    assert manifest["inputs"]["code_revision"] != manifest["inputs"]["tailorcv"]
+    assert manifest["inputs"]["code_revision"] != manifest["inputs"]["clearscout"]
 
 
 def test_each_letter_paragraph_keeps_its_citations_in_the_review_and_the_report(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     answered: list[dict[str, Any]] = []
     drafted = scripted["provider"].script["CoverLetter"]
@@ -1935,7 +1935,7 @@ def failing_the_first_draft(provider: ScriptedProvider) -> None:
 def test_the_manifest_records_every_attempt_and_the_feedback_that_followed_it(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
-    from tailorcv.infrastructure.providers.plan import digest_of
+    from clearscout.infrastructure.providers.plan import digest_of
 
     provider = scripted["provider"]
     failing_the_first_draft(provider)
@@ -1964,11 +1964,11 @@ def test_the_manifest_names_the_build_and_time_behind_each_cached_answer(
 
     provider = ScriptedProvider(script({}))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.cache.user_cache_dir",
+        "clearscout.infrastructure.providers.cache.user_cache_dir",
         lambda _name: str(tmp_path / "cache"),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -2005,7 +2005,7 @@ def test_the_manifest_names_the_build_and_time_behind_each_cached_answer(
 def test_the_report_names_a_stored_master_cv_by_version_rather_than_by_path(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any], file_name: str, named: str
 ) -> None:
-    from tailorcv.application.tailoring.pipeline import StoredMasterCv
+    from clearscout.application.tailoring.pipeline import StoredMasterCv
 
     stored = StoredMasterCv(version_id="cvv-synthetic-0001", file_name=file_name)
     result = go(master_cv, tmp_path, stored_cv=stored)
@@ -2019,14 +2019,14 @@ def test_the_report_names_a_stored_master_cv_by_version_rather_than_by_path(
 def test_the_page_record_costs_a_bullet_with_its_details_as_selection_does(
     settings, guardrails
 ) -> None:
-    from tailorcv.application.tailoring.stages.draft import (
+    from clearscout.application.tailoring.stages.draft import (
         DraftedLine,
         DraftedRole,
         ResumeDraft,
         fit,
     )
-    from tailorcv.application.tailoring.stages.match import EvidenceMap
-    from tailorcv.application.tailoring.stages.select import build_plan
+    from clearscout.application.tailoring.stages.match import EvidenceMap
+    from clearscout.application.tailoring.stages.select import build_plan
     from tests.support.resumes import cited, detailed_record, must_haves
 
     record = detailed_record()

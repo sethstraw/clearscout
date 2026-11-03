@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { storedFileName } from "./documentNames";
 
-const RUN_ROOT = "applications/_workbench/tailorcv/Globex_Platform_Director--gh-100/runs";
+const RUN_ROOT = "applications/_workbench/clearscout/Globex_Platform_Director--gh-100/runs";
 
 describe("the name a stored file shows", () => {
   it("separates two run records that share the file name, by the run folder", () => {

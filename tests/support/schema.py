@@ -81,20 +81,22 @@ def production_schemas() -> dict[str, type[BaseModel]]:
     is a stage no vendor-subset check covers, so a search for that call across
     src/ is the list this has to match.
     """
-    from tailorcv.application.discovery.assisted_content_resolution import (
+    from clearscout.application.discovery.assisted_content_resolution import (
         response_schema as recovery_schema,
     )
-    from tailorcv.application.discovery.relevance_review import (
+    from clearscout.application.discovery.relevance_review import (
         response_schema as relevance_review_schema,
     )
-    from tailorcv.application.discovery.search_vocabulary import response_schema as search_schema
-    from tailorcv.application.master_cv.sources import SourceDocument, SourceLine
-    from tailorcv.application.tailoring.pipeline.models import VisionTranscript
-    from tailorcv.application.tailoring.stages.draft import cover_letter_schema, draft_schema
-    from tailorcv.application.tailoring.stages.jobspec import JobSpecExtraction
-    from tailorcv.application.tailoring.stages.match import response_schema as match_schema
-    from tailorcv.application.tailoring.stages.structure import response_schema as structure_schema
-    from tailorcv.application.tailoring.stages.verify import CriticVerdict
+    from clearscout.application.discovery.search_vocabulary import response_schema as search_schema
+    from clearscout.application.master_cv.sources import SourceDocument, SourceLine
+    from clearscout.application.tailoring.pipeline.models import VisionTranscript
+    from clearscout.application.tailoring.stages.draft import cover_letter_schema, draft_schema
+    from clearscout.application.tailoring.stages.jobspec import JobSpecExtraction
+    from clearscout.application.tailoring.stages.match import response_schema as match_schema
+    from clearscout.application.tailoring.stages.structure import (
+        response_schema as structure_schema,
+    )
+    from clearscout.application.tailoring.stages.verify import CriticVerdict
 
     entries = ("entry-1", "entry-2")
     source = SourceDocument(

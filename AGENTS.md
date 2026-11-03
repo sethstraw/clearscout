@@ -1,17 +1,17 @@
 # Agent instructions
 
 These instructions are public project guidance for AI coding agents working on
-TailorCV. Private maintainer notes belong outside the repository or in ignored
+ClearScout. Private maintainer notes belong outside the repository or in ignored
 local files.
 
 ## Product boundary
 
-TailorCV is a local job-search tool. `README.md` describes the loop it runs and
+ClearScout is a local job-search tool. `README.md` describes the loop it runs and
 `ARCHITECTURE.md` explains why it is shaped that way; read those rather than a
 summary here.
 
 `pressume` renders Markdown in a separate sibling project. The two applications
-stay separate, and TailorCV stays free of any dependency on `pressume`.
+stay separate, and ClearScout stays free of any dependency on `pressume`.
 
 ## Non-negotiables
 

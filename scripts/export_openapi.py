@@ -1,4 +1,4 @@
-"""Export TailorCV's generated API schema for frontend type generation."""
+"""Export ClearScout's generated API schema for frontend type generation."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from tailorcv.bootstrap.api import create_app
+from clearscout.bootstrap.api import create_app
 
 
 def main() -> None:
@@ -16,7 +16,7 @@ def main() -> None:
     arguments = parser.parse_args()
     arguments.output.write_text(
         json.dumps(
-            create_app("sqlite+pysqlite:////nonexistent/tailorcv.sqlite3").openapi(),
+            create_app("sqlite+pysqlite:////nonexistent/clearscout.sqlite3").openapi(),
             indent=2,
             sort_keys=True,
         )

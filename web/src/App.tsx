@@ -97,11 +97,11 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 function prefersCollapsedNav() {
-  return window.localStorage.getItem("tailorcv.nav") === "collapsed";
+  return window.localStorage.getItem("clearscout.nav") === "collapsed";
 }
 
 function prefersDarkTheme() {
-  const stored = window.localStorage.getItem("tailorcv.theme");
+  const stored = window.localStorage.getItem("clearscout.theme");
   return stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
@@ -116,11 +116,11 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
-    window.localStorage.setItem("tailorcv.theme", dark ? "dark" : "light");
+    window.localStorage.setItem("clearscout.theme", dark ? "dark" : "light");
   }, [dark]);
 
   useEffect(() => {
-    window.localStorage.setItem("tailorcv.nav", navCollapsed ? "collapsed" : "expanded");
+    window.localStorage.setItem("clearscout.nav", navCollapsed ? "collapsed" : "expanded");
   }, [navCollapsed]);
 
   useEffect(() => {
@@ -238,7 +238,7 @@ export function App() {
           >
             <strong>Background worker is not running.</strong>
             <span>
-              Start <code>tailorcv worker</code> in another terminal before queueing background
+              Start <code>clearscout worker</code> in another terminal before queueing background
               work.
             </span>
           </aside>

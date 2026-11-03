@@ -4,11 +4,11 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tailorcv.application.documents import DocumentService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.documents import DocumentService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import seed_application_fit_report, studio_workspace
 

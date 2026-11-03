@@ -12,12 +12,12 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.application.discovery.posting_text import closure_signal
-from tailorcv.domain.records import PostingReadIntent, RobotsReadBasis
-from tailorcv.domain.staged_facts import FreshnessState
-from tailorcv.infrastructure.web_fetch.ingest import strip_tags
-from tailorcv.infrastructure.web_fetch.ingest.inputs import ingest, looks_like_url
-from tailorcv.infrastructure.web_fetch.ingest.url import (
+from clearscout.application.discovery.posting_text import closure_signal
+from clearscout.domain.records import PostingReadIntent, RobotsReadBasis
+from clearscout.domain.staged_facts import FreshnessState
+from clearscout.infrastructure.web_fetch.ingest import strip_tags
+from clearscout.infrastructure.web_fetch.ingest.inputs import ingest, looks_like_url
+from clearscout.infrastructure.web_fetch.ingest.url import (
     PublisherPostingUnverifiedError,
     check_posting,
     from_html,
@@ -25,11 +25,11 @@ from tailorcv.infrastructure.web_fetch.ingest.url import (
     shared_posting_feeds,
     workday_posting_detail,
 )
-from tailorcv.infrastructure.web_fetch.ingest.url.page_text import _extract
-from tailorcv.infrastructure.web_fetch.ingest.url.platform_readers import _greenhouse, _workable
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
-from tailorcv.shared.errors import IngestError
-from tailorcv.shared.layout import plain_layout
+from clearscout.infrastructure.web_fetch.ingest.url.page_text import _extract
+from clearscout.infrastructure.web_fetch.ingest.url.platform_readers import _greenhouse, _workable
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.shared.errors import IngestError
+from clearscout.shared.layout import plain_layout
 from tests.support.application_forms import (
     US_STATE_OPTIONS,
     ashby_form,
@@ -183,7 +183,7 @@ def test_linkedin_fetch_is_refused_by_its_published_policy() -> None:
         raise AssertionError(f"Policy allowed an unexpected request to {url}")
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -239,7 +239,7 @@ def _greenhouse_with_a_disallowed_api(requested: list[str]) -> PoliteHttpClient:
         )
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -362,7 +362,7 @@ def test_greenhouse_hosted_careers_page_records_an_http_refusal(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A hosted Greenhouse page refusal remains visible to the URL reader."""
-    caplog.set_level("DEBUG", logger="tailorcv")
+    caplog.set_level("DEBUG", logger="clearscout")
     answer = _greenhouse(
         "https://careers.example.test/roles/open?gh_jid=1234567890",
         client=policy_client(lambda url: text_response(url, "", status_code=404)),
@@ -377,7 +377,7 @@ def test_greenhouse_hosted_careers_page_records_a_robots_refusal(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A robots refusal remains a typed Greenhouse result for the fallback path."""
-    caplog.set_level("DEBUG", logger="tailorcv")
+    caplog.set_level("DEBUG", logger="clearscout")
 
     def unexpected_request(url: str) -> httpx.Response:
         raise AssertionError(f"unexpected request: {url}")
@@ -399,7 +399,7 @@ def test_greenhouse_hosted_careers_page_records_a_missing_board_token(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A page without a board token remains a typed Greenhouse refusal."""
-    caplog.set_level("DEBUG", logger="tailorcv")
+    caplog.set_level("DEBUG", logger="clearscout")
     answer = _greenhouse(
         "https://careers.example.test/roles/open?gh_jid=1234567890",
         client=policy_client(lambda url: text_response(url, "<html><body>Careers</body></html>")),
@@ -1169,7 +1169,7 @@ def test_a_redirect_into_a_disallowed_index_still_reads_as_a_closed_posting() ->
         )
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=get,
         resolver=public_resolver,
@@ -1210,7 +1210,7 @@ def test_a_retryable_status_is_retried_once_and_then_accepted() -> None:
         )
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=flaky,
         resolver=public_resolver,
@@ -1222,7 +1222,10 @@ def test_a_retryable_status_is_retried_once_and_then_accepted() -> None:
 
 def test_the_pause_between_a_refusal_and_its_retry_is_injectable() -> None:
     """Sleeping is not this function's subject, so a caller can say what waiting is."""
-    from tailorcv.infrastructure.web_fetch.ingest.url.transport import RETRY_PAUSE_SECONDS, http_get
+    from clearscout.infrastructure.web_fetch.ingest.url.transport import (
+        RETRY_PAUSE_SECONDS,
+        http_get,
+    )
 
     def refused(target: str, **kwargs: object) -> httpx.Response:
         status = 404 if target.endswith("/robots.txt") else 429
@@ -1230,7 +1233,7 @@ def test_the_pause_between_a_refusal_and_its_retry_is_injectable() -> None:
 
     waited: list[float] = []
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=refused,
         resolver=public_resolver,
@@ -1250,7 +1253,7 @@ def test_a_persistent_refusal_is_not_retried_forever() -> None:
         return httpx.Response(429, request=httpx.Request("GET", target))
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda seconds: None,
         getter=refused,
         resolver=public_resolver,
@@ -1260,12 +1263,12 @@ def test_a_persistent_refusal_is_not_retried_forever() -> None:
     assert len(calls) == len(set(calls)) * 2, "each endpoint should be tried exactly twice"
 
 
-def test_tailorcv_says_who_it_is() -> None:
-    """Every request names tailorcv as its user agent rather than posing as a browser."""
-    from tailorcv.infrastructure.web_fetch.ingest.url import JSON_HEADERS, PAGE_HEADERS
+def test_clearscout_says_who_it_is() -> None:
+    """Every request names clearscout as its user agent rather than posing as a browser."""
+    from clearscout.infrastructure.web_fetch.ingest.url import JSON_HEADERS, PAGE_HEADERS
 
     for headers in (PAGE_HEADERS, JSON_HEADERS):
-        assert headers["User-Agent"].startswith("tailorcv/")
+        assert headers["User-Agent"].startswith("clearscout/")
         assert "Mozilla" not in headers["User-Agent"]
     assert PAGE_HEADERS["Accept"].startswith("text/html")
     assert JSON_HEADERS["Accept"] == "application/json"
@@ -1284,12 +1287,12 @@ def test_a_read_without_a_client_closes_the_one_it_builds(
     monkeypatch: pytest.MonkeyPatch, read: Callable[[str], object], url: str
 ) -> None:
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy.httpx.Client", fake_httpx_client()
+        "clearscout.infrastructure.web_fetch.policy.httpx.Client", fake_httpx_client()
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.policy._resolve_addresses", public_resolver
+        "clearscout.infrastructure.web_fetch.policy._resolve_addresses", public_resolver
     )
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.time.sleep", lambda _s: None)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.time.sleep", lambda _s: None)
     built, closed = recorded_web_clients(monkeypatch)
 
     with contextlib.suppress(IngestError):
@@ -1486,14 +1489,14 @@ def test_a_text_file_reaches_the_canonical_layout(tmp_path: Path) -> None:
 def test_a_pdf_text_layer_reaches_the_canonical_layout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from tailorcv.infrastructure.web_fetch.ingest import pdf
+    from clearscout.infrastructure.web_fetch.ingest import pdf
 
     monkeypatch.setattr(pdf, "extract_text", lambda path: GLYPH_TEXT)
     assert pdf.from_pdf(tmp_path / "posting.pdf").text == GLYPH_LAYOUT
 
 
 def test_a_vision_transcript_reaches_the_canonical_layout(tmp_path: Path) -> None:
-    from tailorcv.infrastructure.web_fetch.ingest.image import from_image
+    from clearscout.infrastructure.web_fetch.ingest.image import from_image
 
     path = tmp_path / "shot.png"
     path.write_bytes(b"\x89PNG\r\n")
@@ -2696,14 +2699,14 @@ def blank_pdf(path: Path, pages: int = 1) -> Path:
 
 def test_a_pdf_with_no_text_layer_says_to_screenshot_it(tmp_path: Path) -> None:
     """A scan is a real case, and the honest answer is cheaper than rasterizing."""
-    from tailorcv.infrastructure.web_fetch.ingest.pdf import from_pdf
+    from clearscout.infrastructure.web_fetch.ingest.pdf import from_pdf
 
     with pytest.raises(IngestError, match="screenshot"):
         from_pdf(blank_pdf(tmp_path / "scan.pdf"))
 
 
 def test_an_unreadable_pdf_offers_the_same_remedy(tmp_path: Path) -> None:
-    from tailorcv.infrastructure.web_fetch.ingest.pdf import from_pdf
+    from clearscout.infrastructure.web_fetch.ingest.pdf import from_pdf
 
     path = tmp_path / "broken.pdf"
     path.write_bytes(b"%PDF-1.4\nnot really a pdf")
@@ -2713,14 +2716,14 @@ def test_an_unreadable_pdf_offers_the_same_remedy(tmp_path: Path) -> None:
 
 def test_a_pdf_reader_failure_on_one_page_does_not_lose_the_others(tmp_path: Path) -> None:
     """Nine good pages should survive one malformed one."""
-    from tailorcv.infrastructure.web_fetch.ingest.pdf import extract_text
+    from clearscout.infrastructure.web_fetch.ingest.pdf import extract_text
 
     assert extract_text(blank_pdf(tmp_path / "blank.pdf", pages=3)) == ""
 
 
 def test_a_pdf_reports_the_lines_set_wholly_in_a_bold_font() -> None:
     """A line mixing a bold title with a lighter date is not a heading."""
-    from tailorcv.infrastructure.web_fetch.ingest.pdf import extract_bold_lines
+    from clearscout.infrastructure.web_fetch.ingest.pdf import extract_bold_lines
 
     path = FIXTURES / "cv_formats" / "academic_pdf" / "cv.pdf"
     bold = [line.strip() for line in extract_bold_lines(path)]
@@ -2732,7 +2735,7 @@ def test_a_pdf_reports_the_lines_set_wholly_in_a_bold_font() -> None:
 
 def test_a_base_font_named_bold_is_emphasis_even_with_no_weight_declared(tmp_path: Path) -> None:
     """One of the base fourteen fonts has no descriptor, so pdfium reports weight zero."""
-    from tailorcv.infrastructure.web_fetch.ingest.pdf import extract_bold_lines
+    from clearscout.infrastructure.web_fetch.ingest.pdf import extract_bold_lines
     from tests.support.pdf_documents import text_pdf
 
     placed = [(60, 700, "PROFESSIONAL EXPERIENCE")]
@@ -2780,7 +2783,7 @@ def pdf_readings(path: Path) -> dict[str, list[str]]:
     The stream reading goes through the shipped posting reader, so the corpus
     fails if the opt-in column cut is ever made the default underneath it.
     """
-    from tailorcv.infrastructure.web_fetch.ingest.pdf import extract_text, from_pdf
+    from clearscout.infrastructure.web_fetch.ingest.pdf import extract_text, from_pdf
 
     texts = {"stream": from_pdf(path).text, "columns": extract_text(path, columns=True)}
     return {
@@ -2808,7 +2811,7 @@ def test_each_posting_pdf_shape_is_read_in_the_order_the_corpus_states(shape: st
 
 
 def test_an_image_reader_refuses_a_file_that_is_not_an_image(tmp_path: Path) -> None:
-    from tailorcv.infrastructure.web_fetch.ingest.image import media_type_of
+    from clearscout.infrastructure.web_fetch.ingest.image import media_type_of
 
     path = tmp_path / "notes.txt"
     path.write_text("hello", encoding="utf-8")
@@ -2817,7 +2820,7 @@ def test_an_image_reader_refuses_a_file_that_is_not_an_image(tmp_path: Path) -> 
 
 
 def test_an_image_without_vision_says_so(tmp_path: Path) -> None:
-    from tailorcv.infrastructure.web_fetch.ingest.image import from_image
+    from clearscout.infrastructure.web_fetch.ingest.image import from_image
 
     path = tmp_path / "shot.png"
     path.write_bytes(b"\x89PNG\r\n")
@@ -2826,7 +2829,7 @@ def test_an_image_without_vision_says_so(tmp_path: Path) -> None:
 
 
 def test_an_image_goes_through_the_injected_vision_reader(tmp_path: Path) -> None:
-    from tailorcv.infrastructure.web_fetch.ingest.image import from_image
+    from clearscout.infrastructure.web_fetch.ingest.image import from_image
 
     path = tmp_path / "shot.png"
     path.write_bytes(b"\x89PNG\r\n")

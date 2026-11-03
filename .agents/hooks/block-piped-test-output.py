@@ -28,7 +28,7 @@ CONSUMER_AT_START = re.compile(rf"^\s*\S*{CONSUMERS}\b", re.IGNORECASE)
 SEGMENTS = re.compile(r";|&&|\|\||\n")
 
 MESSAGE = """This pipes test output into a search, which discards the run and
-forces a rerun. In TailorCV, run `just pytest-log <name> <files>` and read the log
+forces a rerun. In ClearScout, run `just pytest-log <name> <files>` and read the log
 it names. Elsewhere, redirect the run once and search the file:
 
   uv run pytest ... > /tmp/pytest.out 2>&1

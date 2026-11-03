@@ -8,12 +8,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application.failures import ConflictError, NotFoundError
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.workspaces import GuardrailService, WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import GuardrailVersion
+from clearscout.application.failures import ConflictError, NotFoundError
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.workspaces import GuardrailService, WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import GuardrailVersion
 from tests.support.artifacts import runtime_storage
 
 

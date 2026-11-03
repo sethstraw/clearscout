@@ -1,5 +1,5 @@
-from tailorcv.application.master_cv import anchoring
-from tailorcv.application.master_cv.anchoring import Anchor, reanchor_many
+from clearscout.application.master_cv import anchoring
+from clearscout.application.master_cv.anchoring import Anchor, reanchor_many
 
 OLD_CV = """## Professional Experience
 

@@ -2,11 +2,11 @@
 
 from pathlib import Path
 
-from tailorcv.infrastructure import build
+from clearscout.infrastructure import build
 
 
 def test_source_changes_change_build_identity_without_changing_package_version(tmp_path: Path):
-    package = tmp_path / "tailorcv"
+    package = tmp_path / "clearscout"
     package.mkdir()
     source = package / "example.py"
     source.write_text("VALUE = 1\n")
@@ -19,7 +19,9 @@ def test_source_changes_change_build_identity_without_changing_package_version(t
 
 
 def test_distribution_record_identifies_an_install_without_source(tmp_path, monkeypatch):
-    monkeypatch.setattr(build, "_distribution_record", lambda: "tailorcv/module.so,sha256=abc,123")
+    monkeypatch.setattr(
+        build, "_distribution_record", lambda: "clearscout/module.so,sha256=abc,123"
+    )
     identity = build.identify_build(tmp_path, "0.1.0")
     assert identity.revision.startswith("record-sha256:")
     monkeypatch.setattr(build, "_distribution_record", lambda: "")

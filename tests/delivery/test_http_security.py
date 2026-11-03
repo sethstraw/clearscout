@@ -13,9 +13,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import InternalError
 
-from tailorcv.bootstrap.api import create_app
-from tailorcv.delivery.api.http_security import authority, origin_authority
-from tailorcv.infrastructure.persistence.migrations.versions import v0001_schema
+from clearscout.bootstrap.api import create_app
+from clearscout.delivery.api.http_security import authority, origin_authority
+from clearscout.infrastructure.persistence.migrations.versions import v0001_schema
 
 
 @pytest.mark.parametrize(
@@ -136,7 +136,7 @@ def test_framework_method_errors_use_problem_documents(api: TestClient) -> None:
 
     assert response.status_code == 405
     assert response.headers["content-type"].startswith("application/problem+json")
-    assert response.json()["type"] == "urn:tailorcv:problem:method-not-allowed"
+    assert response.json()["type"] == "urn:clearscout:problem:method-not-allowed"
     assert response.json()["correlation_id"] == response.headers["x-correlation-id"]
 
 
@@ -158,7 +158,7 @@ def test_an_unexpected_database_raise_keeps_the_problem_contract(
 
     assert response.status_code == 500
     assert response.headers["content-type"].startswith("application/problem+json")
-    assert response.json()["type"] == "urn:tailorcv:problem:database-fault"
+    assert response.json()["type"] == "urn:clearscout:problem:database-fault"
     assert response.json()["correlation_id"] == response.headers["x-correlation-id"]
     # The database's own wording never reaches the client.
     assert "immutable" not in response.text
@@ -196,7 +196,7 @@ def test_a_cross_origin_write_is_refused_and_a_same_origin_one_is_not(api: TestC
     allowed = api.post(
         "/api/v1/workspaces",
         json=body,
-        headers={"Origin": "http://localhost", "X-TailorCV-Request": "browser"},
+        headers={"Origin": "http://localhost", "X-ClearScout-Request": "browser"},
     )
     assert allowed.status_code == 201
 
@@ -204,8 +204,8 @@ def test_a_cross_origin_write_is_refused_and_a_same_origin_one_is_not(api: TestC
 @pytest.mark.parametrize(
     "headers",
     [
-        {"Sec-Fetch-Site": "same-origin", "X-TailorCV-Request": "browser"},
-        {"Referer": "http://localhost/", "X-TailorCV-Request": "browser"},
+        {"Sec-Fetch-Site": "same-origin", "X-ClearScout-Request": "browser"},
+        {"Referer": "http://localhost/", "X-ClearScout-Request": "browser"},
     ],
 )
 def test_browser_indicators_without_an_origin_are_refused_but_local_clients_remain_supported(
@@ -234,7 +234,7 @@ def test_cross_site_fetch_metadata_is_refused_even_for_an_exact_origin(api: Test
         headers={
             "Origin": "http://localhost",
             "Sec-Fetch-Site": "cross-site",
-            "X-TailorCV-Request": "browser",
+            "X-ClearScout-Request": "browser",
         },
     )
 
@@ -249,10 +249,12 @@ def test_frontend_root_asset_is_served_before_the_spa_fallback(
     frontend = tmp_path / "web"
     (frontend / "assets").mkdir(parents=True)
     (frontend / "brand").mkdir()
-    (frontend / "index.html").write_text("<!doctype html><title>TailorCV</title>", encoding="utf-8")
+    (frontend / "index.html").write_text(
+        "<!doctype html><title>ClearScout</title>", encoding="utf-8"
+    )
     (frontend / "favicon.svg").write_text("<svg></svg>", encoding="utf-8")
     (frontend / "brand" / "mark.svg").write_text("<svg id='mark'></svg>", encoding="utf-8")
-    monkeypatch.setattr("tailorcv.bootstrap.api._frontend_directory", lambda: frontend)
+    monkeypatch.setattr("clearscout.bootstrap.api._frontend_directory", lambda: frontend)
 
     with TestClient(create_app(durable_database_url), base_url="http://localhost") as client:
         favicon = client.get("/favicon.svg")
@@ -268,7 +270,7 @@ def test_frontend_root_asset_is_served_before_the_spa_fallback(
     assert brand_mark.status_code == 200
     assert brand_mark.headers["content-type"].startswith("image/svg+xml")
     assert brand_mark.text == "<svg id='mark'></svg>"
-    assert application_route.text == "<!doctype html><title>TailorCV</title>"
+    assert application_route.text == "<!doctype html><title>ClearScout</title>"
 
 
 @pytest.mark.parametrize("frontend_present", [False, True])
@@ -280,9 +282,9 @@ def test_openapi_discovery_returns_the_contract_before_the_frontend_route(
 ) -> None:
     frontend = tmp_path / "frontend"
     (frontend / "assets").mkdir(parents=True)
-    (frontend / "index.html").write_text("<!doctype html><title>TailorCV</title>")
+    (frontend / "index.html").write_text("<!doctype html><title>ClearScout</title>")
     monkeypatch.setattr(
-        "tailorcv.bootstrap.api._frontend_directory",
+        "clearscout.bootstrap.api._frontend_directory",
         lambda: frontend if frontend_present else None,
     )
     with TestClient(create_app(durable_database_url), base_url="http://localhost") as client:
@@ -300,7 +302,7 @@ def test_api_only_help_points_at_a_route_that_exists_without_the_spa(
     durable_database_url: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The API remains navigable when a distribution carries no frontend bundle."""
-    monkeypatch.setattr("tailorcv.bootstrap.api._frontend_directory", lambda: None)
+    monkeypatch.setattr("clearscout.bootstrap.api._frontend_directory", lambda: None)
     with TestClient(create_app(durable_database_url), base_url="http://localhost") as client:
         root = client.get("/")
         docs = client.get("/api/v1/docs", follow_redirects=False)
@@ -309,7 +311,7 @@ def test_api_only_help_points_at_a_route_that_exists_without_the_spa(
     assert root.json()["documentation"] == "/api/v1/openapi.json"
     assert docs.headers["location"] == "/api/v1/openapi.json"
     assert missing.status_code == 404
-    assert missing.json()["type"] == "urn:tailorcv:problem:not-found"
+    assert missing.json()["type"] == "urn:clearscout:problem:not-found"
 
 
 def test_api_errors_are_stable_and_do_not_echo_undeclared_fields(
@@ -401,7 +403,7 @@ def test_local_host_and_browser_origin_boundary(durable_database_url: str, tmp_p
                 headers={
                     "Host": host,
                     "Origin": origin,
-                    "X-TailorCV-Request": "browser",
+                    "X-ClearScout-Request": "browser",
                 },
                 json={"slug": f"browser-{index}", "name": f"Browser {index}"},
             )

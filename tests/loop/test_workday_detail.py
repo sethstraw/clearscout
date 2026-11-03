@@ -12,9 +12,9 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.scan_sweep import BoardSweep
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.scan_sweep import BoardSweep
+from clearscout.application.discovery.screening import (
     DiscoveryScreening,
     ScreeningCode,
     ScreeningDimension,
@@ -22,8 +22,8 @@ from tailorcv.application.discovery.screening import (
     ScreeningStanding,
     screen_discovery,
 )
-from tailorcv.application.discovery.source_continuation import SourceContinuationHandler
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_continuation import SourceContinuationHandler
+from clearscout.application.discovery.source_reading import (
     PostingCheck,
     SourceContinuationTarget,
     SourceDetailSummary,
@@ -31,11 +31,11 @@ from tailorcv.application.discovery.source_reading import (
     SourceRead,
     SourceReadOptions,
 )
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.bootstrap.worker import Worker
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.search_parameters import (
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.bootstrap.worker import Worker
+from clearscout.domain import SourceReadOutcome
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     Cluster,
@@ -45,18 +45,18 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import StagedListingFacts
-from tailorcv.infrastructure.artifacts.store import file_uri_path
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Artifact, SourceScan
-from tailorcv.infrastructure.web_fetch.ingest.url import (
+from clearscout.domain.staged_facts import StagedListingFacts
+from clearscout.infrastructure.artifacts.store import file_uri_path
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Artifact, SourceScan
+from clearscout.infrastructure.web_fetch.ingest.url import (
     check_posting,
     from_url,
     guarded_posting_reads,
     workday_posting_detail,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.shared.errors import IngestError
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.shared.errors import IngestError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedBoards, UnexpectedPostingFetcher
 from tests.support.http import policy_client

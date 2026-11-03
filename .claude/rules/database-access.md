@@ -2,7 +2,7 @@
 paths:
   - "**/*.db"
   - "**/*.sqlite3"
-  - "src/tailorcv/infrastructure/persistence/**"
+  - "src/clearscout/infrastructure/persistence/**"
 ---
 
 # Reading a workspace database

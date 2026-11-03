@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.artifacts.store import LocalArtifactStore, file_uri_path
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Artifact
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.artifacts.store import LocalArtifactStore, file_uri_path
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Artifact
 
 
 def runtime_storage(database: Database, artifact_root: Path | None = None) -> RuntimeStorage:

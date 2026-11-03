@@ -17,18 +17,18 @@ from typing import Any
 import httpx
 from fastapi.testclient import TestClient
 
-import tailorcv
-from tailorcv.application.config import CONFIG_FILENAME, find_config
-from tailorcv.application.job_search.models import ClosingDateEditInput, ManualJobReviewInput
-from tailorcv.application.workspaces.models import ScanScheduleInput
-from tailorcv.bootstrap.api import create_app
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.delivery.api.models.search import SearchParametersBody
-from tailorcv.delivery.api.models.tasks import TaskCreate
-from tailorcv.delivery.api.models.workspaces import SourceCreate, WorkspaceCreate
-from tailorcv.delivery.cli.support import open_database
-from tailorcv.domain import SourceReadOutcome, TaskStatus
-from tailorcv.domain.search_parameters import (
+import clearscout
+from clearscout.application.config import CONFIG_FILENAME, find_config
+from clearscout.application.job_search.models import ClosingDateEditInput, ManualJobReviewInput
+from clearscout.application.workspaces.models import ScanScheduleInput
+from clearscout.bootstrap.api import create_app
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.delivery.api.models.search import SearchParametersBody
+from clearscout.delivery.api.models.tasks import TaskCreate
+from clearscout.delivery.api.models.workspaces import SourceCreate, WorkspaceCreate
+from clearscout.delivery.cli.support import open_database
+from clearscout.domain import SourceReadOutcome, TaskStatus
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     JobSearchParameters,
@@ -36,9 +36,9 @@ from tailorcv.domain.search_parameters import (
     Seniority,
     TargetTitle,
 )
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.persistence.database import sqlite_path
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.persistence.database import sqlite_path
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 
 ASSET_REFERENCE = re.compile(r"(?:src|href)=[\"'](/assets/[^\"']+)[\"']")
 POSTING_URL = "https://job-boards.greenhouse.io/acme/jobs/101"
@@ -50,7 +50,7 @@ PERSONAL_DATE = date(2099, 12, 15)
 def _cli(root: Path, *arguments: str, expected: int = 0) -> str:
     """Run the installed CLI against the isolated data root."""
     result = subprocess.run(  # noqa: S603 - installed executable and fixed caller arguments
-        [str(Path(sys.prefix) / "bin" / "tailorcv"), *arguments, "--data-root", str(root)],
+        [str(Path(sys.prefix) / "bin" / "clearscout"), *arguments, "--data-root", str(root)],
         capture_output=True,
         text=True,
         check=False,
@@ -205,7 +205,7 @@ def _synthetic_http() -> PoliteHttpClient:
         synthetic_seconds += seconds
 
     return PoliteHttpClient(
-        user_agent="tailorcv/installed-smoke",
+        user_agent="clearscout/installed-smoke",
         getter=_synthetic_get,
         poster=_reject_post,
         resolver=lambda _host, port: [
@@ -302,7 +302,7 @@ def _scan(root: Path, workspace_id: str, source_ids: list[str]) -> dict[str, Any
                 json={"closing_date_override": f"{PERSONAL_DATE.isoformat()}T00:00:00Z"},
             )
             assert invalid.status_code == 422, invalid.text
-            assert invalid.json()["type"] == "urn:tailorcv:problem:request-validation"
+            assert invalid.json()["type"] == "urn:clearscout:problem:request-validation"
             tracked = _json(
                 client,
                 "POST",
@@ -379,10 +379,10 @@ def _persisted(
 
 def _first_use(root: Path) -> int:
     """Initialize storage, start both managed processes, and verify persistence after restart."""
-    package = Path(tailorcv.__file__).resolve()
+    package = Path(clearscout.__file__).resolve()
     checkout = Path(__file__).resolve().parents[1]
     assert package.is_relative_to(Path(sys.prefix).resolve()), package
-    assert not package.is_relative_to(checkout), "Smoke imported TailorCV from the checkout"
+    assert not package.is_relative_to(checkout), "Smoke imported ClearScout from the checkout"
     assert find_config() == Path.cwd() / CONFIG_FILENAME
     _cli(root, "db", "upgrade")
     with socket.socket() as listener:
@@ -439,7 +439,7 @@ def main() -> int:
     """Run first use with isolated storage, configuration, and unavailable credentials."""
     if len(sys.argv) == 3 and sys.argv[1] == "--isolated-root":
         return _first_use(Path(sys.argv[2]))
-    with TemporaryDirectory(prefix="tailorcv-installed-") as temporary:
+    with TemporaryDirectory(prefix="clearscout-installed-") as temporary:
         root = Path(temporary)
         (root / CONFIG_FILENAME).write_text("", encoding="ascii")
         environment = {

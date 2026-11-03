@@ -1,15 +1,15 @@
 # Backend development
 
-The Python application is in `src/tailorcv/`. One set of services sits behind
+The Python application is in `src/clearscout/`. One set of services sits behind
 three ways in: the Typer CLI, the versioned FastAPI adapter, and the durable
 worker. A change belongs in the service rather than in whichever entry point you
 happened to be holding when you noticed it.
 
 ## Durable workflow entry points
 
-| Use case       | CLI                     | HTTP                                        | Worker             |
-| -------------- | ----------------------- | ------------------------------------------- | ------------------ |
-| Paid tailoring | `tailorcv tasks tailor` | `POST /api/v1/tasks` with `workflow.tailor` | `TailoringHandler` |
+| Use case       | CLI                       | HTTP                                        | Worker             |
+| -------------- | ------------------------- | ------------------------------------------- | ------------------ |
+| Paid tailoring | `clearscout tasks tailor` | `POST /api/v1/tasks` with `workflow.tailor` | `TailoringHandler` |
 
 The CLI and HTTP adapter validate the same task payload and enqueue through
 `TaskQueueService`. The worker claims that durable task and executes the
@@ -41,7 +41,7 @@ for an audit.
 
 ## Where things belong
 
-Every package under `src/tailorcv/` opens with a docstring saying what it is
+Every package under `src/clearscout/` opens with a docstring saying what it is
 for, and those docstrings are the map. Read them before placing new code instead
 of guessing from a neighbouring file, and do not copy them into prose here,
 because the copy is what goes stale.

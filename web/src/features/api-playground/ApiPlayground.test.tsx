@@ -8,7 +8,7 @@ import { server } from "../../test/msw/server";
 import { ApiPlaygroundPage } from "./ApiPlayground";
 
 const schema = {
-  info: { title: "Synthetic TailorCV API", version: "0.2.0" },
+  info: { title: "Synthetic ClearScout API", version: "0.2.0" },
   paths: {
     "/health": {
       get: {
@@ -46,7 +46,7 @@ describe("ApiPlaygroundPage", () => {
         return HttpResponse.json({ status: "healthy", version: "0.2.0" });
       }),
       http.post("*/tasks", ({ request }) => {
-        taskRequestHeaders.push(request.headers.get("X-TailorCV-Request"));
+        taskRequestHeaders.push(request.headers.get("X-ClearScout-Request"));
         return HttpResponse.json({ id: "task-1" }, { status: 202 });
       }),
     );

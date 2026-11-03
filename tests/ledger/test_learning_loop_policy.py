@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.failures import ConflictError, NotFoundError
-from tailorcv.application.workspaces import (
+from clearscout.application.failures import ConflictError, NotFoundError
+from clearscout.application.workspaces import (
     LearningLoopPolicyService,
     WorkspaceService,
     WorkspaceSettingsService,
 )
-from tailorcv.domain.policy import LearningLoopPolicy
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.domain.policy import LearningLoopPolicy
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import runtime_storage
 
 

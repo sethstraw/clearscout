@@ -65,8 +65,8 @@ from evals.inspect.selection import (
 from evals.support.inventory import synthetic_guardrails, synthetic_inventory
 from pydantic import TypeAdapter, ValidationError
 
-from tailorcv.application.tailoring.stages.jobspec import Dimension
-from tailorcv.application.tailoring.stages.match import Classification, Strength
+from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.match import Classification, Strength
 from tests.support.match_selection import (
     HELD_OUT,
     SET_SIZE,
@@ -585,12 +585,13 @@ def test_the_reviewer_rubric_shares_the_product_behavioral_boundary(boundary: st
 
 def test_each_family_keeps_its_own_hash_domain() -> None:
     """A judgment cannot be replayed into another family, because the domain differs."""
-    assert review_domain(MATCH, ReviewArtifact.JUDGMENT) == "tailorcv-match-judgment-v1"
+    assert review_domain(MATCH, ReviewArtifact.JUDGMENT) == "clearscout-match-judgment-v1"
     assert (
-        review_domain(RELEVANCE, ReviewArtifact.JUDGMENT) == "tailorcv-relevance-review-judgment-v1"
+        review_domain(RELEVANCE, ReviewArtifact.JUDGMENT)
+        == "clearscout-relevance-review-judgment-v1"
     )
     assert review_domain(RELEVANCE, ReviewArtifact.REVIEW_SET) == (
-        "tailorcv-relevance-review-judgment-set-v1"
+        "clearscout-relevance-review-judgment-set-v1"
     )
     assert len({review_domain(MATCH, item) for item in ReviewArtifact}) == len(ReviewArtifact)
 
@@ -717,7 +718,7 @@ def test_a_relevance_judgment_records_the_axes_and_the_recommendation() -> None:
         "decisive_basis",
         "recommendation",
     )
-    assert judgment.protocol_version == "tailorcv-relevance-review-development-v1"
+    assert judgment.protocol_version == "clearscout-relevance-review-development-v1"
 
 
 def test_a_relevance_judgment_refuses_a_combination_the_stage_never_allows() -> None:
@@ -732,7 +733,7 @@ def test_a_judgment_cannot_declare_another_familys_protocol_version() -> None:
         _judgment_from(
             _relevance_decision(),
             family=RELEVANCE,
-            declared="tailorcv-match-development-v1",
+            declared="clearscout-match-development-v1",
         )
 
 

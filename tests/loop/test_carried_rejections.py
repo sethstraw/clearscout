@@ -7,11 +7,11 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.derived_vocabulary_rules import (
+from clearscout.application.discovery.derived_vocabulary_rules import (
     SearchArchetype,
     SearchTitle,
 )
-from tailorcv.application.discovery.proposals import (
+from clearscout.application.discovery.proposals import (
     CarriedRejection,
     CarriedRejections,
     SearchArchetypeProposalService,
@@ -20,28 +20,28 @@ from tailorcv.application.discovery.proposals import (
     accepted_clusters,
     carried_rejections,
 )
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.discovery.search_parameter_summary import (
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.discovery.search_parameter_summary import (
     accepted_proposals_block,
     carried_rejections_block,
 )
-from tailorcv.application.discovery.search_proposal_inbox import (
+from clearscout.application.discovery.search_proposal_inbox import (
     SearchProposalInbox,
     remaining_capacity,
 )
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import ProposalRejectionReason, SearchProposalState, new_id, utc_now
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.search_parameters import (
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import ProposalRejectionReason, SearchProposalState, new_id, utc_now
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.search_parameters import (
     MAX_CLUSTER_TERMS,
     MAX_TITLES,
     ClusterKind,
     EmployerArchetype,
     TargetTitle,
 )
-from tailorcv.domain.statements import derived_proposal_identity
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.statements import derived_proposal_identity
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     CandidateProfile,
     DerivedCluster,
     DerivedEmployerArchetype,

@@ -10,6 +10,6 @@ not include exploit details or sensitive data.
 
 Conduct concerns are covered by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-This is a single-maintainer project with no service-level agreement. TailorCV
+This is a single-maintainer project with no service-level agreement. ClearScout
 does not provide individual career advice, application review, hiring advice, or
 support for submitting applications.

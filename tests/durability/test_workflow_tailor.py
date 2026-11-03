@@ -14,35 +14,35 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from tailorcv.application.config import load_settings
-from tailorcv.application.documents import DocumentService
-from tailorcv.application.failures import NotFoundError, ValidationError
-from tailorcv.application.job_search.postings import RequirementRulingService
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.pipeline import SerializedRunArtifacts, StoredMasterCv
-from tailorcv.application.tailoring.stages.jobspec import StoredPostingName
-from tailorcv.application.tailoring.stages.verify import KeywordCoverage, Report
-from tailorcv.application.tailoring.workflows import (
+from clearscout.application.config import load_settings
+from clearscout.application.documents import DocumentService
+from clearscout.application.failures import NotFoundError, ValidationError
+from clearscout.application.job_search.postings import RequirementRulingService
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.pipeline import SerializedRunArtifacts, StoredMasterCv
+from clearscout.application.tailoring.stages.jobspec import StoredPostingName
+from clearscout.application.tailoring.stages.verify import KeywordCoverage, Report
+from clearscout.application.tailoring.workflows import (
     PipelineWorkflowRunner,
     TailorOutput,
     WorkflowService,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import (
     GuardrailService,
     SearchParametersService,
     WorkspaceService,
 )
-from tailorcv.bootstrap.api import create_app
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import ArtifactLogicalType, ResearchKind, TailoringOutcome
-from tailorcv.domain.identity import normalize_url
-from tailorcv.domain.rulings import Ruling
-from tailorcv.domain.search_parameters import JobSearchParameters, Location
-from tailorcv.domain.staged_facts import ListingIdentityTrust, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.bootstrap.api import create_app
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import ArtifactLogicalType, ResearchKind, TailoringOutcome
+from clearscout.domain.identity import normalize_url
+from clearscout.domain.rulings import Ruling
+from clearscout.domain.search_parameters import JobSearchParameters, Location
+from clearscout.domain.staged_facts import ListingIdentityTrust, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     CostRecord,
     Employer,
@@ -57,12 +57,12 @@ from tailorcv.infrastructure.persistence.models import (
     ReviewProposal,
     TailoringRun,
 )
-from tailorcv.infrastructure.web_fetch.company_research import (
+from clearscout.infrastructure.web_fetch.company_research import (
     CompanyResearchFetcher,
     ResearchSource,
 )
-from tailorcv.shared.costs import CallManifest, Ledger, ServiceTier, Usage
-from tailorcv.shared.results import Finding, Outcome
+from clearscout.shared.costs import CallManifest, Ledger, ServiceTier, Usage
+from clearscout.shared.results import Finding, Outcome
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import FakeRunResult
 from tests.support.http import COMPANY_CAREERS_PAGE, policy_client
@@ -176,7 +176,7 @@ def test_tailoring_passes_the_command_options_through_and_normalizes_the_run_res
             serialized=build_artifacts(),
         )
 
-    monkeypatch.setattr("tailorcv.application.tailoring.workflows.runner.pipeline.run", fake_run)
+    monkeypatch.setattr("clearscout.application.tailoring.workflows.runner.pipeline.run", fake_run)
 
     tailored = PipelineWorkflowRunner().tailor(source, settings, master_cv=master, **options)
 
@@ -202,7 +202,7 @@ def test_workflow_runner_consumes_the_serialized_package_without_reopening_paths
         review={},
     )
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.workflows.runner.pipeline.run",
+        "clearscout.application.tailoring.workflows.runner.pipeline.run",
         lambda command: FakeRunResult(
             verification=Report(
                 findings=(),
@@ -886,7 +886,7 @@ def test_workflow_inputs_use_database_owned_workspace_settings(
         JobSearchParameters(locations=[Location(key="database", country="Atlantis")]),
         expected_version=0,
     )
-    (root / "tailorcv.toml").write_text('[rules]\nforbidden = ["file rule"]\n', encoding="utf-8")
+    (root / "clearscout.toml").write_text('[rules]\nforbidden = ["file rule"]\n', encoding="utf-8")
 
     inputs = WorkflowService(
         durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
@@ -1020,11 +1020,11 @@ def test_tailoring_keeps_billed_calls_when_cancelled_or_a_later_stage_fails(
 def test_zero_planning_estimate_does_not_prevent_paid_tailoring(durable_database, tmp_path):
     from pydantic import BaseModel
 
-    from tailorcv.application.config import ProviderName, Stage
-    from tailorcv.infrastructure.providers.base import CallRecord
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import ModelPrice
+    from clearscout.application.config import ProviderName, Stage
+    from clearscout.infrastructure.providers.base import CallRecord
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import ModelPrice
     from tests.support.plans import plan_for
 
     class Answer(BaseModel):

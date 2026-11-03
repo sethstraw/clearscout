@@ -8,30 +8,30 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring import fit
-from tailorcv.application.tailoring.fit import Disagreement
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.fit import Disagreement
+from clearscout.application.tailoring.stages.jobspec import (
     Dimension,
     HardGate,
     Importance,
     JobSpec,
     Requirement,
 )
-from tailorcv.application.tailoring.stages.match import (
+from clearscout.application.tailoring.stages.match import (
     Classification,
     EvidenceMap,
     Match,
     Strength,
 )
-from tailorcv.application.tailoring.stages.spans import locate
-from tailorcv.application.tailoring.workflows.evaluation_report import project_fit_report
-from tailorcv.application.tailoring.workflows.models import EvaluationOutput
-from tailorcv.domain import SpanStatus
-from tailorcv.domain.requirements import GateKind
-from tailorcv.domain.search_parameters import OUTSIDE_DECLARED
-from tailorcv.infrastructure.web_fetch.ingest import JDText
-from tailorcv.shared.costs import CallManifest, Ledger, Usage
+from clearscout.application.tailoring.stages.spans import locate
+from clearscout.application.tailoring.workflows.evaluation_report import project_fit_report
+from clearscout.application.tailoring.workflows.models import EvaluationOutput
+from clearscout.domain import SpanStatus
+from clearscout.domain.requirements import GateKind
+from clearscout.domain.search_parameters import OUTSIDE_DECLARED
+from clearscout.infrastructure.web_fetch.ingest import JDText
+from clearscout.shared.costs import CallManifest, Ledger, Usage
 
 
 def _output() -> EvaluationOutput:

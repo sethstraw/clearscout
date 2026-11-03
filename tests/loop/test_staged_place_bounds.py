@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.source_reading import SourceListing
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import utc_now
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import PendingDiscovery
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.source_reading import SourceListing
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import utc_now
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PendingDiscovery
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 

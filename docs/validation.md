@@ -27,10 +27,10 @@ CV ingestion is not yet well tested across real-world layouts and formats.
 Live OpenAI intake and synthetic tests do not establish reliable conversion
 of arbitrary CVs.
 
-Downstream work uses the parsed evidence from a standardized TailorCV Markdown
+Downstream work uses the parsed evidence from a standardized ClearScout Markdown
 master. The parser's recognized structure matters: retained text in an
 unrecognized section is not automatically citable evidence. Start from
-`tailorcv template`, inspect the master and import report, and check that the
+`clearscout template`, inspect the master and import report, and check that the
 needed evidence is available before evaluating or drafting. The
 [intake instructions](user-guide.md#initialize-one-workspace) describe the
 accepted file types and paid restructuring path.
@@ -169,7 +169,7 @@ and the drafted Markdown is estimated with the same model and trimmed in drop
 order until it fits. A trim never removes the last printed answer to a
 must-have, an entry a prose line cites, or a role's last bullets. When only
 those are left and the estimate still runs over, the run warns with the lines
-over. It does not fit silently. TailorCV asks pressume for that theme
+over. It does not fit silently. ClearScout asks pressume for that theme
 and density on every render; another renderer, paper size, or body size can run
 long or short.
 
@@ -191,7 +191,7 @@ that run. Human rulings calibrate the evaluation method and are not gold labels.
 
 ## Rendering stays outside the application
 
-TailorCV tests request preparation, artifact promotion, and returned-artifact
+ClearScout tests request preparation, artifact promotion, and returned-artifact
 verification. It does not run the external renderer in the public gate and does
 not depend on the renderer at runtime. A verified PDF proves the expected bytes
 were returned and stored; it does not prove every viewer or applicant-tracking

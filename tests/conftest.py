@@ -13,20 +13,20 @@ import pytest
 from hypothesis import HealthCheck
 from hypothesis import settings as hypothesis_settings
 
-from tailorcv.application.config import Settings
-from tailorcv.application.master_cv.cv import CvInventory, parse_cv
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.providers.cache import ResponseCache
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.infrastructure.providers.credentials import (
+from clearscout.application.config import Settings
+from clearscout.application.master_cv.cv import CvInventory, parse_cv
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.providers.cache import ResponseCache
+from clearscout.infrastructure.providers.client import Client
+from clearscout.infrastructure.providers.credentials import (
     ENVIRONMENT_VARIABLES,
     OPENAI_ADMIN_ENV,
     Credential,
     Source,
 )
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
-from tailorcv.shared.costs import Ledger
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.shared.costs import Ledger
 from tests.support.database import build_template, clone
 from tests.support.doubles import ScriptedProvider
 from tests.support.suite import FIXTURES, SUITE_PROVIDER
@@ -56,7 +56,7 @@ def _seal(patch: pytest.MonkeyPatch, documents: Path) -> None:
     is running on.
     """
     for name in list(os.environ):
-        if name.startswith("TAILORCV_"):
+        if name.startswith("CLEARSCOUT_"):
             patch.delenv(name, raising=False)
     # Read from the one mapping that knows them, so a third vendor cannot leave a
     # hole in the seal.
@@ -67,7 +67,7 @@ def _seal(patch: pytest.MonkeyPatch, documents: Path) -> None:
     patch.setattr("keyring.delete_password", lambda service, name: None)
     # Without a data root, storage resolves to the real Documents workspace.
     patch.setattr(
-        "tailorcv.infrastructure.persistence.database.user_documents_path",
+        "clearscout.infrastructure.persistence.database.user_documents_path",
         lambda: documents,
     )
 
@@ -135,7 +135,7 @@ def refreshable_prices(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Let one test refresh the price table without repricing another test's calls."""
     from genai_prices.data_snapshot import set_custom_snapshot
 
-    from tailorcv.shared.costs import prices
+    from clearscout.shared.costs import prices
 
     monkeypatch.setattr(prices, "PRICES", dict(prices.PRICES))
     monkeypatch.setattr(prices, "_in_force", replace(prices._in_force))

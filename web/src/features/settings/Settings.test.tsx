@@ -60,7 +60,7 @@ function installSettings(reads: SettingsReads = {}) {
 
 describe("SettingsPage", () => {
   it("shows health and workspace metadata without exposing credentials", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     installSettings({
       spendHistory: [
         {
@@ -159,7 +159,7 @@ describe("SettingsPage", () => {
   });
 
   it("keeps health, workspace details, and the data browser under Advanced > Diagnostics", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     installSettings();
     server.use(
       http.get("*/api/v1/workspaces/:workspaceId/learning-loop-metrics", () =>
@@ -179,7 +179,7 @@ describe("SettingsPage", () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByText("TailorCV 0.1.0")).toBeTruthy();
+    expect(await screen.findByText("ClearScout 0.1.0")).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Diagnostics", selected: true })).toBeTruthy();
     expect(screen.getByText("Synthetic Search")).toBeTruthy();
     expect(screen.getByText("Not running")).toBeTruthy();
@@ -191,7 +191,7 @@ describe("SettingsPage", () => {
   });
 
   it("lists refused postings under Advanced > Posting refusals", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     installSettings();
     server.use(
       http.get("*/api/v1/workspaces/:workspaceId/posting-refusals", () =>
@@ -244,7 +244,7 @@ describe("SettingsPage", () => {
   });
 
   it("lists saved guardrail versions", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     const saved = {
       version: 2,
       content_sha256: "synthetic-digest",
@@ -280,7 +280,7 @@ describe("SettingsPage", () => {
   });
 
   it("renders a safe problem detail for a critical health failure", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     installSettings({
       onHealthRequest: () =>
         HttpResponse.json(
@@ -310,7 +310,7 @@ describe("SettingsPage", () => {
   });
 
   it("edits workspace guardrails as one rule per line with optimistic versioning", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     const saves = requestLog();
     installSettings({
       health: {
@@ -391,7 +391,7 @@ describe("SettingsPage", () => {
   });
 
   it("clears every phrase list when the textarea is emptied", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     const saves = requestLog();
     installSettings({
       guardrails: guardrails({
@@ -453,7 +453,7 @@ describe("SettingsPage", () => {
   });
 
   it("shows a saved guardrail version in the history beside it", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     const rules = guardrailRules({ forbidden: ["world-class"] });
     const saved = guardrails({
       version: 1,
@@ -515,7 +515,7 @@ describe("SettingsPage", () => {
   });
 
   it("states the actual matching semantics for each phrase type", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     installSettings();
 
     render(
@@ -560,7 +560,7 @@ describe("SettingsPage", () => {
   });
 
   it("offers the price refresh on the Costs tab", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-settings");
+    window.localStorage.setItem("clearscout.workspace", "workspace-settings");
     let posts = 0;
     installSettings();
     server.use(

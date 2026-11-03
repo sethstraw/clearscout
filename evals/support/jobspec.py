@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring.stages.jobspec import (
     Dimension,
     Importance,
     JobSpec,
@@ -23,7 +23,7 @@ from tailorcv.application.tailoring.stages.jobspec import (
 )
 
 if TYPE_CHECKING:
-    from tailorcv.application.tailoring.stages.match import EvidenceMap
+    from clearscout.application.tailoring.stages.match import EvidenceMap
 
 _ORIGIN = "evals.inspect.solvers"
 

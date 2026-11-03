@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.infrastructure.web_fetch.workday_arrangement import workday_arrangement_facts
+from clearscout.infrastructure.web_fetch.workday_arrangement import workday_arrangement_facts
 
 
 def test_workday_arrangement_from_detail_remote_type_yes() -> None:

@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from tailorcv.application.tailoring.fit.structure import Answer
-from tailorcv.application.tailoring.stages.jobspec import HardGate, Importance, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.stages.spans import locate
-from tailorcv.application.tailoring.workflows.evaluation_policy import (
+from clearscout.application.tailoring.fit.structure import Answer
+from clearscout.application.tailoring.stages.jobspec import HardGate, Importance, Requirement
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.stages.spans import locate
+from clearscout.application.tailoring.workflows.evaluation_policy import (
     arrangement_cap,
     compensation_score,
     decision,
@@ -17,8 +22,8 @@ from tailorcv.application.tailoring.workflows.evaluation_policy import (
     supported_requirements,
     unread_residence_gate,
 )
-from tailorcv.domain.records import EvaluationDecision, EvidenceDirection
-from tailorcv.domain.search_parameters import OUTSIDE_DECLARED
+from clearscout.domain.records import EvaluationDecision, EvidenceDirection
+from clearscout.domain.search_parameters import OUTSIDE_DECLARED
 
 
 def _requirement(identifier: str, importance: Importance = Importance.MUST_HAVE) -> Requirement:

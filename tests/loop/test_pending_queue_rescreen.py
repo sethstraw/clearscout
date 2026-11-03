@@ -13,22 +13,22 @@ import pytest
 from sqlalchemy import event as sa_event
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import (
+from clearscout.application.discovery.board_scan import (
     PendingQueueRescreenHandler,
     SourceScanService,
 )
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     CurrentPostingContent,
     CurrentPostingContentReader,
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.refusal_patterns import RefusedPosting, file_refusal
-from tailorcv.application.failures import UnavailableError
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.bootstrap.worker import TaskCancelledError, Worker, default_handlers
-from tailorcv.domain import (
+from clearscout.application.discovery.refusal_patterns import RefusedPosting, file_refusal
+from clearscout.application.failures import UnavailableError
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.bootstrap.worker import TaskCancelledError, Worker, default_handlers
+from clearscout.domain import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -37,8 +37,8 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     CountryNames,
@@ -46,15 +46,17 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import PublishedFact, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
     PendingDiscovery,
     PendingDiscoveryDispositionEvent,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.infrastructure.web_fetch.posting_resolution import DeterministicPostingContentResolver
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.posting_resolution import (
+    DeterministicPostingContentResolver,
+)
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.scenarios import (

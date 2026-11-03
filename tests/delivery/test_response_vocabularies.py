@@ -5,10 +5,10 @@ from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
-from tailorcv.application.tasks import task_types
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain import ARTIFACT_LOGICAL_TYPES
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.tasks import task_types
+from clearscout.bootstrap.api import create_app
+from clearscout.domain import ARTIFACT_LOGICAL_TYPES
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.scenarios import studio_workspace
 
 

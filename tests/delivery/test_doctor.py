@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.diagnostics import Diagnosis, diagnose
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.domain.search_parameters import JobSearchParameters, Seniority
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.results import Outcome
+from clearscout.application.diagnostics import Diagnosis, diagnose
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.domain.search_parameters import JobSearchParameters, Seniority
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.results import Outcome
 from tests.support.doubles import ScriptedProvider
 from tests.support.scenarios import studio_workspace
 from tests.support.suite import SUITE_KEY_VARIABLE
@@ -35,7 +35,7 @@ def _no_ambient_keys(monkeypatch: pytest.MonkeyPatch) -> None:
 def offline_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     """Answer the model listing locally so no diagnosis reaches a network."""
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.base.provider_for",
+        "clearscout.infrastructure.providers.base.provider_for",
         lambda name, key, timeout=None: ScriptedProvider({}),
     )
 
@@ -43,7 +43,7 @@ def offline_provider(monkeypatch: pytest.MonkeyPatch) -> None:
 def write_config(
     tmp_path: Path, master_cv: Path, extra: str = "", output_dir: Path | None = None
 ) -> Path:
-    path = tmp_path / "tailorcv.toml"
+    path = tmp_path / "clearscout.toml"
     destination = output_dir or (tmp_path / "runs")
     path.write_text(f'cv = "{master_cv}"\noutput_dir = "{destination}"\n{extra}', encoding="utf-8")
     return path
@@ -109,7 +109,7 @@ def test_a_broken_master_cv_fails_with_the_reason(tmp_path: Path) -> None:
 
 
 def test_a_broken_configuration_stops_before_cascading(tmp_path: Path) -> None:
-    path = tmp_path / "tailorcv.toml"
+    path = tmp_path / "clearscout.toml"
     path.write_text('master_cv = "absent.md"\n', encoding="utf-8")
     diagnosis = diagnose(path)
     assert not diagnosis.healthy
@@ -135,7 +135,7 @@ def test_a_configured_key_is_described_but_never_printed(
 def test_missing_rules_warn_that_none_apply(tmp_path: Path, master_cv: Path) -> None:
     diagnosis = diagnose(write_config(tmp_path, master_cv))
     assert outcome(diagnosis, "rules") is Outcome.WARN
-    assert "tailorcv init" in detail(diagnosis, "rules")
+    assert "clearscout init" in detail(diagnosis, "rules")
 
 
 def test_rules_in_force_are_counted(tmp_path: Path, master_cv: Path) -> None:
@@ -172,8 +172,8 @@ def test_doctor_names_a_served_model_no_price_covers(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A run whose served model is unpriced reports tokens and no dollars."""
-    from tailorcv.application.workspaces.spend import record_calls
-    from tailorcv.shared.costs import CallManifest, Ledger, Usage
+    from clearscout.application.workspaces.spend import record_calls
+    from clearscout.shared.costs import CallManifest, Ledger, Usage
 
     workspace_id, _, _, _ = studio_workspace(
         durable_database,
@@ -203,7 +203,7 @@ def test_doctor_names_a_served_model_no_price_covers(
 def test_an_unwritable_output_directory_fails(
     tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("tailorcv.application.diagnostics.os.access", lambda path, mode: False)
+    monkeypatch.setattr("clearscout.application.diagnostics.os.access", lambda path, mode: False)
     diagnosis = diagnose(write_config(tmp_path, master_cv))
     assert outcome(diagnosis, "output directory") is Outcome.FAIL
 
@@ -225,7 +225,7 @@ def test_no_configuration_file_is_not_a_problem(
     """Running with no configuration is supported, so it must not read as broken."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        "tailorcv.application.config.user_config_dir", lambda name: str(tmp_path / "none")
+        "clearscout.application.config.user_config_dir", lambda name: str(tmp_path / "none")
     )
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path / "nohome"))
     diagnosis = diagnose(None)

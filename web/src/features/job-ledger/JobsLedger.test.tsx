@@ -48,8 +48,8 @@ const jobs = [
 
 /** Two rows scored under different policies, plus one from before tracking. */
 const mixedPolicyJobs = [
-  { ...jobs[0]!, score_policy_name: "TailorCV default", score_policy_version: 1 },
-  { ...jobs[1]!, score_policy_name: "TailorCV default", score_policy_version: 2 },
+  { ...jobs[0]!, score_policy_name: "ClearScout default", score_policy_version: 1 },
+  { ...jobs[1]!, score_policy_name: "ClearScout default", score_policy_version: 2 },
   jobSummary({
     job_posting_id: "job-3",
     employer: "Gamma",
@@ -70,7 +70,7 @@ const partiallyScoredJob = {
   overall_score: null,
   overall_score_lower_bound: 42,
   unscored_weighted_component_count: 1,
-  score_policy_name: "TailorCV default",
+  score_policy_name: "ClearScout default",
   score_policy_version: 1,
 } satisfies Job;
 
@@ -221,7 +221,7 @@ function installApi(
 
 describe("JobsPage", () => {
   it("omits absent closing dates and links the role to its full job page", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-closing-empty-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-closing-empty-test");
     installApi([
       jobSummary({
         job_posting_id: "job-date",
@@ -247,7 +247,7 @@ describe("JobsPage", () => {
   });
 
   it("shows a compact publisher closing date without evidence or an editor in the role cell", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-closing-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-closing-test");
     const items = [
       jobSummary({
         job_posting_id: "job-date",
@@ -288,7 +288,7 @@ describe("JobsPage", () => {
   });
 
   it("shows the compact personal closing date and retains both passed-date warnings", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-closing-override-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-closing-override-test");
     installApi([
       jobSummary({
         job_posting_id: "job-date",
@@ -326,7 +326,7 @@ describe("JobsPage", () => {
   });
 
   it("shows comparison fields and sorts on the server", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-sort-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-sort-test");
     const recorded = installApi(jobs);
 
     render(
@@ -379,7 +379,7 @@ describe("JobsPage", () => {
   });
 
   it("keeps ledger columns aligned and marks a recorded priority", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-priority-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-priority-test");
     const recorded = installApi([
       jobSummary({
         job_posting_id: "job-priority",
@@ -438,7 +438,7 @@ describe("JobsPage", () => {
   });
 
   it("edits priority from the latest complete review and records application status", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-inline-edit-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-inline-edit-test");
     const items = [
       jobSummary({
         job_posting_id: "job-inline",
@@ -523,7 +523,7 @@ describe("JobsPage", () => {
   });
 
   it("keeps the old priority through a pending and failed clear", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-inline-error-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-inline-error-test");
     installApi([
       jobSummary({
         job_posting_id: "job-error",
@@ -572,7 +572,7 @@ describe("JobsPage", () => {
   });
 
   it("keeps archived application history read only in the ledger", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-archived-edit-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-archived-edit-test");
     installApi([
       jobSummary({
         job_posting_id: "job-archived",
@@ -603,7 +603,7 @@ describe("JobsPage", () => {
   });
 
   it("shows evaluation freshness beside the decision without repeating an unevaluated state", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-review-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-review-test");
     installApi([
       jobSummary({
         job_posting_id: "job-needs-review",
@@ -647,7 +647,7 @@ describe("JobsPage", () => {
   });
 
   it("labels a conservative recorded score without making it look like upside", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-partial-score-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-partial-score-test");
     installApi([partiallyScoredJob]);
 
     render(
@@ -670,7 +670,7 @@ describe("JobsPage", () => {
   });
 
   it("confirms recorded provider charges before comparing selected jobs", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-compare-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-compare-test");
     const recorded = installApi(jobs, [], jobs.length, comparisonCostHistory);
 
     render(
@@ -700,7 +700,7 @@ describe("JobsPage", () => {
   });
 
   it("re-evaluates the exact selected postings in one batched paid task", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-reevaluate-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-reevaluate-test");
     const finished = ledgerTask({
       task_type: "discovery.evaluate_batch",
       status: "completed",
@@ -739,7 +739,7 @@ describe("JobsPage", () => {
   });
 
   it("prices a batch re-evaluation from the batch task's own history", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-reevaluate-price-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-reevaluate-price-test");
     installApi(jobs, [], jobs.length, evaluationCostHistory);
 
     render(
@@ -759,7 +759,7 @@ describe("JobsPage", () => {
   });
 
   it("folds the rare filters under Advanced and keeps the page to one line of context", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-advanced-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-advanced-test");
     installApi(jobs, [savedView]);
 
     render(
@@ -782,7 +782,7 @@ describe("JobsPage", () => {
   });
 
   it("names an Advanced filter outside the closed fold and clears it", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-advanced-active-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-advanced-active-test");
     installApi(jobs, [savedView]);
 
     render(
@@ -811,7 +811,7 @@ describe("JobsPage", () => {
   });
 
   it("forces an explicit selected-posting refresh", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-refresh-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-refresh-test");
     const recorded = installApi(jobs);
 
     render(
@@ -839,7 +839,7 @@ describe("JobsPage", () => {
   });
 
   it("reports successful and failed postings from one completed refresh batch", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-partial-refresh-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-partial-refresh-test");
     const task = ledgerTask({
       id: "refresh-partial",
       workspace_id: "jobs-partial-refresh-test",
@@ -885,7 +885,7 @@ describe("JobsPage", () => {
   });
 
   it("spells out an unconfirmed refresh instead of leaving the reader the phrase", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-unverified-refresh-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-unverified-refresh-test");
     const task = ledgerTask({
       id: "refresh-unverified",
       workspace_id: "jobs-unverified-refresh-test",
@@ -927,7 +927,7 @@ describe("JobsPage", () => {
   });
 
   it("confirms and bulk archives the exact selected postings", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-archive-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-archive-test");
     const recorded = installApi(jobs);
 
     render(
@@ -958,7 +958,7 @@ describe("JobsPage", () => {
   });
 
   it("keeps policy context accessible and warns when recorded scores differ", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-policy-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-policy-test");
     installApi(mixedPolicyJobs);
 
     render(
@@ -970,8 +970,8 @@ describe("JobsPage", () => {
     );
     const table = await screen.findByRole("table");
 
-    expect(within(table).getByTitle(/TailorCV default v1/).textContent).toBe("55");
-    expect(within(table).getByTitle(/TailorCV default v2/).textContent).toBe("75");
+    expect(within(table).getByTitle(/ClearScout default v1/).textContent).toBe("55");
+    expect(within(table).getByTitle(/ClearScout default v2/).textContent).toBe("75");
     expect(within(table).getByTitle(/weights behind this total are unknown/).textContent).toBe(
       "50",
     );
@@ -980,7 +980,7 @@ describe("JobsPage", () => {
   });
 
   it("marks a closed posting beside its role and names the matched place and its countries", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-place-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-place-test");
     installApi([
       { ...jobs[0]!, posting_status: "closed", place: "Toronto, ON", countries: ["Canada"] },
       { ...jobs[1]!, posting_status: "active", place: null },
@@ -1012,7 +1012,7 @@ describe("JobsPage", () => {
   });
 
   it("asks for archived jobs on request and marks them in the ledger", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-archived-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-archived-test");
     const recorded = installApi([{ ...jobs[0]!, archived_at: "2026-08-06T09:00:00Z" }]);
 
     render(
@@ -1034,7 +1034,7 @@ describe("JobsPage", () => {
   });
 
   it("applies the filters and sort a saved view stores", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-view-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-view-test");
     const recorded = installApi(jobs, [savedView], 100);
 
     render(
@@ -1064,7 +1064,7 @@ describe("JobsPage", () => {
   });
 
   it("narrows to the chosen employers with one parameter each and drops the row selection", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-employer-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-employer-test");
     const recorded = installApi(jobs);
 
     render(
@@ -1094,7 +1094,7 @@ describe("JobsPage", () => {
   });
 
   it("stays quiet when every row was scored the same way", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-single-policy-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-single-policy-test");
     installApi(mixedPolicyJobs.slice(0, 1));
 
     render(
@@ -1110,7 +1110,7 @@ describe("JobsPage", () => {
   });
 
   it("points an empty active list at discovery without blaming filters", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "jobs-empty-test");
+    window.localStorage.setItem("clearscout.workspace", "jobs-empty-test");
     installApi([]);
 
     render(

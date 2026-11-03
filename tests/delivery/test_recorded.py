@@ -14,8 +14,8 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.config import ProviderName, load_settings
-from tailorcv.application.master_cv.cv import parse_cv
+from clearscout.application.config import ProviderName, load_settings
+from clearscout.application.master_cv.cv import parse_cv
 from tests.support.cassette import Cassette, redact, replaying_client
 from tests.support.provider_clients import provider_for_http
 from tests.support.suite import CASSETTES, REPO_ROOT
@@ -47,12 +47,12 @@ def test_a_recorded_run_replays_through_the_real_sdk(
     cassette_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The pipeline completes against genuine model output, offline."""
-    from tailorcv.application.tailoring.pipeline import RunCommand, run
+    from clearscout.application.tailoring.pipeline import RunCommand, run
 
     cassette = Cassette.load(cassette_path)
     provider = ProviderName(cassette_path.stem.removeprefix("run_"))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider_from(cassette, provider),
     )
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
@@ -106,8 +106,8 @@ def test_the_anthropic_replay_seam_builds_a_working_provider(tmp_path: Path) -> 
     from anthropic import Anthropic
     from pydantic import BaseModel
 
-    from tailorcv.application.config import Effort, ModelChoice
-    from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
+    from clearscout.application.config import Effort, ModelChoice
+    from clearscout.infrastructure.providers.anthropic import AnthropicProvider
     from tests.support.cassette import RecordingTransport
     from tests.support.fake_provider import anthropic_events
     from tests.support.plans import plan_for
@@ -341,7 +341,7 @@ def test_record_then_replay_survives_a_round_trip_through_the_real_sdk(tmp_path:
     import httpx
     from anthropic import Anthropic
 
-    from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
+    from clearscout.infrastructure.providers.anthropic import AnthropicProvider
     from tests.support.cassette import RecordingTransport
 
     listing = {
@@ -389,8 +389,8 @@ def test_a_recorded_rejection_replays_as_a_real_auth_error(tmp_path: Path) -> No
     import httpx
     from anthropic import Anthropic
 
-    from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
-    from tailorcv.shared.errors import AuthError
+    from clearscout.infrastructure.providers.anthropic import AnthropicProvider
+    from clearscout.shared.errors import AuthError
     from tests.support.cassette import RecordingTransport
 
     def upstream(request: httpx.Request) -> httpx.Response:
@@ -430,7 +430,7 @@ def test_the_recorder_substitutes_provider_for_compatibly() -> None:
     import importlib.util
     import inspect
 
-    from tailorcv.infrastructure.providers.base import provider_for
+    from clearscout.infrastructure.providers.base import provider_for
 
     # Loaded from its path: `scripts/` is a directory of programs, and putting it
     # on `sys.path` leaves it there for every test that follows.

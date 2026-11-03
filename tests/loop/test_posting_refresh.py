@@ -15,44 +15,44 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from tailorcv.application import job_search
-from tailorcv.application.config import Settings
-from tailorcv.application.contracts import ApplicationEventInput
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.posting_refresh import (
+from clearscout.application import job_search
+from clearscout.application.config import Settings
+from clearscout.application.contracts import ApplicationEventInput
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.posting_refresh import (
     PostingRefreshService,
     PostingRefreshWithReextractionHandler,
 )
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.discovery.refresh_decision import (
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.refresh_decision import (
     PreviousObservation,
     RefreshDecision,
     decide_refresh,
 )
-from tailorcv.application.discovery.source_reading import PostingCheck, SourceListing
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.job_search.postings import RequirementRulingService
-from tailorcv.application.tasks import (
+from clearscout.application.discovery.source_reading import PostingCheck, SourceListing
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.job_search.postings import RequirementRulingService
+from clearscout.application.tasks import (
     TaskContext,
     TaskQueueService,
     TaskResponse,
     task_types,
     validate_task_payload,
 )
-from tailorcv.application.workspaces import LearningLoopPolicyService, WorkspaceService
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.bootstrap.worker import TaskCancelledError, Worker, default_handlers
-from tailorcv.domain import ApplicationStatus, utc_now
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.identity import normalize_url
-from tailorcv.domain.policy import LearningLoopPolicy
-from tailorcv.domain.records import PostingReadIntent, RobotsReadBasis
-from tailorcv.domain.rulings import Ruling
-from tailorcv.domain.staged_facts import PublisherClosingDate
-from tailorcv.infrastructure.artifacts.store import file_uri_path
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.workspaces import LearningLoopPolicyService, WorkspaceService
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.bootstrap.worker import TaskCancelledError, Worker, default_handlers
+from clearscout.domain import ApplicationStatus, utc_now
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.identity import normalize_url
+from clearscout.domain.policy import LearningLoopPolicy
+from clearscout.domain.records import PostingReadIntent, RobotsReadBasis
+from clearscout.domain.rulings import Ruling
+from clearscout.domain.staged_facts import PublisherClosingDate
+from clearscout.infrastructure.artifacts.store import file_uri_path
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     ApplicationEvent,
     Artifact,
     AuditEvent,
@@ -69,25 +69,25 @@ from tailorcv.infrastructure.persistence.models import (
     RequirementRuling,
     Workspace,
 )
-from tailorcv.infrastructure.providers.cache import ResponseCache
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.infrastructure.web_fetch.ingest import url as url_ingest
-from tailorcv.infrastructure.web_fetch.ingest.url import (
+from clearscout.infrastructure.providers.cache import ResponseCache
+from clearscout.infrastructure.providers.client import Client
+from clearscout.infrastructure.web_fetch.ingest import url as url_ingest
+from clearscout.infrastructure.web_fetch.ingest.url import (
     PublisherPostingUnverifiedError,
     UrlPostingText,
     check_posting,
 )
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.infrastructure.web_fetch.policy import (
     UNRESOLVED_DESTINATION_NOTE,
     PoliteHttpClient,
     RobotsDeniedError,
 )
-from tailorcv.infrastructure.web_fetch.posting_fetch import (
+from clearscout.infrastructure.web_fetch.posting_fetch import (
     UNRESOLVED_DESTINATION_METHOD,
     PolitePostingFetcher,
 )
-from tailorcv.shared.costs import Ledger
-from tailorcv.shared.errors import IngestError
+from clearscout.shared.costs import Ledger
+from clearscout.shared.errors import IngestError
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.doubles import ScriptedProvider
 from tests.support.http import (
@@ -247,7 +247,7 @@ def test_production_fetcher_respects_robots_honest_identity_and_jitter(
         )
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
+        "clearscout.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
         lambda url, client, **kwargs: (
             client.get(url),
             UrlPostingText(text="A" * 300, origin=url, method="scripted page"),
@@ -255,7 +255,7 @@ def test_production_fetcher_respects_robots_honest_identity_and_jitter(
     )
     pauses: list[float] = []
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=pauses.append,
         jitter=lambda low, high: 0.5,
         getter=robots_get,
@@ -266,10 +266,10 @@ def test_production_fetcher_respects_robots_honest_identity_and_jitter(
     result = fetcher.fetch("https://example.test/jobs/1")
     assert result.posting_status == "active"
     assert pauses == [0.5]
-    assert identities == ["tailorcv/test", "tailorcv/test"]
+    assert identities == ["clearscout/test", "clearscout/test"]
 
     denied_client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=lambda url, **kwargs: httpx.Response(
             200,
             request=httpx.Request("GET", url),
@@ -291,7 +291,7 @@ def test_a_host_that_answers_no_address_is_a_retryable_bodiless_read() -> None:
 
     fetcher = PolitePostingFetcher(
         client=PoliteHttpClient(
-            user_agent="tailorcv/test",
+            user_agent="clearscout/test",
             getter=lambda url, **kwargs: pytest.fail(f"unresolved URL was contacted: {url}"),
             resolver=resolve,
         )
@@ -326,7 +326,7 @@ def _robots_disallowed_host(
         return httpx.Response(status, request=httpx.Request("GET", url), text=page)
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _: None,
         getter=get,
         resolver=lambda host, port: [(2, 1, 6, "", ("93.184.216.34", port))],
@@ -423,7 +423,7 @@ def test_a_single_read_redirected_to_a_retryable_host_reads_the_target_once() ->
         return httpx.Response(503, request=httpx.Request("GET", url))
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _: None,
         getter=get,
         resolver=lambda host, port: [(2, 1, 6, "", ("93.184.216.34", port))],
@@ -482,12 +482,12 @@ def test_a_single_posting_read_named_for_this_client_stays_a_policy_refusal() ->
     fetcher must translate the read's own denial into ``ValidationError`` too.
     """
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _: None,
         getter=lambda url, **kwargs: httpx.Response(
             200,
             request=httpx.Request("GET", url),
-            text="User-agent: tailorcv\nDisallow: /\n",
+            text="User-agent: clearscout\nDisallow: /\n",
         ),
         resolver=lambda host, port: [(2, 1, 6, "", ("93.184.216.34", port))],
     )
@@ -505,7 +505,7 @@ def test_a_robots_blocked_human_url_still_reads_through_a_permitted_publisher_ap
     """A board answers on a permitted API path even when its human posting URL is robots-blocked."""
     # from_url stands in for the platform readers that answer on the permitted API path.
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
+        "clearscout.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
         lambda url, client, **kwargs: UrlPostingText(
             text="Director of Product Management. " + "A" * 300,
             origin=url,
@@ -513,7 +513,7 @@ def test_a_robots_blocked_human_url_still_reads_through_a_permitted_publisher_ap
         ),
     )
     denied_client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=lambda url, **kwargs: httpx.Response(
             200,
             request=httpx.Request("GET", url),
@@ -533,7 +533,7 @@ def test_a_robots_blocked_human_url_still_reads_through_a_permitted_publisher_ap
 def test_a_robots_refusal_on_an_api_only_board_stays_a_policy_refusal() -> None:
     """The board's API and its page are both disallowed, so nothing was refused by the publisher."""
     denied_client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=lambda url, **kwargs: httpx.Response(
             200,
             request=httpx.Request("GET", url),
@@ -583,10 +583,10 @@ def test_recognized_greenhouse_posting_that_cannot_be_verified_is_not_closed(
         )
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.url_ingest.from_url", unreadable
+        "clearscout.infrastructure.web_fetch.posting_fetch.url_ingest.from_url", unreadable
     )
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=lambda url, **kwargs: httpx.Response(
             200,
             request=httpx.Request("GET", url),
@@ -643,7 +643,7 @@ def test_a_readable_posting_retains_the_publishers_date_without_inferring_closur
 ) -> None:
     fetched_at = datetime(2026, 9, 2, 12, tzinfo=UTC)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.utc_now",
+        "clearscout.infrastructure.web_fetch.posting_fetch.utc_now",
         lambda: fetched_at,
     )
     source = PostingSource(
@@ -660,7 +660,7 @@ def test_a_readable_posting_retains_the_publishers_date_without_inferring_closur
         source=source,
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
+        "clearscout.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
         lambda url, client, **kwargs: posting,
     )
 
@@ -700,7 +700,7 @@ def test_a_readable_static_posting_retains_its_stated_end_date(
     fetched_at: datetime,
 ) -> None:
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.utc_now",
+        "clearscout.infrastructure.web_fetch.posting_fetch.utc_now",
         lambda: fetched_at,
     )
     page = (
@@ -757,7 +757,7 @@ def test_a_short_publisher_notice_returns_a_closed_bodiless_posting(
 ) -> None:
     fetched_at = datetime(2026, 9, 2, 12, tzinfo=UTC)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.utc_now", lambda: fetched_at
+        "clearscout.infrastructure.web_fetch.posting_fetch.utc_now", lambda: fetched_at
     )
     page = f"<html><body><main>{notice}</main></body></html>"
     client = policy_client(
@@ -838,7 +838,7 @@ def test_an_explicit_closure_still_returns_a_closed_bodiless_posting(
         raise IngestError(message)
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
+        "clearscout.infrastructure.web_fetch.posting_fetch.url_ingest.from_url",
         closed_read,
     )
     client = policy_client(lambda url: httpx.Response(200))
@@ -3043,7 +3043,7 @@ def test_paid_refresh_worker_short_circuits_when_flag_off(
     def _fail_resolve(*args: object, **kwargs: object) -> object:
         raise AssertionError("resolve() must not be called when the flag is off.")
 
-    monkeypatch.setattr("tailorcv.application.discovery.paid_task.resolve", _fail_resolve)
+    monkeypatch.setattr("clearscout.application.discovery.paid_task.resolve", _fail_resolve)
     queue = TaskQueueService(durable_database)
     task = queue.enqueue(
         workspace_id=workspace_id,
@@ -3150,8 +3150,8 @@ def test_job_detail_surfaces_a_ruling_orphaned_by_the_current_evaluation(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A dispute surfaces when the current evaluation dropped its requirement key."""
-    from tailorcv.domain import new_id
-    from tailorcv.infrastructure.persistence.models import JobEvaluation
+    from clearscout.domain import new_id
+    from clearscout.infrastructure.persistence.models import JobEvaluation
 
     root = tmp_path / "artifacts"
     workspace_id = _workspace_with_dispute_reextraction_setting(

@@ -10,10 +10,10 @@ import pytest
 from sqlalchemy.dialects import sqlite
 from sqlalchemy.exc import StatementError
 
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.migration import upgrade
-from tailorcv.infrastructure.persistence.models import Workspace
-from tailorcv.infrastructure.persistence.types import UTCDateTime
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.migration import upgrade
+from clearscout.infrastructure.persistence.models import Workspace
+from clearscout.infrastructure.persistence.types import UTCDateTime
 
 
 def test_aware_datetime_is_canonical_utc_text_and_round_trips(tmp_path: Path) -> None:

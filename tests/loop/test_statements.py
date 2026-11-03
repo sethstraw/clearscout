@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tailorcv.domain.statements import Known, Stated, carried_identities
+from clearscout.domain.statements import Known, Stated, carried_identities
 
 ROLE = "acme-data-lead"
 RXNORM = "Led RxNorm normalization, raising coverage from 8 per cent to 25 per cent."

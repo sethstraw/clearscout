@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from clearscout.application.config import ProviderName, Settings
+from clearscout.infrastructure.providers.base import Provider, provider_for
+from clearscout.infrastructure.providers.cache import ResponseCache
+from clearscout.infrastructure.providers.client import Client
+from clearscout.shared.costs import Ledger
+from clearscout.shared.costs.prices import table as price_table
 from evals.support.scripted_provider import EVAL_PROVIDER, ScriptedProvider
-from tailorcv.application.config import ProviderName, Settings
-from tailorcv.infrastructure.providers.base import Provider, provider_for
-from tailorcv.infrastructure.providers.cache import ResponseCache
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.shared.costs import Ledger
-from tailorcv.shared.costs.prices import table as price_table
 
 
 def _cache(cache_dir: Path | None) -> ResponseCache:

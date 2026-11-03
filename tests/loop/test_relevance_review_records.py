@@ -7,29 +7,29 @@ from pathlib import Path
 import pytest
 from sqlalchemy import func, select, update
 
-from tailorcv.application.discovery.pending import set_pending_markers
-from tailorcv.application.discovery.relevance_review import current_review_contract
-from tailorcv.application.discovery.relevance_review_queries import RelevanceReviewQueries
-from tailorcv.application.discovery.relevance_review_records import (
+from clearscout.application.discovery.pending import set_pending_markers
+from clearscout.application.discovery.relevance_review import current_review_contract
+from clearscout.application.discovery.relevance_review_queries import RelevanceReviewQueries
+from clearscout.application.discovery.relevance_review_records import (
     RelevanceReviewPostingInput,
     RelevanceReviewRecorder,
     ValidatedRelevanceReview,
 )
-from tailorcv.application.job_search.models import (
+from clearscout.application.job_search.models import (
     RelevanceReviewAnswerOutcome,
     RelevanceReviewCitation,
     RelevanceReviewStaleInput,
 )
-from tailorcv.application.master_cv.service import MasterCvService
-from tailorcv.application.master_cv.versioning import current_version_id
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces.parameters import (
+from clearscout.application.master_cv.service import MasterCvService
+from clearscout.application.master_cv.versioning import current_version_id
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces.parameters import (
     SearchParametersService,
     parameter_snapshot_in,
 )
-from tailorcv.domain.search_parameters import Arrangement, JobSearchParameters
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import PendingDiscovery, RelevanceReview
+from clearscout.domain.search_parameters import Arrangement, JobSearchParameters
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PendingDiscovery, RelevanceReview
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import workspace_with_retained_postings
 

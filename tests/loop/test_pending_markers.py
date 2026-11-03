@@ -8,35 +8,35 @@ from pathlib import Path
 import pytest
 from sqlalchemy import func, select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.dispositions import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.dispositions import (
     DiscoveryDispositionService,
     dismissed_pending_ids,
 )
-from tailorcv.application.discovery.pending import pending_closing_date, set_pending_markers
-from tailorcv.application.discovery.relevance_review_queries import RelevanceReviewQueries
-from tailorcv.application.discovery.source_reading import SourceListing
-from tailorcv.application.failures import ConflictError, NotFoundError
-from tailorcv.application.job_search.models import (
+from clearscout.application.discovery.pending import pending_closing_date, set_pending_markers
+from clearscout.application.discovery.relevance_review_queries import RelevanceReviewQueries
+from clearscout.application.discovery.source_reading import SourceListing
+from clearscout.application.failures import ConflictError, NotFoundError
+from clearscout.application.job_search.models import (
     ClosingDateEditInput,
     DispositionApply,
     DispositionSelection,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import PendingDiscoveryReadiness, TaskStatus, new_id
-from tailorcv.domain.identity import url_sha256
-from tailorcv.domain.search_parameters import JobSearchParameters, Location, Seniority
-from tailorcv.domain.staged_facts import StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import PendingDiscoveryReadiness, TaskStatus, new_id
+from clearscout.domain.identity import url_sha256
+from clearscout.domain.search_parameters import JobSearchParameters, Location, Seniority
+from clearscout.domain.staged_facts import StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
     PendingDiscovery,
     PendingDiscoveryDispositionEvent,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedBoards, UnexpectedPostingFetcher
 from tests.support.scenarios import (
@@ -133,7 +133,7 @@ def test_a_personal_closing_date_edit_changes_only_the_family_head_and_audits_it
         session.get_one(PendingDiscovery, head).reason = "Closing date: February 15."
     _mark(durable_database, workspace_id, head, "keep", note="Call the recruiter.")
     times = iter([datetime(2026, 1, 2, tzinfo=UTC), datetime(2026, 1, 3, tzinfo=UTC)])
-    monkeypatch.setattr("tailorcv.application.discovery.pending.utc_now", lambda: next(times))
+    monkeypatch.setattr("clearscout.application.discovery.pending.utc_now", lambda: next(times))
     service = _service(durable_database)
 
     edited = service.set_pending_closing_date(

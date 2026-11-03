@@ -1098,7 +1098,7 @@ describe("GuidedCampaignPanel", () => {
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Abandon attempt" }));
 
-    const error = await screen.findByText(/TailorCV request failed \(409\)/);
+    const error = await screen.findByText(/ClearScout request failed \(409\)/);
     expect(
       error.compareDocumentPosition(abandonButton) & Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();

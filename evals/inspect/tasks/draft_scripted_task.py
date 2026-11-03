@@ -1,6 +1,6 @@
 """Scripted-provider drafting task loaded by the bespoke runner.
 
-Runs the shipped ``tailorcv.application.tailoring.stages.draft.draft`` against a canned
+Runs the shipped ``clearscout.application.tailoring.stages.draft.draft`` against a canned
 provider and scores attempt one through ``verify.check``. Catches a stale prompt
 template, a closed-vocabulary regression, or a verifier that stopped catching a
 planted defect; it does not test prompt quality.

@@ -7,14 +7,14 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.config import load_settings
-from tailorcv.application.tailoring.batch.analysis import Recommendation, Verdict
-from tailorcv.application.tailoring.stages.jobspec import StoredPostingName
-from tailorcv.application.tailoring.workflows import PipelineWorkflowRunner
-from tailorcv.application.tailoring.workflows._support import _posting_name
-from tailorcv.domain.search_parameters import Seniority
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.costs import Ledger
+from clearscout.application.config import load_settings
+from clearscout.application.tailoring.batch.analysis import Recommendation, Verdict
+from clearscout.application.tailoring.stages.jobspec import StoredPostingName
+from clearscout.application.tailoring.workflows import PipelineWorkflowRunner
+from clearscout.application.tailoring.workflows._support import _posting_name
+from clearscout.domain.search_parameters import Seniority
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.costs import Ledger
 from tests.support.doubles import FakeScreenResult, ScriptedProvider
 from tests.support.payloads import script
 from tests.support.suite import POSTING, SUITE_KEY_VARIABLE, settings_for
@@ -33,7 +33,7 @@ def test_the_evaluation_seniority_cap_reads_the_stored_title_rather_than_the_ext
     answers["JobSpecExtraction"] = without_a_rung
     provider = ScriptedProvider(answers)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -72,11 +72,11 @@ def test_only_a_fresh_evaluation_asks_the_provider_past_a_warm_response_cache(
 ) -> None:
     provider = ScriptedProvider(script({}))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.cache.user_cache_dir",
+        "clearscout.infrastructure.providers.cache.user_cache_dir",
         lambda name: str(tmp_path / "cache"),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -201,10 +201,10 @@ def test_evaluating_a_screened_posting_normalizes_the_outcome_reasons_and_finger
         )
 
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.workflows.runner.pipeline.screen", fake_screen
+        "clearscout.application.tailoring.workflows.runner.pipeline.screen", fake_screen
     )
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.workflows.runner.batch.recommend",
+        "clearscout.application.tailoring.workflows.runner.batch.recommend",
         lambda _spec, _evidence, **_: Recommendation(Verdict.PURSUE, ("direct evidence",)),
     )
 

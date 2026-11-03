@@ -8,17 +8,17 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from tailorcv.application.discovery.hints import PendingDiscoveryHintsService
-from tailorcv.application.discovery.relevance_review_rejections import (
+from clearscout.application.discovery.hints import PendingDiscoveryHintsService
+from clearscout.application.discovery.relevance_review_rejections import (
     RelevanceReviewItemFailure,
     RelevanceReviewRejectionService,
 )
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.job_search.models import PendingDiscoveryResponse
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.domain import TaskStatus
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.job_search.models import PendingDiscoveryResponse
+from clearscout.application.tasks import TaskQueueService
+from clearscout.domain import TaskStatus
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
     RelevanceReviewRejection,

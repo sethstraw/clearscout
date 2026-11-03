@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.config import (
+from clearscout.application.config import (
     DEFAULT_PROVIDER,
     Effort,
     ProviderName,
@@ -16,13 +16,13 @@ from tailorcv.application.config import (
     find_config,
     load_settings,
 )
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.shared.errors import ConfigError
 from tests.support.suite import SUITE_PROVIDER
 
 
 def write_config(tmp_path: Path, body: str) -> Path:
-    path = tmp_path / "tailorcv.toml"
+    path = tmp_path / "clearscout.toml"
     path.write_text(body, encoding="utf-8")
     return path
 
@@ -33,7 +33,7 @@ def test_a_run_needs_no_configuration_at_all(
     """Zero config is a supported way to run, not an error to report."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        "tailorcv.application.config.user_config_dir", lambda app: str(tmp_path / "none")
+        "clearscout.application.config.user_config_dir", lambda app: str(tmp_path / "none")
     )
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path / "nohome"))
     settings = load_settings()
@@ -79,7 +79,7 @@ def test_the_environment_beats_the_file(
     tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     config = write_config(tmp_path, f'cv = "{master_cv}"\nprovider = "anthropic"\n')
-    monkeypatch.setenv("TAILORCV_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_PROVIDER", "openai")
     assert load_settings(config).provider is ProviderName.OPENAI
 
 
@@ -125,14 +125,14 @@ def test_every_non_default_guardrail_counts_as_configured() -> None:
 
 def test_prices_ship_with_the_program(tmp_path: Path, master_cv: Path) -> None:
     """Nobody should have to type a price to see what a run cost."""
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     settings = load_settings(write_config(tmp_path, f'cv = "{master_cv}"\n'))
     assert settings.choice_for(Tier.DRAFTING).model in table(settings.prices)
 
 
 def test_a_price_can_still_be_overridden(tmp_path: Path, master_cv: Path) -> None:
-    from tailorcv.shared.costs.prices import table
+    from clearscout.shared.costs.prices import table
 
     config = write_config(
         tmp_path,
@@ -169,7 +169,7 @@ def test_an_explicitly_named_missing_file_is_an_error(tmp_path: Path) -> None:
 
 def test_the_project_directory_is_searched_before_the_home_directory(tmp_path: Path) -> None:
     locations = config_locations(tmp_path)
-    assert locations[0] == tmp_path / "tailorcv.toml"
+    assert locations[0] == tmp_path / "clearscout.toml"
     assert ".config" in str(locations[1])
 
 
@@ -220,7 +220,7 @@ def test_a_vocabulary_table_reaches_the_deterministic_reading(
     tmp_path: Path, master_cv: Path
 ) -> None:
     """The `[vocabulary]` table as a settings file spells it, from file to lexicon."""
-    from tailorcv.domain.taxonomy import extended
+    from clearscout.domain.taxonomy import extended
 
     body = "\n".join(
         [

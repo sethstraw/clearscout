@@ -3,7 +3,7 @@
 Everything about which package may import which other package lives in the
 `[tool.importlinter]` contracts and is checked by `lint-imports`. One rule does
 not fit that model and stays here: a capability's privates are a name-level
-rule. Import-linter graphs modules, so `from tailorcv.application.other import
+rule. Import-linter graphs modules, so `from clearscout.application.other import
 _thing` is invisible to it, and ruff's SLF001 covers attribute access rather
 than an imported name.
 
@@ -22,7 +22,7 @@ from typing import Any
 
 from tests.support.suite import REPO_ROOT
 
-SOURCE = REPO_ROOT / "src" / "tailorcv"
+SOURCE = REPO_ROOT / "src" / "clearscout"
 NAME_LIMIT = 75
 
 
@@ -47,7 +47,7 @@ def _private_crossings(module: Path) -> list[str]:
         if not isinstance(node, ast.ImportFrom) or node.level or not node.module:
             continue
         parts = node.module.split(".")
-        if parts[:2] != ["tailorcv", "application"]:
+        if parts[:2] != ["clearscout", "application"]:
             continue
         target = tuple(parts[1:3])
         if target == owner:
@@ -187,7 +187,7 @@ def test_contract_checks_report_each_kind_of_loose_contract(tmp_path: Path) -> N
         {
             "name": "pkg layers",
             "type": "layers",
-            "containers": ["tailorcv.pkg"],
+            "containers": ["clearscout.pkg"],
             "layers": ["top", "bottom"],
         },
         {
@@ -213,7 +213,7 @@ def test_contract_checks_report_each_kind_of_loose_contract(tmp_path: Path) -> N
         },
     ]
 
-    assert _unlayered_modules(contracts, tmp_path) == ["tailorcv.pkg.stray"]
+    assert _unlayered_modules(contracts, tmp_path) == ["clearscout.pkg.stray"]
     assert _redundant_forbidden(contracts) == ["a: x.b.inner", "x.a: y"]
     assert _one_sided_exclusions(contracts) == ["a: x.c"]
     assert _contract_name_problems(contracts) == ["a"]

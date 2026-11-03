@@ -141,7 +141,7 @@ function documentHandlers(reads: DocumentReads = {}): Recorded {
 }
 
 function renderDocuments() {
-  window.localStorage.setItem("tailorcv.workspace", "workspace-1");
+  window.localStorage.setItem("clearscout.workspace", "workspace-1");
   return render(
     <AppProviders>
       <MemoryRouter>
@@ -178,7 +178,7 @@ describe("JobDocuments", () => {
     expect(await screen.findByRole("button", { name: "Save as PDF or text" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Render PDF or text" })).toBeNull();
     expect(screen.getByText(/writes the file to this machine/)).toBeTruthy();
-    expect(screen.getByText(/TailorCV does not typeset a resume/)).toBeTruthy();
+    expect(screen.getByText(/ClearScout does not typeset a resume/)).toBeTruthy();
   });
 
   it("shows correct artifact hash when switching between documents", async () => {

@@ -11,7 +11,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
-from tailorcv.domain.records import EvaluationDecision
+from clearscout.domain.records import EvaluationDecision
 
 Slug = Annotated[str, Field(min_length=1, max_length=64, pattern=r"^[a-z0-9][a-z0-9_-]*$")]
 ArtifactReference = Annotated[

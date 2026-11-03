@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tailorcv.application.tailoring.stages.spans import locate, normalize
-from tailorcv.domain import SpanStatus
+from clearscout.application.tailoring.stages.spans import locate, normalize
+from clearscout.domain import SpanStatus
 
 POSTING = "Requirements:\n  - Must be in  Canada\n  - 5+ years of Python\n"
 

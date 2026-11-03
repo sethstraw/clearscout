@@ -1,9 +1,9 @@
 ---
 name: generated-artifact-sentinel
-description: Detect drift between hand-edited TailorCV generated artifacts and their source. Use on a request to check for generated drift, before committing a change that touches generated files, and whenever a diff changes generated files without an obvious regeneration step. Do not use for checked-in files that are authored by hand, such as fixtures and reviewed snapshots.
+description: Detect drift between hand-edited ClearScout generated artifacts and their source. Use on a request to check for generated drift, before committing a change that touches generated files, and whenever a diff changes generated files without an obvious regeneration step. Do not use for checked-in files that are authored by hand, such as fixtures and reviewed snapshots.
 ---
 
-# TailorCV generated artifact sentinel
+# ClearScout generated artifact sentinel
 
 A hand edit to a generated file is overwritten by the next generate run, and it
 hides the real drift until then. This skill lists the generators, maps their
@@ -31,7 +31,7 @@ version, and source inputs. A missing source edit in the same diff is a prompt
 to investigate, not proof of corruption:
 
 - the OpenAPI JSON or the TypeScript types changed, but no Pydantic wire model
-  or route under `src/tailorcv/delivery/api/` changed
+  or route under `src/clearscout/delivery/api/` changed
 - the gazetteer changed, but `scripts/build_gazetteer.py` and its inputs did not
 - the notices changed, but `uv.lock` and `web/package-lock.json` did not
 

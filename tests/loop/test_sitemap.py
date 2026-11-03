@@ -10,15 +10,15 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import SourceScan
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.domain import SourceReadOutcome
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import SourceScan
+from clearscout.infrastructure.web_fetch.board_adapters import (
     SITEMAP_POSTING_FETCHES,
     BoardApiFetcher,
 )
-from tailorcv.infrastructure.web_fetch.ingest.sitemap import (
+from clearscout.infrastructure.web_fetch.ingest.sitemap import (
     SitemapLimits,
     discover_job_urls,
     is_document_url,
@@ -313,7 +313,7 @@ def test_an_unadapted_icims_portal_reads_each_sitemap_posting_from_its_iframe_bo
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.fetcher.SITEMAP_POSTING_FETCHES", 1
+        "clearscout.infrastructure.web_fetch.board_adapters.fetcher.SITEMAP_POSTING_FETCHES", 1
     )
     origin = "https://acme.icims.com"
     first, second = f"{origin}/jobs/1201/data-lead/job", f"{origin}/jobs/1202/analyst/job"

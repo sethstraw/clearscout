@@ -6,7 +6,7 @@ import json
 from html import escape
 from typing import Literal
 
-from tailorcv.domain.artifacts import PostingSource
+from clearscout.domain.artifacts import PostingSource
 
 FormPlatform = Literal["greenhouse", "lever", "ashby"]
 FORM_PLATFORMS: tuple[FormPlatform, ...] = ("greenhouse", "lever", "ashby")

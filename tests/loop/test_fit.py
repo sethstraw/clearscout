@@ -16,18 +16,23 @@ from typing import get_args
 import pytest
 from pydantic import ValidationError
 
-from tailorcv.application.master_cv.cv import CvInventory, parse_cv
-from tailorcv.application.tailoring import fit
-from tailorcv.application.tailoring.fit.structure import AnswerName
-from tailorcv.application.tailoring.stages.jobspec import HardGate, Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.spans import locate
-from tailorcv.domain import taxonomy
-from tailorcv.domain.requirements import GateKind
-from tailorcv.domain.search_parameters import Acceptance, Arrangement, JobSearchParameters
-from tailorcv.domain.taxonomy import Vocabulary
-from tailorcv.infrastructure.web_fetch.board_mappings import plain_description
-from tailorcv.shared.layout import ITEM_MARKER, plain_layout
-from tailorcv.shared.text import sanitize
+from clearscout.application.master_cv.cv import CvInventory, parse_cv
+from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.fit.structure import AnswerName
+from clearscout.application.tailoring.stages.jobspec import (
+    HardGate,
+    Importance,
+    JobSpec,
+    Requirement,
+)
+from clearscout.application.tailoring.stages.spans import locate
+from clearscout.domain import taxonomy
+from clearscout.domain.requirements import GateKind
+from clearscout.domain.search_parameters import Acceptance, Arrangement, JobSearchParameters
+from clearscout.domain.taxonomy import Vocabulary
+from clearscout.infrastructure.web_fetch.board_mappings import plain_description
+from clearscout.shared.layout import ITEM_MARKER, plain_layout
+from clearscout.shared.text import sanitize
 from tests.support.posting_bodies import (
     BODY_SHAPES,
     PREFERRED_HEADING,

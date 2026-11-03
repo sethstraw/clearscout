@@ -9,9 +9,9 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.application import prompts
-from tailorcv.application.discovery import guided_campaign_report
-from tailorcv.application.discovery.guided_campaign import (
+from clearscout.application import prompts
+from clearscout.application.discovery import guided_campaign_report
+from clearscout.application.discovery.guided_campaign import (
     DEFAULT_MAX_HOSTED_SEARCHES,
     DEFAULT_MAX_MODEL_CALLS,
     BranchKind,
@@ -21,11 +21,11 @@ from tailorcv.application.discovery.guided_campaign import (
     CampaignIdentities,
     CampaignManifest,
 )
-from tailorcv.application.failures import NotFoundError
-from tailorcv.application.workspaces.prompt_library import PromptLibraryService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain.campaigns import AttemptState, CampaignReason, CampaignStatus
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.failures import NotFoundError
+from clearscout.application.workspaces.prompt_library import PromptLibraryService
+from clearscout.bootstrap.api import create_app
+from clearscout.domain.campaigns import AttemptState, CampaignReason, CampaignStatus
+from clearscout.infrastructure.persistence.database import Database
 
 
 def test_search_parameter_options_publish_every_compensation_basis(

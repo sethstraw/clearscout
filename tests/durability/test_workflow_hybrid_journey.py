@@ -10,16 +10,16 @@ from typing import NamedTuple
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.documents.approvals import ApprovalService
-from tailorcv.application.master_cv import parse_canonical_source
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.workflows import PipelineWorkflowRunner, WorkflowService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.domain import TailoringOutcome
-from tailorcv.domain.search_parameters import JobSearchParameters
-from tailorcv.infrastructure.persistence.models import Artifact, JobEvaluation
+from clearscout.application.documents.approvals import ApprovalService
+from clearscout.application.master_cv import parse_canonical_source
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.workflows import PipelineWorkflowRunner, WorkflowService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.domain import TailoringOutcome
+from clearscout.domain.search_parameters import JobSearchParameters
+from clearscout.infrastructure.persistence.models import Artifact, JobEvaluation
 from tests.support.artifacts import runtime_storage
 
 
@@ -66,12 +66,12 @@ def hybrid_cv() -> _HybridCv:
 def test_hybrid_shortlist_retains_review_findings_and_export_lineage(
     durable_database, tmp_path, monkeypatch, hybrid_cv, family, fragments, readiness
 ):
-    from tailorcv.application import job_search
-    from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-    from tailorcv.application.job_search.models import JobListQuery
-    from tailorcv.application.master_cv import MasterCvService
-    from tailorcv.application.master_cv.cv import EntryKind
-    from tailorcv.application.tailoring.workflows.evaluation_commit import (
+    from clearscout.application import job_search
+    from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+    from clearscout.application.job_search.models import JobListQuery
+    from clearscout.application.master_cv import MasterCvService
+    from clearscout.application.master_cv.cv import EntryKind
+    from clearscout.application.tailoring.workflows.evaluation_commit import (
         EvaluationCommitInputs,
         build_evaluation_commit,
     )
@@ -131,7 +131,7 @@ def test_hybrid_shortlist_retains_review_findings_and_export_lineage(
     }
     provider = ScriptedProvider(answers)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda *args, **kwargs: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "offline-test-key")

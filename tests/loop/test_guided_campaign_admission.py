@@ -14,21 +14,21 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery import guided_campaign_admission
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.board_slugs import board_identity_key
-from tailorcv.application.discovery.funnel_audit import (
+from clearscout.application.discovery import guided_campaign_admission
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.board_slugs import board_identity_key
+from clearscout.application.discovery.funnel_audit import (
     FunnelCandidateKind,
     FunnelReason,
     FunnelStage,
 )
-from tailorcv.application.discovery.guided_campaign import (
+from clearscout.application.discovery.guided_campaign import (
     CampaignAttemptPlan,
     CampaignBounds,
     CampaignIdentities,
     CampaignManifest,
 )
-from tailorcv.application.discovery.guided_campaign_admission import (
+from clearscout.application.discovery.guided_campaign_admission import (
     BOARD_LISTINGS_NOT_STAGED_DETAIL,
     AdmissionResult,
     BoardListingCandidate,
@@ -40,39 +40,39 @@ from tailorcv.application.discovery.guided_campaign_admission import (
     classify_url,
     read_captured_urls,
 )
-from tailorcv.application.discovery.guided_campaign_ledger import GuidedCampaignLedger
-from tailorcv.application.discovery.pending import (
+from clearscout.application.discovery.guided_campaign_ledger import GuidedCampaignLedger
+from clearscout.application.discovery.pending import (
     MARKERS_CHANGED_ACTION,
     reset_pending_queue,
     set_pending_markers,
 )
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.posting_identity import posting_identity_keys, posting_url_key
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.discovery.scan_staging import (
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.posting_identity import posting_identity_keys, posting_url_key
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.discovery.scan_staging import (
     CAMPAIGN_BOARD_LISTING_REASON,
     CAMPAIGN_FOUND_POSTING_REASON,
 )
-from tailorcv.application.discovery.scan_sweep import SOURCE_STAGE_LIMIT
-from tailorcv.application.discovery.source_reading import PostingCheck, SourceListing
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.parameters import SearchParametersService
-from tailorcv.domain import new_id, utc_now
-from tailorcv.domain.campaigns import (
+from clearscout.application.discovery.scan_sweep import SOURCE_STAGE_LIMIT
+from clearscout.application.discovery.source_reading import PostingCheck, SourceListing
+from clearscout.application.failures import ValidationError
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.parameters import SearchParametersService
+from clearscout.domain import new_id, utc_now
+from clearscout.domain.campaigns import (
     CapturedUrlClassification,
     CapturedUrlOutcome,
     StagedBasis,
     UrlActionKind,
 )
-from tailorcv.domain.records import (
+from clearscout.domain.records import (
     PageClassification,
     PostingContentAccessStatus,
     PostingReadIntent,
     RobotsReadBasis,
 )
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     Cluster,
@@ -83,9 +83,9 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import ListingIdentityTrust, PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import ListingIdentityTrust, PublishedFact, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
     Employer,
@@ -93,16 +93,16 @@ from tailorcv.infrastructure.persistence.models import (
     Source,
     SourceScanOutcome,
 )
-from tailorcv.infrastructure.providers.base import BackgroundPoll, CallRecord
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.infrastructure.providers.base import BackgroundPoll, CallRecord
+from clearscout.infrastructure.web_fetch.policy import (
     UNRESOLVED_DESTINATION_NOTE,
     PoliteHttpClient,
     RobotsDeniedError,
 )
-from tailorcv.infrastructure.web_fetch.posting_fetch import PolitePostingFetcher
-from tailorcv.shared.costs import CallManifest, Usage
-from tailorcv.shared.costs import Ledger as CostLedger
-from tailorcv.shared.errors import IngestError
+from clearscout.infrastructure.web_fetch.posting_fetch import PolitePostingFetcher
+from clearscout.shared.costs import CallManifest, Usage
+from clearscout.shared.costs import Ledger as CostLedger
+from clearscout.shared.errors import IngestError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.scenarios import scan_workspace
@@ -1051,7 +1051,7 @@ def _unresolvable_fetcher() -> PolitePostingFetcher:
         raise AssertionError(f"an unresolvable host must not be contacted: {url}")
 
     return PolitePostingFetcher(
-        client=PoliteHttpClient(user_agent="tailorcv/test", getter=get, resolver=resolve)
+        client=PoliteHttpClient(user_agent="clearscout/test", getter=get, resolver=resolve)
     )
 
 

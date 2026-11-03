@@ -9,16 +9,16 @@ from typing import Any
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.documents import DocumentService
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.prompts import packaged
-from tailorcv.application.tailoring.stages.jobspec import StoredPostingName
-from tailorcv.application.tailoring.workflows import BatchOutput, WorkflowService
-from tailorcv.application.tasks import TaskQueueService, validate_task_payload
-from tailorcv.application.workspaces.prompt_library import PromptLibraryService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.documents import DocumentService
+from clearscout.application.failures import ValidationError
+from clearscout.application.prompts import packaged
+from clearscout.application.tailoring.stages.jobspec import StoredPostingName
+from clearscout.application.tailoring.workflows import BatchOutput, WorkflowService
+from clearscout.application.tasks import TaskQueueService, validate_task_payload
+from clearscout.application.workspaces.prompt_library import PromptLibraryService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     BatchMember,
     BatchRun,
@@ -28,7 +28,7 @@ from tailorcv.infrastructure.persistence.models import (
     PostingObservation,
     RunPromptVersion,
 )
-from tailorcv.shared.costs import CallManifest, Ledger, Usage
+from clearscout.shared.costs import CallManifest, Ledger, Usage
 from tests.support.artifacts import runtime_storage
 from tests.support.runners import ScriptedPipelineRunner
 from tests.support.scenarios import studio_workspace
@@ -201,7 +201,7 @@ def test_a_batch_payload_names_a_distinct_job_set_with_matching_columns(
 def test_batch_keeps_billing_when_cancelled_or_a_later_posting_fails(
     durable_database, tmp_path, failure
 ):
-    from tailorcv.application.tailoring.workflows import ScreenOutput
+    from clearscout.application.tailoring.workflows import ScreenOutput
 
     workspace_id, job_id, other_id, _ = studio_workspace(
         durable_database, tmp_path / "workspace", tmp_path / "artifacts"

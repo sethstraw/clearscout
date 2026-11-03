@@ -37,11 +37,11 @@ from evals.inspect.selection import (
     serialize_match_dataset,
     split_resolution_sha256,
 )
-from evals.inspect.solvers import tailorcv_live
+from evals.inspect.solvers import clearscout_live
 from pydantic import ValidationError
 
-from tailorcv.application.tailoring.stages.jobspec import Dimension
-from tailorcv.application.tailoring.stages.match import Classification, Strength
+from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.match import Classification, Strength
 from tests.support.match_selection import (
     CASES,
     HELD_OUT,
@@ -73,16 +73,16 @@ def _write_live_manifest(
 ) -> Path:
     path = tmp_path / "selection-manifest.json"
     path.write_text(manifest.model_dump_json(), encoding="utf-8")
-    monkeypatch.setenv("TAILORCV_EVAL_SELECTION_MANIFEST", str(path))
-    monkeypatch.setenv("TAILORCV_EVAL_SELECTION_MANIFEST_SHA256", manifest.manifest_sha256)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST", str(path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST_SHA256", manifest.manifest_sha256)
     monkeypatch.setenv(
-        "TAILORCV_EVAL_SELECTION_MANIFEST_BYTES_SHA256", bytes_sha256(path.read_bytes())
+        "CLEARSCOUT_EVAL_SELECTION_MANIFEST_BYTES_SHA256", bytes_sha256(path.read_bytes())
     )
     return path
 
 
 def _live_manifest_identity(manifest: SelectionManifest) -> dict[str, Any]:
-    return tailorcv_live._selection_manifest_identity(
+    return clearscout_live._selection_manifest_identity(
         split="development", limit=len(manifest.body.ordered_cases)
     )
 
@@ -866,12 +866,12 @@ def test_live_identity_binds_the_exact_private_selection_manifest(
 def test_live_identity_requires_an_approved_selection_manifest(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("TAILORCV_EVAL_SELECTION_MANIFEST", raising=False)
-    monkeypatch.delenv("TAILORCV_EVAL_SELECTION_MANIFEST_SHA256", raising=False)
-    monkeypatch.delenv("TAILORCV_EVAL_SELECTION_MANIFEST_BYTES_SHA256", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST_SHA256", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST_BYTES_SHA256", raising=False)
 
     with pytest.raises(RuntimeError, match="private selection manifest"):
-        tailorcv_live._selection_manifest_identity(split="development", limit=SET_SIZE)
+        clearscout_live._selection_manifest_identity(split="development", limit=SET_SIZE)
 
 
 def test_live_identity_refuses_manifest_approval_or_byte_drift(
@@ -880,18 +880,18 @@ def test_live_identity_refuses_manifest_approval_or_byte_drift(
     pool = candidate_pool()
     manifest = selection_manifest(pool, resolution_set())
     path = _write_live_manifest(tmp_path, monkeypatch, manifest)
-    monkeypatch.setenv("TAILORCV_EVAL_SELECTION_MANIFEST_SHA256", "0" * 64)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST_SHA256", "0" * 64)
 
     with pytest.raises(RuntimeError, match="does not match the approved SHA-256"):
         _live_manifest_identity(manifest)
 
-    monkeypatch.setenv("TAILORCV_EVAL_SELECTION_MANIFEST_SHA256", manifest.manifest_sha256)
-    monkeypatch.setenv("TAILORCV_EVAL_SELECTION_MANIFEST_BYTES_SHA256", "0" * 64)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST_SHA256", manifest.manifest_sha256)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST_BYTES_SHA256", "0" * 64)
     with pytest.raises(RuntimeError, match="manifest bytes"):
         _live_manifest_identity(manifest)
 
     monkeypatch.setenv(
-        "TAILORCV_EVAL_SELECTION_MANIFEST_BYTES_SHA256", bytes_sha256(path.read_bytes())
+        "CLEARSCOUT_EVAL_SELECTION_MANIFEST_BYTES_SHA256", bytes_sha256(path.read_bytes())
     )
     path.write_text("{}", encoding="utf-8")
     with pytest.raises(RuntimeError, match="invalid selection manifest"):
@@ -921,7 +921,7 @@ def test_live_identity_admits_an_explicit_holdout_run_over_every_held_out_case(
     manifest = selection_manifest(candidate_pool(), resolution_set())
     _write_live_manifest(tmp_path, monkeypatch, manifest)
 
-    identity = tailorcv_live._selection_manifest_identity(
+    identity = clearscout_live._selection_manifest_identity(
         split="holdout", limit=len(manifest.body.held_out_cases)
     )
 
@@ -952,4 +952,4 @@ def test_live_identity_refuses_scope_outside_the_selection_manifest(
     approved_scope.update(scope)
 
     with pytest.raises(RuntimeError, match=message):
-        tailorcv_live._selection_manifest_identity(**approved_scope)
+        clearscout_live._selection_manifest_identity(**approved_scope)

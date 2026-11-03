@@ -8,11 +8,11 @@ from urllib.parse import urlsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import SourceReadOptions
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.ingest import strip_tags
-from tailorcv.infrastructure.web_fetch.ingest.careers import inspect_publisher_page
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.application.discovery.source_reading import SourceReadOptions
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.ingest import strip_tags
+from clearscout.infrastructure.web_fetch.ingest.careers import inspect_publisher_page
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 from tests.support.doubles import declaring_page
 from tests.support.http import public_resolver
 
@@ -66,7 +66,7 @@ class _FeedSite:
 
         return Fetcher(
             client=PoliteHttpClient(
-                user_agent="tailorcv/test",
+                user_agent="clearscout/test",
                 getter=get,
                 sleeper=sleep,
                 jitter=lambda _low, _high: 0.5,
@@ -222,11 +222,11 @@ def test_a_pacing_deadline_retains_successes_and_resumes_pending_details_on_a_fr
     site = _FeedSite(quota_interval=2.2)
     site.empty = {2}
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: site.now,
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 10.0
+        "clearscout.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 10.0
     )
 
     first = site.fetcher.listings("Acme", site.root)

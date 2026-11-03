@@ -15,9 +15,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from tailorcv import __version__
-from tailorcv.application import job_search, prompts
-from tailorcv.application.contracts import (
+from clearscout import __version__
+from clearscout.application import job_search, prompts
+from clearscout.application.contracts import (
     CompensationInput,
     EligibilityInput,
     EvaluationCommit,
@@ -26,13 +26,13 @@ from tailorcv.application.contracts import (
     ScoreComponentInput,
     ScoreEvidenceInput,
 )
-from tailorcv.application.discovery import posting_identity as posting
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery import posting_identity as posting
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.relevance_review import current_review_contract
-from tailorcv.application.discovery.relevance_review_records import (
+from clearscout.application.discovery.relevance_review import current_review_contract
+from clearscout.application.discovery.relevance_review_records import (
     RelevanceReviewContract,
     RelevanceReviewPostingInput,
     RelevanceReviewRecorder,
@@ -40,20 +40,20 @@ from tailorcv.application.discovery.relevance_review_records import (
     current_review_in,
     keep_note_digest,
 )
-from tailorcv.application.discovery.source_continuation import POSTING_DETAIL_COMPLETED
-from tailorcv.application.discovery.source_reading import SourceListing
-from tailorcv.application.documents import DocumentService
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.job_search.models import JobDetailResponse, RelevanceReviewCitation
-from tailorcv.application.master_cv import cv
-from tailorcv.application.master_cv.service import MasterCvService
-from tailorcv.application.master_cv.versioning import current_version_id
-from tailorcv.application.tailoring import runs
-from tailorcv.application.tailoring.workflows import TailorOutput, WorkflowService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.application.workspaces.parameters import parameter_snapshot_in
-from tailorcv.domain import (
+from clearscout.application.discovery.source_continuation import POSTING_DETAIL_COMPLETED
+from clearscout.application.discovery.source_reading import SourceListing
+from clearscout.application.documents import DocumentService
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.job_search.models import JobDetailResponse, RelevanceReviewCitation
+from clearscout.application.master_cv import cv
+from clearscout.application.master_cv.service import MasterCvService
+from clearscout.application.master_cv.versioning import current_version_id
+from clearscout.application.tailoring import runs
+from clearscout.application.tailoring.workflows import TailorOutput, WorkflowService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.application.workspaces.parameters import parameter_snapshot_in
+from clearscout.domain import (
     EvaluationDecision,
     EvidenceClassification,
     EvidenceSourceKind,
@@ -68,8 +68,8 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.identity import normalize_text, normalize_url, url_sha256
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.identity import normalize_text, normalize_url, url_sha256
+from clearscout.domain.search_parameters import (
     CompensationBand,
     CountryNames,
     JobSearchParameters,
@@ -78,9 +78,9 @@ from tailorcv.domain.search_parameters import (
     Seniority,
     TargetTitle,
 )
-from tailorcv.domain.staged_facts import PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import PublishedFact, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Application,
     AuditEvent,
     BackgroundTask,
@@ -104,9 +104,11 @@ from tailorcv.infrastructure.persistence.models import (
     SourceScanOutcome,
     TailoringRun,
 )
-from tailorcv.infrastructure.web_fetch.company_research import ResearchSource, fingerprint
-from tailorcv.infrastructure.web_fetch.posting_resolution import DeterministicPostingContentResolver
-from tailorcv.shared.costs import Ledger
+from clearscout.infrastructure.web_fetch.company_research import ResearchSource, fingerprint
+from clearscout.infrastructure.web_fetch.posting_resolution import (
+    DeterministicPostingContentResolver,
+)
+from clearscout.shared.costs import Ledger
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.runners import serialized_artifacts
 
@@ -297,7 +299,7 @@ def store_parameters_without(
             supersedes_id=previous.parameter_set_id,
             document=document,
             created_by="local_user",
-            origin="tailorcv",
+            origin="clearscout",
         )
         session.add(row)
         session.flush()
@@ -368,7 +370,7 @@ def board_source(database: Database, workspace_id: str, name: str, url: str, **o
                 url=url,
                 priority=overrides.get("priority", 1),
                 enabled=overrides.get("enabled", True),
-                origin=overrides.get("origin", "tailorcv"),
+                origin=overrides.get("origin", "clearscout"),
                 resolved_platform=overrides.get("resolved_platform"),
                 resolved_url=overrides.get("resolved_url"),
             )
@@ -559,7 +561,7 @@ def seed_scan_continuation(
     source_scan_id: str,
     rows: Sequence[dict[str, object]],
     *,
-    origin: str = "tailorcv",
+    origin: str = "clearscout",
     correlation_id: str | None = None,
 ) -> str:
     """Add a continuation and its hand-placed frontier rows to an open session.
@@ -588,7 +590,7 @@ def seed_frontier_rows(
     continuation_id: str,
     rows: Sequence[dict[str, object]],
     *,
-    origin: str = "tailorcv",
+    origin: str = "clearscout",
 ) -> None:
     """Add hand-placed frontier rows to an existing continuation; each row states ``url``."""
     for row in rows:
@@ -1314,7 +1316,7 @@ def seed_reusable_tailoring_run(
             "research_hash": fingerprint(research),
             "trimmed": 0,
             "approval": "",
-            "tailorcv": __version__,
+            "clearscout": __version__,
         },
         "run": {"outcome": "passed"},
     }

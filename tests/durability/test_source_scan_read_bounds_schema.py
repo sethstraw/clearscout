@@ -8,10 +8,10 @@ import pytest
 from sqlalchemy import Table, inspect, text
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.domain import utc_now
-from tailorcv.domain.records import SourceReadOutcome
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import SourceScan
+from clearscout.domain import utc_now
+from clearscout.domain.records import SourceReadOutcome
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import SourceScan
 from tests.support.scenarios import employer_board, scan_workspace
 
 

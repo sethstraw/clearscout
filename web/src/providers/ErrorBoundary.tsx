@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<PropsWithChildren, State> {
           onClick={() => window.location.reload()}
           type="button"
         >
-          Reload TailorCV
+          Reload ClearScout
         </button>
       </main>
     );

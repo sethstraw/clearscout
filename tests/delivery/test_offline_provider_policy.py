@@ -7,7 +7,7 @@ import socket
 import pytest
 from evals.runner import EvalError, forbid_network
 
-from tailorcv.infrastructure.providers.credentials import ENVIRONMENT_VARIABLES
+from clearscout.infrastructure.providers.credentials import ENVIRONMENT_VARIABLES
 from tests.support.suite import REPO_ROOT
 
 ROOT = REPO_ROOT

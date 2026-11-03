@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from tailorcv.application.prompts import packaged
-from tailorcv.application.tailoring.stages.context import requirement_text
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.prompts import packaged
+from clearscout.application.tailoring.stages.context import requirement_text
+from clearscout.application.tailoring.stages.jobspec import (
     Dimension,
     HardGate,
     Importance,

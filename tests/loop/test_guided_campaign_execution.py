@@ -16,12 +16,12 @@ from sqlalchemy import func, select
 from sqlalchemy import update as sa_update
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from tailorcv.application.config import ProviderName, Settings
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.config import ProviderName, Settings
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.guided_campaign import (
+from clearscout.application.discovery.guided_campaign import (
     DEFAULT_MAX_HOSTED_SEARCHES,
     DEFAULT_MAX_MODEL_CALLS,
     BranchKind,
@@ -32,38 +32,38 @@ from tailorcv.application.discovery.guided_campaign import (
     CampaignManifest,
     compile_campaign,
 )
-from tailorcv.application.discovery.guided_campaign_ledger import GuidedCampaignLedger
-from tailorcv.application.discovery.guided_campaign_report import (
+from clearscout.application.discovery.guided_campaign_ledger import GuidedCampaignLedger
+from clearscout.application.discovery.guided_campaign_report import (
     abandon_uncertain_attempt,
     build_campaign_preview,
     campaign_report,
     latest_campaign_report,
 )
-from tailorcv.application.discovery.guided_campaign_request import (
+from clearscout.application.discovery.guided_campaign_request import (
     MAX_SEARCHES,
     MAX_WHY_LENGTH,
     campaign_response_schema,
 )
-from tailorcv.application.discovery.guided_campaign_runner import (
+from clearscout.application.discovery.guided_campaign_runner import (
     GuidedCampaignHandler,
     GuidedCampaignRetryHandler,
     GuidedCampaignService,
     captured_url_rows,
     matched_queries,
 )
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.source_reading import PostingCheck, SourceListing, SourceRead
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.tasks import TaskQueueService, validate_task_payload
-from tailorcv.application.tasks.registry import TASK_REGISTRY
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.parameters import SearchParametersService
-from tailorcv.bootstrap.worker import TaskCancelledError, Worker, default_handlers
-from tailorcv.domain import SearchProposalState, new_id, utc_now
-from tailorcv.domain.campaigns import AttemptErrorCategory, AttemptState, CampaignStatus
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.records import (
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.source_reading import PostingCheck, SourceListing, SourceRead
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.tasks import TaskQueueService, validate_task_payload
+from clearscout.application.tasks.registry import TASK_REGISTRY
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.parameters import SearchParametersService
+from clearscout.bootstrap.worker import TaskCancelledError, Worker, default_handlers
+from clearscout.domain import SearchProposalState, new_id, utc_now
+from clearscout.domain.campaigns import AttemptErrorCategory, AttemptState, CampaignStatus
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.records import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -72,7 +72,7 @@ from tailorcv.domain.records import (
     RobotsReadBasis,
     SourceReadOutcome,
 )
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.search_parameters import (
     Cluster,
     EmployerArchetype,
     Focus,
@@ -81,9 +81,9 @@ from tailorcv.domain.search_parameters import (
     Seniority,
     TargetTitle,
 )
-from tailorcv.domain.statements import derived_proposal_identity
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.statements import derived_proposal_identity
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
     CostRecord,
     DerivedEmployerArchetype,
@@ -101,7 +101,7 @@ from tailorcv.infrastructure.persistence.models import (
     Source,
     SourceScanOutcome,
 )
-from tailorcv.infrastructure.providers.base import (
+from clearscout.infrastructure.providers.base import (
     BackgroundDispatch,
     BackgroundPoll,
     CallRecord,
@@ -111,16 +111,16 @@ from tailorcv.infrastructure.providers.base import (
     SearchSource,
     parse_or_raise,
 )
-from tailorcv.infrastructure.providers.failures import translate
-from tailorcv.infrastructure.providers.plan import digest_of
-from tailorcv.shared.costs import CallManifest, ServiceTier, Usage, cents
-from tailorcv.shared.costs import Ledger as CostLedger
-from tailorcv.shared.costs.prices import PriceOverride
-from tailorcv.shared.errors import (
+from clearscout.infrastructure.providers.failures import translate
+from clearscout.infrastructure.providers.plan import digest_of
+from clearscout.shared.costs import CallManifest, ServiceTier, Usage, cents
+from clearscout.shared.costs import Ledger as CostLedger
+from clearscout.shared.costs.prices import PriceOverride
+from clearscout.shared.errors import (
     CapacityError,
+    ClearscoutError,
     ProviderError,
     ProviderFailure,
-    TailorcvError,
 )
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedProvider, UnexpectedPostingFetcher
@@ -1487,7 +1487,7 @@ def test_a_poll_timeout_resumes_the_same_response_without_a_second_dispatch(
     evidence_digest = digest_of(initial_inputs.evidence_text)
     assert len(manifest.attempts) == 1
     monkeypatch.setattr(
-        "tailorcv.application.discovery.guided_campaign_runner.MAX_POLL_ATTEMPTS", 1
+        "clearscout.application.discovery.guided_campaign_runner.MAX_POLL_ATTEMPTS", 1
     )
     schema = campaign_response_schema(tuple(branch.key for branch in manifest.branches))
     provider = ScriptedProvider(
@@ -1572,7 +1572,7 @@ def _dispatch_and_time_out(
     workspace_id = _workspace(database, tmp_path, master_cv)
     manifest = _compile(database, workspace_id, tmp_path)
     monkeypatch.setattr(
-        "tailorcv.application.discovery.guided_campaign_runner.MAX_POLL_ATTEMPTS", 1
+        "clearscout.application.discovery.guided_campaign_runner.MAX_POLL_ATTEMPTS", 1
     )
     schema = campaign_response_schema(tuple(branch.key for branch in manifest.branches))
     provider = ScriptedProvider(
@@ -2499,7 +2499,7 @@ def test_the_preview_prices_a_dated_model_name_the_way_a_recorded_call_is_priced
 ) -> None:
     """A dated snapshot name is the same shipped model, so the fee is known here too."""
     monkeypatch.setenv(
-        "TAILORCV_MODELS",
+        "CLEARSCOUT_MODELS",
         '{"openai":{"extraction":{"model":"gpt-5.6-terra-2026-03-05"},'
         '"drafting":{"model":"gpt-5.6-terra-2026-03-05"}}}',
     )
@@ -3305,13 +3305,13 @@ class _StatusError(Exception):
         self.status_code = status_code
 
 
-def _response_gone_error() -> TailorcvError:
+def _response_gone_error() -> ClearscoutError:
     return translate(
         _StatusError(404), ProviderName.OPENAI, "collect a response", not_found="response"
     )
 
 
-def _overloaded_error() -> TailorcvError:
+def _overloaded_error() -> ClearscoutError:
     return translate(_StatusError(529), ProviderName.OPENAI, "collect a response")
 
 
@@ -4066,7 +4066,7 @@ def test_a_supersede_that_cannot_rebuild_the_stale_campaign_restores_it(
             background_answers=[_floor_poll(manifest)],
         )
     service = _service(durable_database, tmp_path, provider, sleeper=lambda _: None)
-    with pytest.raises(TailorcvError):
+    with pytest.raises(ClearscoutError):
         service.run(
             workspace_id,
             campaign_manifest_sha256=manifest.sha256,

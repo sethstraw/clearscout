@@ -52,4 +52,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME"
           dist/*.whl dist/*.tar.gz dist/SHA256SUMS
           --draft --prerelease --verify-tag --generate-notes
-          --title "TailorCV $GITHUB_REF_NAME alpha"
+          --title "ClearScout $GITHUB_REF_NAME alpha"

@@ -8,12 +8,12 @@ from pathlib import Path
 import pytest
 from sqlalchemy import func, select
 
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.infrastructure.artifacts.store import LocalArtifactStore, StagedArtifact
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Artifact
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.failures import ValidationError
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.infrastructure.artifacts.store import LocalArtifactStore, StagedArtifact
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Artifact
 from tests.support.artifacts import runtime_storage, strand_promotion
 
 
@@ -132,7 +132,7 @@ def test_a_failed_stage_write_leaves_no_partial_file_behind(
         raise OSError("synthetic disk failure")
 
     store = LocalArtifactStore(tmp_path / "artifacts")
-    monkeypatch.setattr("tailorcv.infrastructure.artifacts.store.os.fsync", explode)
+    monkeypatch.setattr("clearscout.infrastructure.artifacts.store.os.fsync", explode)
 
     with pytest.raises(OSError, match="synthetic disk failure"):
         store.stage("workspace/report.txt", b"durable evidence")

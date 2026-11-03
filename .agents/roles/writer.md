@@ -44,7 +44,7 @@ cross-references go. ASCII only.
 
 Run the focused tests, lint, format, and type checks for the files you changed,
 and the checks under "Before reporting a change", in the forms the
-`tailorcv-command-card` skill gives. Read each log once.
+`clearscout-command-card` skill gives. Read each log once.
 
 Leave `scripts/gate.sh` to the coordinating session, which runs it once on the
 integrated tree.

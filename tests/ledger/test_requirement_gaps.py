@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.job_search.models import JobDetailResponse
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import JobEvaluation
+from clearscout.application import job_search
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.failures import ValidationError
+from clearscout.application.job_search.models import JobDetailResponse
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import JobEvaluation
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import evaluation_commit
 from tests.support.scenarios import fit_report as _fit_report
@@ -25,7 +25,7 @@ GOVERNANCE = (
 )
 # The package re-exports the query function under its module name, so the module
 # holding the cap has to be reached through the import system.
-GAPS_MODULE = import_module("tailorcv.application.job_search.requirement_gaps")
+GAPS_MODULE = import_module("clearscout.application.job_search.requirement_gaps")
 
 ON_CALL = "Shares a weekly on-call rotation (evenings, weekends, statutory holidays)"
 ANSWERED = "Lead a data platform"

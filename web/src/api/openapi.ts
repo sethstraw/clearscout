@@ -193,7 +193,7 @@ export function buildRequest(
   if (/\{[^}]+\}/.test(path)) throw new Error("Every path parameter is required.");
   const mediaType = requestMediaType(operation);
   const init: RequestInit = { method: operation.method.toUpperCase(), headers };
-  if (operation.method !== "get") headers.set("X-TailorCV-Request", "browser");
+  if (operation.method !== "get") headers.set("X-ClearScout-Request", "browser");
   if (operation.shape.requestBody) {
     if (mediaType !== "application/json") {
       throw new Error(

@@ -93,7 +93,7 @@ One record per line. Fields:
 `expected_recommendation` is one of `review`, `investigate`, `unlikely`, or
 `insufficient_evidence`. The four `expected_axes` vocabularies are the shipped
 ones, closed in
-`src/tailorcv/application/discovery/relevance_review.py`. `axes_confidence` is
+`src/clearscout/application/discovery/relevance_review.py`. `axes_confidence` is
 `high` or `low`.
 
 `expected_recommendation` and `expected_axes` are frozen calibration from two
@@ -119,7 +119,7 @@ label:
 
 ```json
 {
-  "protocol_version": "tailorcv-match-development-v1",
+  "protocol_version": "clearscout-match-development-v1",
   "family": "match | relevance-review",
   "rubric_version": "<the rubric both reviewers judged against>",
   "reviewer_a": "<the first blind reviewer>",

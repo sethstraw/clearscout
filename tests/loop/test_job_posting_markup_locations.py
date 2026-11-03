@@ -10,18 +10,18 @@ from typing import Any, cast
 import httpx
 import pytest
 
-from tailorcv.application.discovery.screening import ScreeningCode, screen_discovery
-from tailorcv.domain.search_parameters import (
+from clearscout.application.discovery.screening import ScreeningCode, screen_discovery
+from clearscout.domain.search_parameters import (
     CountryNames,
     JobSearchParameters,
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import ListingIdentityTrust
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.board_mappings.schema_org import declared_check
-from tailorcv.infrastructure.web_fetch.ingest.job_posting_markup import job_postings
-from tailorcv.infrastructure.web_fetch.publisher_sources import PublisherSourceFetcher
+from clearscout.domain.staged_facts import ListingIdentityTrust
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_mappings.schema_org import declared_check
+from clearscout.infrastructure.web_fetch.ingest.job_posting_markup import job_postings
+from clearscout.infrastructure.web_fetch.publisher_sources import PublisherSourceFetcher
 from tests.support.scenarios import titles
 
 URL = "https://careers.example-health.test/jobs/42"

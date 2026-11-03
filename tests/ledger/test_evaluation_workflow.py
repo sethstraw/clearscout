@@ -11,45 +11,50 @@ from typing import Any, ClassVar, NamedTuple
 import pytest
 from sqlalchemy import func, select
 
-from tailorcv.application import job_search
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application import job_search
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.dispositions import DiscoveryDispositionService
-from tailorcv.application.discovery.pending import set_pending_markers
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.discovery.source_reading import PostingCheck, SourceListing, SourceRead
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.job_search.models import (
+from clearscout.application.discovery.dispositions import DiscoveryDispositionService
+from clearscout.application.discovery.pending import set_pending_markers
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.source_reading import PostingCheck, SourceListing, SourceRead
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.failures import ValidationError
+from clearscout.application.job_search.models import (
     DispositionApply,
     DispositionSelection,
     JobListQuery,
 )
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.tailoring import fit
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.stages.jobspec import (
     Importance,
     JobSpec,
     Requirement,
     StoredPostingName,
 )
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.workflows import (
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.workflows import (
     EvaluationHandler,
     EvaluationOutput,
     EvaluationWorkflowService,
 )
-from tailorcv.application.tailoring.workflows import evaluations as evaluation_workflows
-from tailorcv.application.tasks import TaskQueueService, task_types, validate_task_payload
-from tailorcv.application.tasks.payloads import DiscoveryEvaluateBatchPayload
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import (
+from clearscout.application.tailoring.workflows import evaluations as evaluation_workflows
+from clearscout.application.tasks import TaskQueueService, task_types, validate_task_payload
+from clearscout.application.tasks.payloads import DiscoveryEvaluateBatchPayload
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import (
     EvidenceStatus,
     GapClass,
     PostingContentAccessStatus,
@@ -59,9 +64,9 @@ from tailorcv.domain import (
     SourceReadOutcome,
     new_id,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.records import PostingReadIntent, RobotsReadBasis
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.records import PostingReadIntent, RobotsReadBasis
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     CountryNames,
@@ -70,14 +75,14 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import (
+from clearscout.domain.staged_facts import (
     ListingIdentityTrust,
     PublishedFact,
     PublisherClosingDate,
     StagedListingFacts,
 )
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     CostRecord,
     Employer,
@@ -93,10 +98,12 @@ from tailorcv.infrastructure.persistence.models import (
     Source,
     Workspace,
 )
-from tailorcv.infrastructure.web_fetch.ingest import JDText
-from tailorcv.infrastructure.web_fetch.posting_resolution import DeterministicPostingContentResolver
-from tailorcv.shared.costs import CallManifest, Ledger, ServiceTier, Usage
-from tailorcv.shared.errors import IngestError, NoRequirementsError
+from clearscout.infrastructure.web_fetch.ingest import JDText
+from clearscout.infrastructure.web_fetch.posting_resolution import (
+    DeterministicPostingContentResolver,
+)
+from clearscout.shared.costs import CallManifest, Ledger, ServiceTier, Usage
+from clearscout.shared.errors import IngestError, NoRequirementsError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.runners import ScriptedPipelineRunner
@@ -3255,7 +3262,7 @@ def test_evaluating_a_manually_added_posting_does_not_register_a_source(
 ) -> None:
     """A manual add stays a one-off discovery; evaluation must not promote its URL."""
     workspace_id = _evaluate_found_posting(
-        durable_database, tmp_path, origin="tailorcv", worker_id="evaluate-manual-add"
+        durable_database, tmp_path, origin="clearscout", worker_id="evaluate-manual-add"
     )
 
     with durable_database.session() as session:

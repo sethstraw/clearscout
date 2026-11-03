@@ -12,13 +12,13 @@ from urllib.parse import urlsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceReadOptions,
 )
-from tailorcv.domain import PostingContentAccessStatus, SourceReadOutcome
-from tailorcv.domain.staged_facts import ListingIdentityTrust
-from tailorcv.infrastructure.web_fetch.publisher_sources import (
+from clearscout.domain import PostingContentAccessStatus, SourceReadOutcome
+from clearscout.domain.staged_facts import ListingIdentityTrust
+from clearscout.infrastructure.web_fetch.publisher_sources import (
     PublisherReadLimits,
     PublisherSourceFetcher,
 )
@@ -1023,7 +1023,7 @@ def test_time_limit_returns_the_exact_unvisited_frontier(monkeypatch: Any) -> No
             return response
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.publisher_sources.time.monotonic",
+        "clearscout.infrastructure.web_fetch.publisher_sources.time.monotonic",
         lambda: now[0],
     )
     client = TimedClient(
@@ -1184,7 +1184,7 @@ def test_continuation_reports_only_targets_visited_before_its_deadline(
             return response
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.publisher_sources.time.monotonic",
+        "clearscout.infrastructure.web_fetch.publisher_sources.time.monotonic",
         lambda: now[0],
     )
     continued = PublisherSourceFetcher(
@@ -1724,7 +1724,7 @@ def test_deadline_stops_dispatch_before_the_next_host_lane(monkeypatch: Any) -> 
             return response
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.publisher_sources.time.monotonic",
+        "clearscout.infrastructure.web_fetch.publisher_sources.time.monotonic",
         lambda: now[0],
     )
     client = _TimedProbe({first: _posting("Role One"), second: _posting("Role Two")})

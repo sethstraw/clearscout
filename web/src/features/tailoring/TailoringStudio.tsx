@@ -352,8 +352,8 @@ export function TailoringStudio({
               />
             </label>
             <p>
-              Use only words supported by your answers above. TailorCV will reject invented wording,
-              numbers, or ownership.
+              Use only words supported by your answers above. ClearScout will reject invented
+              wording, numbers, or ownership.
             </p>
             <button className="button button--primary" type="submit">
               Validate and preview

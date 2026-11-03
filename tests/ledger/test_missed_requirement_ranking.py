@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from tailorcv.application.discovery.ranking import (
+from clearscout.application.discovery.ranking import (
     DEFAULT_MISSED_REQUIREMENT_PENALTY,
     rank,
 )
-from tailorcv.domain.search_parameters import JobSearchParameters
+from clearscout.domain.search_parameters import JobSearchParameters
 
 
 def _empty_parameters() -> JobSearchParameters:

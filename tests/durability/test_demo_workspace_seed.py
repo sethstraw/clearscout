@@ -8,11 +8,11 @@ from pathlib import Path
 
 from scripts.seed_demo_workspace import seed
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.relevance_review import ALLOWED_VERDICTS
-from tailorcv.application.workspaces.spend import SpendService
-from tailorcv.domain import ARTIFACT_LOGICAL_TYPES
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.relevance_review import ALLOWED_VERDICTS
+from clearscout.application.workspaces.spend import SpendService
+from clearscout.domain import ARTIFACT_LOGICAL_TYPES
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 
@@ -62,7 +62,7 @@ def test_demo_workspace_populates_every_durable_surface(tmp_path: Path) -> None:
         "review_decisions": 3,
         "artifact_types": len(ARTIFACT_LOGICAL_TYPES),
     }
-    with sqlite3.connect(data_root / "tailorcv.sqlite3") as connection:
+    with sqlite3.connect(data_root / "clearscout.sqlite3") as connection:
         table_names = [
             row[0]
             for row in connection.execute(
@@ -241,7 +241,7 @@ def test_demo_workspace_populates_every_durable_surface(tmp_path: Path) -> None:
         and document["compensation"]["complete"]
         for document in staged_fact_documents
     )
-    database = Database(f"sqlite+pysqlite:///{data_root / 'tailorcv.sqlite3'}")
+    database = Database(f"sqlite+pysqlite:///{data_root / 'clearscout.sqlite3'}")
     pending = SourceScanService(
         database,
         storage=runtime_storage(database),

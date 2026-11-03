@@ -4,8 +4,8 @@ Every screenshot of a real workspace carries a real employer, a real salary, and
 a real career record, none of which belong in a public repository. This writes a
 complete, plausible workspace out of material that describes nobody:
 
-    uv run python scripts/seed_demo_workspace.py --data-root /tmp/tailorcv-demo
-    uv run tailorcv serve --data-root /tmp/tailorcv-demo --port 8799
+    uv run python scripts/seed_demo_workspace.py --data-root /tmp/clearscout-demo
+    uv run clearscout serve --data-root /tmp/clearscout-demo --port 8799
 
 It refuses to run against a data root that already holds a database unless
 ``--force`` is passed. That refusal is the point of the script's safety, not a
@@ -34,8 +34,8 @@ from pathlib import Path
 
 from sqlalchemy import func, select
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import (
+from clearscout.application import job_search
+from clearscout.application.contracts import (
     ApplicationEventInput,
     CandidateRecordInput,
     CompensationInput,
@@ -51,51 +51,51 @@ from tailorcv.application.contracts import (
     ScoreComponentInput,
     ScoreEvidenceInput,
 )
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.derived_vocabulary_rules import (
+from clearscout.application.discovery.derived_vocabulary_rules import (
     SearchArchetype,
     SearchCluster,
     SearchTitle,
 )
-from tailorcv.application.discovery.dispositions import DiscoveryDispositionService
-from tailorcv.application.discovery.guided_campaign_admission import AdmissionResult
-from tailorcv.application.discovery.guided_campaign_ledger import GuidedCampaignLedger
-from tailorcv.application.discovery.guided_campaign_report import compile_current_campaign
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.posting_refresh import PostingRefreshService
-from tailorcv.application.discovery.proposals import (
+from clearscout.application.discovery.dispositions import DiscoveryDispositionService
+from clearscout.application.discovery.guided_campaign_admission import AdmissionResult
+from clearscout.application.discovery.guided_campaign_ledger import GuidedCampaignLedger
+from clearscout.application.discovery.guided_campaign_report import compile_current_campaign
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.posting_refresh import PostingRefreshService
+from clearscout.application.discovery.proposals import (
     SearchArchetypeProposalService,
     SearchClusterProposalService,
     SearchTitleProposalService,
 )
-from tailorcv.application.discovery.refusal_patterns import RefusedPosting, file_refusal
-from tailorcv.application.discovery.relevance_disputes import RelevanceDisputeService
-from tailorcv.application.discovery.relevance_review import current_review_contract
-from tailorcv.application.discovery.relevance_review_records import (
+from clearscout.application.discovery.refusal_patterns import RefusedPosting, file_refusal
+from clearscout.application.discovery.relevance_disputes import RelevanceDisputeService
+from clearscout.application.discovery.relevance_review import current_review_contract
+from clearscout.application.discovery.relevance_review_records import (
     RelevanceReviewPostingInput,
     RelevanceReviewRecorder,
     ValidatedRelevanceReview,
     current_review_in,
 )
-from tailorcv.application.discovery.relevance_review_rejections import (
+from clearscout.application.discovery.relevance_review_rejections import (
     RelevanceReviewItemFailure,
     RelevanceReviewRejectionService,
 )
-from tailorcv.application.discovery.search_proposal_inbox import SearchProposalInbox
-from tailorcv.application.discovery.source_continuation import SourceContinuationHandler
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.search_proposal_inbox import SearchProposalInbox
+from clearscout.application.discovery.source_continuation import SourceContinuationHandler
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceListing,
     SourceRead,
 )
-from tailorcv.application.documents import DocumentService
-from tailorcv.application.documents.approvals import ApprovalService
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.job_search.models import (
+from clearscout.application.documents import DocumentService
+from clearscout.application.documents.approvals import ApprovalService
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.job_search.models import (
     DispositionApply,
     DispositionSelection,
     RelevanceReviewAnswerOutcome,
@@ -103,27 +103,27 @@ from tailorcv.application.job_search.models import (
     RelevanceReviewVerdict,
     SourceTerms,
 )
-from tailorcv.application.job_search.postings import RequirementRulingService
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.prompts import packaged
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.pipeline import SerializedRunArtifacts
-from tailorcv.application.tailoring.workflows import BatchOutput, ScreenOutput, TailorOutput
-from tailorcv.application.tailoring.workflows.evaluations import EvaluationWorkflowService
-from tailorcv.application.tailoring.workflows.service import WorkflowService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import (
+from clearscout.application.job_search.postings import RequirementRulingService
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.prompts import packaged
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.pipeline import SerializedRunArtifacts
+from clearscout.application.tailoring.workflows import BatchOutput, ScreenOutput, TailorOutput
+from clearscout.application.tailoring.workflows.evaluations import EvaluationWorkflowService
+from clearscout.application.tailoring.workflows.service import WorkflowService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import (
     GuardrailService,
     LearningLoopPolicyService,
     SearchParametersService,
     WorkspaceService,
 )
-from tailorcv.application.workspaces.prompt_library import PromptLibraryService
-from tailorcv.application.workspaces.records import WorkspaceRecords
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.application.workspaces.spend import record_calls
-from tailorcv.domain import (
+from clearscout.application.workspaces.prompt_library import PromptLibraryService
+from clearscout.application.workspaces.records import WorkspaceRecords
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.application.workspaces.spend import record_calls
+from clearscout.domain import (
     ARTIFACT_LOGICAL_TYPES,
     ApplicationEventType,
     ApplicationStatus,
@@ -139,23 +139,23 @@ from tailorcv.domain import (
     TailoringOutcome,
     TaskStatus,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.campaigns import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.campaigns import (
     CampaignStatus,
     CapturedUrlClassification,
     CapturedUrlOutcome,
     StagedBasis,
     UrlActionKind,
 )
-from tailorcv.domain.policy import LearningLoopPolicy
-from tailorcv.domain.records import (
+from clearscout.domain.policy import LearningLoopPolicy
+from clearscout.domain.records import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
     PostingReadIntent,
 )
-from tailorcv.domain.rulings import Ruling
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.rulings import Ruling
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     ClusterKind,
@@ -169,11 +169,11 @@ from tailorcv.domain.search_parameters import (
     TargetTitle,
     WorkEligibility,
 )
-from tailorcv.domain.staged_facts import PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.migration import status, upgrade
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import PublishedFact, StagedListingFacts
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.migration import status, upgrade
+from clearscout.infrastructure.persistence.models import (
     Application,
     ApplicationEvent,
     JobEvaluation,
@@ -184,12 +184,17 @@ from tailorcv.infrastructure.persistence.models import (
     ReviewProposal,
     SourceScanContinuation,
 )
-from tailorcv.infrastructure.providers.base import BackgroundPoll, CallRecord, Search, SearchSource
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.infrastructure.providers.base import (
+    BackgroundPoll,
+    CallRecord,
+    Search,
+    SearchSource,
+)
+from clearscout.infrastructure.web_fetch.board_adapters import (
     BoardResolution,
 )
-from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
-from tailorcv.shared.costs import CallManifest, Ledger, ModelPrice, Usage
+from clearscout.infrastructure.web_fetch.company_research import ResearchSource
+from clearscout.shared.costs import CallManifest, Ledger, ModelPrice, Usage
 
 WORKSPACE_SLUG = "demo-search"
 WORKSPACE_NAME = "Demo search"
@@ -1263,7 +1268,7 @@ DEMO_PNG = base64.b64decode(
 
 def _demo_pdf() -> bytes:
     """Build a small valid PDF containing only invented documentation text."""
-    stream = b"BT /F1 12 Tf 72 720 Td (Synthetic TailorCV document) Tj ET"
+    stream = b"BT /F1 12 Tf 72 720 Td (Synthetic ClearScout document) Tj ET"
     objects = (
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -1513,8 +1518,8 @@ def _seed_missed_requirement_texts(
     database: Database, workspace_id: str, master_version_id: str
 ) -> None:
     """Materialize one missed-requirement row per evaluation payload with a gap."""
-    from tailorcv.application.discovery.missed_requirement_reader import refresh_for_evaluation
-    from tailorcv.infrastructure.persistence.models import JobPosting
+    from clearscout.application.discovery.missed_requirement_reader import refresh_for_evaluation
+    from clearscout.infrastructure.persistence.models import JobPosting
 
     with database.session() as session:
         for row in session.scalars(
@@ -2855,10 +2860,10 @@ def seed(data_root: Path, *, force: bool) -> dict[str, int]:
     """Write the whole invented workspace and return what was written."""
     # Use the requested root so environment settings cannot redirect demo data.
     root = data_root.expanduser().resolve()
-    database_url = f"sqlite+pysqlite:///{root / 'tailorcv.sqlite3'}"
+    database_url = f"sqlite+pysqlite:///{root / 'clearscout.sqlite3'}"
     if status(database_url).database_exists and not force:
         raise SystemExit(
-            f"{root} already holds a TailorCV database.\n"
+            f"{root} already holds a ClearScout database.\n"
             "  Point --data-root at an empty throwaway directory, or pass --force "
             "if you are certain this is not your real workspace."
         )

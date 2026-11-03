@@ -22,7 +22,7 @@ export class ApiError extends Error {
 async function responseError(response: Response): Promise<ApiError> {
   const problem = (await response.json().catch(() => null)) as Problem | null;
   return new ApiError(
-    problem?.detail ?? `TailorCV request failed (${response.status}).`,
+    problem?.detail ?? `ClearScout request failed (${response.status}).`,
     response.status,
     problem?.correlation_id ?? response.headers?.get("X-Correlation-ID") ?? undefined,
   );
@@ -35,7 +35,7 @@ function requestHeaders(init?: RequestInit): Headers {
     headers.set("Content-Type", "application/json");
   }
   if (init?.method && UNSAFE_METHODS.has(init.method.toUpperCase())) {
-    headers.set("X-TailorCV-Request", "browser");
+    headers.set("X-ClearScout-Request", "browser");
   }
   return headers;
 }

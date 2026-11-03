@@ -149,8 +149,8 @@ export function PriceRefreshControl() {
   return (
     <>
       <p className="field-note">
-        Prices are shipped with TailorCV. Refreshing re-derives them from the published price data,
-        which changes what later runs are priced at and leaves recorded costs as they were. A
+        Prices are shipped with ClearScout. Refreshing re-derives them from the published price
+        data, which changes what later runs are priced at and leaves recorded costs as they were. A
         provider answers a request for a model with a dated snapshot of it, and that call is priced
         at the model&apos;s own rate.
       </p>

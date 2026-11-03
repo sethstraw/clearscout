@@ -12,24 +12,24 @@ import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import SAWarning
 
-from tailorcv.application import job_search
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.portability import import_database
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import utc_now
-from tailorcv.infrastructure.artifacts.store import StagedArtifact
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.migration import upgrade
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application import job_search
+from clearscout.application.failures import ValidationError
+from clearscout.application.portability import import_database
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import utc_now
+from clearscout.infrastructure.artifacts.store import StagedArtifact
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.migration import upgrade
+from clearscout.infrastructure.persistence.models import (
     CandidateProfile,
     MasterCvVersion,
     SourceScan,
     SourceScanContinuation,
     SourceScanMember,
 )
-from tailorcv.infrastructure.persistence.models.tailoring import ModelCall
-from tailorcv.infrastructure.persistence.models.workspaces import Workspace
+from clearscout.infrastructure.persistence.models.tailoring import ModelCall
+from clearscout.infrastructure.persistence.models.workspaces import Workspace
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import board_source, evaluation_commit, state_target_titles
 
@@ -389,7 +389,7 @@ def test_a_required_column_with_only_a_python_default_is_refused(tmp_path: Path)
         target.dispose()
 
 
-def test_a_file_that_is_not_a_tailorcv_database_is_refused(tmp_path: Path) -> None:
+def test_a_file_that_is_not_a_clearscout_database_is_refused(tmp_path: Path) -> None:
     stranger = tmp_path / "stranger.sqlite3"
     connection = sqlite3.connect(stranger)
     try:
@@ -400,7 +400,7 @@ def test_a_file_that_is_not_a_tailorcv_database_is_refused(tmp_path: Path) -> No
     _, target = _fresh(tmp_path, "target.sqlite3")
 
     try:
-        with pytest.raises(ValidationError, match="not a TailorCV database"):
+        with pytest.raises(ValidationError, match="not a ClearScout database"):
             import_database(stranger, target)
         with pytest.raises(ValidationError, match="No database to import"):
             import_database(tmp_path / "absent.sqlite3", target)
@@ -469,7 +469,7 @@ def test_divergent_seed_collision_is_refused_with_columns(tmp_path: Path) -> Non
 
 def test_explicit_roots_relocate_and_verify_immutable_artifacts(tmp_path: Path) -> None:
     source_root = tmp_path / "source-data"
-    source_path = source_root / "tailorcv.sqlite3"
+    source_path = source_root / "clearscout.sqlite3"
     source_url = f"sqlite+pysqlite:///{source_path}"
     upgrade(source_url)
     source_database = Database(source_url)
@@ -505,7 +505,7 @@ def test_explicit_roots_relocate_and_verify_immutable_artifacts(tmp_path: Path) 
         source_database.dispose()
 
     target_root = tmp_path / "target-data"
-    target_path = target_root / "tailorcv.sqlite3"
+    target_path = target_root / "clearscout.sqlite3"
     target_url = f"sqlite+pysqlite:///{target_path}"
     upgrade(target_url)
     target = Database(target_url)
@@ -558,7 +558,7 @@ def test_explicit_roots_relocate_and_verify_immutable_artifacts(tmp_path: Path) 
 
 def test_relocation_refuses_artifact_bytes_that_changed(tmp_path: Path) -> None:
     source_root = tmp_path / "source-data"
-    source_path = source_root / "tailorcv.sqlite3"
+    source_path = source_root / "clearscout.sqlite3"
     source_url = f"sqlite+pysqlite:///{source_path}"
     upgrade(source_url)
     source_database = Database(source_url)
@@ -580,7 +580,7 @@ def test_relocation_refuses_artifact_bytes_that_changed(tmp_path: Path) -> None:
     Path(uri.removeprefix("file://")).write_bytes(b"changed after indexing")
 
     target_root = tmp_path / "target-data"
-    target_url = f"sqlite+pysqlite:///{target_root / 'tailorcv.sqlite3'}"
+    target_url = f"sqlite+pysqlite:///{target_root / 'clearscout.sqlite3'}"
     upgrade(target_url)
     target = Database(target_url)
     try:
@@ -599,7 +599,7 @@ def test_relocation_compensates_promoted_files_when_finalize_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     source_root = tmp_path / "source-data"
-    source_path = source_root / "tailorcv.sqlite3"
+    source_path = source_root / "clearscout.sqlite3"
     source_url = f"sqlite+pysqlite:///{source_path}"
     upgrade(source_url)
     source_database = Database(source_url)
@@ -625,7 +625,7 @@ def test_relocation_compensates_promoted_files_when_finalize_fails(
         source_database.dispose()
 
     target_root = tmp_path / "target-data"
-    target_url = f"sqlite+pysqlite:///{target_root / 'tailorcv.sqlite3'}"
+    target_url = f"sqlite+pysqlite:///{target_root / 'clearscout.sqlite3'}"
     upgrade(target_url)
     target = Database(target_url)
     original_finalize = StagedArtifact.finalize

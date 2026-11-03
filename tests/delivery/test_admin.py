@@ -15,9 +15,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.bootstrap import api as api_module
-from tailorcv.bootstrap.api import ADMIN_GROUPS, ADMIN_SCRIPT, create_app
-from tailorcv.infrastructure.persistence.models import Base
+from clearscout.bootstrap import api as api_module
+from clearscout.bootstrap.api import ADMIN_GROUPS, ADMIN_SCRIPT, create_app
+from clearscout.infrastructure.persistence.models import Base
 
 APPEND_ONLY = "audit-event"
 MUTABLE = "job-posting"
@@ -42,7 +42,7 @@ def test_the_bare_admin_path_reaches_the_admin_and_not_the_application_shell(
     assert bare.status_code == 307
     assert bare.headers["location"] == "/admin/"
     assert index.status_code == 200
-    assert "<title>TailorCV admin</title>" in index.text
+    assert "<title>ClearScout admin</title>" in index.text
     # Served by the admin's own static mount, which the SPA build has no route for.
     assert "/admin/static/css/vendor/tabler.min.css" in index.text
 

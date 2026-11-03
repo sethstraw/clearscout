@@ -25,14 +25,14 @@ from pathlib import Path
 from sqlalchemy import ColumnElement, or_, select
 from sqlalchemy.orm import Session
 
+from clearscout.application.config import Effort, ProviderName, Stage
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models.tailoring import CostRecord, ModelCall
+from clearscout.shared.costs import ServiceTier
 from evals.inspect.runner import SPLITS, selected_samples
+from evals.inspect.solvers.clearscout_live import live_settings
 from evals.inspect.solvers.relevance_live import review_calls
-from evals.inspect.solvers.tailorcv_live import live_settings
-from tailorcv.application.config import Effort, ProviderName, Stage
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models.tailoring import CostRecord, ModelCall
-from tailorcv.shared.costs import ServiceTier
 
 MIN_SAMPLES = 5
 # Every live eval solver bills under an origin with this prefix; production origins never carry it.

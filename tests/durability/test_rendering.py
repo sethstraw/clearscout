@@ -1,6 +1,6 @@
 """Handing the Markdown to a renderer, without depending on one.
 
-tailorcv does not render. The renderer is found on PATH or it is not, it is
+clearscout does not render. The renderer is found on PATH or it is not, it is
 asked with a fixed argument list, and whatever it does the Markdown survives. A
 stub executable stands in for pressume, so the suite needs neither it nor Typst.
 """
@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.tailoring import layout
-from tailorcv.infrastructure.artifacts import rendering
+from clearscout.application.tailoring import layout
+from clearscout.infrastructure.artifacts import rendering
 from tests.support.suite import REPO_ROOT
 
 

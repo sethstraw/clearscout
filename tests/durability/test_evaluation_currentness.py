@@ -7,14 +7,14 @@ import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application.job_search import (
+from clearscout.application.job_search import (
     acknowledge_evaluation_currentness,
     job_detail,
     list_jobs,
 )
-from tailorcv.application.job_search.models import JobListQuery
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.job_search.models import JobListQuery
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     EvaluationCurrentnessReview,
     JobEvaluation,
     MasterCvVersion,
@@ -79,14 +79,14 @@ def test_reading_an_old_score_reports_unknown_inputs_without_rewriting_history(
 def test_currentness_compares_exact_inputs_without_rewriting_the_assessment(
     durable_database: Database, tmp_path: Path, monkeypatch, changed: str | None
 ) -> None:
-    from tailorcv.application import prompts
-    from tailorcv.application.job_search import evaluation_currentness
-    from tailorcv.application.workspaces import SearchParametersService
-    from tailorcv.application.workspaces.parameters import parameter_snapshot_in
-    from tailorcv.application.workspaces.prompt_library import PromptLibraryService
-    from tailorcv.domain.search_parameters import JobSearchParameters, Seniority
-    from tailorcv.infrastructure.build import BuildIdentity, current_build
-    from tailorcv.infrastructure.persistence.models import PostingObservation
+    from clearscout.application import prompts
+    from clearscout.application.job_search import evaluation_currentness
+    from clearscout.application.workspaces import SearchParametersService
+    from clearscout.application.workspaces.parameters import parameter_snapshot_in
+    from clearscout.application.workspaces.prompt_library import PromptLibraryService
+    from clearscout.domain.search_parameters import JobSearchParameters, Seniority
+    from clearscout.infrastructure.build import BuildIdentity, current_build
+    from clearscout.infrastructure.persistence.models import PostingObservation
 
     workspace_id, job_id, _, version_id = studio_workspace(
         durable_database, tmp_path / "workspace", tmp_path / "artifacts"
@@ -206,8 +206,8 @@ def test_currentness_keeps_an_unchanged_posting_current_after_a_refresh(
 def test_review_acknowledgement_retains_the_score_until_inputs_change_again(
     durable_database: Database, tmp_path: Path
 ) -> None:
-    from tailorcv.application.workspaces import SearchParametersService
-    from tailorcv.domain.search_parameters import JobSearchParameters, Seniority
+    from clearscout.application.workspaces import SearchParametersService
+    from clearscout.domain.search_parameters import JobSearchParameters, Seniority
 
     workspace_id, job_id, _, version_id = studio_workspace(
         durable_database, tmp_path / "workspace", tmp_path / "artifacts"

@@ -9,7 +9,7 @@ import shutil
 import sqlite3
 from pathlib import Path
 
-from tailorcv.infrastructure.persistence.migration import upgrade
+from clearscout.infrastructure.persistence.migration import upgrade
 
 
 def build_template(destination: Path) -> Path:

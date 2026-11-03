@@ -10,13 +10,13 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     MAX_SOURCE_READ_ATTEMPTS,
     SourceReadOptions,
 )
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.domain import SourceReadOutcome
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 from tests.support.doubles import declaring_page
 from tests.support.http import public_resolver
 from tests.support.suite import FIXTURES
@@ -59,7 +59,7 @@ class _TaleoSite:
     def new_client(self) -> PoliteHttpClient:
         """Build a fresh policy client that carries the publisher's required POST headers."""
         return PoliteHttpClient(
-            user_agent="tailorcv/test",
+            user_agent="clearscout/test",
             sleeper=lambda _seconds: None,
             jitter=lambda _low, _high: 0.0,
             getter=self.get,
@@ -327,7 +327,7 @@ def test_taleo_later_malformed_page_retains_prior_details(failure: str) -> None:
 
     site.fetcher = BoardApiFetcher(
         client=PoliteHttpClient(
-            user_agent="tailorcv/test",
+            user_agent="clearscout/test",
             sleeper=lambda _seconds: None,
             jitter=lambda _low, _high: 0.0,
             getter=site.get,
@@ -399,7 +399,7 @@ def _held_client(
     """Give ``site`` a fresh client serving ``robots``; return a URL that answers the hold."""
     if budget is not None:
         monkeypatch.setattr(
-            "tailorcv.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS",
+            "clearscout.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS",
             budget,
         )
     hold_url = site.origin + "/publisher-hold"
@@ -791,7 +791,7 @@ class _ClassicTaleoSite:
         self.requests: list[str] = []
         self.fetcher = BoardApiFetcher(
             client=PoliteHttpClient(
-                user_agent="tailorcv/test",
+                user_agent="clearscout/test",
                 sleeper=lambda _seconds: None,
                 jitter=lambda _low, _high: 0.0,
                 getter=self.get,

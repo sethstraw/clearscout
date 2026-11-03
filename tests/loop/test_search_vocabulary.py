@@ -17,9 +17,9 @@ import pytest
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import event, select
 
-from tailorcv.application import job_search
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.derived_vocabulary_rules import (
+from clearscout.application import job_search
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.derived_vocabulary_rules import (
     ProposedArchetype,
     ProposedCluster,
     ProposedTitle,
@@ -30,51 +30,51 @@ from tailorcv.application.discovery.derived_vocabulary_rules import (
     searched_archetypes,
     searched_titles,
 )
-from tailorcv.application.discovery.posting_identity import posting_identity_keys, posting_url_key
-from tailorcv.application.discovery.proposals import (
+from clearscout.application.discovery.posting_identity import posting_identity_keys, posting_url_key
+from clearscout.application.discovery.proposals import (
     SearchArchetypeProposalService,
     SearchClusterProposalService,
     SearchTitleProposalService,
     accepted_archetypes,
     accepted_clusters,
 )
-from tailorcv.application.discovery.ranking import rank
-from tailorcv.application.discovery.relevance_review import RelevanceReviewService
-from tailorcv.application.discovery.search_parameter_summary import search_summary
-from tailorcv.application.discovery.search_planning_queries import SearchPlanningQueries
-from tailorcv.application.discovery.search_vocabulary import (
+from clearscout.application.discovery.ranking import rank
+from clearscout.application.discovery.relevance_review import RelevanceReviewService
+from clearscout.application.discovery.search_parameter_summary import search_summary
+from clearscout.application.discovery.search_planning_queries import SearchPlanningQueries
+from clearscout.application.discovery.search_vocabulary import (
     SearchVocabularyHandler,
     SearchVocabularyService,
     response_schema,
     system_prompt,
 )
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceListing,
     SourceRead,
 )
-from tailorcv.application.failures import NotFoundError, ValidationError
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.tailoring.stages.context import citable_entries
-from tailorcv.application.tasks import (
+from clearscout.application.failures import NotFoundError, ValidationError
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.tailoring.stages.context import citable_entries
+from clearscout.application.tasks import (
     SearchVocabularyPayload,
     TaskQueueService,
     validate_task_payload,
 )
-from tailorcv.application.workspaces import (
+from clearscout.application.workspaces import (
     SearchParametersService,
     WorkspaceService,
 )
-from tailorcv.application.workspaces.parameters import parameters_in
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import (
+from clearscout.application.workspaces.parameters import parameters_in
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import (
     PostingStatus,
     SearchProposalState,
     SourceReadOutcome,
     utc_now,
 )
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.search_parameters import (
     LANES,
     MAX_ARCHETYPES,
     MAX_CLUSTERS,
@@ -95,9 +95,9 @@ from tailorcv.domain.search_parameters import (
     WorkEligibility,
     WorkingTimeZone,
 )
-from tailorcv.domain.search_parameters.roles import title_excluded
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.search_parameters.roles import title_excluded
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     Employer,
     JobPosting,
@@ -108,11 +108,11 @@ from tailorcv.infrastructure.persistence.models import (
     Source,
     WorkerPresence,
 )
-from tailorcv.infrastructure.providers.base import (
+from clearscout.infrastructure.providers.base import (
     json_schema,
 )
-from tailorcv.infrastructure.web_fetch.policy import fetch_refusal
-from tailorcv.shared.costs import ServiceTier
+from clearscout.infrastructure.web_fetch.policy import fetch_refusal
+from clearscout.shared.costs import ServiceTier
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.doubles import ScriptedProvider, UnexpectedPostingFetcher
 from tests.support.scenarios import evaluation_commit, pending_discovery
@@ -215,7 +215,7 @@ def _workspace(
     root = tmp_path / "workspace"
     root.mkdir(parents=True, exist_ok=True)
     # Keep the test independent of the user's home directory.
-    (root / "tailorcv.toml").write_text(settings_toml, encoding="utf-8")
+    (root / "clearscout.toml").write_text(settings_toml, encoding="utf-8")
     workspace_id = str(
         WorkspaceService(database, runtime_storage(database))
         .create(slug="guided", name="Guided", root_path=str(root))
@@ -608,7 +608,7 @@ def test_the_registry_builds_the_handler_without_reaching_for_a_key(
     def refuse(*args: object, **kwargs: object) -> None:
         raise AssertionError("building a handler must not resolve a credential")
 
-    monkeypatch.setattr("tailorcv.application.discovery.search_vocabulary.resolve", refuse)
+    monkeypatch.setattr("clearscout.application.discovery.search_vocabulary.resolve", refuse)
     handlers = default_handlers(durable_database, artifact_root=tmp_path / "artifacts")
     assert "search.vocabulary" in handlers
 

@@ -185,7 +185,7 @@ export function JobSummary({
                 options={{
                   title: "Keep the recorded evaluation?",
                   description:
-                    "You reviewed the current changes and decided they do not warrant a new evaluation. The recorded score and evidence remain historical. TailorCV will ask for review again if the posting or decision criteria change further.",
+                    "You reviewed the current changes and decided they do not warrant a new evaluation. The recorded score and evidence remain historical. ClearScout will ask for review again if the posting or decision criteria change further.",
                   confirmLabel: "Mark reviewed",
                 }}
               >

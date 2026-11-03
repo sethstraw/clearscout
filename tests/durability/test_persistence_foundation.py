@@ -13,14 +13,14 @@ from sqlalchemy import CheckConstraint, Table, inspect, select, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from tailorcv.infrastructure.persistence.database import (
+from clearscout.infrastructure.persistence.database import (
     Database,
     register_session_finalizer,
     sqlite_path,
     sqlite_uri,
 )
-from tailorcv.infrastructure.persistence.migration import downgrade, status, upgrade
-from tailorcv.infrastructure.persistence.types import UTCDateTime
+from clearscout.infrastructure.persistence.migration import downgrade, status, upgrade
+from clearscout.infrastructure.persistence.types import UTCDateTime
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import (
     NOW,
@@ -53,7 +53,7 @@ def test_publisher_dates_round_trip_without_inventing_missing_evidence(
 ) -> None:
     from datetime import date
 
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.infrastructure.persistence.models import (
         PendingDiscovery,
         PendingPostingContent,
         PostingObservation,
@@ -107,7 +107,7 @@ def test_personal_closing_dates_and_explicit_resets_survive_reload(
 ) -> None:
     from datetime import date
 
-    from tailorcv.infrastructure.persistence.models import JobPosting, PendingDiscovery
+    from clearscout.infrastructure.persistence.models import JobPosting, PendingDiscovery
 
     committed = workspace_with_committed_evaluation(durable_database, tmp_path, "personal-date")
     closing_date = date.fromisoformat(value) if value else None
@@ -144,7 +144,7 @@ def test_personal_closing_dates_and_explicit_resets_survive_reload(
 
 
 def test_explicit_migration_cycle_is_private_and_configures_sqlite(tmp_path: Path) -> None:
-    database_path = tmp_path / "private" / "tailorcv.sqlite3"
+    database_path = tmp_path / "private" / "clearscout.sqlite3"
     database_url = f"sqlite+pysqlite:///{database_path}"
 
     before = status(database_url)
@@ -182,7 +182,7 @@ def test_explicit_migration_cycle_is_private_and_configures_sqlite(tmp_path: Pat
 
 
 def test_scan_outcome_url_lookup_searches_the_scan_index(durable_database: Database) -> None:
-    from tailorcv.infrastructure.persistence.models import SourceScan, SourceScanOutcome
+    from clearscout.infrastructure.persistence.models import SourceScan, SourceScanOutcome
     from tests.support.scenarios import same_day_rescans_with_follow_ups
 
     workspace_id, first_task_id, second_task_id = same_day_rescans_with_follow_ups(durable_database)
@@ -230,8 +230,8 @@ def test_scan_outcome_url_lookup_searches_the_scan_index(durable_database: Datab
 def test_detail_rows_of_one_board_store_its_listing_membership_once(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.discovery.source_reading import SourceDetailCheckpoint
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.application.discovery.source_reading import SourceDetailCheckpoint
+    from clearscout.infrastructure.persistence.models import (
         SourceListingMembership,
         SourceScanFrontierItem,
     )
@@ -309,8 +309,8 @@ def test_a_listing_membership_no_frontier_row_names_is_released(
 ) -> None:
     from sqlalchemy import delete
 
-    from tailorcv.application.discovery.source_reading import SourceDetailCheckpoint
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.application.discovery.source_reading import SourceDetailCheckpoint
+    from clearscout.infrastructure.persistence.models import (
         SourceListingMembership,
         SourceScanFrontierItem,
     )
@@ -374,8 +374,8 @@ def test_a_checkpoint_reads_whole_while_another_writer_replaces_its_listing(
 ) -> None:
     from sqlalchemy import event
 
-    from tailorcv.application.discovery.source_reading import SourceDetailCheckpoint
-    from tailorcv.infrastructure.persistence.models import SourceScanFrontierItem
+    from clearscout.application.discovery.source_reading import SourceDetailCheckpoint
+    from clearscout.infrastructure.persistence.models import SourceScanFrontierItem
     from tests.support.scenarios import (
         board_source,
         completed_earlier_scan,
@@ -427,7 +427,7 @@ def test_a_checkpoint_reads_whole_while_another_writer_replaces_its_listing(
 
 
 def _continuation_of(session: Session, scan_id: str) -> str:
-    from tailorcv.infrastructure.persistence.models import SourceScanContinuation
+    from clearscout.infrastructure.persistence.models import SourceScanContinuation
 
     return session.scalars(
         select(SourceScanContinuation.id).where(SourceScanContinuation.source_scan_id == scan_id)
@@ -449,7 +449,7 @@ def _continuation_of(session: Session, scan_id: str) -> str:
 def test_lookup_indexes_match_the_migrated_schema(
     durable_database: Database, model_name: str, index_name: str, columns: tuple[str, ...]
 ) -> None:
-    from tailorcv.infrastructure.persistence import models
+    from clearscout.infrastructure.persistence import models
 
     table = cast(Table, getattr(models, model_name).__table__)
     mapped = {
@@ -469,8 +469,8 @@ def test_the_claim_searches_recent_continuations_through_the_start_index(
 ) -> None:
     from sqlalchemy import event
 
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.application.workspaces import WorkspaceService
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.application.workspaces import WorkspaceService
 
     workspace = WorkspaceService(durable_database, runtime_storage(durable_database)).create(
         slug="claims", name="Claims"
@@ -503,7 +503,7 @@ def test_the_claim_searches_recent_continuations_through_the_start_index(
 
 
 def test_database_requires_an_explicit_upgrade(tmp_path: Path) -> None:
-    from tailorcv.shared.errors import ConfigError
+    from clearscout.shared.errors import ConfigError
 
     database_url = f"sqlite+pysqlite:///{tmp_path / 'missing.sqlite3'}"
     with pytest.raises(ConfigError, match="db upgrade"):
@@ -511,7 +511,7 @@ def test_database_requires_an_explicit_upgrade(tmp_path: Path) -> None:
 
 
 def test_an_engine_opened_early_never_creates_the_database(tmp_path: Path) -> None:
-    database_path = tmp_path / "a dir #1" / "tailorcv.sqlite3"
+    database_path = tmp_path / "a dir #1" / "clearscout.sqlite3"
     database_path.parent.mkdir()
     database_url = f"sqlite+pysqlite:///{database_path}"
     database = Database(database_url, require_existing=False)
@@ -583,8 +583,8 @@ def test_a_write_locked_session_settles_staged_files_like_any_other(
 
 
 def test_immutable_trigger_refuses_task_event_updates(durable_database: Database) -> None:
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.application.workspaces import WorkspaceService
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.application.workspaces import WorkspaceService
 
     workspace = WorkspaceService(durable_database, runtime_storage(durable_database)).create(
         slug="test", name="Test"
@@ -632,7 +632,7 @@ def test_every_model_module_reaches_the_one_metadata_graph() -> None:
     module and forgetting to import it in the package: the class would map, but
     its table would be missing from the graph the migration is checked against.
     """
-    package = importlib.import_module("tailorcv.infrastructure.persistence.models")
+    package = importlib.import_module("clearscout.infrastructure.persistence.models")
     root = Path(next(iter(package.__path__)))
 
     # Read rather than import: importing the modules here would perform the very
@@ -667,12 +667,12 @@ def test_pending_content_evidence_is_append_only_typed_and_owner_scoped(
 ) -> None:
     from datetime import date
 
-    from tailorcv.application.workspaces import WorkspaceService
-    from tailorcv.domain import (
+    from clearscout.application.workspaces import WorkspaceService
+    from clearscout.domain import (
         PostingContentAccessStatus,
         PostingIdentityStatus,
     )
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.infrastructure.persistence.models import (
         PendingDiscovery,
     )
 
@@ -752,8 +752,8 @@ def test_upgrading_a_database_holding_model_calls_keeps_them_beside_the_envelope
     durable_database_url: str, tmp_path: Path
 ) -> None:
     """Running the migrations over a live workspace must leave its recorded calls alone."""
-    from tailorcv.application.workspaces import WorkspaceService
-    from tailorcv.infrastructure.persistence.models import ModelCall
+    from clearscout.application.workspaces import WorkspaceService
+    from clearscout.infrastructure.persistence.models import ModelCall
 
     database = Database(durable_database_url)
     try:
@@ -797,8 +797,8 @@ def test_a_stored_envelope_can_be_pruned_while_its_model_call_stays(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """Envelopes are the bulk of a workspace, and the call row is the history."""
-    from tailorcv.application.workspaces import WorkspaceService
-    from tailorcv.infrastructure.persistence.models import ModelCall, ModelCallEnvelope
+    from clearscout.application.workspaces import WorkspaceService
+    from clearscout.infrastructure.persistence.models import ModelCall, ModelCallEnvelope
 
     workspace_id = str(
         WorkspaceService(durable_database, runtime_storage(durable_database))
@@ -862,9 +862,9 @@ def test_migrated_check_vocabularies_match_the_mappers_closed_lists(
     durable_database: Database,
 ) -> None:
     """A CHECK the mapper widened alone is a value the migrated database still refuses."""
-    from tailorcv.application.job_search.models import RelevanceReviewRejectionCode
-    from tailorcv.domain import ARTIFACT_LOGICAL_TYPES, ROBOTS_READ_BASES, STORED_TASK_TYPES
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.application.job_search.models import RelevanceReviewRejectionCode
+    from clearscout.domain import ARTIFACT_LOGICAL_TYPES, ROBOTS_READ_BASES, STORED_TASK_TYPES
+    from clearscout.infrastructure.persistence.models import (
         Artifact,
         BackgroundTask,
         GuidedCampaignCapturedUrl,
@@ -936,7 +936,7 @@ def test_a_relevance_review_holds_all_five_classes_or_none(durable_database: Dat
 
     from sqlalchemy.orm import Session
 
-    from tailorcv.infrastructure.persistence.models.discovery import RelevanceReview
+    from clearscout.infrastructure.persistence.models.discovery import RelevanceReview
 
     moment = datetime(2026, 1, 1, tzinfo=UTC)
     with durable_database.engine.connect() as connection:
@@ -973,10 +973,10 @@ def test_a_read_exempt_as_one_postings_own_read_stores_that_basis(
     """The exemption a known-posting read carries is the only non-allowed basis a row may hold."""
     from datetime import date
 
-    from tailorcv.application.workspaces import WorkspaceService
-    from tailorcv.domain import PostingIdentityStatus
-    from tailorcv.domain.records import RobotsReadBasis
-    from tailorcv.infrastructure.persistence.models import PendingDiscovery, PendingPostingContent
+    from clearscout.application.workspaces import WorkspaceService
+    from clearscout.domain import PostingIdentityStatus
+    from clearscout.domain.records import RobotsReadBasis
+    from clearscout.infrastructure.persistence.models import PendingDiscovery, PendingPostingContent
 
     workspace = WorkspaceService(durable_database, runtime_storage(durable_database)).create(
         slug="robots-basis", name="Robots basis"
@@ -1029,7 +1029,7 @@ def test_derived_proposal_mappers_match_the_migration_schema(
 ) -> None:
     from sqlalchemy import ColumnDefault, Table, inspect
 
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.infrastructure.persistence.models import (
         DerivedCluster,
         DerivedEmployerArchetype,
         DerivedSearchTitle,

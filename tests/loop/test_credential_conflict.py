@@ -8,10 +8,10 @@ workspace conditions.
 
 from __future__ import annotations
 
-from tailorcv.application.tailoring.stages.jobspec import HardGate
-from tailorcv.application.tailoring.stages.spans import Span
-from tailorcv.application.tailoring.workflows.evaluations import _credential_conflict
-from tailorcv.domain import SpanStatus
+from clearscout.application.tailoring.stages.jobspec import HardGate
+from clearscout.application.tailoring.stages.spans import Span
+from clearscout.application.tailoring.workflows.evaluations import _credential_conflict
+from clearscout.domain import SpanStatus
 
 TRADE = ("Requires an active locksmith or master electrician license", "not held")
 _VERIFIED = Span(status=SpanStatus.VERIFIED, start=0, end=1)

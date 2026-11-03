@@ -10,7 +10,7 @@ from __future__ import annotations
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tailorcv.domain.countries import CountryTable
+from clearscout.domain.countries import CountryTable
 
 # A bounded alphabet keeps the alias space finite and every generated table
 # distinguishable. All-letters keeps the tokens outside the ISO-3 code table

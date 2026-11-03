@@ -11,13 +11,13 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from tailorcv.application.config import CriticStatistic
-from tailorcv.application.master_cv.cv import CvInventory, EntryKind
-from tailorcv.application.prompts import data_block
-from tailorcv.application.tailoring.fit.lexicon import HEADING_WORDS
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.stages.context import entry_line, record_block
-from tailorcv.application.tailoring.stages.draft import (
+from clearscout.application.config import CriticStatistic
+from clearscout.application.master_cv.cv import CvInventory, EntryKind
+from clearscout.application.prompts import data_block
+from clearscout.application.tailoring.fit.lexicon import HEADING_WORDS
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.stages.context import entry_line, record_block
+from clearscout.application.tailoring.stages.draft import (
     CoverLetter,
     DraftedLine,
     DraftedRole,
@@ -25,10 +25,10 @@ from tailorcv.application.tailoring.stages.draft import (
     ResumeDraft,
     SourceType,
 )
-from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.match import EvidenceMap
-from tailorcv.application.tailoring.stages.select import build_plan
-from tailorcv.application.tailoring.stages.verify import (
+from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+from clearscout.application.tailoring.stages.match import EvidenceMap
+from clearscout.application.tailoring.stages.select import build_plan
+from clearscout.application.tailoring.stages.verify import (
     LETTER_CRITIC,
     CriticVerdict,
     DoubtedClaim,
@@ -41,14 +41,14 @@ from tailorcv.application.tailoring.stages.verify import (
     keyword_coverage,
     line_citations,
 )
-from tailorcv.domain import ClaimBoundary, ResearchKind
-from tailorcv.infrastructure.providers.base import json_schema
-from tailorcv.infrastructure.providers.cache import ResponseCache
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.infrastructure.providers.plan import RequestPlan
-from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
-from tailorcv.shared.costs import Ledger
-from tailorcv.shared.results import Finding, Outcome
+from clearscout.domain import ClaimBoundary, ResearchKind
+from clearscout.infrastructure.providers.base import json_schema
+from clearscout.infrastructure.providers.cache import ResponseCache
+from clearscout.infrastructure.providers.client import Client
+from clearscout.infrastructure.providers.plan import RequestPlan
+from clearscout.infrastructure.web_fetch.company_research import ResearchSource
+from clearscout.shared.costs import Ledger
+from clearscout.shared.results import Finding, Outcome
 from tests.support.doubles import ScriptedProvider
 from tests.support.reports import rendered_report, report_section
 
@@ -87,7 +87,7 @@ def build(inventory, settings, draft, markdown, keywords=("Kafka",), *, plan=Non
 
 
 def _guardrails():
-    from tailorcv.application.tailoring.guardrails import Guardrails
+    from clearscout.application.tailoring.guardrails import Guardrails
 
     return Guardrails(
         protected=["Staff Systems Engineer - Platform"],
@@ -129,8 +129,8 @@ def test_a_clean_document_passes_every_check(inventory, settings) -> None:
 
 def test_a_missing_selected_bullet_answer_fails_with_redraft_feedback(inventory, settings) -> None:
     """Selected bullet slots must reach a cited drafted line or trigger repair."""
-    from tailorcv.application.master_cv.cv import EntryKind
-    from tailorcv.application.tailoring.stages.match import Classification, Match, Strength
+    from clearscout.application.master_cv.cv import EntryKind
+    from clearscout.application.tailoring.stages.match import Classification, Match, Strength
 
     kafka = next(e for e in inventory.entries if e.text.startswith("Rebuilt the ingestion tier"))
     summary = inventory.of_kind(EntryKind.SUMMARY)[0]
@@ -171,7 +171,7 @@ def test_a_missing_selected_bullet_answer_fails_with_redraft_feedback(inventory,
 
 def test_a_dropped_publication_no_longer_answers_its_must_have(inventory, settings) -> None:
     """Fit can drop a publication, and a page without it does not answer what it answered."""
-    from tailorcv.application.tailoring.stages.match import Classification, Match, Strength
+    from clearscout.application.tailoring.stages.match import Classification, Match, Strength
 
     publication = inventory.of_kind(EntryKind.PUBLICATION)[0]
     summary = inventory.of_kind(EntryKind.SUMMARY)[0]
@@ -492,7 +492,7 @@ def test_a_forbidden_string_in_a_cover_letter_stays_redraftable(inventory, setti
 
 
 def test_a_forbidden_string_in_supplied_text_stays_redraftable(inventory, settings) -> None:
-    from tailorcv.application.tailoring.stages.verify import check_supplied
+    from clearscout.application.tailoring.stages.verify import check_supplied
 
     entry = inventory.entries[0]
     findings = check_supplied(
@@ -1495,7 +1495,7 @@ def test_the_critic_reads_the_record_the_match_stage_sends_byte_for_byte(
     The record is the cached prefix, so a critic that marks it per document
     writes a fresh cache entry on every call instead of reading the match stage's.
     """
-    from tailorcv.application.tailoring.stages.match import match
+    from clearscout.application.tailoring.stages.match import match
 
     cited, *_, uncited = inventory.of_kind(EntryKind.BULLET)
     provider = ScriptedProvider(
@@ -1860,7 +1860,7 @@ def test_the_critic_is_told_which_lines_it_may_not_judge(
     master CV. None of them is in the evidence inventory, so without this the
     critic reports them as unsupported claims that no redraft can change.
     """
-    from tailorcv.application.tailoring.stages.context import copied_text
+    from clearscout.application.tailoring.stages.context import copied_text
 
     rules = guardrails.model_copy(
         update={
@@ -1889,7 +1889,7 @@ def test_asserted_lines_are_listed_once_each(
     inventory: CvInventory, guardrails: Guardrails
 ) -> None:
     """A protected phrase that is also the work authorization must not repeat."""
-    from tailorcv.application.tailoring.stages.context import copied_text
+    from clearscout.application.tailoring.stages.context import copied_text
 
     line = "New Zealand citizen and Australian permanent resident"
     rules = guardrails.model_copy(update={"work_authorization": line, "protected": [line, line]})
@@ -1900,7 +1900,7 @@ def test_a_record_with_nothing_asserted_produces_nothing(
     inventory: CvInventory, guardrails: Guardrails
 ) -> None:
     """An empty block must not become a stray blank line in the prompt."""
-    from tailorcv.application.tailoring.stages.context import copied_text
+    from clearscout.application.tailoring.stages.context import copied_text
 
     bare = inventory.model_copy(update={"name": "", "contact_lines": (), "roles": ()})
     empty = guardrails.model_copy(update={"protected": [], "work_authorization": None})
@@ -1911,7 +1911,7 @@ def test_a_role_location_the_assembler_copies_is_asserted_rather_than_judged(
     inventory: CvInventory, guardrails: Guardrails
 ) -> None:
     """A place name the program copies under a role heading is not the model's claim."""
-    from tailorcv.application.tailoring.stages.context import copied_text
+    from clearscout.application.tailoring.stages.context import copied_text
 
     located = inventory.model_copy(
         update={
@@ -1963,8 +1963,8 @@ def test_a_hyphen_is_not_a_different_word() -> None:
     The token pattern keeps hyphens so that C++ and Neo4j-backed survive, which
     would otherwise make technical-lead a single token matching neither half.
     """
-    from tailorcv.application.tailoring.stages.jobspec import JobSpec
-    from tailorcv.application.tailoring.stages.verify import keyword_coverage
+    from clearscout.application.tailoring.stages.jobspec import JobSpec
+    from clearscout.application.tailoring.stages.verify import keyword_coverage
 
     document = "Held technical-lead responsibility through October 2025."
     spec = JobSpec(
@@ -1984,8 +1984,8 @@ def test_a_hyphen_is_not_a_different_word() -> None:
 
 def test_splitting_hyphens_does_not_break_the_tokens_hyphens_protect() -> None:
     """C++, F#, .NET and Neo4j are why the pattern keeps punctuation at all."""
-    from tailorcv.application.tailoring.stages.jobspec import JobSpec
-    from tailorcv.application.tailoring.stages.verify import keyword_coverage
+    from clearscout.application.tailoring.stages.jobspec import JobSpec
+    from clearscout.application.tailoring.stages.verify import keyword_coverage
 
     document = "Built in C++ and F# against Neo4j-backed services on .NET."
     spec = JobSpec(
@@ -2003,8 +2003,8 @@ def test_splitting_hyphens_does_not_break_the_tokens_hyphens_protect() -> None:
 
 def test_a_genuinely_absent_phrase_is_still_reported_absent() -> None:
     """Hyphen splitting must not turn the check into one that always passes."""
-    from tailorcv.application.tailoring.stages.jobspec import JobSpec
-    from tailorcv.application.tailoring.stages.verify import keyword_coverage
+    from clearscout.application.tailoring.stages.jobspec import JobSpec
+    from clearscout.application.tailoring.stages.verify import keyword_coverage
 
     spec = JobSpec(
         title="x",
@@ -2021,8 +2021,8 @@ def test_a_genuinely_absent_phrase_is_still_reported_absent() -> None:
 
 def letter_with(inventory, settings, text: str):
     """Return the report for a one-paragraph letter citing real evidence."""
-    from tailorcv.application.tailoring.stages.draft import CoverLetter, DraftedLine
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.draft import CoverLetter, DraftedLine
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     entry_id = inventory.entries[0].id
     return check_letter(
@@ -2039,7 +2039,7 @@ def letter_with(inventory, settings, text: str):
 
 def test_a_letter_within_the_stated_limit_passes(inventory, settings) -> None:
     """The prompt states a length, so a check counts it rather than trusting it."""
-    from tailorcv.application.tailoring.stages.draft import MAXIMUM_LETTER_WORDS
+    from clearscout.application.tailoring.stages.draft import MAXIMUM_LETTER_WORDS
 
     report = letter_with(inventory, settings, "The record fits this posting.")
     finding = next(item for item in report.findings if item.check == "letter length")
@@ -2067,8 +2067,8 @@ def test_licensed_is_a_credential_only_beside_a_profession_or_a_licence(
 def test_a_letter_may_cite_declared_company_research_but_not_an_unknown_source(
     inventory, settings
 ) -> None:
-    from tailorcv.application.tailoring.stages.draft import CoverLetter, DraftedLine
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.draft import CoverLetter, DraftedLine
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     plan = build_plan(inventory, spec_with("Kafka"), EvidenceMap(), settings)
 
@@ -2097,8 +2097,8 @@ def test_a_letter_may_cite_declared_company_research_but_not_an_unknown_source(
 
 
 def test_a_cover_letter_cannot_mix_candidate_and_company_claims(inventory, settings) -> None:
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     plan = build_plan(inventory, spec_with("Kafka"), EvidenceMap(), settings)
     entry_id = inventory.entries[0].id
@@ -2130,8 +2130,8 @@ def test_letter_feedback_quotes_every_uncited_paragraph_and_every_untraced_figur
     inventory, settings
 ) -> None:
     """A redraft can only fix what the feedback shows it, so no offender is cut to a prefix."""
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     cited = inventory.entries[0].id
     uncited = (
@@ -2163,7 +2163,7 @@ def test_letter_feedback_quotes_every_uncited_paragraph_and_every_untraced_figur
 
 
 def test_a_letter_over_the_stated_limit_is_sent_back(inventory, settings) -> None:
-    from tailorcv.application.tailoring.stages.draft import MAXIMUM_LETTER_WORDS
+    from clearscout.application.tailoring.stages.draft import MAXIMUM_LETTER_WORDS
 
     long_letter = " ".join(["word"] * (MAXIMUM_LETTER_WORDS + 1))
     report = letter_with(inventory, settings, long_letter)
@@ -2182,8 +2182,8 @@ def _letter_report(
     body: str = "The record fits this posting.",
 ):
     """Report for a letter whose greeting, body, and sign-off are under test."""
-    from tailorcv.application.tailoring.stages.draft import CoverLetter, DraftedLine
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.draft import CoverLetter, DraftedLine
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     return check_letter(
         letter=CoverLetter(
@@ -2244,7 +2244,7 @@ def test_a_forbidden_phrase_does_not_fire_inside_a_longer_word(inventory, settin
 
 
 def test_source_answerability_survives_an_omitted_plan_entry(inventory, settings):
-    from tailorcv.application.tailoring.stages.select import Plan
+    from clearscout.application.tailoring.stages.select import Plan
 
     plan = Plan(requirements_for={inventory.entries[0].id: ("r01",)})
     report = build(inventory, settings, EMPTY_RESUME, "# J\n", keywords=(), plan=plan)
@@ -2254,8 +2254,8 @@ def test_source_answerability_survives_an_omitted_plan_entry(inventory, settings
 
 
 def test_empty_and_signature_only_letters_fail_as_incomplete(inventory, settings):
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     plan = build_plan(inventory, spec_with(), EvidenceMap(), settings)
     for paragraphs in (
@@ -2275,9 +2275,9 @@ def test_empty_and_signature_only_letters_fail_as_incomplete(inventory, settings
 
 
 def test_company_numbers_are_checked_against_the_cited_company_text(inventory, settings):
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
-    from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
+    from clearscout.infrastructure.web_fetch.company_research import ResearchSource
 
     source = ResearchSource(
         id="company.about",
@@ -2309,9 +2309,9 @@ def test_company_numbers_are_checked_against_the_cited_company_text(inventory, s
 
 
 def test_a_valid_company_id_does_not_establish_support_for_an_unrelated_claim(inventory, settings):
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
-    from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
+    from clearscout.infrastructure.web_fetch.company_research import ResearchSource
 
     source = ResearchSource(
         id="company.about",
@@ -2345,9 +2345,9 @@ def test_a_valid_company_id_does_not_establish_support_for_an_unrelated_claim(in
 
 
 def test_company_evidence_cannot_supply_a_candidate_achievement(inventory, settings):
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
-    from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
+    from clearscout.infrastructure.web_fetch.company_research import ResearchSource
 
     source = ResearchSource(
         id="company.about",
@@ -2403,7 +2403,7 @@ def _company_paragraph_report(
     ),
     cited: tuple[str, ...] = ("company.about",),
 ) -> Report:
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     return check_letter(
         letter=CoverLetter(
@@ -2522,7 +2522,7 @@ def test_a_company_sentence_copying_a_source_its_paragraph_cites_is_an_echo(
 
 
 def test_context_only_misses_warn_but_mixed_slots_fail(inventory, settings):
-    from tailorcv.application.tailoring.stages.select import Plan
+    from clearscout.application.tailoring.stages.select import Plan
 
     cases: tuple[tuple[dict[str, tuple[str, ...]], Outcome], ...] = (
         ({}, Outcome.WARN),
@@ -2552,7 +2552,7 @@ def test_a_must_have_answered_by_a_copied_section_needs_no_drafted_line(
     inventory, settings, section: str
 ) -> None:
     """The program copies education and publications onto the page, so no line can cite them."""
-    from tailorcv.application.tailoring.stages.select import Plan
+    from clearscout.application.tailoring.stages.select import Plan
 
     plan = Plan.model_validate({section: ("edu",), "requirements_for": {"edu": ("r01",)}})
     report = build(inventory, settings, EMPTY_RESUME, "# J\n", keywords=(), plan=plan)
@@ -2561,7 +2561,7 @@ def test_a_must_have_answered_by_a_copied_section_needs_no_drafted_line(
 
 
 def test_one_citation_may_answer_two_must_haves_without_duplicate_prose(inventory, settings):
-    from tailorcv.application.tailoring.stages.select import Plan
+    from clearscout.application.tailoring.stages.select import Plan
 
     plan = Plan(summary_ids=("shared",), requirements_for={"shared": ("r01", "r02")})
     target = spec_with().model_copy(
@@ -2732,9 +2732,9 @@ def test_only_a_limit_on_the_applicants_part_is_a_qualifier_a_line_may_not_drop(
 
 def test_a_qualifier_in_company_research_is_not_an_ownership_risk(inventory, settings):
     """Research describes the employer, so nothing in it states a limit on the candidate."""
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
-    from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
+    from clearscout.infrastructure.web_fetch.company_research import ResearchSource
 
     source = ResearchSource(
         id="company.about",
@@ -2765,7 +2765,7 @@ def test_a_qualifier_in_company_research_is_not_an_ownership_risk(inventory, set
 
 
 def test_summary_phrase_reuse_is_distinct_from_factual_review(inventory, settings):
-    from tailorcv.application.tailoring.stages.draft import DraftedRole
+    from clearscout.application.tailoring.stages.draft import DraftedRole
 
     summary = "Turned customer discovery into roadmap priorities and delivery plans."
     repeated = ResumeDraft(
@@ -2794,8 +2794,8 @@ def _echo_report(
     ),
     details: tuple[str, ...] = (),
 ) -> Report:
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
 
     entry = inventory.entries[0].model_copy(update={"text": evidence, "details": details})
     record = inventory.model_copy(update={"entries": (entry, *inventory.entries[1:])})
@@ -3576,9 +3576,9 @@ CORPUS = tomllib.loads(
 
 def _corpus_report(item: dict[str, Any], inventory: CvInventory, settings) -> Report:
     """Run the resume or letter check set over one corpus item citing its own evidence."""
-    from tailorcv.application.tailoring.stages.draft import CoverLetter
-    from tailorcv.application.tailoring.stages.verify import check_letter
-    from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
+    from clearscout.application.tailoring.stages.draft import CoverLetter
+    from clearscout.application.tailoring.stages.verify import check_letter
+    from clearscout.infrastructure.web_fetch.company_research import ResearchSource
 
     original = next(e for e in inventory.entries if e.text.startswith("Jane Example builds"))
     record, cited_id = evidence_record(inventory, item.get("evidence", original.text))

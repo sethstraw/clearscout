@@ -7,8 +7,8 @@ import httpx
 import pytest
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from tailorcv.infrastructure.web_fetch import rendered as rendered_module
-from tailorcv.infrastructure.web_fetch.rendered import RenderedPageFetcher, RenderLimits
+from clearscout.infrastructure.web_fetch import rendered as rendered_module
+from clearscout.infrastructure.web_fetch.rendered import RenderedPageFetcher, RenderLimits
 
 
 @dataclass

@@ -1,9 +1,9 @@
 ---
 name: openapi-contract-sync
-description: Keep the TailorCV OpenAPI schema and the generated SPA TypeScript types in sync. Use after a wire-model or delivery/api route change, for an explicit regeneration request, or for demonstrated contract drift. Do not use for pure runtime changes.
+description: Keep the ClearScout OpenAPI schema and the generated SPA TypeScript types in sync. Use after a wire-model or delivery/api route change, for an explicit regeneration request, or for demonstrated contract drift. Do not use for pure runtime changes.
 ---
 
-# TailorCV OpenAPI contract sync
+# ClearScout OpenAPI contract sync
 
 The SPA's types and closed vocabularies come from the generated schema, as the
 non-negotiables in `AGENTS.md` require. When either side drifts, the SPA either

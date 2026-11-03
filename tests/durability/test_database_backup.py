@@ -11,18 +11,18 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.portability import backup_database
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.migration import upgrade
+from clearscout.application import job_search
+from clearscout.application.failures import ValidationError
+from clearscout.application.portability import backup_database
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.migration import upgrade
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import evaluation_commit
 
 
 def test_portability_package_owns_the_database_transfer_surface() -> None:
-    portability = importlib.import_module("tailorcv.application.portability")
+    portability = importlib.import_module("clearscout.application.portability")
 
     assert tuple(portability.__all__) == (
         "BackupReport",
@@ -31,8 +31,8 @@ def test_portability_package_owns_the_database_transfer_surface() -> None:
         "backup_database",
         "import_database",
     )
-    assert importlib.util.find_spec("tailorcv.application.database_backup") is None
-    assert importlib.util.find_spec("tailorcv.application.database_import") is None
+    assert importlib.util.find_spec("clearscout.application.database_backup") is None
+    assert importlib.util.find_spec("clearscout.application.database_import") is None
 
 
 def test_backup_is_a_verified_restorable_snapshot(tmp_path: Path) -> None:
@@ -49,7 +49,7 @@ def test_backup_is_a_verified_restorable_snapshot(tmp_path: Path) -> None:
             artifact_service(database, tmp_path / "artifacts"),
             evaluation_commit(workspace.id),
         )
-        destination = tmp_path / "snapshots" / "tailorcv.sqlite3"
+        destination = tmp_path / "snapshots" / "clearscout.sqlite3"
         report = backup_database(database, destination)
     finally:
         database.dispose()
@@ -117,7 +117,7 @@ def test_backup_lands_on_a_filesystem_without_hard_links(
     source_url = f"sqlite+pysqlite:///{tmp_path / 'source.sqlite3'}"
     upgrade(source_url)
     database = Database(source_url)
-    destination = tmp_path / "usb" / "tailorcv.sqlite3"
+    destination = tmp_path / "usb" / "clearscout.sqlite3"
     monkeypatch.setattr(os, "link", _refuse_hard_links)
     try:
         report = backup_database(database, destination)
@@ -131,7 +131,7 @@ def test_backup_lands_on_a_filesystem_without_hard_links(
         assert restored.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
     finally:
         restored.close()
-    assert not list(destination.parent.glob(".tailorcv.sqlite3.*"))
+    assert not list(destination.parent.glob(".clearscout.sqlite3.*"))
 
 
 def test_backup_that_landed_succeeds_when_its_temporary_file_cannot_be_removed(
@@ -140,11 +140,11 @@ def test_backup_that_landed_succeeds_when_its_temporary_file_cannot_be_removed(
     source_url = f"sqlite+pysqlite:///{tmp_path / 'source.sqlite3'}"
     upgrade(source_url)
     database = Database(source_url)
-    destination = tmp_path / "snapshots" / "tailorcv.sqlite3"
+    destination = tmp_path / "snapshots" / "clearscout.sqlite3"
     original_unlink = Path.unlink
 
     def refuse_temporary_cleanup(path: Path, missing_ok: bool = False) -> None:
-        if path.name.startswith(".tailorcv.sqlite3."):
+        if path.name.startswith(".clearscout.sqlite3."):
             raise PermissionError(errno.EACCES, "Permission denied")
         original_unlink(path, missing_ok=missing_ok)
 

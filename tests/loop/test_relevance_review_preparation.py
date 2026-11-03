@@ -11,29 +11,29 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.content_resolution import CurrentPostingContentReader
-from tailorcv.application.discovery.dispositions import DiscoveryDispositionService
-from tailorcv.application.discovery.pending import set_pending_markers
-from tailorcv.application.discovery.refusal_patterns import RefusedPosting, file_refusal
-from tailorcv.application.discovery.relevance_review import current_review_contract
-from tailorcv.application.discovery.relevance_review_preparation import (
+from clearscout.application.discovery.content_resolution import CurrentPostingContentReader
+from clearscout.application.discovery.dispositions import DiscoveryDispositionService
+from clearscout.application.discovery.pending import set_pending_markers
+from clearscout.application.discovery.refusal_patterns import RefusedPosting, file_refusal
+from clearscout.application.discovery.relevance_review import current_review_contract
+from clearscout.application.discovery.relevance_review_preparation import (
     PreparedRelevanceReview,
     RelevanceReviewPreparationService,
 )
-from tailorcv.application.discovery.relevance_review_records import (
+from clearscout.application.discovery.relevance_review_records import (
     RelevanceReviewContract,
     RelevanceReviewRecorder,
     ValidatedRelevanceReview,
 )
-from tailorcv.application.job_search.models import (
+from clearscout.application.job_search.models import (
     DispositionApply,
     DispositionSelection,
     RelevanceReviewAnswerOutcome,
 )
-from tailorcv.application.tailoring.fit import read
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces.parameters import parameter_snapshot_in
-from tailorcv.domain.search_parameters import (
+from clearscout.application.tailoring.fit import read
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces.parameters import parameter_snapshot_in
+from clearscout.domain.search_parameters import (
     Arrangement,
     CountryNames,
     Employers,
@@ -41,15 +41,15 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     PendingDiscovery,
     PostingRefusal,
     RefusalPatternProposal,
 )
-from tailorcv.infrastructure.web_fetch.ingest import strip_injected_instructions
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.infrastructure.web_fetch.posting_fetch import PolitePostingFetcher
+from clearscout.infrastructure.web_fetch.ingest import strip_injected_instructions
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.posting_fetch import PolitePostingFetcher
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.http import policy_client

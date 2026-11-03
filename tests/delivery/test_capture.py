@@ -13,16 +13,16 @@ import httpx
 import pytest
 from pydantic import BaseModel
 
-from tailorcv.application.config import Stage
-from tailorcv.infrastructure.providers.base import CallRecord
-from tailorcv.infrastructure.providers.capture import (
+from clearscout.application.config import Stage
+from clearscout.infrastructure.providers.base import CallRecord
+from clearscout.infrastructure.providers.capture import (
     ENV_VAR,
     CapturingProvider,
     WireRecorder,
     capture_root,
 )
-from tailorcv.infrastructure.providers.plan import RequestPlan, Segment
-from tailorcv.shared.costs import Usage
+from clearscout.infrastructure.providers.plan import RequestPlan, Segment
+from clearscout.shared.costs import Usage
 
 
 class _Answer(BaseModel):

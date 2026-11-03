@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.discovery.posting_identity import (
+from clearscout.application.discovery.posting_identity import (
     Origin,
     content_hash,
     identify,
@@ -16,7 +16,7 @@ from tailorcv.application.discovery.posting_identity import (
     posting_url_key,
     same_words,
 )
-from tailorcv.infrastructure.web_fetch.ingest import JDText
+from clearscout.infrastructure.web_fetch.ingest import JDText
 
 GREENHOUSE_URL = "https://job-boards.greenhouse.io/globex/jobs/6001234004"
 LEVER_URL = "https://jobs.lever.co/initech/7d811a2b-31b8-453f-94db-ff456ffd0376"
@@ -34,7 +34,7 @@ def test_every_board_the_reader_supports_yields_a_requisition_identity() -> None
     A hash quietly loses the property that a re-run after the employer edits a
     word is the same posting.
     """
-    from tailorcv.infrastructure.web_fetch.ingest.url import platform_readers as url
+    from clearscout.infrastructure.web_fetch.ingest.url import platform_readers as url
 
     readable = {"greenhouse", "lever", "workday", "ashby"}
     supported = {name for name in readable if getattr(url, name.upper(), None) is not None}

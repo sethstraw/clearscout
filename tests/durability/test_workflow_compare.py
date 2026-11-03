@@ -7,13 +7,13 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.config import load_settings
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.tailoring.batch.analysis import Recommendation, Verdict
-from tailorcv.application.tailoring.stages.jobspec import StoredPostingName
-from tailorcv.application.tailoring.workflows import PipelineWorkflowRunner
-from tailorcv.domain.records import PostingReadIntent
-from tailorcv.shared.costs import Ledger
+from clearscout.application.config import load_settings
+from clearscout.application.failures import ValidationError
+from clearscout.application.tailoring.batch.analysis import Recommendation, Verdict
+from clearscout.application.tailoring.stages.jobspec import StoredPostingName
+from clearscout.application.tailoring.workflows import PipelineWorkflowRunner
+from clearscout.domain.records import PostingReadIntent
+from clearscout.shared.costs import Ledger
 from tests.support.doubles import FakeBatchAnalysis, FakeBatchScreening
 
 STORED_NAME = StoredPostingName(title="Platform Product Lead", employer="Example Logistics")
@@ -58,10 +58,10 @@ def test_comparing_screened_postings_keeps_the_stored_name_order_in_the_batch_re
         ), object()
 
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.workflows.runner.batch.screen_batch", fake_screen_batch
+        "clearscout.application.tailoring.workflows.runner.batch.screen_batch", fake_screen_batch
     )
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.workflows.runner.batch.write", _fake_batch_write
+        "clearscout.application.tailoring.workflows.runner.batch.write", _fake_batch_write
     )
 
     compared = PipelineWorkflowRunner().compare(
@@ -89,10 +89,10 @@ def test_comparing_refuses_a_screening_that_wrote_no_report(
     master.write_text("# Synthetic Candidate\n", encoding="utf-8")
     settings = load_settings(start=tmp_path)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.workflows.runner.batch.write", _fake_batch_write
+        "clearscout.application.tailoring.workflows.runner.batch.write", _fake_batch_write
     )
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.workflows.runner.batch.screen_batch",
+        "clearscout.application.tailoring.workflows.runner.batch.screen_batch",
         lambda *_args, **_kwargs: (
             FakeBatchAnalysis(
                 screenings=(FakeBatchScreening(key="missing", ledger=Ledger(), report=None),),
@@ -133,7 +133,7 @@ def test_comparing_stored_postings_reads_them_as_a_crawl(
         seen.append(intent)
         raise _StopAfterReadError
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.screen", recording_screen)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.screen", recording_screen)
 
     with pytest.raises(_StopAfterReadError):
         PipelineWorkflowRunner().compare(

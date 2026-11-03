@@ -1,0 +1,1 @@
+"""ClearScout terminal command adapters."""

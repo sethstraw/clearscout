@@ -30,18 +30,18 @@ INDEX = (
 def _write_archive(path: Path, *, include_assets: bool) -> None:
     if path.suffix == ".whl":
         with zipfile.ZipFile(path, "w") as archive:
-            archive.writestr("tailorcv/web/index.html", INDEX)
+            archive.writestr("clearscout/web/index.html", INDEX)
             if include_assets:
-                archive.writestr("tailorcv/web/assets/app.css", "body{}")
-                archive.writestr("tailorcv/web/assets/app.js", "")
+                archive.writestr("clearscout/web/assets/app.css", "body{}")
+                archive.writestr("clearscout/web/assets/app.js", "")
         return
     with tarfile.open(path, "w:gz") as archive:
-        contents = {"tailorcv-0.1.0/web/dist/index.html": INDEX}
+        contents = {"clearscout-0.1.0/web/dist/index.html": INDEX}
         if include_assets:
             contents.update(
                 {
-                    "tailorcv-0.1.0/web/dist/assets/app.css": "body{}",
-                    "tailorcv-0.1.0/web/dist/assets/app.js": "",
+                    "clearscout-0.1.0/web/dist/assets/app.css": "body{}",
+                    "clearscout-0.1.0/web/dist/assets/app.js": "",
                 }
             )
         for name, content in contents.items():
@@ -51,7 +51,9 @@ def _write_archive(path: Path, *, include_assets: bool) -> None:
             archive.addfile(info, io.BytesIO(data))
 
 
-@pytest.mark.parametrize("filename", ["tailorcv-0.1.0-py3-none-any.whl", "tailorcv-0.1.0.tar.gz"])
+@pytest.mark.parametrize(
+    "filename", ["clearscout-0.1.0-py3-none-any.whl", "clearscout-0.1.0.tar.gz"]
+)
 def test_distribution_verifier_accepts_frontend_and_referenced_assets(
     tmp_path: Path, filename: str
 ) -> None:
@@ -62,7 +64,7 @@ def test_distribution_verifier_accepts_frontend_and_referenced_assets(
 
 
 def test_distribution_verifier_rejects_missing_referenced_asset(tmp_path: Path) -> None:
-    archive = tmp_path / "tailorcv-0.1.0-py3-none-any.whl"
+    archive = tmp_path / "clearscout-0.1.0-py3-none-any.whl"
     _write_archive(archive, include_assets=False)
 
     with pytest.raises(DistributionError, match="assets/app.css"):
@@ -81,7 +83,7 @@ def test_generated_spa_is_ignored_and_forced_into_distributions() -> None:
 
     config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     targets = config["tool"]["hatch"]["build"]["targets"]
-    assert targets["wheel"]["force-include"]["web/dist"] == "tailorcv/web"
+    assert targets["wheel"]["force-include"]["web/dist"] == "clearscout/web"
     assert targets["sdist"]["force-include"]["web/dist"] == "web/dist"
 
 

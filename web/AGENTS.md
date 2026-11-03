@@ -5,7 +5,7 @@ the API playground, moving a rule between stylesheets, and the dependency and
 asset policy. Read it before adding a component, a hook, or a CSS class.
 
 Commands run from the repository root as `npm --prefix web run <script>`, in
-the forms the `tailorcv-command-card` skill gives. The coordinating session runs
+the forms the `clearscout-command-card` skill gives. The coordinating session runs
 `scripts/gate.sh web`.
 
 The root `AGENTS.md` states the contract between the wire schema and this
@@ -52,4 +52,4 @@ Two skills in `.agents/skills/` cover recurring work here:
 `openapi-contract-sync` after a backend contract change, and
 `tanstack-query-audit` for `useQuery`, `useMutation`, `useSuspenseQuery`, or
 `useInfiniteQuery` work and stale-cache bugs. Pair the second with
-`tailorcv-ui-debug` when reproducing.
+`clearscout-ui-debug` when reproducing.

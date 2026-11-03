@@ -12,42 +12,42 @@ from urllib.parse import parse_qs
 import httpx
 import pytest
 
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery.screening import (
     ScreeningCode,
     screen_discovery,
     supports_bulk_staging,
 )
-from tailorcv.application.discovery.source_reading import SourceReadOptions
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.domain.search_parameters import JobSearchParameters, Location, Seniority
-from tailorcv.domain.staged_facts import ListingIdentityTrust, PostedDateGrade
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.application.discovery.source_reading import SourceReadOptions
+from clearscout.domain import SourceReadOutcome
+from clearscout.domain.search_parameters import JobSearchParameters, Location, Seniority
+from clearscout.domain.staged_facts import ListingIdentityTrust, PostedDateGrade
+from clearscout.infrastructure.web_fetch.board_adapters import (
     BOARD_ADAPTER_REGISTRY,
     STRUCTURED_PAGE_CURSOR_REASONS,
     BoardApiFetcher,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.adp import ADP_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.bamboohr import BAMBOOHR_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.breezy import BREEZY_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.dayforce import DAYFORCE_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.dover import DOVER_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.gem import GEM_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import (
+from clearscout.infrastructure.web_fetch.board_mappings.adp import ADP_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.bamboohr import BAMBOOHR_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.breezy import BREEZY_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.dayforce import DAYFORCE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.dover import DOVER_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.gem import GEM_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     Posting,
     posting_check,
     source_listing,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.paylocity import PAYLOCITY_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.pinpoint import PINPOINT_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.recruitee import RECRUITEE_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.rippling import RIPPLING_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.smartrecruiters import (
+from clearscout.infrastructure.web_fetch.board_mappings.paylocity import PAYLOCITY_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.pinpoint import PINPOINT_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.recruitee import RECRUITEE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.rippling import RIPPLING_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.smartrecruiters import (
     SMARTRECRUITERS_MAPPING,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.workable import WORKABLE_MAPPING
-from tailorcv.infrastructure.web_fetch.ingest import strip_tags
-from tailorcv.infrastructure.web_fetch.platforms import adp
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.infrastructure.web_fetch.board_mappings.workable import WORKABLE_MAPPING
+from clearscout.infrastructure.web_fetch.ingest import strip_tags
+from clearscout.infrastructure.web_fetch.platforms import adp
+from clearscout.infrastructure.web_fetch.policy import (
     FetchPolicyError,
     HostHeldError,
     PoliteHttpClient,
@@ -1452,7 +1452,8 @@ def test_rippling_location_variants_keep_unique_detail_progress_until_recovery(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     rows = [
         _rippling_row(),
@@ -1520,7 +1521,8 @@ def test_rippling_retains_partial_rows_and_a_relist_obligation_after_a_later_pag
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     third_id = "11111111-2222-4333-8444-555555555553"
     protected_url = f"https://ats.rippling.com/globex/jobs/{_RIPPLING_SECOND}"
@@ -2256,7 +2258,8 @@ def test_details_the_read_deadline_cuts_off_are_a_time_limit_and_not_failed_read
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     rows = [_adp_requisition(itemID=f"920000000000{index}_1") for index in range(3)]
     details: list[str] = []
@@ -2301,7 +2304,8 @@ def test_detail_rows_the_deadline_cuts_off_resume_at_the_first_unread_row(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     rows = [
         _adp_requisition(itemID=f"920000000000{index}_1", requisitionTitle=f"Analyst {index}")
@@ -3670,7 +3674,7 @@ class _CheckpointAdp(BoardApiFetcher):
         self.cut_on_list = False
         self.total: int | None = None
         monkeypatch.setattr(
-            "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+            "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
             lambda: self.now,
         )
 
@@ -3995,7 +3999,8 @@ def test_each_detail_board_preserves_stable_progress_and_strips_internal_cursors
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     boards = {
         "adp": _ADP_BOARD,
@@ -4095,7 +4100,8 @@ def test_a_closed_bamboohr_identity_stays_closed_across_detail_slices(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
 
     class ClosedOpening(BoardApiFetcher):

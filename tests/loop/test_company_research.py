@@ -5,7 +5,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.company_research import (
+from clearscout.infrastructure.web_fetch.company_research import (
     CareersPageRefusedError,
     CompanyResearchFetcher,
     ResearchSource,

@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.config import ProviderName, load_settings
-from tailorcv.bootstrap.setup import render_config, run_application_setup, skills_named
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.config import ProviderName, load_settings
+from clearscout.bootstrap.setup import render_config, run_application_setup, skills_named
+from clearscout.shared.errors import ConfigError
 from tests.support.doubles import ScriptedPrompter
 from tests.support.http import recorded_web_clients
 
@@ -21,7 +21,7 @@ def _no_ambient_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("keyring.get_password", lambda service, name: None)
     monkeypatch.setattr("keyring.set_password", lambda service, name, key: None)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.credentials.check_key", lambda provider, key: None
+        "clearscout.infrastructure.providers.credentials.check_key", lambda provider, key: None
     )
 
 
@@ -41,7 +41,7 @@ def application_setup(
     destination: Path | None = None,
     force: bool = False,
 ):
-    data = tmp_path / "TailorCV"
+    data = tmp_path / "ClearScout"
     return run_application_setup(
         prompter,
         source=master_cv,
@@ -49,7 +49,7 @@ def application_setup(
         slug="my-search",
         root=data / "workspaces" / "my-search",
         destination=destination,
-        database_url=f"sqlite+pysqlite:///{data / 'tailorcv.sqlite3'}",
+        database_url=f"sqlite+pysqlite:///{data / 'clearscout.sqlite3'}",
         force=force,
     )
 
@@ -125,7 +125,7 @@ def test_the_technologies_the_cv_names_are_listed_as_a_checklist(inventory, tmp_
     body = render_config(tmp_path / "cv.md", inventory, ProviderName.ANTHROPIC, tmp_path)
     assert "Kafka" in body
     assert "Terraform" in body
-    from tailorcv.application.master_cv.cv import EntryKind
+    from clearscout.application.master_cv.cv import EntryKind
 
     source = " ".join(entry.text for entry in inventory.of_kind(EntryKind.SKILL))
     for skill in skills_named(inventory):
@@ -168,11 +168,11 @@ def test_a_starter_file_has_exact_wording_but_no_personal_distinctions(
     inventory, tmp_path: Path
 ) -> None:
     """Generated exact wording is active without pretending the user wrote distinctions."""
-    from tailorcv.application.tailoring.guardrails import Guardrails
+    from clearscout.application.tailoring.guardrails import Guardrails
 
     body = render_config(tmp_path / "cv.md", inventory, ProviderName.ANTHROPIC, tmp_path)
-    (tmp_path / "tailorcv.toml").write_text(body, encoding="utf-8")
-    settings = load_settings(tmp_path / "tailorcv.toml")
+    (tmp_path / "clearscout.toml").write_text(body, encoding="utf-8")
+    settings = load_settings(tmp_path / "clearscout.toml")
     assert isinstance(settings.rules, Guardrails)
     assert settings.rules.configured
     assert not settings.rules.personal_distinctions
@@ -181,15 +181,15 @@ def test_a_starter_file_has_exact_wording_but_no_personal_distinctions(
 def test_application_setup_initializes_a_scriptable_documents_workspace(
     tmp_path: Path, master_cv: Path
 ) -> None:
-    root = tmp_path / "TailorCV" / "workspaces" / "my-search"
+    root = tmp_path / "ClearScout" / "workspaces" / "my-search"
     result = application_setup(tmp_path, master_cv, ScriptedPrompter(interactive=False))
 
     assert result.workspace_root == root
     assert result.import_method == "adopted"
     assert result.master_cv == root / "master-cv" / "CV_Master.md"
-    assert result.config_path == root / "tailorcv.toml"
+    assert result.config_path == root / "clearscout.toml"
     assert load_settings(result.config_path).master_cv() == result.master_cv
-    assert (tmp_path / "TailorCV" / "tailorcv.sqlite3").is_file()
+    assert (tmp_path / "ClearScout" / "clearscout.sqlite3").is_file()
     assert (root / "imports").is_dir()
     assert (root / "work").is_dir()
     assert (root / "backups").is_dir()

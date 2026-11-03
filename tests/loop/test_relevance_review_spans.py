@@ -1,6 +1,6 @@
 """Relevance review resolves application-owned spans to exact source bytes."""
 
-from tailorcv.application.discovery.relevance_review_spans import posting_spans
+from clearscout.application.discovery.relevance_review_spans import posting_spans
 
 
 def test_posting_spans_preserve_exact_repeated_whitespace_and_long_source_text() -> None:

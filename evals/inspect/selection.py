@@ -10,6 +10,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.match import Classification, Strength
 from evals.inspect.labeling import (
     PROTOCOL_VERSION,
     CandidatePool,
@@ -29,12 +31,10 @@ from evals.inspect.review_resolution import (
     ResolvedLabel,
     match_material,
 )
-from tailorcv.application.tailoring.stages.jobspec import Dimension
-from tailorcv.application.tailoring.stages.match import Classification, Strength
 
-SELECTION_KEY_DOMAIN = "tailorcv-match-selection-key-v1"
-SPLIT_RESOLUTION_DOMAIN = "tailorcv-match-split-resolution-v1"
-SELECTION_MANIFEST_DOMAIN = "tailorcv-match-selection-manifest-v1"
+SELECTION_KEY_DOMAIN = "clearscout-match-selection-key-v1"
+SPLIT_RESOLUTION_DOMAIN = "clearscout-match-split-resolution-v1"
+SELECTION_MANIFEST_DOMAIN = "clearscout-match-selection-manifest-v1"
 SELECTION_ALGORITHM: Literal["lexicographic-feasible-v1"] = "lexicographic-feasible-v1"
 
 

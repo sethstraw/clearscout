@@ -40,7 +40,7 @@ describe("HTTP helpers", () => {
     expect(headers.get("Accept")).toBe("application/json");
     expect(headers.get("Content-Type")).toBe("application/json");
     expect(headers.get("Idempotency-Key")).toBe("stable-1");
-    expect(headers.get("X-TailorCV-Request")).toBe("browser");
+    expect(headers.get("X-ClearScout-Request")).toBe("browser");
   });
 
   it("reuses one key and body for the same active intent, then retires both on success", async () => {
@@ -187,7 +187,7 @@ describe("HTTP helpers", () => {
       ),
     );
     await expect(requestText("/report")).rejects.toMatchObject({
-      message: "TailorCV request failed (503).",
+      message: "ClearScout request failed (503).",
       correlationId: "header-9",
     });
   });

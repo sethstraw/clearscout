@@ -12,10 +12,10 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.config import Settings
-from tailorcv.application.master_cv.cv import EntryKind, parse_cv
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.layout import (
+from clearscout.application.config import Settings
+from clearscout.application.master_cv.cv import EntryKind, parse_cv
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.layout import (
     BLOCK_GAP_LINES,
     CHARACTERS_PER_LINE,
     LINES_PER_PAGE,
@@ -29,14 +29,14 @@ from tailorcv.application.tailoring.layout import (
     shaping_fingerprint,
     wrapped_lines,
 )
-from tailorcv.application.tailoring.stages.draft import (
+from clearscout.application.tailoring.stages.draft import (
     Document,
     DraftedLine,
     DraftedRole,
     DraftedSkill,
     ResumeDraft,
 )
-from tailorcv.application.tailoring.stages.select import Plan
+from clearscout.application.tailoring.stages.select import Plan
 
 PROSE = (
     "Led a 12-person platform team through the migration of 40 PostgreSQL services to "
@@ -355,7 +355,7 @@ def test_editing_the_length_budget_moves_the_run_identity(
 
     for constant in ("CHARACTERS_PER_LINE", "ROLE_LINES"):
         moved = dict(SHAPING_CONSTANTS, **{constant: SHAPING_CONSTANTS[constant] + 1})
-        monkeypatch.setattr("tailorcv.application.tailoring.layout.SHAPING_CONSTANTS", moved)
+        monkeypatch.setattr("clearscout.application.tailoring.layout.SHAPING_CONSTANTS", moved)
         assert shaping_fingerprint() != before, f"editing {constant} left the identity unchanged"
 
 

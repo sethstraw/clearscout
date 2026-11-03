@@ -9,18 +9,18 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.application.discovery.posting_identity import posting_identity_keys
-from tailorcv.application.discovery.source_reading import SourceReadOptions
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
-from tailorcv.infrastructure.web_fetch.board_platform import host_match
-from tailorcv.infrastructure.web_fetch.boards import board_identity
-from tailorcv.infrastructure.web_fetch.platforms.peoplesoft import (
+from clearscout.application.discovery.posting_identity import posting_identity_keys
+from clearscout.application.discovery.source_reading import SourceReadOptions
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
+from clearscout.infrastructure.web_fetch.board_platform import host_match
+from clearscout.infrastructure.web_fetch.boards import board_identity
+from clearscout.infrastructure.web_fetch.platforms.peoplesoft import (
     _MAX_SETS,
     PEOPLESOFT_BOARD,
     _adapter_groups,
     _GridSession,
 )
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 from tests.support.http import public_resolver
 
 _FLUID = "https://careers.acme.example/psc/hrprd/EMPLOYEE/HRMS/c/HRS_HRAM_FL.HRS_CG_SEARCH_FL.GBL"
@@ -145,7 +145,7 @@ class _Gateway:
     def fetcher(self) -> BoardApiFetcher:
         return BoardApiFetcher(
             client=PoliteHttpClient(
-                user_agent="tailorcv/test",
+                user_agent="clearscout/test",
                 sleeper=lambda _seconds: None,
                 jitter=lambda _low, _high: 0.0,
                 getter=self.get,
@@ -423,10 +423,10 @@ def test_a_form_postback_without_an_injected_poster_sends_its_form_body(
                 return httpx.Response(404, request=request)
             return httpx.Response(200, request=request, text="<p>Next set</p>")
 
-    monkeypatch.setattr("tailorcv.infrastructure.web_fetch.policy.httpx.Client", Client)
+    monkeypatch.setattr("clearscout.infrastructure.web_fetch.policy.httpx.Client", Client)
     fetcher = BoardApiFetcher(
         client=PoliteHttpClient(
-            user_agent="tailorcv/test", sleeper=lambda _seconds: None, resolver=public_resolver
+            user_agent="clearscout/test", sleeper=lambda _seconds: None, resolver=public_resolver
         )
     )
     cookies = httpx.Cookies()

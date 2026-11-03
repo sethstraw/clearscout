@@ -45,7 +45,7 @@ const submittedResume = {
 
 describe("ApplicationFilesPage", () => {
   it("shows verified immutable metadata and disables changes to imported files", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-files");
+    window.localStorage.setItem("clearscout.workspace", "workspace-files");
     server.use(
       http.get("*/api/v1/applications/options", () => HttpResponse.json(applicationOptions)),
       http.get("*/api/v1/artifacts", () => HttpResponse.json([importedResume, submittedResume])),

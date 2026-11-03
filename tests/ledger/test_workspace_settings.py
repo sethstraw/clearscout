@@ -6,18 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.config import DEFAULT_PROVIDER, ProviderName, Settings
-from tailorcv.application.failures import ConflictError
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.workspaces import (
+from clearscout.application.config import DEFAULT_PROVIDER, ProviderName, Settings
+from clearscout.application.failures import ConflictError
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.workspaces import (
     GuardrailService,
     SearchParametersService,
     WorkspaceService,
     WorkspaceSettingsService,
 )
-from tailorcv.domain.search_parameters import JobSearchParameters, Location
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Workspace
+from clearscout.domain.search_parameters import JobSearchParameters, Location
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Workspace
 from tests.support.artifacts import runtime_storage
 
 
@@ -33,7 +33,9 @@ def test_workspace_settings_are_seeded_then_owned_by_the_database(
     workspace = WorkspaceService(
         durable_database, runtime_storage(durable_database), settings=seed
     ).create(slug="authority", name="Authority", root_path=str(root))
-    (root / "tailorcv.toml").write_text('[rules]\nforbidden = ["wrong source"]\n', encoding="utf-8")
+    (root / "clearscout.toml").write_text(
+        '[rules]\nforbidden = ["wrong source"]\n', encoding="utf-8"
+    )
 
     service = WorkspaceSettingsService(durable_database)
     effective = service.current(str(workspace.id))
@@ -101,8 +103,8 @@ def test_learning_loop_policy_composes_into_the_settings_snapshot(
     durable_database: Database,
 ) -> None:
     """Every learning-loop workstream reads its knobs off the composed settings."""
-    from tailorcv.application.workspaces import LearningLoopPolicyService
-    from tailorcv.domain.policy import LearningLoopPolicy
+    from clearscout.application.workspaces import LearningLoopPolicyService
+    from clearscout.domain.policy import LearningLoopPolicy
 
     workspace = WorkspaceService(durable_database, runtime_storage(durable_database)).create(
         slug="learn-compose", name="Compose"

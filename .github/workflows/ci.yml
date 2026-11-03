@@ -116,13 +116,13 @@ jobs:
         working-directory: ${{ runner.temp }}
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          tailorcv --version
-          tailorcv --help
+          clearscout --version
+          clearscout --help
           runtime_dir="$(mktemp -d)"
           cd "$runtime_dir"
-          tailorcv template CV_Master.md
+          clearscout template CV_Master.md
           test -s CV_Master.md
-          "$(uv tool dir)/tailorcv/bin/python" -I "$GITHUB_WORKSPACE/scripts/smoke_installed_frontend.py"
+          "$(uv tool dir)/clearscout/bin/python" -I "$GITHUB_WORKSPACE/scripts/smoke_installed_frontend.py"
 
   workflows:
     name: Audit the workflows themselves

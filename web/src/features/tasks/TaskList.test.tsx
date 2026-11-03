@@ -158,7 +158,7 @@ afterEach(() => {
 
 describe("TasksPage", () => {
   it("resumes retained scan work with workspace scope and idempotency, separately from a fresh scan", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const scan = {
       ...failed,
       id: "scan-interrupted",
@@ -208,7 +208,7 @@ describe("TasksPage", () => {
   });
 
   it("keeps free scan recovery available when cost metadata fails and shows resume errors at its task", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const scan = {
       ...failed,
       id: "scan-failed",
@@ -255,7 +255,7 @@ describe("TasksPage", () => {
   });
 
   it("shows a drained continuation as completed with its batch and link counts", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const continuation = {
       ...running,
       id: "continuation-1",
@@ -306,7 +306,7 @@ describe("TasksPage", () => {
   ] as const)(
     "shows known links and an unknown remaining total for $status continuation with $pending queued",
     async ({ status, completed, pending }) => {
-      window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+      window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
       const continuation = {
         ...running,
         id: "continuation-running",
@@ -345,7 +345,7 @@ describe("TasksPage", () => {
   it.each(["completed", "cancelled", "failed"] as const)(
     "keeps $status continuation counts without claiming ongoing reading",
     async (status) => {
-      window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+      window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
       useTaskPage({
         tasks: [
           {
@@ -375,7 +375,7 @@ describe("TasksPage", () => {
   );
 
   it("keeps other tasks in view when one scan's continuation chain passes fifty tasks", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const chain = Array.from(
       { length: 60 },
       (_, index) =>
@@ -397,7 +397,7 @@ describe("TasksPage", () => {
   });
 
   it("names a failed posting-text read without calling the row itself failed", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const refreshed = {
       ...running,
       id: "refresh-1",
@@ -431,7 +431,7 @@ describe("TasksPage", () => {
   });
 
   it("keeps a by-reason breakdown out of the comma-joined counts line", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const refreshed = {
       ...running,
       id: "refresh-2",
@@ -478,7 +478,7 @@ describe("TasksPage", () => {
   });
 
   it("leaves the identifier lists a discovery refresh carries out of the counts line", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const refreshed = {
       ...running,
       id: "refresh-3",
@@ -517,7 +517,7 @@ describe("TasksPage", () => {
   });
 
   it("shows the reasons a campaign stopped rather than how many there were", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const campaign = {
       ...running,
       id: "campaign-2",
@@ -543,7 +543,7 @@ describe("TasksPage", () => {
   });
 
   it("names a source the same way whether or not its name has a space", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const oneWord = {
       ...running,
       id: "scan-5",
@@ -567,7 +567,7 @@ describe("TasksPage", () => {
   });
 
   it("names a count and a state the label map never listed", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const scan = {
       ...running,
       id: "scan-1",
@@ -598,7 +598,7 @@ describe("TasksPage", () => {
   });
 
   it("names the counts a sweep reports as lists", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const sweep = {
       ...running,
       id: "scan-3",
@@ -626,7 +626,7 @@ describe("TasksPage", () => {
   });
 
   it("names the verdict a tailoring run reports as a string", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const tailored = {
       ...running,
       id: "tailor-1",
@@ -644,7 +644,7 @@ describe("TasksPage", () => {
   });
 
   it("names a false state a person is looking for instead of hiding it", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const campaign = {
       ...running,
       id: "campaign-1",
@@ -662,7 +662,7 @@ describe("TasksPage", () => {
   });
 
   it("spells out the three payload keys whose own names mislead", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const retry = {
       ...running,
       id: "campaign-retry-1",
@@ -684,7 +684,7 @@ describe("TasksPage", () => {
   });
 
   it("renders a nested funnel group as a table of groups and counts", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const scan = {
       ...running,
       id: "scan-2",
@@ -718,7 +718,7 @@ describe("TasksPage", () => {
   });
 
   it("keeps two count groups that humanize to one label apart", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const duplicated = vi.spyOn(console, "error").mockImplementation(() => {});
     const scan = {
       ...running,
@@ -744,7 +744,7 @@ describe("TasksPage", () => {
   });
 
   it("names the rows a relevance review paid for and did not review", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const reviewed = {
       ...running,
       id: "relevance-1",
@@ -798,7 +798,7 @@ describe("TasksPage", () => {
   });
 
   it("shows a running batch's step, its tallies so far, and the current item's outcome", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const batch = {
       ...running,
       id: "evaluate-batch-1",
@@ -838,7 +838,7 @@ describe("TasksPage", () => {
   });
 
   it("labels a stopped batch's item line as its last item, not its result", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const stepped = {
       job_posting_id: "job-7",
       decision: "ineligible",
@@ -878,7 +878,7 @@ describe("TasksPage", () => {
   });
 
   it("reads a failed re-read as a fallback to the stored posting text", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const batch = {
       ...running,
       id: "evaluate-batch-5",
@@ -905,7 +905,7 @@ describe("TasksPage", () => {
   });
 
   it("keeps the stored-text fallback on a completed re-evaluation", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const rerun = {
       ...running,
       id: "reevaluate-1",
@@ -935,7 +935,7 @@ describe("TasksPage", () => {
   });
 
   it("names each skip reason of a posting refresh in words", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const refreshed = {
       ...running,
       id: "refresh-4",
@@ -960,7 +960,7 @@ describe("TasksPage", () => {
   });
 
   it("shows a URL, host, or free-text reason exactly as the task reported it", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const refresh = {
       ...running,
       id: "refresh-batch-1",
@@ -1001,7 +1001,7 @@ describe("TasksPage", () => {
   });
 
   it("lists an evaluation batch's skipped rows one per row and leaves results uncounted", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const batch = {
       ...running,
       id: "evaluate-batch-2",
@@ -1049,7 +1049,7 @@ describe("TasksPage", () => {
   });
 
   it("names an evaluation batch over tracked postings for the postings it re-evaluates", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     const rerun = {
       ...running,
       id: "evaluate-batch-3",
@@ -1079,7 +1079,7 @@ describe("TasksPage", () => {
   });
 
   it("streams active progress and offers an idempotent free retry", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     vi.stubGlobal("EventSource", FakeEventSource);
     const retried: string[] = [];
     const billed = useTaskPage({
@@ -1113,7 +1113,7 @@ describe("TasksPage", () => {
   });
 
   it("shows recorded billing and confirms before retrying a paid task", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     vi.stubGlobal("EventSource", FakeEventSource);
     let resolveBilling!: (value: TaskBilling) => void;
     const billingResponse = new Promise<TaskBilling>((resolve) => {
@@ -1184,7 +1184,7 @@ describe("TasksPage", () => {
   });
 
   it("explains why a reviewed paid retry is disabled while provider choices load", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     vi.stubGlobal("EventSource", FakeEventSource);
     useTaskPage({
       tasks: [failedPaid],
@@ -1218,7 +1218,7 @@ describe("TasksPage", () => {
   });
 
   it("says how many calls the Flex tier refused and standard answered", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     vi.stubGlobal("EventSource", FakeEventSource);
     useTaskPage({
       tasks: [failedPaid],
@@ -1249,7 +1249,7 @@ describe("TasksPage", () => {
   });
 
   it("reports unavailable retry-cost metadata instead of waiting forever", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     vi.stubGlobal("EventSource", FakeEventSource);
     const billed = useTaskPage({ tasks: [failed] });
     renderTasks();
@@ -1264,7 +1264,7 @@ describe("TasksPage", () => {
   });
 
   it("distinguishes repeated paid attempts and recovers from a billing-read failure", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     vi.stubGlobal("EventSource", FakeEventSource);
     const earlier = {
       ...failedPaid,
@@ -1348,7 +1348,7 @@ describe("TasksPage", () => {
   });
 
   it("requires confirmation before requesting cancellation", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-tasks");
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
     vi.stubGlobal("EventSource", FakeEventSource);
     const otherRunning = { ...running, id: "other-running" } satisfies Task;
     const cancelled: string[] = [];

@@ -6,11 +6,11 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 
-from tailorcv.application.job_search.posting_names import rename_posting
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.domain.identity import normalize_text
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.job_search.posting_names import rename_posting
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.domain.identity import normalize_text
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     Employer,
     JobPosting,

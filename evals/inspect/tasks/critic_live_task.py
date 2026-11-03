@@ -12,10 +12,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from clearscout.application.config import Stage
 from evals.inspect.product_questions import ProductQuestion
 from evals.inspect.scorers.document_checks import critic_doubt_contract
 from evals.inspect.solvers.document_live import document_live_solver
-from tailorcv.application.config import Stage
 
 TASK_NAME = "critic-live"
 SCORE_KIND = "judged"

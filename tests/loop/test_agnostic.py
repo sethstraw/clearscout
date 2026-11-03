@@ -13,21 +13,26 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.config import Settings
-from tailorcv.application.master_cv.cv import EntryKind, parse_cv
-from tailorcv.application.tailoring import batch, elicit, fit
-from tailorcv.application.tailoring.fit.facts.roles import read_family
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.stages.context import (
+from clearscout.application.config import Settings
+from clearscout.application.master_cv.cv import EntryKind, parse_cv
+from clearscout.application.tailoring import batch, elicit, fit
+from clearscout.application.tailoring.fit.facts.roles import read_family
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.stages.context import (
     asserted_text,
     citable_entries,
     copied_text,
     record_block,
 )
-from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.stages.select import build_plan
-from tailorcv.domain import taxonomy
+from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.stages.select import build_plan
+from clearscout.domain import taxonomy
 from tests.support.suite import FIXTURES
 
 SHORT_CAREER = (FIXTURES / "short_career.md").read_text(encoding="utf-8")
@@ -501,7 +506,7 @@ def test_nothing_in_the_package_names_its_author_where_behaviour_depends_on_it()
     would mean it only works for one person.
     """
     root = Path(__file__).resolve().parent.parent.parent
-    source = root / "src" / "tailorcv"
+    source = root / "src" / "clearscout"
     prompts = root / "prompts"
     suite = root / "tests"
     client = root / "web" / "src"

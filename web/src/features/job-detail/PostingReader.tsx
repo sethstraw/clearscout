@@ -59,7 +59,7 @@ export function PostingReader({
       <section className="panel posting-empty">
         <h2>Posting body unavailable</h2>
         <EmptyState>
-          This evaluation has no recoverable full posting body. TailorCV did not invent one.
+          This evaluation has no recoverable full posting body. ClearScout did not invent one.
         </EmptyState>
         <HistoryPagination
           count={observationCount}

@@ -16,8 +16,8 @@ from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain import PURSUED_STATUSES
+from clearscout.bootstrap.api import create_app
+from clearscout.domain import PURSUED_STATUSES
 from tests.support.suite import REPO_ROOT
 
 CONTRACT = REPO_ROOT / "web" / "openapi.json"

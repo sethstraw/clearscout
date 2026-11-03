@@ -4,7 +4,7 @@ Only ``scripts/eval.sh --live`` should reach this solver, because it is the only
 relevance mode that spends money. It refuses to launch unless the environment
 carries the complete approved run identity, and it records the prompt snapshot
 and dataset identity the run was bound to. Credentials load through
-``tailorcv.infrastructure.providers.credentials.find``; nothing here prompts.
+``clearscout.infrastructure.providers.credentials.find``; nothing here prompts.
 
 Each repeat sends its rows in production-shaped batches: one task per search
 context, split by the production batch limits, so one paid call decides every
@@ -12,12 +12,12 @@ row in its batch under the schema production closes over the task's CV and condi
 trial sends the same batches, because rotating rows would put them in batches
 production never sends.
 
-A run may declare several prompt arms in ``TAILORCV_EVAL_PROMPT_ARMS`` as
+A run may declare several prompt arms in ``CLEARSCOUT_EVAL_PROMPT_ARMS`` as
 ``name=directory`` entries separated by commas. Each directory holds one
 ``<prompt>.md`` file per name in ``RELEVANCE_PROMPTS``, the runner asks for one
 arm per trial, and every call is checked against the bytes that arm declared.
 
-``TAILORCV_EVAL_CV_VERSION`` names a master-CV version in the billed workspace
+``CLEARSCOUT_EVAL_CV_VERSION`` names a master-CV version in the billed workspace
 to review against instead of the synthetic CV. ``--render-only`` writes each
 batch request a trial would send, per arm, and calls no provider. It takes the
 run's ``--limit``, ``--ids`` and ``--split`` and selects rows the way the runner
@@ -40,10 +40,24 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from clearscout.application.config import ProviderName, Settings, Stage
+from clearscout.application.discovery.relevance_review import review_plan
+from clearscout.application.job_search.models import RelevanceReviewBatchResponse
+from clearscout.application.master_cv.cv import CvInventory, parse_cv
+from clearscout.application.master_cv.service import MasterCvService
+from clearscout.application.prompts import overriding
+from clearscout.application.tailoring.stages.context import record_block
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.providers.base import Finish, UnusableResponseError, wire_schema
+from clearscout.infrastructure.providers.plan import RequestPlan, schema_digest
+from clearscout.shared.costs import Ledger
+from clearscout.shared.costs.prices import table as price_table
+from clearscout.shared.errors import ClearscoutError
 from evals.inspect.labeling import bytes_sha256
 from evals.inspect.outcomes import BatchOutcome, FailedCall
 from evals.inspect.runner import SPLITS, dataset_samples
-from evals.inspect.solvers.tailorcv_live import (
+from evals.inspect.solvers.clearscout_live import (
     PromptArm,
     arms_metadata,
     bill_sample,
@@ -57,7 +71,7 @@ from evals.inspect.solvers.tailorcv_live import (
     sample_provenance,
     stage_identity,
 )
-from evals.inspect.solvers.tailorcv_live import declared_arms as shared_declared_arms
+from evals.inspect.solvers.clearscout_live import declared_arms as shared_declared_arms
 from evals.support.client import build_live_client
 from evals.support.inventory import synthetic_inventory
 from evals.support.relevance import (
@@ -67,20 +81,6 @@ from evals.support.relevance import (
     run_schema,
     sample_batches,
 )
-from tailorcv.application.config import ProviderName, Settings, Stage
-from tailorcv.application.discovery.relevance_review import review_plan
-from tailorcv.application.job_search.models import RelevanceReviewBatchResponse
-from tailorcv.application.master_cv.cv import CvInventory, parse_cv
-from tailorcv.application.master_cv.service import MasterCvService
-from tailorcv.application.prompts import overriding
-from tailorcv.application.tailoring.stages.context import record_block
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.providers.base import Finish, UnusableResponseError, wire_schema
-from tailorcv.infrastructure.providers.plan import RequestPlan, schema_digest
-from tailorcv.shared.costs import Ledger
-from tailorcv.shared.costs.prices import table as price_table
-from tailorcv.shared.errors import TailorcvError
 
 RELEVANCE_PROMPTS = (
     "relevance_review_system",
@@ -88,7 +88,7 @@ RELEVANCE_PROMPTS = (
     "relevance_review_user",
 )
 BILLING_ORIGIN = "eval.relevance_review_live"
-CV_VERSION_ENV = "TAILORCV_EVAL_CV_VERSION"
+CV_VERSION_ENV = "CLEARSCOUT_EVAL_CV_VERSION"
 
 
 def declared_arms() -> tuple[PromptArm, ...]:
@@ -103,7 +103,7 @@ def _dataset_rows(dataset: Path) -> list[dict[str, Any]]:
 
 def _parsed_version(content: str) -> CvInventory:
     """Parse a stored version from a file, as search planning does, so line endings match."""
-    with tempfile.TemporaryDirectory(prefix="tailorcv-eval-cv-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="clearscout-eval-cv-") as temporary:
         path = Path(temporary) / "master.md"
         path.write_text(content, encoding="utf-8")
         return parse_cv(path)
@@ -117,7 +117,7 @@ def run_inventory(
 ) -> tuple[CvInventory, dict[str, Any]]:
     """Return the CV a run reviews against and the identity its metadata records.
 
-    The synthetic CV, recording nothing, unless ``TAILORCV_EVAL_CV_VERSION`` names a
+    The synthetic CV, recording nothing, unless ``CLEARSCOUT_EVAL_CV_VERSION`` names a
     version the billed workspace holds.
     """
     version_id = os.environ.get(CV_VERSION_ENV, "").strip()
@@ -133,7 +133,7 @@ def run_inventory(
     try:
         version = MasterCvService(database, storage).read_version(workspace_id, version_id)
         inventory = _parsed_version(version.content)
-    except TailorcvError as error:
+    except ClearscoutError as error:
         raise RuntimeError(f"Live evaluation refused: CV version {version_id}: {error}") from error
     mislabelled = [
         str(row.get("id")) for row in rows if row.get("cv_hash") != inventory.content_hash
@@ -461,7 +461,7 @@ def main(argv: list[str] | None = None) -> int:
         dataset = Path(task["DATASET_PATH"])
         samples = dataset_samples(dataset, limit=args.limit, split=args.split, ids=args.ids)
         written = render_requests(dataset, args.provider, args.render_only, samples)
-    except (ImportError, KeyError, OSError, ValueError, RuntimeError, TailorcvError) as error:
+    except (ImportError, KeyError, OSError, ValueError, RuntimeError, ClearscoutError) as error:
         print(f"eval render error: {error}", file=sys.stderr)
         return 1
     print(f"rendered {len(written)} requests into {args.render_only}")

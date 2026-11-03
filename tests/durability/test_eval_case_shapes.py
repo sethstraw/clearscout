@@ -8,9 +8,9 @@ from evals.runner import execute
 from evals.scorers import CaseRun, Score, score
 from evals.support.inventory import synthetic_inventory
 
-from tailorcv.application.tailoring.stages.jobspec import Dimension, HardGate, Importance, JobSpec
-from tailorcv.application.tailoring.stages.match import Classification, Strength
-from tailorcv.shared.costs import Ledger
+from clearscout.application.tailoring.stages.jobspec import Dimension, HardGate, Importance, JobSpec
+from clearscout.application.tailoring.stages.match import Classification, Strength
+from clearscout.shared.costs import Ledger
 
 CONDITIONAL = "If this role is remote, you must reside in a state where the employer employs staff"
 ABSOLUTE = "Must be authorized to work in the United States without sponsorship"

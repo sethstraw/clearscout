@@ -6,11 +6,11 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from tailorcv.application.tailoring.pipeline import SerializedRunArtifacts, StoredMasterCv
-from tailorcv.application.tailoring.stages.jobspec import StoredPostingName
-from tailorcv.application.tailoring.workflows import BatchOutput, ScreenOutput, TailorOutput
-from tailorcv.domain import ArtifactLogicalType, TailoringOutcome
-from tailorcv.shared.costs import CallManifest, Ledger, Usage
+from clearscout.application.tailoring.pipeline import SerializedRunArtifacts, StoredMasterCv
+from clearscout.application.tailoring.stages.jobspec import StoredPostingName
+from clearscout.application.tailoring.workflows import BatchOutput, ScreenOutput, TailorOutput
+from clearscout.domain import ArtifactLogicalType, TailoringOutcome
+from clearscout.shared.costs import CallManifest, Ledger, Usage
 
 
 def serialized_artifacts(

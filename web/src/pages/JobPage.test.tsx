@@ -112,7 +112,7 @@ async function renderFitAdvanced() {
 }
 
 async function runDisputeRefresh(kind: "extraction" | "fit" = "extraction") {
-  window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+  window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
   await renderFitAdvanced();
   fireEvent.click(
     await screen.findByRole("button", {
@@ -128,7 +128,7 @@ async function runDisputeRefresh(kind: "extraction" | "fit" = "extraction") {
 
 describe("JobPage", () => {
   it("records an earlier application time and offers a valid next status", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     let current = jobDetail({ application_status: "package_ready", application_event_count: 1 });
     const submitted: { status: string; occurred_at: string }[] = [];
     installJob({ detail: () => current, parameters: NO_SAVED_PLACES });
@@ -173,7 +173,7 @@ describe("JobPage", () => {
   });
 
   it("keeps concrete fit-section links in browser history under one Fit workspace", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     installJob({ detail: detail, parameters: NO_SAVED_PLACES });
     render(
       <AppProviders>
@@ -193,7 +193,7 @@ describe("JobPage", () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByText(/TailorCV default/)).toBeTruthy();
+    expect(await screen.findByText(/ClearScout default/)).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Fit" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("tab", { name: "Evaluation" }).getAttribute("aria-selected")).toBe(
       "true",
@@ -203,14 +203,14 @@ describe("JobPage", () => {
       "/jobs/job-1?tab=evidence",
     );
     fireEvent.click(screen.getByRole("button", { name: "History back" }));
-    expect(await screen.findByText(/TailorCV default/)).toBeTruthy();
+    expect(await screen.findByText(/ClearScout default/)).toBeTruthy();
     expect(screen.getByLabelText("Current job location").textContent).toBe(
       "/jobs/job-1?tab=evaluation",
     );
   });
 
   it("explains append-only status changes before writing one", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const correctedDetail = jobDetail({
       application_status: "not_applied",
       application_events: [
@@ -283,7 +283,7 @@ describe("JobPage", () => {
   });
 
   it("shows authoritative latest facts outside the loaded observation page", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     installJob({ detail: detail, parameters: NO_SAVED_PLACES });
     render(
       <AppProviders>
@@ -308,7 +308,7 @@ describe("JobPage", () => {
   });
 
   it("marks the current evaluation as describing an earlier posting when the body changed", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const changedPosting = jobDetail({
       evaluation_inputs: [
         {
@@ -347,7 +347,7 @@ describe("JobPage", () => {
   });
 
   it("withholds a location that cannot be a place and shows the stated residence rule", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const residence =
       "Applicants must be authorized to work in the U.S. and reside in one of the states where the company is registered as an employer.";
     const prose = jobDetail({
@@ -375,7 +375,7 @@ describe("JobPage", () => {
   });
 
   it("names an eligibility reading only while the workspace still states its place", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const readings = jobDetail({
       eligibility_records: [
         ...detail.eligibility_records,
@@ -408,7 +408,7 @@ describe("JobPage", () => {
   });
 
   it("leads an uncited requirement with its own text and qualifies the verdict chip", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const uncited = jobDetail({
       unsupported: [],
       evidence: [
@@ -445,7 +445,7 @@ describe("JobPage", () => {
   });
 
   it("places a hard-gate quote on the gate card the fit report pairs it with", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const gated = jobDetail({
       unsupported: [],
       requirements: [
@@ -511,7 +511,7 @@ describe("JobPage", () => {
   });
 
   it("shows reconstructable arithmetic and makes unsupported findings loud", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     installJob({ detail: detail });
     render(
       <AppProviders>
@@ -522,7 +522,7 @@ describe("JobPage", () => {
         </MemoryRouter>
       </AppProviders>,
     );
-    expect(await screen.findByText(/TailorCV default/)).toBeTruthy();
+    expect(await screen.findByText(/ClearScout default/)).toBeTruthy();
     expect(screen.getByText("31.50")).toBeTruthy();
     expect(screen.getByText("v2").textContent).toContain("current");
     expect(screen.getByText("v1")).toBeTruthy();
@@ -534,7 +534,7 @@ describe("JobPage", () => {
   });
 
   it("pages retained application events without loading the whole timeline", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const jobNote = {
       archived_at: null,
       body: "Interview preparation",
@@ -587,7 +587,7 @@ describe("JobPage", () => {
   });
 
   it("pairs each requirement with its evidence, unanswered first, and counts the coverage", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const longAsk = `Deep experience with distributed systems. ${"Detail that keeps going. ".repeat(20)}`;
     const paired = jobDetail({
       unsupported: [],
@@ -734,7 +734,7 @@ describe("JobPage", () => {
   });
 
   it("names the job id and offers a way back when the id is not in this workspace", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     installJob({
       onDetailRequest: () => HttpResponse.json({ detail: "job not found" }, { status: 404 }),
     });
@@ -761,7 +761,7 @@ describe("JobPage", () => {
   });
 
   it("hides the paid re-check button when the workspace has not opted in", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const disabled = jobDetail({
       enable_dispute_reextraction: false,
       disputed_extraction_ruling_count: 3,
@@ -783,7 +783,7 @@ describe("JobPage", () => {
   });
 
   it("hides the paid re-check button when no disputes are active", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const empty = jobDetail({
       enable_dispute_reextraction: true,
       disputed_extraction_ruling_count: 0,
@@ -805,7 +805,7 @@ describe("JobPage", () => {
   });
 
   it("enqueues the paid re-check when both flag and count qualify", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const enabled = jobDetail({
       enable_dispute_reextraction: true,
       disputed_extraction_ruling_count: 2,
@@ -840,7 +840,7 @@ describe("JobPage", () => {
   });
 
   it("enqueues fit re-match only from its own flag and count", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const enabled = jobDetail({
       enable_dispute_rematch: true,
       disputed_fit_ruling_count: 1,
@@ -1176,7 +1176,7 @@ describe("JobPage", () => {
       "",
       "posting.refresh",
     );
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     render(
       <AppProviders>
         <MemoryRouter initialEntries={["/jobs/job-1"]}>
@@ -1196,7 +1196,7 @@ describe("JobPage", () => {
   });
 
   it("enqueues a paid re-run evaluation from the page actions", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const evaluation = (status: Task["status"]) =>
       taskRecord({
         id: "task-eval",
@@ -1258,7 +1258,7 @@ describe("JobPage", () => {
   });
 
   it("announces why a paid re-run evaluation failed", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const evaluation = (status: Task["status"], error: string | null) =>
       taskRecord({
         id: "task-eval",
@@ -1313,7 +1313,7 @@ describe("JobPage", () => {
   });
 
   it("names the re-run when its enqueue is refused outright", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     installJob({
       onEnqueueRefused: () =>
         HttpResponse.json(
@@ -1341,7 +1341,7 @@ describe("JobPage", () => {
   });
 
   it("hides Re-run evaluation for an archived job", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const archived = { ...detail, archived_at: "2026-08-10T12:00:00Z" };
     installJob({ detail: archived });
     render(
@@ -1362,7 +1362,7 @@ describe("JobPage", () => {
     ["an archived job", { archived_at: "2026-08-10T12:00:00Z" }],
     ["a job with no stored fit report", { fit_report_available: false }],
   ])("offers no fit report export for %s", async (_label, change) => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     installJob({ detail: { ...detail, ...change } });
     render(
       <AppProviders>
@@ -1378,7 +1378,7 @@ describe("JobPage", () => {
   });
 
   it("shows orphaned rulings when a re-evaluation dropped their requirement", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const withOrphan = jobDetail({
       orphaned_ruling_count: 1,
       orphaned_rulings: [
@@ -1409,7 +1409,7 @@ describe("JobPage", () => {
   });
 
   const renderRerunConfirmation = async (observedAt: string) => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const localDetail = jobDetail({
       latest_observation: { ...latestObservation, observed_at: observedAt },
     });

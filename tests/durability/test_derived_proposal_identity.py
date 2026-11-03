@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tailorcv.domain.statements import derived_proposal_identity
+from clearscout.domain.statements import derived_proposal_identity
 
 
 def test_same_normalized_text_shares_identity() -> None:

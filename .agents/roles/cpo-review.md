@@ -1,6 +1,6 @@
 # Product review
 
-The product review for changes that alter what a person using TailorCV sees or
+The product review for changes that alter what a person using ClearScout sees or
 decides.
 
 ## When to dispatch
@@ -49,7 +49,7 @@ Read and inspect only; never edit. Never commit; return findings to the coordina
 3. Severity-ranked concerns, worst first, each tagged VERIFIED or ASSERTED.
 
 Block when the change would silently produce a wrong result for the person
-using TailorCV, or strand a workflow with no way forward. Ship-with-note is for
+using ClearScout, or strand a workflow with no way forward. Ship-with-note is for
 a real defect that can land and be fixed after, not a softer way to say block
 and not a place to park a preference.
 

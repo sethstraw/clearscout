@@ -16,18 +16,18 @@ from pathlib import Path
 
 import pytest
 from evals.inspect.scorers.match_classification import stored_classification_consistency
-from evals.inspect.solvers.tailorcv_replay import tailorcv_replay_solver
+from evals.inspect.solvers.clearscout_replay import clearscout_replay_solver
 
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.migration import upgrade
-from tailorcv.infrastructure.persistence.models.artifacts import Artifact
-from tailorcv.infrastructure.persistence.models.discovery import Employer, JobPosting
-from tailorcv.infrastructure.persistence.models.evaluations import (
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.migration import upgrade
+from clearscout.infrastructure.persistence.models.artifacts import Artifact
+from clearscout.infrastructure.persistence.models.discovery import Employer, JobPosting
+from clearscout.infrastructure.persistence.models.evaluations import (
     JobEvaluation,
     MatchEvidence,
     PostingRequirement,
 )
-from tailorcv.infrastructure.persistence.models.workspaces import Workspace
+from clearscout.infrastructure.persistence.models.workspaces import Workspace
 
 REQUIREMENT_KEY = "a1a1a1a1-1111-4111-8111-111111111111"
 
@@ -131,7 +131,7 @@ def _solve(url: str, posting_id: str, requirement_text: str) -> dict[str, object
             "database_url": url,
         },
     }
-    return dict(tailorcv_replay_solver()(sample))
+    return dict(clearscout_replay_solver()(sample))
 
 
 def test_stored_classification_is_independent_of_requirement_text(tmp_path: Path) -> None:
@@ -198,8 +198,8 @@ def test_a_stored_gap_row_is_credited_as_a_gap(tmp_path: Path) -> None:
 
 
 def test_replay_refuses_a_sample_without_ledger_identity(monkeypatch) -> None:
-    monkeypatch.delenv("TAILORCV_EVAL_DATABASE_URL", raising=False)
-    solver = tailorcv_replay_solver()
+    monkeypatch.delenv("CLEARSCOUT_EVAL_DATABASE_URL", raising=False)
+    solver = clearscout_replay_solver()
 
     with pytest.raises(ValueError, match="posting_id"):
         solver({"metadata": {}})

@@ -10,30 +10,30 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.proposals import SearchTitleProposalService
-from tailorcv.application.discovery.scan_outcome import INCOMPLETE_READ_NOTE
-from tailorcv.application.discovery.scan_sweep import BoardSweep
-from tailorcv.application.discovery.source_continuation import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.proposals import SearchTitleProposalService
+from clearscout.application.discovery.scan_outcome import INCOMPLETE_READ_NOTE
+from clearscout.application.discovery.scan_sweep import BoardSweep
+from clearscout.application.discovery.source_continuation import (
     MANUAL_RECOVERY_NOTE,
     MAX_AUTOMATIC_ATTEMPTS,
     POSTING_DETAIL_COMPLETED,
     SourceContinuationCommands,
 )
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceDetailSummary,
     SourceRead,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import SearchProposalState, SourceReadOutcome, TaskStatus, new_id, utc_now
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.statements import derived_proposal_identity
-from tailorcv.domain.task_types import TaskType
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import SearchProposalState, SourceReadOutcome, TaskStatus, new_id, utc_now
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.statements import derived_proposal_identity
+from clearscout.domain.task_types import TaskType
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
     CandidateProfile,
     DerivedSearchTitle,
@@ -59,16 +59,16 @@ def test_cancellation_while_staging_waits_prevents_source_writes(
     from concurrent.futures import ThreadPoolExecutor
     from contextlib import contextmanager
 
-    from tailorcv.application.discovery.board_scan import SourceScanHandler
-    from tailorcv.application.discovery.scan_staging import DiscoveryStaging
-    from tailorcv.application.discovery.source_continuation import SourceContinuationHandler
-    from tailorcv.application.discovery.source_reading import SourceListing
-    from tailorcv.application.tasks import TaskHandler
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.application.discovery.board_scan import SourceScanHandler
+    from clearscout.application.discovery.scan_staging import DiscoveryStaging
+    from clearscout.application.discovery.source_continuation import SourceContinuationHandler
+    from clearscout.application.discovery.source_reading import SourceListing
+    from clearscout.application.tasks import TaskHandler
+    from clearscout.infrastructure.persistence.models import (
         PendingDiscovery,
         PendingDiscoveryDispositionEvent,
     )
-    from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
+    from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
     from tests.support.scenarios import (
         published_location_facts,
         state_single_market,
@@ -489,11 +489,11 @@ def test_a_continuation_abandoned_at_its_time_limit_is_charged_once_and_rearmed_
         try:
             original_run(thread)
         finally:
-            if thread.name.startswith("tailorcv-task-"):
+            if thread.name.startswith("clearscout-task-"):
                 reader_or_handler_done.set()
 
     def join_after_entry_or_completion(thread: Thread, timeout: float | None = None) -> None:
-        if thread.name.startswith("tailorcv-task-"):
+        if thread.name.startswith("clearscout-task-"):
             reader_or_handler_done.wait()
             original_join(thread, timeout=0)
         else:
@@ -875,7 +875,7 @@ def test_a_same_day_rescan_keeps_pending_work_and_retries_a_failed_link_exactly_
 def test_cancelling_a_completed_batch_stops_its_children_and_preserves_the_frontier(
     durable_database: Database,
 ) -> None:
-    from tailorcv.infrastructure.persistence.models import SourceScanMember
+    from clearscout.infrastructure.persistence.models import SourceScanMember
 
     workspace_id, source_id = _workspace_with_source(durable_database)
     target = f"{BOARD}/retained"
@@ -917,7 +917,7 @@ def test_cancelling_a_completed_batch_stops_its_children_and_preserves_the_front
 def test_retrying_a_cancelled_continuation_requires_resume_without_enqueuing_stale_work(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.failures import ValidationError
+    from clearscout.application.failures import ValidationError
 
     workspace_id, _source_id = _workspace_with_source(durable_database)
     board = _DrainingBoard(_deferring_read(_target(f"{BOARD}/retained")))
@@ -935,7 +935,10 @@ def test_retrying_a_cancelled_continuation_requires_resume_without_enqueuing_sta
 def test_first_manual_continuation_admits_ownership_before_competing_scan(
     durable_database: Database,
 ) -> None:
-    from tailorcv.infrastructure.persistence.models import SourceScanContinuation, SourceScanMember
+    from clearscout.infrastructure.persistence.models import (
+        SourceScanContinuation,
+        SourceScanMember,
+    )
     from tests.support.scenarios import state_target_titles
 
     workspace_id, source_id = _workspace_with_source(durable_database)
@@ -996,7 +999,7 @@ def test_a_continuing_holder_yields_its_source_only_when_nothing_can_continue_it
     task_type: TaskType,
     adopted: bool,
 ) -> None:
-    from tailorcv.infrastructure.persistence.models import SourceScanMember
+    from clearscout.infrastructure.persistence.models import SourceScanMember
     from tests.support.scenarios import state_target_titles
 
     workspace_id, source_id = _workspace_with_source(durable_database)
@@ -1041,8 +1044,8 @@ def test_a_continuing_holder_yields_its_source_only_when_nothing_can_continue_it
 def test_a_superseded_frontier_is_refused_before_task_admission(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.failures import ValidationError
-    from tailorcv.infrastructure.persistence.models import SourceScanMember
+    from clearscout.application.failures import ValidationError
+    from clearscout.infrastructure.persistence.models import SourceScanMember
 
     workspace_id, source_id = _workspace_with_source(durable_database)
     old_scan = _scan_row(durable_database, source_id, -1)
@@ -1076,8 +1079,8 @@ def test_a_failed_read_release_preserves_ownership_until_restart_then_resume(
 
     from sqlalchemy.orm import Session
 
-    from tailorcv.application.failures import ConflictError, UnavailableError
-    from tailorcv.infrastructure.persistence.models import SourceScanMember
+    from clearscout.application.failures import ConflictError, UnavailableError
+    from clearscout.infrastructure.persistence.models import SourceScanMember
     from tests.support.scenarios import state_target_titles
 
     workspace_id, source_id = _workspace_with_source(durable_database)
@@ -1142,11 +1145,11 @@ def test_a_reader_dying_after_its_final_detail_releases_ownership_when_reclaimed
 ) -> None:
     from typing import Any
 
-    from tailorcv.application.discovery.board_scan import SourceScanHandler
-    from tailorcv.application.discovery.source_continuation import SourceContinuationHandler
-    from tailorcv.application.discovery.source_reading import SourceListing
-    from tailorcv.application.tasks.leases import DEFAULT_TASK_LEASE_SECONDS
-    from tailorcv.infrastructure.persistence.models import (
+    from clearscout.application.discovery.board_scan import SourceScanHandler
+    from clearscout.application.discovery.source_continuation import SourceContinuationHandler
+    from clearscout.application.discovery.source_reading import SourceListing
+    from clearscout.application.tasks.leases import DEFAULT_TASK_LEASE_SECONDS
+    from clearscout.infrastructure.persistence.models import (
         PendingDiscovery,
         SourceScanMember,
         SourceScanOutcome,
@@ -1221,9 +1224,9 @@ def test_a_reader_dying_after_its_final_detail_releases_ownership_when_reclaimed
     )
     worker.queue = queue
     now = utc_now()
-    monkeypatch.setattr("tailorcv.application.tasks.leases.utc_now", lambda: now)
+    monkeypatch.setattr("clearscout.application.tasks.leases.utc_now", lambda: now)
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.local_process_started_at", lambda _pid: "reader-start"
+        "clearscout.bootstrap.local_runtime.local_process_started_at", lambda _pid: "reader-start"
     )
 
     def crash_before_release(*args: Any, **kwargs: Any) -> None:
@@ -1299,8 +1302,11 @@ def test_resuming_a_cancelled_batch_reads_its_retained_frontier_without_rereadin
 ) -> None:
     from typing import cast
 
-    from tailorcv.application.discovery.source_reading import SourceReadOptions
-    from tailorcv.infrastructure.persistence.models import SourceScanContinuation, SourceScanMember
+    from clearscout.application.discovery.source_reading import SourceReadOptions
+    from clearscout.infrastructure.persistence.models import (
+        SourceScanContinuation,
+        SourceScanMember,
+    )
     from tests.support.scenarios import state_target_titles
 
     workspace_id, source_id = _workspace_with_source(durable_database)

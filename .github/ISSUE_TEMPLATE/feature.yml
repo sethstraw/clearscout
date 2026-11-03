@@ -25,7 +25,7 @@ body:
     id: boundaries
     attributes:
       label: Scope check
-      description: tailorcv writes a reviewable local package and keeps a local record of your own search. Rendering and submitting an application are deliberately out of scope.
+      description: clearscout writes a reviewable local package and keeps a local record of your own search. Rendering and submitting an application are deliberately out of scope.
       options:
-        - label: This does not ask tailorcv to render a document or submit an application.
+        - label: This does not ask clearscout to render a document or submit an application.
           required: true

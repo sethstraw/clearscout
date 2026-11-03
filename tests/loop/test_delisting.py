@@ -13,20 +13,23 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.application.discovery.posting_text import closure_signal
-from tailorcv.domain.records import PostingReadIntent
-from tailorcv.domain.staged_facts import ListingIdentityTrust
-from tailorcv.infrastructure.web_fetch.ingest.url import (
+from clearscout.application.discovery.posting_text import closure_signal
+from clearscout.domain.records import PostingReadIntent
+from clearscout.domain.staged_facts import ListingIdentityTrust
+from clearscout.infrastructure.web_fetch.ingest.url import (
     PublisherReadRefusedError,
     check_posting,
     from_url,
     shared_posting_feeds,
     workday_posting_detail,
 )
-from tailorcv.infrastructure.web_fetch.ingest.url.addresses import redirected_off_the_posting
-from tailorcv.infrastructure.web_fetch.ingest.url.platform_readers import check_lever, check_workday
-from tailorcv.infrastructure.web_fetch.policy import RobotsDeniedError
-from tailorcv.shared.errors import IngestError
+from clearscout.infrastructure.web_fetch.ingest.url.addresses import redirected_off_the_posting
+from clearscout.infrastructure.web_fetch.ingest.url.platform_readers import (
+    check_lever,
+    check_workday,
+)
+from clearscout.infrastructure.web_fetch.policy import RobotsDeniedError
+from clearscout.shared.errors import IngestError
 from tests.support.http import DAYFORCE_POSTING_URL, CountingFeedClient, dayforce_feed_row
 
 _ASHBY_URL = "https://jobs.ashbyhq.com/globex/3c9a7e14-8b2d-4f6a-a1c5-7d0e9b2f4c81"
@@ -36,7 +39,7 @@ _ASHBY_URL = "https://jobs.ashbyhq.com/globex/3c9a7e14-8b2d-4f6a-a1c5-7d0e9b2f4c
 def _no_retry_sleep(monkeypatch: pytest.MonkeyPatch) -> None:
     """The retryable-status pause is irrelevant to these deterministic router tests."""
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.ingest.url.transport.time.sleep", lambda *_: None
+        "clearscout.infrastructure.web_fetch.ingest.url.transport.time.sleep", lambda *_: None
     )
 
 
@@ -471,7 +474,7 @@ def test_one_deadline_bounds_every_read_of_a_workday_liveness_check(
     """A slow tenant's searches share the detail read's deadline rather than each taking one."""
     now = [1000.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.ingest.url.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.ingest.url.transport.time.monotonic", lambda: now[0]
     )
 
     class _SlowRouter(_Router):

@@ -8,16 +8,16 @@ from datetime import UTC, datetime
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.missed_requirement_reader import (
+from clearscout.application.discovery.missed_requirement_reader import (
     missed_requirement_texts_in,
     normalize,
     refresh_for_evaluation,
 )
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import utc_now
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.failures import ValidationError
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import utc_now
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     CandidateProfile,
     Employer,
     JobEvaluation,

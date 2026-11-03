@@ -25,19 +25,19 @@ from evals.inspect.scorers.document_checks import (
     verifier_result,
 )
 from evals.inspect.solvers import document_live
+from evals.inspect.solvers.clearscout_live import prompt_snapshot_fingerprint
 from evals.inspect.solvers.document_scripted import (
     cover_scripted_solver,
     critic_scripted_solver,
     draft_scripted_solver,
 )
-from evals.inspect.solvers.tailorcv_live import prompt_snapshot_fingerprint
 from evals.support.documents import DocumentSampleError, document_context
 
-from tailorcv.application.config import ProviderName, Settings, Stage
-from tailorcv.application.prompts import load
-from tailorcv.application.tailoring.runs import settings_hash
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.config import ProviderName, Settings, Stage
+from clearscout.application.prompts import load
+from clearscout.application.tailoring.runs import settings_hash
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.errors import ConfigError
 
 TASKS = Path(__file__).resolve().parents[2] / "evals" / "inspect" / "tasks"
 FIXTURES = Path(__file__).resolve().parents[2] / "evals" / "fixtures"
@@ -447,7 +447,7 @@ def test_a_live_document_run_refuses_without_explicit_paid_consent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The live families spend money, so an absent approval stops the run before any call."""
-    monkeypatch.delenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", raising=False)
 
     with pytest.raises(RuntimeError, match="paid-run consent"):
         document_live.document_live_solver(Stage.DRAFT, FIXTURES / "draft_cases.jsonl")
@@ -462,8 +462,8 @@ def test_a_live_document_run_refuses_a_stage_no_family_owns() -> None:
 @pytest.mark.parametrize(
     ("variable", "value", "field", "shipped"),
     [
-        ("TAILORCV_EVAL_LIVE_MODEL", "gpt-6-luna", "model", "gpt-6.1-sol"),
-        ("TAILORCV_EVAL_LIVE_EFFORT", "low", "effort", "medium"),
+        ("CLEARSCOUT_EVAL_LIVE_MODEL", "gpt-6-luna", "model", "gpt-6.1-sol"),
+        ("CLEARSCOUT_EVAL_LIVE_EFFORT", "low", "effort", "medium"),
     ],
 )
 def test_a_live_document_run_sends_the_choice_the_run_names_to_its_stage_only(
@@ -478,7 +478,7 @@ def test_a_live_document_run_sends_the_choice_the_run_names_to_its_stage_only(
     """The paid stage takes the named choice and records it; other stages keep theirs."""
     from evals.support import client as eval_client
 
-    from tailorcv.infrastructure.persistence.models.workspaces import Workspace
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
     from tests.support.doubles import FakeProvider
 
     database = Database(durable_database_url)
@@ -487,13 +487,13 @@ def test_a_live_document_run_sends_the_choice_the_run_names_to_its_stage_only(
             session.add(Workspace(slug="ws", name="Workspace"))
     finally:
         database.dispose()
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
     monkeypatch.setenv(variable, value)
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "development")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "5")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
     monkeypatch.setattr(document_live, "credential_for", lambda provider: "test-key")
     monkeypatch.setattr(eval_client, "provider_for", lambda provider, key: FakeProvider())
     built: list[Any] = []
@@ -537,12 +537,12 @@ def test_a_live_document_run_refuses_an_effort_the_model_does_not_have(
     message: str,
 ) -> None:
     """An effort outside the vocabulary or the model's own ladder stops the run before any call."""
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_EFFORT", effort)
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "development")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "5")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_EFFORT", effort)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
 
     with pytest.raises(error, match=message):
         document_live.document_live_solver(Stage.CRITIC, FIXTURES / "draft_cases.jsonl")
@@ -556,7 +556,7 @@ def test_a_live_critic_row_keeps_what_each_draw_doubted_flagged_and_advised(
 
     from evals.support import client as eval_client
 
-    from tailorcv.infrastructure.persistence.models.workspaces import Workspace
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
     from tests.support.doubles import ScriptedProvider
 
     database = Database(durable_database_url)
@@ -565,12 +565,12 @@ def test_a_live_critic_row_keeps_what_each_draw_doubted_flagged_and_advised(
             session.add(Workspace(slug="ws", name="Workspace"))
     finally:
         database.dispose()
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "development")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "5")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
     scores = {
         "alignment": 4,
         "preservation": 4,
@@ -623,7 +623,7 @@ def test_a_live_letter_critique_is_asked_as_the_product_asks_about_a_letter(
 
     from evals.support import client as eval_client
 
-    from tailorcv.infrastructure.persistence.models.workspaces import Workspace
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
     from tests.support.doubles import ScriptedProvider
 
     database = Database(durable_database_url)
@@ -632,12 +632,12 @@ def test_a_live_letter_critique_is_asked_as_the_product_asks_about_a_letter(
             session.add(Workspace(slug="ws", name="Workspace"))
     finally:
         database.dispose()
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "development")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "5")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
     sample = _case("critic_cases.jsonl", "letter_company_paragraph")
     verdict = sample["metadata"]["scripted_verdict"]
     provider = ScriptedProvider(script={"CriticVerdict": lambda _schema: verdict})
@@ -664,7 +664,7 @@ def test_a_live_document_run_binds_its_stage_prompts_and_dataset_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, durable_database_url: str
 ) -> None:
     """The log has to prove which prompts and which dataset the money was spent on."""
-    from tailorcv.infrastructure.persistence.models.workspaces import Workspace
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
 
     database = Database(durable_database_url)
     try:
@@ -672,12 +672,12 @@ def test_a_live_document_run_binds_its_stage_prompts_and_dataset_bytes(
             session.add(Workspace(slug="ws", name="Workspace"))
     finally:
         database.dispose()
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", durable_database_url)
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "development")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "5")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
     dataset = FIXTURES / "draft_cases.jsonl"
 
     solver = document_live.document_live_solver(Stage.CRITIC, dataset)

@@ -8,13 +8,13 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.infrastructure.web_fetch.board_adapters import (
     BOARD_ADAPTER_REGISTRY,
     BoardApiFetcher,
     identify_board,
 )
-from tailorcv.infrastructure.web_fetch.board_reads import page_continuation_target
-from tailorcv.infrastructure.web_fetch.boards import job_board_address
+from clearscout.infrastructure.web_fetch.board_reads import page_continuation_target
+from clearscout.infrastructure.web_fetch.boards import job_board_address
 from tests.support.http import policy_client
 
 _ROOT = "https://www.deel.com/careers/"

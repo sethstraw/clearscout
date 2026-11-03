@@ -1,6 +1,6 @@
 # AI-assisted development
 
-Claude and Codex contributed substantially to TailorCV's implementation, tests,
+Claude and Codex contributed substantially to ClearScout's implementation, tests,
 and prose. I own the requirements, acceptance, review, release, support, and
 every decision about what the program is allowed to claim.
 [How it was built](agent-workflow.md) describes the setup.

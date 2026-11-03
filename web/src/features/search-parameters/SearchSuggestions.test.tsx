@@ -193,7 +193,7 @@ describe("SearchSuggestions", () => {
     ).toBeTruthy();
     expect(within(titleCard!).getByText(/Later search campaigns, board scans/)).toBeTruthy();
     const rationale = within(titleCard!).getByLabelText(
-      "Why TailorCV suggested Streaming Platform Engineer",
+      "Why ClearScout suggested Streaming Platform Engineer",
     );
     fireEvent.click(rationale);
     expect(within(titleCard!).getByText("Owned streaming ingestion.")).toBeTruthy();

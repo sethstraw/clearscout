@@ -7,15 +7,15 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError as PydanticValidationError
 
-from tailorcv.application.contracts import (
+from clearscout.application.contracts import (
     CompensationInput,
     EligibilityInput,
     EvaluationCommit,
     ScoreComponentInput,
 )
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.job_search._support import _assert_score_traceability
-from tailorcv.infrastructure.persistence.models import EvaluationScore
+from clearscout.application.failures import ValidationError
+from clearscout.application.job_search._support import _assert_score_traceability
+from clearscout.infrastructure.persistence.models import EvaluationScore
 from tests.support.scenarios import evaluation_commit
 
 

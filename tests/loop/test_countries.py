@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.domain import countries
-from tailorcv.domain.places import PlaceReader
+from clearscout.domain import countries
+from clearscout.domain.places import PlaceReader
 
 
 @pytest.mark.parametrize(

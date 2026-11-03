@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from tailorcv.application.tailoring.guardrail_preview import (
+from clearscout.application.tailoring.guardrail_preview import (
     GuardrailPreviewReport,
     preview_against_master_cv,
 )
-from tailorcv.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.guardrails import Guardrails
 
 CV = """\
 # Jane Q. Example

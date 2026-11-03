@@ -32,13 +32,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from clearscout.infrastructure.providers.base import Finish, UnusableResponseError
+from clearscout.shared.errors import ClearscoutError
 from evals.inspect.labeling import bytes_sha256
 from evals.inspect.outcomes import BatchOutcome, FailedCall
 from evals.inspect.product_questions import ProductQuestion
 from evals.semantic import StageMeasurement
 from evals.support.jobspec import canonical_job_spec
-from tailorcv.infrastructure.providers.base import Finish, UnusableResponseError
-from tailorcv.shared.errors import TailorcvError
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_LOG_DIR = REPO_ROOT / "reports" / "eval"
@@ -898,7 +898,7 @@ def main(argv: list[str] | None = None) -> int:
         AttributeError,
         ValueError,
         RuntimeError,
-        TailorcvError,
+        ClearscoutError,
     ) as error:
         print(f"eval runner error: {error}", file=sys.stderr)
         return 1

@@ -7,22 +7,22 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.proposals import RefusalPatternProposalService
-from tailorcv.application.discovery.refusal_patterns import (
+from clearscout.application.discovery.proposals import RefusalPatternProposalService
+from clearscout.application.discovery.refusal_patterns import (
     RefusedPosting,
     file_refusal,
     refresh_for_workspace,
 )
-from tailorcv.application.failures import ConflictError
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.parameters import SearchParametersService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import (
+from clearscout.application.failures import ConflictError
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.parameters import SearchParametersService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -31,20 +31,22 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.search_parameters import (
     Arrangement,
     JobSearchParameters,
     Location,
     Seniority,
 )
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     PendingDiscovery,
     PostingRefusal,
     RefusalPatternProposal,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.infrastructure.web_fetch.posting_resolution import DeterministicPostingContentResolver
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.posting_resolution import (
+    DeterministicPostingContentResolver,
+)
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import dismiss_pending_discovery, seed_pending_discovery, titles
 

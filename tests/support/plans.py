@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tailorcv.application.config import Stage
-from tailorcv.infrastructure.providers.plan import Image, RequestPlan, SearchPolicy, Segment
+from clearscout.application.config import Stage
+from clearscout.infrastructure.providers.plan import Image, RequestPlan, SearchPolicy, Segment
 
 
 def plan_for(

@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from tailorcv.application.master_cv.cv import Entry, EntryKind
-from tailorcv.application.tailoring.stages.context import chronology_block, citable_entries
-from tailorcv.application.tailoring.stages.draft import (
+from clearscout.application.master_cv.cv import Entry, EntryKind
+from clearscout.application.tailoring.stages.context import chronology_block, citable_entries
+from clearscout.application.tailoring.stages.draft import (
     CoverLetter,
     Document,
     DraftedLine,
@@ -23,9 +23,14 @@ from tailorcv.application.tailoring.stages.draft import (
     skill_items,
     skill_placements,
 )
-from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.stages.select import build_plan
+from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.stages.select import build_plan
 from tests.support.resumes import (
     DETAIL,
     DETAILED_BULLET,
@@ -208,7 +213,7 @@ def test_section_names_are_configurable(inventory, settings, guardrails):
 def test_the_document_never_carries_an_annotation(inventory, settings, guardrails):
     plan, kafka, registry = plan_for(inventory, settings)
     markdown = Document(drafted(kafka, registry), inventory, plan, settings, guardrails).markdown()
-    for marker in ("<!--", "Generated", "tailorcv", "Revision", "Draft"):
+    for marker in ("<!--", "Generated", "clearscout", "Revision", "Draft"):
         assert marker not in markdown
 
 
@@ -293,7 +298,7 @@ def test_a_settings_authorization_line_replaces_the_masters_rather_than_joining_
     The settings version wins because it was written for derivatives, and every
     line that is not about authorization survives.
     """
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     record = parse_cv(_cv_stating_authorization(tmp_path))
     guardrails.work_authorization = (
@@ -316,7 +321,7 @@ def test_the_masters_own_statement_survives_when_settings_supply_none(
     tmp_path, settings, guardrails
 ) -> None:
     """Dropping it unconditionally would lose the fact rather than deduplicate it."""
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     record = parse_cv(_cv_stating_authorization(tmp_path))
     guardrails.work_authorization = None
@@ -328,7 +333,7 @@ def test_the_masters_own_statement_survives_when_settings_supply_none(
 
 def test_a_derivative_omits_the_contact_lines_the_user_named(tmp_path, settings, guardrails):
     """The master CV is the superset. A resume header is expensive space."""
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     source = tmp_path / "CV.md"
     source.write_text(
@@ -381,8 +386,8 @@ def test_a_long_record_is_drafted_to_within_two_lines_of_the_page_budget(
     Drafts run shorter than their sources, so selecting only what the page
     holds at master length would print a short page.
     """
-    from tailorcv.application.tailoring.layout import Budget, markdown_lines
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.layout import Budget, markdown_lines
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -408,8 +413,8 @@ def test_a_long_record_is_drafted_to_within_two_lines_of_the_page_budget(
 
 def test_fit_keeps_one_of_two_weak_answers_to_a_must_have(tmp_path, settings, guardrails):
     """Both answers rank last, so a drop order read as a plain prefix removes both."""
-    from tailorcv.application.tailoring.stages.draft import fit
-    from tailorcv.application.tailoring.stages.verify import check
+    from clearscout.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.stages.verify import check
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -441,7 +446,7 @@ def test_fit_keeps_one_of_two_weak_answers_to_a_must_have(tmp_path, settings, gu
 
 def test_fit_never_drops_an_entry_the_summary_cites(tmp_path, settings, guardrails):
     """The summary would still make the claim the dropped bullet was its evidence for."""
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -465,7 +470,7 @@ def test_fit_trims_roles_past_the_cap_level_by_level(tmp_path, settings, guardra
     Trimming the weakest over-cap bullets first would empty the oldest role back to
     the cap, because recency is part of every bullet's score.
     """
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -484,8 +489,8 @@ def test_fit_trims_roles_past_the_cap_level_by_level(tmp_path, settings, guardra
 
 
 def test_a_draft_too_long_to_fit_says_how_far_over_it_runs(tmp_path, settings, guardrails):
-    from tailorcv.application.tailoring.layout import Budget
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.layout import Budget
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -525,7 +530,7 @@ def _merged(written: ResumeDraft, first: str, partner: str) -> ResumeDraft:
 
 def test_an_entry_whose_merged_line_still_prints_is_on_the_page(tmp_path, settings, guardrails):
     """A bullet citing two entries prints while either survives; losing one removes nothing."""
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -547,7 +552,7 @@ def test_a_planned_bullet_the_drafter_left_out_is_never_counted_as_trimmed(
     tmp_path, settings, guardrails
 ):
     """It was never on the page, so --trim N must take N entries that were."""
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -577,7 +582,7 @@ def test_a_planned_bullet_the_drafter_left_out_is_never_counted_as_trimmed(
 
 
 def test_a_merged_line_leaves_the_page_with_both_its_entries(tmp_path, settings, guardrails):
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -597,7 +602,7 @@ def test_fit_counts_only_what_the_page_prints_as_answering_a_must_have(
     tmp_path, settings, guardrails
 ):
     """A drafted role the page never prints answers nothing, however many lines cite it."""
-    from tailorcv.application.tailoring.stages.draft import fit
+    from clearscout.application.tailoring.stages.draft import fit
 
     record = long_record(tmp_path)
     bullets = bullet_ids(record)
@@ -653,8 +658,8 @@ SKILLS = "- Python\n\n**Platforms:** Kafka, Terraform\n\n**Data**\n\n- lineage\n
 
 def _drafted_skills(tmp_path, settings, guardrails, client_factory, skills, *lines):
     """Draft skills lines, each given as its text, the entry-text prefixes it cites, and extras."""
-    from tailorcv.application.master_cv.cv import parse_cv
-    from tailorcv.application.tailoring.stages.draft import draft
+    from clearscout.application.master_cv.cv import parse_cv
+    from clearscout.application.tailoring.stages.draft import draft
 
     record = parse_cv(
         tmp_path / "CV.md",
@@ -1051,7 +1056,7 @@ def test_a_skills_line_may_cite_only_skill_entries_and_names_no_heading() -> Non
 def test_the_letter_greeting_and_sign_off_are_written_by_the_program(
     inventory, settings, guardrails, client_factory
 ) -> None:
-    from tailorcv.application.tailoring.stages.draft import cover_letter
+    from clearscout.application.tailoring.stages.draft import cover_letter
 
     plan, kafka, _ = plan_for(inventory, settings)
     paragraph = {"text": "I rebuilt ingestion on Kafka.", "source_ids": [kafka]}
@@ -1071,7 +1076,7 @@ def test_the_letter_file_opens_on_a_letterhead_copied_from_the_master_cv(
     inventory, settings, guardrails, client_factory
 ) -> None:
     """The letter policy wants a name heading and one contact line, and the model writes neither."""
-    from tailorcv.application.tailoring.stages.draft import cover_letter
+    from clearscout.application.tailoring.stages.draft import cover_letter
 
     plan, kafka, _ = plan_for(inventory, settings)
     record = inventory.model_copy(
@@ -1104,10 +1109,10 @@ def test_the_letter_file_opens_on_a_letterhead_copied_from_the_master_cv(
 def test_the_program_types_each_letter_citation_by_where_its_id_came_from(
     inventory, settings, guardrails, client_factory
 ) -> None:
-    from tailorcv.application.tailoring.stages.draft import cover_letter
-    from tailorcv.application.tailoring.stages.verify import check_letter
-    from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
-    from tailorcv.shared.results import Outcome
+    from clearscout.application.tailoring.stages.draft import cover_letter
+    from clearscout.application.tailoring.stages.verify import check_letter
+    from clearscout.infrastructure.web_fetch.company_research import ResearchSource
+    from clearscout.shared.results import Outcome
 
     plan, kafka, _ = plan_for(inventory, settings)
     research = (
@@ -1146,7 +1151,7 @@ def test_the_letter_request_shows_every_drafted_entry_without_resume_layout_inst
     inventory, settings, guardrails, client_factory
 ) -> None:
     """The letter reads the resume's evidence, but not the resume's bullet counts."""
-    from tailorcv.application.tailoring.stages.draft import cover_letter
+    from clearscout.application.tailoring.stages.draft import cover_letter
     from tests.support.payloads import script
 
     plan, _, _ = plan_for(inventory, settings)
@@ -1176,7 +1181,7 @@ def test_no_writing_schema_asks_the_model_for_source_types(schema) -> None:
 def test_the_drafter_is_asked_for_an_earlier_career_line_only_when_an_earlier_role_prints(
     inventory, settings, guardrails, client_factory, earlier
 ) -> None:
-    from tailorcv.application.tailoring.stages.draft import draft
+    from clearscout.application.tailoring.stages.draft import draft
     from tests.support.payloads import script
     from tests.support.schema import declares
 
@@ -1203,7 +1208,7 @@ def test_the_drafter_is_asked_for_an_earlier_career_line_only_when_an_earlier_ro
 def test_production_draft_request_carries_requirement_meaning(
     inventory, settings, guardrails, client_factory
 ):
-    from tailorcv.application.tailoring.stages.draft import draft
+    from clearscout.application.tailoring.stages.draft import draft
     from tests.support.payloads import script
 
     target = spec().model_copy(

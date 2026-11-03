@@ -7,13 +7,13 @@ import pytest
 from hypothesis import example, given
 from hypothesis import strategies as st
 
-from tailorcv.application.discovery.board_slugs import (
+from clearscout.application.discovery.board_slugs import (
     backfilled_listing,
     publisher_spelling_of_host,
     publisher_spelling_of_tenant,
 )
-from tailorcv.application.discovery.scan_queries import refusal_text
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery.scan_queries import refusal_text
+from clearscout.application.discovery.screening import (
     BulkStagingRefusal,
     ConstraintConfidence,
     DiscoveryScreening,
@@ -34,8 +34,8 @@ from tailorcv.application.discovery.screening import (
     supports_bulk_staging,
     supports_title_expansion,
 )
-from tailorcv.application.discovery.source_reading import SourceListing
-from tailorcv.domain.search_parameters import (
+from clearscout.application.discovery.source_reading import SourceListing
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     Cluster,
@@ -50,13 +50,13 @@ from tailorcv.domain.search_parameters import (
     Seniority,
     WorkEligibility,
 )
-from tailorcv.domain.staged_facts import (
+from clearscout.domain.staged_facts import (
     ListingIdentityTrust,
     PublishedFact,
     StagedListingFacts,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.infrastructure.web_fetch.workday_arrangement import workday_arrangement_facts
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.workday_arrangement import workday_arrangement_facts
 from tests.support.scenarios import (
     DATA_PRODUCT_TARGET_TITLES,
     data_product_search,

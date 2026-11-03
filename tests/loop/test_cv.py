@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.master_cv.cv import (
+from clearscout.application.master_cv.cv import (
     EntryKind,
     content_hash,
     kind_for_section,
     normalize,
     parse_cv,
 )
-from tailorcv.shared.errors import CvParseError
+from clearscout.shared.errors import CvParseError
 
 
 def test_parses_front_matter_and_sections(inventory) -> None:

@@ -7,15 +7,15 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application import job_search
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.job_search.models import JobDetailResponse
-from tailorcv.application.job_search.postings import RequirementRulingService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.domain.rulings import Ruling
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import AuditEvent, PostingRequirement
+from clearscout.application import job_search
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.job_search.models import JobDetailResponse
+from clearscout.application.job_search.postings import RequirementRulingService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.domain.rulings import Ruling
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import AuditEvent, PostingRequirement
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import evaluation_commit
 from tests.support.scenarios import fit_report as _fit_report

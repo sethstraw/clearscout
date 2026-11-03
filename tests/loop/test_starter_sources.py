@@ -6,11 +6,11 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.starter_sources import StarterSourceInstaller
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain import SourceKind
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.starter_sources import StarterSourceInstaller
+from clearscout.bootstrap.api import create_app
+from clearscout.domain import SourceKind
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.scenarios import scan_workspace

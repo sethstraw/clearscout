@@ -18,8 +18,8 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.application.config import Effort, ModelChoice, ProviderName, Settings
-from tailorcv.shared.errors import AuthError
+from clearscout.application.config import Effort, ModelChoice, ProviderName, Settings
+from clearscout.shared.errors import AuthError
 from tests.support.fake_provider import FakeProviderAPI
 from tests.support.payloads import independent_script, script
 from tests.support.provider_clients import provider_for_http
@@ -37,7 +37,7 @@ def assert_a_whole_run_happened(result: Any, master_cv: Path) -> None:
     fabricated. These are properties the product promises, and they hold for any
     correct run regardless of wording.
     """
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     materialized = result.materialized
     assert materialized is not None, "the CLI-shaped run did not materialize its package"
@@ -86,12 +86,12 @@ def test_the_whole_pipeline_runs_through_the_real_sdk(
     vendor: ProviderName, master_cv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Ingest to written package, for each vendor, with no key and no network."""
-    from tailorcv.application.tailoring.pipeline import RunCommand, run
+    from clearscout.application.tailoring.pipeline import RunCommand, run
 
     api = FakeProviderAPI(vendor.value, independent_script())
     http = httpx.Client(transport=httpx.MockTransport(api))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider_for_http(vendor, http, max_retries=0),
     )
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
@@ -222,14 +222,14 @@ def test_a_request_offers_only_identifiers_that_exist(
     schema that was correct in Python and lost its enum on the way out would
     look identical to every other test in this suite.
     """
-    from tailorcv.application.master_cv.cv import parse_cv
-    from tailorcv.application.tailoring.pipeline import RunCommand, run
+    from clearscout.application.master_cv.cv import parse_cv
+    from clearscout.application.tailoring.pipeline import RunCommand, run
     from tests.support.schema import literals
 
     api = FakeProviderAPI(vendor.value, script({}))
     http = httpx.Client(transport=httpx.MockTransport(api))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider_for_http(vendor, http, max_retries=0),
     )
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")

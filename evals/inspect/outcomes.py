@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from tailorcv.infrastructure.providers.base import UnusableResponseError
+from clearscout.infrastructure.providers.base import UnusableResponseError
 
 
 @dataclass(frozen=True)

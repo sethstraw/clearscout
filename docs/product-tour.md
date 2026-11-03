@@ -1,10 +1,10 @@
-# Follow one requirement through TailorCV
+# Follow one requirement through ClearScout
 
 On real postings, the question behind a draft is simple: what in the career
 record supports this sentence? A score does not answer that. Neither does
 polished wording.
 
-This is a walk through how TailorCV keeps those questions close to the work.
+This is a walk through how ClearScout keeps those questions close to the work.
 You can also read the [prompts](../prompts/README.md) without running the
 application. They show how the model is asked to read, match, draft, and critique.
 
@@ -17,7 +17,7 @@ job-board request.
 
 ## Start with a lead
 
-A URL returned by search or a board scan enters Pending discoveries. TailorCV
+A URL returned by search or a board scan enters Pending discoveries. ClearScout
 keeps how it was found, the publisher facts available before a full read, and
 typed screening findings beside the lead, but it does not call that an
 evaluation. Unknown facts remain visible rather than becoming an inferred
@@ -28,7 +28,7 @@ its policy-gated content read; no listing disappears because it missed the
 automatic admission rule.
 
 Board and sitemap reads are bounded per task. A supported source can have more
-pages or posting URLs than one task can read. TailorCV then keeps the exact
+pages or posting URLs than one task can read. ClearScout then keeps the exact
 next page or URLs as durable continuation work. It does not restart the source
 or drop the unread tail. A sitemap read stopped by a discovery bound says so and
 stays incomplete, so the part it reached is never reported as the whole board.
@@ -57,7 +57,7 @@ have no cited candidate-record evidence.
 ![Redacted live workspace: a job evaluation retaining cited and unsupported requirements](images/evidence-and-gaps.png)
 
 The posting asks for hands-on experience with a named tool and for occasional
-travel. The selected CV evidence does not answer either one, so TailorCV shows the posting text and
+travel. The selected CV evidence does not answer either one, so ClearScout shows the posting text and
 states that no candidate-record match is stored. It does not infer a preference
 or qualification from the rest of the score.
 
@@ -86,7 +86,7 @@ STRUCTURE call with no cost dialog, or fails when no key is set.
 
 ## Approval belongs to exact bytes
 
-TailorCV stores each document proposal with its evidence identifiers and a
+ClearScout stores each document proposal with its evidence identifiers and a
 digest. A reviewer can accept it, reject it, or replace the wording. Replacement
 is checked against the same evidence set, so review cannot turn an unsupported
 source identifier into an approved one. Human review still has to assess the

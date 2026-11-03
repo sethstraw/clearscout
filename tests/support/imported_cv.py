@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tailorcv.application.master_cv.sources import SourceDocument, SourceLine
-from tailorcv.application.tailoring.stages.structure import (
+from clearscout.application.master_cv.sources import SourceDocument, SourceLine
+from clearscout.application.tailoring.stages.structure import (
     Dropped,
     ImportedCv,
     ImportedRole,

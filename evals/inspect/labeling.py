@@ -21,29 +21,29 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import to_jsonable_python
 
-from tailorcv.application.master_cv.cv import CvInventory, EntryKind
-from tailorcv.application.tailoring.guardrails import Guardrails
+from clearscout.application.master_cv.cv import CvInventory, EntryKind
+from clearscout.application.tailoring.guardrails import Guardrails
 
-type MatchProtocolVersion = Literal["tailorcv-match-development-v1"]
-type RelevanceProtocolVersion = Literal["tailorcv-relevance-review-development-v1"]
+type MatchProtocolVersion = Literal["clearscout-match-development-v1"]
+type RelevanceProtocolVersion = Literal["clearscout-relevance-review-development-v1"]
 type ProtocolVersion = MatchProtocolVersion | RelevanceProtocolVersion
-PROTOCOL_VERSION: MatchProtocolVersion = "tailorcv-match-development-v1"
-NORMALIZATION_DOMAIN = "tailorcv-match-normalized-requirement-v1"
-CANDIDATE_POOL_DOMAIN = "tailorcv-match-candidate-pool-v1"
-EXTRACTION_QA_DOMAIN = "tailorcv-match-extraction-qa-v1"
-REVIEW_CONTEXT_DOMAIN = "tailorcv-match-review-context-v1"
-REVIEWER_PACKET_DOMAIN = "tailorcv-match-reviewer-packet-v1"
-OPERATIONAL_RECEIPT_DOMAIN = "tailorcv-match-operational-receipt-v1"
-RUBRIC_DOMAIN = "tailorcv-review-rubric-v1"
+PROTOCOL_VERSION: MatchProtocolVersion = "clearscout-match-development-v1"
+NORMALIZATION_DOMAIN = "clearscout-match-normalized-requirement-v1"
+CANDIDATE_POOL_DOMAIN = "clearscout-match-candidate-pool-v1"
+EXTRACTION_QA_DOMAIN = "clearscout-match-extraction-qa-v1"
+REVIEW_CONTEXT_DOMAIN = "clearscout-match-review-context-v1"
+REVIEWER_PACKET_DOMAIN = "clearscout-match-reviewer-packet-v1"
+OPERATIONAL_RECEIPT_DOMAIN = "clearscout-match-operational-receipt-v1"
+RUBRIC_DOMAIN = "clearscout-review-rubric-v1"
 
 # A registered rubric version names exactly one text; a changed text needs a new version.
 FROZEN_RUBRIC_SHA256: Mapping[str, str] = MappingProxyType(
     {
         "match-review-rubric-v1": (
-            "552ebd11ebb10a57d381d51898c32b57509e392d0f478f16d6b308df74be92ed"
+            "500c49cc92d19521deb3b9be993226bad86460acb85faee2120d1d0fb7ebcb67"
         ),
         "match-review-rubric-v2": (
-            "115386caa5d3055b7f52e0ee7b099fd627fd3800d55a0140f8d52d17869a9511"
+            "3fef1d5557945e20329d7b661161f59a0d9ac2fb712abac7c285890f805be767"
         ),
     }
 )
@@ -57,8 +57,8 @@ class ReviewFamily(StrEnum):
 
 
 _PROTOCOL_VERSIONS: dict[ReviewFamily, ProtocolVersion] = {
-    ReviewFamily.MATCH: "tailorcv-match-development-v1",
-    ReviewFamily.RELEVANCE_REVIEW: "tailorcv-relevance-review-development-v1",
+    ReviewFamily.MATCH: "clearscout-match-development-v1",
+    ReviewFamily.RELEVANCE_REVIEW: "clearscout-relevance-review-development-v1",
 }
 
 

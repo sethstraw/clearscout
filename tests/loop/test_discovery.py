@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.master_cv.discovery import candidates, reads_as_cv, resolve_master_cv
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.master_cv.discovery import candidates, reads_as_cv, resolve_master_cv
+from clearscout.shared.errors import ConfigError
 
 
 def place(directory: Path, name: str, source: Path) -> Path:
@@ -59,7 +59,7 @@ def test_nothing_found_says_exactly_where_it_looked(tmp_path: Path) -> None:
     message = str(caught.value)
     assert "CV_Master.md" in message
     assert "--cv PATH" in message
-    assert "tailorcv init" in message
+    assert "clearscout init" in message
 
 
 def test_an_explicit_path_skips_discovery_entirely(tmp_path: Path, master_cv: Path) -> None:

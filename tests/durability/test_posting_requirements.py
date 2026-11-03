@@ -6,12 +6,12 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from tailorcv.application import job_search
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.job_search.models import JobDetailResponse
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import PostingRequirement
+from clearscout.application import job_search
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.job_search.models import JobDetailResponse
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PostingRequirement
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import evaluation_commit
 from tests.support.scenarios import fit_report as _fit_report
@@ -254,7 +254,7 @@ def test_match_evidence_carries_the_requirement_key_of_the_cited_requirement(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """A citation stored under a positional id must also carry the durable identity."""
-    from tailorcv.infrastructure.persistence.models import MatchEvidence
+    from clearscout.infrastructure.persistence.models import MatchEvidence
 
     workspace = WorkspaceService(durable_database, runtime_storage(durable_database)).create(
         slug="evidence", name="Evidence"

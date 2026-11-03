@@ -109,7 +109,7 @@ const TASKS = [
 ] satisfies Task[];
 
 function renderPage(summary: WorkspaceSummary = SUMMARY, tasks: Task[] = TASKS) {
-  window.localStorage.setItem("tailorcv.workspace", "workspace-command");
+  window.localStorage.setItem("clearscout.workspace", "workspace-command");
   server.use(
     http.get("*/api/v1/workspaces/:workspaceId/summary", () => HttpResponse.json(summary)),
     http.get("*/api/v1/tasks", () => HttpResponse.json(tasks)),

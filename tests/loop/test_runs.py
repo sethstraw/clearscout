@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.tailoring.runs import (
+from clearscout.application.tailoring.runs import (
     MANIFEST,
     Manifest,
     RunIdentity,
@@ -77,7 +77,7 @@ def test_a_manifest_written_before_the_version_was_recorded_is_not_reused(
     """An unknown version is exactly the case where the code cannot be vouched for."""
     landed = finish(tmp_path, identity())
     payload = json.loads((landed / MANIFEST).read_text(encoding="utf-8"))
-    del payload["inputs"]["tailorcv"]
+    del payload["inputs"]["clearscout"]
     (landed / MANIFEST).write_text(json.dumps(payload), encoding="utf-8")
     assert existing_run(tmp_path, "Acme_Engineer", identity()) is None
 
@@ -157,7 +157,7 @@ def test_the_manifest_hashes_every_artifact(tmp_path: Path) -> None:
     payload = json.loads((landed / MANIFEST).read_text(encoding="utf-8"))
     assert set(payload["artifacts"]) == {"Acme_Engineer.md"}
     assert payload["posting"]["id"] == "gh-123"
-    assert payload["inputs"]["tailorcv"] == "0.1.0"
+    assert payload["inputs"]["clearscout"] == "0.1.0"
     assert payload["run"]["outcome"] == "passed"
 
 
@@ -205,7 +205,7 @@ def test_editing_the_length_budget_is_not_a_reusable_run() -> None:
     Otherwise reuse would hand back a package built to the previous budget and
     report that nothing had changed.
     """
-    from tailorcv.application.tailoring.layout import SHAPING_CONSTANTS, shaping_fingerprint
+    from clearscout.application.tailoring.layout import SHAPING_CONSTANTS, shaping_fingerprint
 
     assert shaping_fingerprint() == shaping_fingerprint(), "a fingerprint must be stable"
     assert len(shaping_fingerprint()) == 12
@@ -217,8 +217,8 @@ def test_editing_the_length_budget_is_not_a_reusable_run() -> None:
 
 def test_the_fingerprint_covers_every_calibration_constant() -> None:
     """A constant left out is one the reuse check silently stops noticing."""
-    import tailorcv.application.tailoring.layout as layout_module
-    from tailorcv.application.tailoring.layout import SHAPING_CONSTANTS
+    import clearscout.application.tailoring.layout as layout_module
+    from clearscout.application.tailoring.layout import SHAPING_CONSTANTS
 
     declared = {
         name
@@ -233,7 +233,7 @@ def test_the_fingerprint_covers_every_calibration_constant() -> None:
 
 def test_the_fingerprint_does_no_filesystem_work(monkeypatch: pytest.MonkeyPatch) -> None:
     """It has to hold under a packaging that does not lay the source out as files."""
-    from tailorcv.application.tailoring.layout import shaping_fingerprint
+    from clearscout.application.tailoring.layout import shaping_fingerprint
 
     def refuse(*args: object, **kwargs: object) -> None:
         raise AssertionError("shaping_fingerprint read a file")
@@ -249,8 +249,8 @@ def test_the_fingerprint_does_not_move_when_shaping_logic_does() -> None:
     A pure fingerprint does no filesystem work; `--force` covers development and
     `RunIdentity.version` covers a release.
     """
-    import tailorcv.application.tailoring.layout as layout_module
-    from tailorcv.application.tailoring.layout import shaping_fingerprint
+    import clearscout.application.tailoring.layout as layout_module
+    from clearscout.application.tailoring.layout import shaping_fingerprint
 
     before = shaping_fingerprint()
     original = layout_module.wrapped_lines
@@ -274,13 +274,13 @@ def test_the_settings_hash_moves_when_the_shaping_constants_do(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """It is the settings hash that carries this into the run identity."""
-    from tailorcv.application.config import Settings
-    from tailorcv.application.tailoring.runs import settings_hash
+    from clearscout.application.config import Settings
+    from clearscout.application.tailoring.runs import settings_hash
 
     settings = Settings(pages=2)
     before = settings_hash(settings)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.runs.shaping_fingerprint", lambda: "different123"
+        "clearscout.application.tailoring.runs.shaping_fingerprint", lambda: "different123"
     )
     assert settings_hash(settings) != before
 

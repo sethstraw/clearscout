@@ -210,7 +210,7 @@ const WORKSPACE = "*/api/v1/workspaces/:workspaceId";
 /** Serve the queue-count read and the two workspace reads a workspace-bound render makes. */
 function installCollateral(body: TitleExclusionCollateral): URL[] {
   const asked: URL[] = [];
-  window.localStorage.setItem("tailorcv.workspace", "workspace-level");
+  window.localStorage.setItem("clearscout.workspace", "workspace-level");
   server.use(
     http.get(`${WORKSPACE}/pending-discoveries/title-exclusion-collateral`, ({ request }) => {
       asked.push(new URL(request.url));

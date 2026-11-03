@@ -1,6 +1,6 @@
 """Build the packaged city index the place reader uses from geonamescache's GeoNames data.
 
-Usage: python scripts/build_gazetteer.py src/tailorcv/domain/gazetteer.json
+Usage: python scripts/build_gazetteer.py src/clearscout/domain/gazetteer.json
 """
 
 from __future__ import annotations
@@ -10,8 +10,8 @@ import json
 from importlib import metadata, resources
 from pathlib import Path
 
-from tailorcv.domain.countries import DEFAULT_TABLE
-from tailorcv.domain.places import place_key
+from clearscout.domain.countries import DEFAULT_TABLE
+from clearscout.domain.places import place_key
 
 # GeoNames numbers Canadian provinces; boards write the postal abbreviation.
 CANADIAN_ADMIN1 = {
@@ -96,7 +96,7 @@ def build() -> dict[str, object]:
                 f"as packaged by geonamescache {version}"
             ),
             "modifications": (
-                "Modified by TailorCV: only the cities15000 extract (population of fifteen "
+                "Modified by ClearScout: only the cities15000 extract (population of fifteen "
                 "thousand or more), primary names only, folded to ASCII, names of three letters "
                 "or fewer removed, and fields trimmed to country, US or Canadian subdivision, "
                 "and population."

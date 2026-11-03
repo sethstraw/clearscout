@@ -7,15 +7,15 @@ from threading import Barrier
 import pytest
 from sqlalchemy import event, select
 
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.application.workspaces.models import ScanScheduleInput
-from tailorcv.application.workspaces.scan_schedule import ScanScheduleService
-from tailorcv.domain.search_parameters import JobSearchParameters
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import BackgroundTask, Employer, Source, Workspace
-from tailorcv.infrastructure.persistence.models.discovery import SourceScanMember
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.application.workspaces.models import ScanScheduleInput
+from clearscout.application.workspaces.scan_schedule import ScanScheduleService
+from clearscout.domain.search_parameters import JobSearchParameters
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import BackgroundTask, Employer, Source, Workspace
+from clearscout.infrastructure.persistence.models.discovery import SourceScanMember
 from tests.support.scenarios import board_source, scan_workspace, state_target_titles
 
 

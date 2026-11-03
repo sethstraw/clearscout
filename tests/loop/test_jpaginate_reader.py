@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
 from tests.support.http import policy_client
 
 _BODY = (

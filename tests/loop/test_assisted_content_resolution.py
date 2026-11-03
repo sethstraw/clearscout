@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import select
 
-from tailorcv.application.config import ModelChoice, ProviderName, Settings, TierModels
-from tailorcv.application.discovery.assisted_content_resolution import (
+from clearscout.application.config import ModelChoice, ProviderName, Settings, TierModels
+from clearscout.application.discovery.assisted_content_resolution import (
     AssistedContentResolutionService,
     AssistedPostingRecoveryItem,
     PostingBodyCompleteness,
@@ -22,7 +22,7 @@ from tailorcv.application.discovery.assisted_content_resolution import (
     PostingSourceAuthority,
     request_plan,
 )
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     AddressHolder,
     PostingContentResolutionService,
     PostingResolutionPreflight,
@@ -31,11 +31,11 @@ from tailorcv.application.discovery.content_resolution import (
     StoredEvidence,
     pending_discovery_readiness,
 )
-from tailorcv.application.discovery.hints import PendingDiscoveryHintsService
-from tailorcv.application.failures import ConflictError, ValidationError
-from tailorcv.application.prompts import render
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import (
+from clearscout.application.discovery.hints import PendingDiscoveryHintsService
+from clearscout.application.failures import ConflictError, ValidationError
+from clearscout.application.prompts import render
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import (
     PendingDiscoveryReadiness,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
@@ -43,11 +43,11 @@ from tailorcv.domain import (
     PostingStatus,
     utc_now,
 )
-from tailorcv.domain.identity import url_sha256
-from tailorcv.domain.records import PostingReadIntent
-from tailorcv.domain.staged_facts import ListingIdentityTrust, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.identity import url_sha256
+from clearscout.domain.records import PostingReadIntent
+from clearscout.domain.staged_facts import ListingIdentityTrust, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     Employer,
     JobPosting,
@@ -55,12 +55,12 @@ from tailorcv.infrastructure.persistence.models import (
     PendingPostingContent,
     PostingUrl,
 )
-from tailorcv.infrastructure.providers.base import CallRecord, Provider, Search, SearchSource
-from tailorcv.infrastructure.providers.cache import ResponseCache
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.infrastructure.providers.plan import RequestPlan
-from tailorcv.shared.costs import Ledger, Usage
-from tailorcv.shared.costs.prices import PriceOverride, table
+from clearscout.infrastructure.providers.base import CallRecord, Provider, Search, SearchSource
+from clearscout.infrastructure.providers.cache import ResponseCache
+from clearscout.infrastructure.providers.client import Client
+from clearscout.infrastructure.providers.plan import RequestPlan
+from clearscout.shared.costs import Ledger, Usage
+from clearscout.shared.costs.prices import PriceOverride, table
 from tests.support.artifacts import runtime_storage
 from tests.support.fake_provider import FakeProviderAPI
 from tests.support.provider_clients import provider_for_http

@@ -11,25 +11,25 @@ import pytest
 from sqlalchemy import event, select
 from sqlalchemy.orm import Session
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.pending import set_pending_markers
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.discovery.relevance_disputes import RelevanceDisputeService
-from tailorcv.application.discovery.relevance_review_rejections import (
+from clearscout.application.discovery.pending import set_pending_markers
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.relevance_disputes import RelevanceDisputeService
+from clearscout.application.discovery.relevance_review_rejections import (
     RelevanceReviewItemFailure,
     RelevanceReviewRejectionService,
 )
-from tailorcv.application.discovery.scan_queries import (
+from clearscout.application.discovery.scan_queries import (
     PENDING_PAGE_MAX_LIMIT,
     PendingQueueFilters,
     SourceScanQueries,
     projection,
 )
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery.screening import (
     ConstraintConfidence,
     DiscoveryScreening,
     ScreeningCode,
@@ -38,17 +38,17 @@ from tailorcv.application.discovery.screening import (
     ScreeningStanding,
     screen_discovery,
 )
-from tailorcv.application.discovery.source_reading import SourceListing
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.job_search.evaluation_targets import remember_posting_url
-from tailorcv.application.job_search.models import (
+from clearscout.application.discovery.source_reading import SourceListing
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.job_search.evaluation_targets import remember_posting_url
+from clearscout.application.job_search.models import (
     PendingDiscoveryPageResponse,
     PendingDiscoveryResponse,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.domain import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.domain import (
     EvaluationDecision,
     PendingDiscoveryReadiness,
     PostingContentAccessStatus,
@@ -58,8 +58,8 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.identity import requisition_key
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.identity import requisition_key
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     Cluster,
@@ -69,9 +69,9 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import PublishedFact, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Employer,
     JobEvaluation,
     JobPosting,
@@ -2401,7 +2401,7 @@ def test_scan_response_helpers_refuse_a_non_int_field() -> None:
     """The int-zero helper must fail loudly if a response field grows a richer shape."""
     from pydantic import BaseModel
 
-    from tailorcv.application.discovery.scan_queries.history import _zeroed_ints
+    from clearscout.application.discovery.scan_queries.history import _zeroed_ints
 
     class Mixed(BaseModel):
         good: int = 0

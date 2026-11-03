@@ -1,4 +1,4 @@
 interface:
   display_name: "Alembic migration author"
-  short_description: "Author a TailorCV Alembic migration with pre-release rules"
-  default_prompt: "Add or modify an Alembic migration under src/tailorcv/infrastructure/persistence/migrations/versions/. If `git tag --list 'v*'` prints nothing, edit v0001_schema.py in place; otherwise add a forward revision. Give any data step provenance, an idempotency guard, and a verification query."
+  short_description: "Author a ClearScout Alembic migration with pre-release rules"
+  default_prompt: "Add or modify an Alembic migration under src/clearscout/infrastructure/persistence/migrations/versions/. If `git tag --list 'v*'` prints nothing, edit v0001_schema.py in place; otherwise add a forward revision. Give any data step provenance, an idempotency guard, and a verification query."

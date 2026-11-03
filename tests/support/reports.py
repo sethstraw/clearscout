@@ -9,18 +9,18 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from tailorcv.application.config import Settings
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring.fit import Reading, read
-from tailorcv.application.tailoring.pipeline.report import render_report
-from tailorcv.application.tailoring.stages.draft import DraftedLine, ResumeDraft, fit
-from tailorcv.application.tailoring.stages.jobspec import JobSpec
-from tailorcv.application.tailoring.stages.match import EvidenceMap
-from tailorcv.application.tailoring.stages.select import Plan
-from tailorcv.application.tailoring.stages.verify import KeywordCoverage, Report
-from tailorcv.infrastructure.providers.credentials import Credential, Source
-from tailorcv.infrastructure.web_fetch.ingest import JDText
-from tailorcv.shared.costs import Ledger
+from clearscout.application.config import Settings
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring.fit import Reading, read
+from clearscout.application.tailoring.pipeline.report import render_report
+from clearscout.application.tailoring.stages.draft import DraftedLine, ResumeDraft, fit
+from clearscout.application.tailoring.stages.jobspec import JobSpec
+from clearscout.application.tailoring.stages.match import EvidenceMap
+from clearscout.application.tailoring.stages.select import Plan
+from clearscout.application.tailoring.stages.verify import KeywordCoverage, Report
+from clearscout.infrastructure.providers.credentials import Credential, Source
+from clearscout.infrastructure.web_fetch.ingest import JDText
+from clearscout.shared.costs import Ledger
 
 RUN_DATE = date(2025, 1, 1)
 POSTING = "Staff Data Platform Engineer\n\nBuild and run the ingestion platform.\n"

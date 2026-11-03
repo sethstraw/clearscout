@@ -29,7 +29,7 @@ function overview(data: JobDetail) {
 
 describe("JobOverview closing dates", () => {
   it("saves a missing date through its free endpoint while preserving a review draft", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const job = jobDetail({ recorded_deadline: "After the panel, before 17:00 MDT" });
     const writes: { path: string; body: unknown }[] = [];
     const paid: unknown[] = [];
@@ -92,7 +92,7 @@ describe("JobOverview closing dates", () => {
   });
 
   it("preserves a failed date for retry and keeps publisher facts when resetting", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const publisher = {
       needs_clarification: false,
       normalized_value: "2026-11-12",
@@ -174,7 +174,7 @@ describe("JobOverview closing dates", () => {
 
 describe("JobOverview recorded review", () => {
   it("edits and clears source values on an archived job without changing evaluated scores", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-jobs");
+    window.localStorage.setItem("clearscout.workspace", "workspace-jobs");
     const job = jobDetail({
       archived_at: "2026-08-10T12:00:00Z",
       recorded_fit_score: 77,

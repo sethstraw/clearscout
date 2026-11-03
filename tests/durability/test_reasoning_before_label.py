@@ -13,10 +13,10 @@ from typing import get_args
 
 from pydantic import BaseModel
 
-from tailorcv.application.discovery.relevance_review import response_schema
-from tailorcv.application.tailoring.stages.jobspec import RawRequirement
-from tailorcv.application.tailoring.stages.match import response_schema as match_response_schema
-from tailorcv.application.tailoring.stages.verify import CriticVerdict
+from clearscout.application.discovery.relevance_review import response_schema
+from clearscout.application.tailoring.stages.jobspec import RawRequirement
+from clearscout.application.tailoring.stages.match import response_schema as match_response_schema
+from clearscout.application.tailoring.stages.verify import CriticVerdict
 
 _FINDINGS = ("unsupported_claims", "style_flags", "weaknesses", "guidance")
 _SCORES = ("alignment", "preservation", "specificity", "readability", "ats_clarity", "human_voice")

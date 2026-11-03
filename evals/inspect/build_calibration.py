@@ -22,15 +22,15 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models.discovery import PostingUrl
-from tailorcv.infrastructure.persistence.models.evaluations import (
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models.discovery import PostingUrl
+from clearscout.infrastructure.persistence.models.evaluations import (
     JobEvaluation,
     MatchEvidence,
     PostingRequirement,
 )
-from tailorcv.infrastructure.persistence.models.workspaces import (
+from clearscout.infrastructure.persistence.models.workspaces import (
     MasterCvVersion,
     RequirementRuling,
 )

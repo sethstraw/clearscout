@@ -14,7 +14,7 @@ from evals.runner import (
 )
 from evals.support.inventory import synthetic_inventory
 
-from tailorcv.application import prompts
+from clearscout.application import prompts
 
 
 def _families() -> set[str]:

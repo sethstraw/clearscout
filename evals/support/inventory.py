@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tailorcv.application.master_cv.cv import CvInventory, Entry, EntryKind, Role, content_hash
-from tailorcv.application.tailoring.guardrails import Guardrails
+from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind, Role, content_hash
+from clearscout.application.tailoring.guardrails import Guardrails
 
 SYNTHETIC_SOURCE = Path("/evals/support/synthetic_cv.md")
 SYNTHETIC_WORK_AUTHORIZATION = "Authorized to work in Canada without sponsorship."

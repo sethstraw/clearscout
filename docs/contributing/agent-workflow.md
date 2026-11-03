@@ -1,13 +1,13 @@
 # How it was built
 
-Claude Code and Codex did most of the typing on TailorCV. This page is the
+Claude Code and Codex did most of the typing on ClearScout. This page is the
 setup used to review that work: who does what, what stops them, and what I
 still do by hand. It does not make generated code safe by itself.
 
 The files are real and tracked. If you open this repository in either tool, you
 get the same roles, recipes, and guards I use.
 
-You can borrow a review role or a guard without using TailorCV. These are the
+You can borrow a review role or a guard without using ClearScout. These are the
 working files, not a separate example written for this page.
 
 ## One coordinator, bounded workers
@@ -72,7 +72,7 @@ The person still checks whether its wording says more than the source supports.
 A panel is only independent if its members fail differently.
 [Verga et al.](https://arxiv.org/abs/2404.18796) found a panel of models from
 different families less biased toward its own outputs than one large judge.
-TailorCV's reviewers must be distinct agents, but nothing forces them onto
+ClearScout's reviewers must be distinct agents, but nothing forces them onto
 different model families.
 
 ## One writer per surface

@@ -11,9 +11,9 @@ import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from tailorcv.application import job_search
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.tasks import (
+from clearscout.application import job_search
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.tasks import (
     TASK_SPECS,
     UNPAID,
     TaskContext,
@@ -24,17 +24,17 @@ from tailorcv.application.tasks import (
     task_types,
     validate_task_payload,
 )
-from tailorcv.application.tasks.events import TaskEventLog
-from tailorcv.application.tasks.leases import TaskLeases
-from tailorcv.application.workspaces import WorkspaceResponse, WorkspaceService
-from tailorcv.application.workspaces.models import ScanScheduleInput
-from tailorcv.application.workspaces.scan_schedule import ScanScheduleService
-from tailorcv.bootstrap.worker import ArtifactVerifier, Worker, _LeaseKeeper, default_handlers
-from tailorcv.domain import SourceKind, TaskStatus, utc_now
-from tailorcv.infrastructure import build
-from tailorcv.infrastructure.build import BuildIdentity, current_build
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.tasks.events import TaskEventLog
+from clearscout.application.tasks.leases import TaskLeases
+from clearscout.application.workspaces import WorkspaceResponse, WorkspaceService
+from clearscout.application.workspaces.models import ScanScheduleInput
+from clearscout.application.workspaces.scan_schedule import ScanScheduleService
+from clearscout.bootstrap.worker import ArtifactVerifier, Worker, _LeaseKeeper, default_handlers
+from clearscout.domain import SourceKind, TaskStatus, utc_now
+from clearscout.infrastructure import build
+from clearscout.infrastructure.build import BuildIdentity, current_build
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     BackgroundTask,
     PendingDiscovery,
@@ -1051,7 +1051,7 @@ def test_worker_persists_success_failure_and_cooperative_cancellation(
     assert failed_state.error_message == "bounded failure without a traceback"
 
     def cancel(context: object, payload: dict[str, object]) -> dict[str, object]:
-        from tailorcv.bootstrap.worker import TaskContext
+        from clearscout.bootstrap.worker import TaskContext
 
         del payload
         assert isinstance(context, TaskContext)
@@ -1110,7 +1110,7 @@ def test_worker_terminal_log_matches_persisted_outcome_after_late_cancellation(
         return finish(*args, **kwargs)
 
     monkeypatch.setattr(worker.queue, "finish", cancel_then_finish)
-    with caplog.at_level("INFO", logger="tailorcv.bootstrap.worker"):
+    with caplog.at_level("INFO", logger="clearscout.bootstrap.worker"):
         assert worker.run_once()
     persisted = queue.get(str(task.id))
     expected = (
@@ -1743,7 +1743,7 @@ def test_a_worker_does_not_write_into_a_later_attempt_with_the_same_worker_id(
             renewal_finished.set()
 
     monkeypatch.setattr(worker.queue, "heartbeat", heartbeat)
-    with caplog.at_level("INFO", logger="tailorcv.bootstrap.worker"):
+    with caplog.at_level("INFO", logger="clearscout.bootstrap.worker"):
         assert worker.run_once()
 
     assert queue.get(str(task.id)) == recovered[0]

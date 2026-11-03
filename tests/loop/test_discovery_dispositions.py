@@ -9,22 +9,22 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.dispositions import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.dispositions import (
     BODY_REFUSAL_CATEGORIES,
     DiscoveryDispositionService,
     dismissed_pending_ids,
 )
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.discovery.source_reading import SourceListing
-from tailorcv.application.failures import ConflictError, ValidationError
-from tailorcv.application.job_search.models import (
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.discovery.source_reading import SourceListing
+from clearscout.application.failures import ConflictError, ValidationError
+from clearscout.application.job_search.models import (
     DispositionApply,
     DispositionSelection,
     PendingDuplicateSuggestionResponse,
 )
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.domain import (
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.domain import (
     EXPLICIT_DISMISSAL_REASONS,
     ExplicitDismissalCategory,
     PostingContentExtractionMethod,
@@ -33,17 +33,17 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.identity import normalize_text, normalize_url
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.identity import normalize_text, normalize_url
+from clearscout.domain.search_parameters import (
     CountryNames,
     Employers,
     JobSearchParameters,
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import ListingIdentityTrust, PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import ListingIdentityTrust, PublishedFact, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     AuditEvent,
     Employer,
@@ -55,7 +55,7 @@ from tailorcv.infrastructure.persistence.models import (
     PostingUrl,
     Source,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedBoards, UnexpectedPostingFetcher
 from tests.support.scenarios import (
@@ -474,7 +474,7 @@ def _is_dismissed(database: Database, workspace_id: str, pending_id: str) -> boo
 
 @pytest.mark.parametrize(
     ("origin", "dismissed"),
-    [("api", False), ("tailorcv", False), ("search.guided_campaign", True)],
+    [("api", False), ("clearscout", False), ("search.guided_campaign", True)],
 )
 def test_an_automatic_refusal_leaves_a_posting_the_person_added_in_the_queue(
     durable_database: Database, origin: str, dismissed: bool

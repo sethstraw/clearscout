@@ -10,7 +10,7 @@ from __future__ import annotations
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tailorcv.infrastructure.web_fetch.policy import fetch_refusal
+from clearscout.infrastructure.web_fetch.policy import fetch_refusal
 
 _HOST_LETTERS = st.text(alphabet="abcdefghijklmnop", min_size=3, max_size=12)
 _PATH_LETTERS = st.text(alphabet="abcdefghijklmnop-", min_size=0, max_size=12)

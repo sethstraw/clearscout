@@ -9,9 +9,9 @@ from datetime import date
 
 import pytest
 
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring import fit
-from tailorcv.domain.arrangement_grammar import (
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring import fit
+from clearscout.domain.arrangement_grammar import (
     attendance_is_hedged,
     attendance_statement,
     remote_offer_statement,

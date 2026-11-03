@@ -10,13 +10,13 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import ApplicationEventInput
-from tailorcv.application.failures import ConflictError, ValidationError
-from tailorcv.application.job_search.models import JobListQuery
-from tailorcv.domain import ApplicationEventType, ApplicationStatus
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Application
+from clearscout.application import job_search
+from clearscout.application.contracts import ApplicationEventInput
+from clearscout.application.failures import ConflictError, ValidationError
+from clearscout.application.job_search.models import JobListQuery
+from clearscout.domain import ApplicationEventType, ApplicationStatus
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Application
 from tests.support.scenarios import NOW, workspace_with_committed_evaluation
 
 

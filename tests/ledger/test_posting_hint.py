@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.config import Settings
-from tailorcv.application.failures import NotFoundError
-from tailorcv.application.job_search.commands import set_posting_hint
-from tailorcv.application.prompts import render
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import utc_now
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Employer, JobPosting
+from clearscout.application.config import Settings
+from clearscout.application.failures import NotFoundError
+from clearscout.application.job_search.commands import set_posting_hint
+from clearscout.application.prompts import render
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import utc_now
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Employer, JobPosting
 from tests.support.artifacts import runtime_storage
 
 

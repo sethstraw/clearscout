@@ -12,11 +12,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.bootstrap.worker import Worker
-from tailorcv.domain import TaskStatus, utc_now
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.tasks import TaskQueueService
+from clearscout.bootstrap.api import create_app
+from clearscout.bootstrap.worker import Worker
+from clearscout.domain import TaskStatus, utc_now
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.scenarios import evaluation_commit, populated_workspace
 
 SCOPED_COLLECTIONS = (
@@ -88,7 +88,7 @@ def test_queueing_survives_a_clock_jump_between_worker_setup_and_the_request(
     workspace = api.post("/api/v1/workspaces", json={"slug": "clock", "name": "Clock"})
     assert workspace.status_code == 201, workspace.text
     clock = [utc_now()]
-    monkeypatch.setattr("tailorcv.application.tasks.leases.utc_now", lambda: clock[0])
+    monkeypatch.setattr("clearscout.application.tasks.leases.utc_now", lambda: clock[0])
     _present_worker(durable_database)
     clock[0] += timedelta(seconds=121)
 

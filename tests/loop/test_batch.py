@@ -14,17 +14,17 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from tailorcv.application.config import ModelChoice, Settings
-from tailorcv.application.tailoring import batch
-from tailorcv.application.tailoring.batch import Request, Verdict
-from tailorcv.application.tailoring.batch.analysis import (
+from clearscout.application.config import ModelChoice, Settings
+from clearscout.application.tailoring import batch
+from clearscout.application.tailoring.batch import Request, Verdict
+from clearscout.application.tailoring.batch.analysis import (
     _common_terms,
     _Entry,
     _same_requirement,
     _terms,
     recommend,
 )
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.tailoring.stages.jobspec import (
     Dimension,
     HardGate,
     Importance,
@@ -32,22 +32,22 @@ from tailorcv.application.tailoring.stages.jobspec import (
     Requirement,
     StoredPostingName,
 )
-from tailorcv.application.tailoring.stages.match import (
+from clearscout.application.tailoring.stages.match import (
     Classification,
     EvidenceMap,
     Match,
     Strength,
 )
-from tailorcv.application.tailoring.stages.spans import Span
-from tailorcv.domain import EvidenceStatus, GapClass
-from tailorcv.domain.records import SpanStatus
-from tailorcv.domain.requirements import GateKind
-from tailorcv.domain.taxonomy import extended
-from tailorcv.infrastructure.providers.base import CallRecord, json_schema
-from tailorcv.infrastructure.providers.cache import cache_key
-from tailorcv.infrastructure.providers.plan import RequestPlan
-from tailorcv.shared.costs import Usage
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.tailoring.stages.spans import Span
+from clearscout.domain import EvidenceStatus, GapClass
+from clearscout.domain.records import SpanStatus
+from clearscout.domain.requirements import GateKind
+from clearscout.domain.taxonomy import extended
+from clearscout.infrastructure.providers.base import CallRecord, json_schema
+from clearscout.infrastructure.providers.cache import cache_key
+from clearscout.infrastructure.providers.plan import RequestPlan
+from clearscout.shared.costs import Usage
+from clearscout.shared.errors import ConfigError
 from tests.support.schema import literals
 from tests.support.suite import SUITE_KEY_VARIABLE, SUITE_PROVIDER
 
@@ -202,11 +202,11 @@ def provider(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> BatchProvider:
     """Point screening at a scripted provider and a cache under the temp path."""
     built = BatchProvider()
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: built,
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.cache.user_cache_dir",
+        "clearscout.infrastructure.providers.cache.user_cache_dir",
         lambda name: str(tmp_path / "cache"),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -480,7 +480,7 @@ def test_the_report_answers_every_question_a_batch_is_read_for(
         "High-leverage discovery for this posting:",
         "What these postings ask for in common",
         "Shared discovery queue",
-        "tailorcv discover --queue batch.json",
+        "clearscout discover --queue batch.json",
     ):
         assert expected in report
 
@@ -590,7 +590,7 @@ def test_a_batch_file_that_is_not_one_is_refused(tmp_path: Path) -> None:
 
 
 def test_a_batch_of_one_or_of_too_many_is_refused(master_cv: Path, tmp_path: Path) -> None:
-    with pytest.raises(ConfigError, match="tailorcv screen"):
+    with pytest.raises(ConfigError, match="clearscout screen"):
         run(master_cv, tmp_path, [Request(source="one.txt")])
     too_many = [Request(source=f"{index}.txt") for index in range(batch.MAX_POSTINGS + 1)]
     with pytest.raises(ConfigError, match="more than a batch"):
@@ -613,21 +613,21 @@ def test_two_postings_with_the_same_identity_still_get_separate_keys(
 
 def test_one_unestablished_gate_alone_does_not_block_a_pursue() -> None:
     """One unpaired gate is tolerated. A second one, or no cited evidence, is not."""
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         HardGate,
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
     )
-    from tailorcv.application.tailoring.stages.spans import Span
-    from tailorcv.domain.records import SpanStatus
+    from clearscout.application.tailoring.stages.spans import Span
+    from clearscout.domain.records import SpanStatus
 
     def _gate(text: str) -> HardGate:
         return HardGate(
@@ -713,21 +713,21 @@ def test_a_blocking_gate_the_record_fails_is_still_a_skip() -> None:
     Built directly rather than through a run, because the difference is which
     classification the gate carries and nothing else.
     """
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         HardGate,
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
     )
-    from tailorcv.application.tailoring.stages.spans import Span
-    from tailorcv.domain.records import SpanStatus
+    from clearscout.application.tailoring.stages.spans import Span
+    from clearscout.domain.records import SpanStatus
 
     text = "You must hold an active security clearance."
     spec = JobSpec(
@@ -768,22 +768,22 @@ def test_a_compound_degree_gate_answered_in_part_does_not_force_a_skip() -> None
     The master's clause is a word-subset of the gate quote, so pairing on overlap
     alone would let it define the whole gate and hard-skip the fit.
     """
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         HardGate,
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
         answered_gates,
     )
-    from tailorcv.application.tailoring.stages.spans import Span
-    from tailorcv.domain.records import SpanStatus
+    from clearscout.application.tailoring.stages.spans import Span
+    from clearscout.domain.records import SpanStatus
 
     gate_text = (
         "Bachelor's degree in Widget Engineering or a related field and a "
@@ -867,22 +867,22 @@ def test_a_partial_blocking_gate_settles_nothing_so_a_strong_fit_is_cautious() -
     The gapped clause is a responsibility, so the essential cap that would catch
     a must-have never fires; the partial gate itself is what settles nothing.
     """
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         HardGate,
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
         answered_gates,
     )
-    from tailorcv.application.tailoring.stages.spans import Span
-    from tailorcv.domain.records import SpanStatus
+    from clearscout.application.tailoring.stages.spans import Span
+    from clearscout.domain.records import SpanStatus
 
     gate_text = "alpha beta gamma"
     spec = JobSpec(
@@ -944,21 +944,21 @@ def test_an_excluded_core_occupation_deprioritizes_a_strong_fit() -> None:
 
     The rule reads only the span-verified label, so an unverified label is inert.
     """
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         CoreOccupation,
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
     )
-    from tailorcv.application.tailoring.stages.spans import Span
-    from tailorcv.domain.records import SpanStatus
+    from clearscout.application.tailoring.stages.spans import Span
+    from clearscout.domain.records import SpanStatus
 
     label = "platform engineering"
 
@@ -1023,21 +1023,21 @@ def test_a_boundary_listing_alternatives_excludes_an_occupation_naming_one_of_th
     occupation: str, boundary: str
 ) -> None:
     """Each alternative a boundary lists is a whole exclusion of its own."""
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         CoreOccupation,
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
     )
-    from tailorcv.application.tailoring.stages.spans import Span
-    from tailorcv.domain.records import SpanStatus
+    from clearscout.application.tailoring.stages.spans import Span
+    from clearscout.domain.records import SpanStatus
 
     spec = JobSpec(
         title="Manager",
@@ -1096,21 +1096,21 @@ def test_a_boundary_abstains_when_the_occupation_omits_its_qualifying_terms(
     occupation: str, boundary: str
 ) -> None:
     """A short occupation label cannot prove a qualified free-form exclusion."""
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         CoreOccupation,
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
     )
-    from tailorcv.application.tailoring.stages.spans import Span
-    from tailorcv.domain.records import SpanStatus
+    from clearscout.application.tailoring.stages.spans import Span
+    from clearscout.domain.records import SpanStatus
 
     spec = JobSpec(
         title="Engineer",
@@ -1152,15 +1152,15 @@ def test_a_rung_above_the_seniority_band_caps_a_strong_fit_at_cautious() -> None
     the title names none, and abstains without a ceiling or when the posting names no
     rung, so a cap fires only on an altitude the search bounded and the posting states.
     """
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,
         Strength,
     )
-    from tailorcv.domain.search_parameters.roles import Seniority
+    from clearscout.domain.search_parameters.roles import Seniority
 
     def _spec(title: str, seniority: str | None) -> JobSpec:
         return JobSpec(
@@ -1226,13 +1226,13 @@ def test_an_unmet_essential_caps_a_strong_fit_at_cautious_but_not_a_weak_one() -
     from pursue to investigate, while a genuinely weak fit with the same unmet
     essential still deprioritizes rather than being surfaced for review.
     """
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.jobspec import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.jobspec import (
         Importance,
         JobSpec,
         Requirement,
     )
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,

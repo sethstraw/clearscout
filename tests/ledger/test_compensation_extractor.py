@@ -6,10 +6,10 @@ from decimal import Decimal
 
 import pytest
 
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.tailoring.fit import read
-from tailorcv.application.tailoring.fit.preferences import EXTRACTED_ONLY_STANDING
-from tailorcv.domain.search_parameters import (
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.tailoring.fit import read
+from clearscout.application.tailoring.fit.preferences import EXTRACTED_ONLY_STANDING
+from clearscout.domain.search_parameters import (
     CompensationBand,
     CompensationBasis,
     CountryNames,

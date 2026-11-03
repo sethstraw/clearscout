@@ -22,7 +22,7 @@ const SAVED_PARAMETERS = {
   effective_at: "2026-08-01T12:00:00Z",
   parameters: {
     opportunity_thesis: "Synthetic health-data product leadership.",
-    score_weight_set: "TailorCV default",
+    score_weight_set: "ClearScout default",
     working_day_shift_hours: 0,
     locations: [
       {
@@ -44,7 +44,7 @@ export const NO_SAVED_PLACES = {
   ...SAVED_PARAMETERS,
   parameters: {
     opportunity_thesis: "Synthetic health-data product leadership.",
-    score_weight_set: "TailorCV default",
+    score_weight_set: "ClearScout default",
     working_day_shift_hours: 0,
     locations: [],
   },

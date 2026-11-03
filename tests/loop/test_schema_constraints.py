@@ -13,14 +13,14 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.stages.draft import draft, draft_schema
-from tailorcv.application.tailoring.stages.jobspec import JobSpec, requirement_vocabulary
-from tailorcv.application.tailoring.stages.match import response_schema
-from tailorcv.application.tailoring.stages.select import Plan
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.shared.errors import BudgetError
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.stages.draft import draft, draft_schema
+from clearscout.application.tailoring.stages.jobspec import JobSpec, requirement_vocabulary
+from clearscout.application.tailoring.stages.match import response_schema
+from clearscout.application.tailoring.stages.select import Plan
+from clearscout.infrastructure.providers.client import Client
+from clearscout.shared.errors import BudgetError
 
 
 def test_matching_rejects_an_identifier_that_does_not_exist() -> None:

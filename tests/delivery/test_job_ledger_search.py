@@ -9,8 +9,8 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.bootstrap.api import create_app
-from tailorcv.domain import EvaluationDecision
+from clearscout.bootstrap.api import create_app
+from clearscout.domain import EvaluationDecision
 from tests.support.scenarios import evaluation_commit
 
 

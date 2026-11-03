@@ -9,9 +9,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.migration import status
+from clearscout.application.tasks import TaskQueueService
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.migration import status
 from tests.support.scenarios import populated_workspace
 
 SEEDED_TABLES = (
@@ -34,7 +34,7 @@ SEEDED_TABLES = (
 @pytest.fixture
 def seeded(durable_database: Database, durable_database_url: str, tmp_path: Path) -> dict[str, str]:
     """The canonical workspace, written through the shipped API by a present worker."""
-    from tailorcv.bootstrap.api import create_app
+    from clearscout.bootstrap.api import create_app
 
     TaskQueueService(durable_database).renew_worker_presence(
         worker_id="seed-worker", ttl_seconds=3600

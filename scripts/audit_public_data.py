@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from tailorcv.infrastructure.web_fetch.boards import BOARD_PATTERNS
+from clearscout.infrastructure.web_fetch.boards import BOARD_PATTERNS
 
 MACHINE_PATH = re.compile(r"/(?:Users|home)/[A-Za-z0-9._-]+/")
 EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@([A-Z0-9.-]+\.[A-Z]{2,})\b", re.IGNORECASE)

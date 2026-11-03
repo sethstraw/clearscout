@@ -34,7 +34,7 @@ export const TASK_KINDS: Record<TaskType, TaskKind> = {
   "posting.recover_batch": {
     name: "Assisted posting recovery",
     detail:
-      "Use bounded hosted search to locate an exact publisher source, then retain content only after TailorCV reads and verifies it deterministically.",
+      "Use bounded hosted search to locate an exact publisher source, then retain content only after ClearScout reads and verifies it deterministically.",
   },
   "discovery.evaluate": {
     name: "Evaluate a discovery",

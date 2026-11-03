@@ -377,6 +377,101 @@ wheels = [
 ]
 
 [[package]]
+name = "clearscout"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "alembic" },
+    { name = "anthropic" },
+    { name = "anyio" },
+    { name = "babel" },
+    { name = "cleanco" },
+    { name = "defusedxml" },
+    { name = "fastapi" },
+    { name = "genai-prices" },
+    { name = "httpx" },
+    { name = "keyring" },
+    { name = "lxml" },
+    { name = "openai" },
+    { name = "platformdirs" },
+    { name = "playwright" },
+    { name = "protego" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pypdfium2" },
+    { name = "sqlalchemy" },
+    { name = "starlette" },
+    { name = "starlette-admin" },
+    { name = "trafilatura" },
+    { name = "typer" },
+    { name = "uvicorn" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "complexipy" },
+    { name = "deptry" },
+    { name = "geonamescache" },
+    { name = "hypothesis" },
+    { name = "import-linter" },
+    { name = "libcst" },
+    { name = "mypy" },
+    { name = "pip-audit" },
+    { name = "pip-licenses" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-xdist" },
+    { name = "ruff" },
+    { name = "vulture" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = ">=1.18.5,<2" },
+    { name = "anthropic", specifier = ">=0.69,<1" },
+    { name = "anyio", specifier = ">=4,<5" },
+    { name = "babel", specifier = ">=2.18,<3" },
+    { name = "cleanco", specifier = ">=2.3,<3" },
+    { name = "defusedxml", specifier = ">=0.7,<1" },
+    { name = "fastapi", specifier = ">=0.139.2,<1" },
+    { name = "genai-prices", specifier = "==0.2.1" },
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "keyring", specifier = ">=25.5" },
+    { name = "lxml", specifier = ">=6,<7" },
+    { name = "openai", specifier = ">=1.99,<3" },
+    { name = "platformdirs", specifier = ">=4.3" },
+    { name = "playwright", specifier = ">=1.62,<2" },
+    { name = "protego", specifier = ">=0.7,<1" },
+    { name = "pydantic", specifier = ">=2.9" },
+    { name = "pydantic-settings", specifier = ">=2.7" },
+    { name = "pypdfium2", specifier = ">=5.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.51,<2.1" },
+    { name = "starlette", specifier = ">=1.4,<2" },
+    { name = "starlette-admin", specifier = ">=1.0.1,<2" },
+    { name = "trafilatura", specifier = ">=2.0" },
+    { name = "typer", specifier = ">=0.15" },
+    { name = "uvicorn", specifier = ">=0.51,<1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "complexipy", specifier = "==8.0.1" },
+    { name = "deptry", specifier = ">=0.25" },
+    { name = "geonamescache", specifier = "==3.0.2" },
+    { name = "hypothesis", specifier = ">=6.167.1" },
+    { name = "import-linter", specifier = ">=2.7" },
+    { name = "libcst", specifier = ">=1.9" },
+    { name = "mypy", specifier = ">=1.14" },
+    { name = "pip-audit", specifier = "==2.10.1" },
+    { name = "pip-licenses", specifier = "==5.5.5" },
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "pytest-cov", specifier = ">=6.0" },
+    { name = "pytest-xdist", specifier = ">=3.6" },
+    { name = "ruff", specifier = ">=0.9" },
+    { name = "vulture", specifier = "==2.16" },
+]
+
+[[package]]
 name = "click"
 version = "8.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2614,101 +2709,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/67/a4/371bcdf59c3863e0a780a8c619de722ff2830832d9c5a790af36bfb3532c/starlette_admin-1.0.3.tar.gz", hash = "sha256:d215614b85bcccdf57c02b9a3c0c64e21062b8166ec683f2636dfedc6f6ded76", size = 1260652, upload-time = "2026-10-24T08:44:50.715Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6e/13/37097152b35ac8bab1ada12477eb4212d8f707ecd52720b73bc0f40326e0/starlette_admin-1.0.3-py3-none-any.whl", hash = "sha256:c240c333afed8e6844e3a889dda177818043619d95aeb526052908671aadf7aa", size = 1388037, upload-time = "2026-10-24T08:44:49.197Z" },
-]
-
-[[package]]
-name = "tailorcv"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "alembic" },
-    { name = "anthropic" },
-    { name = "anyio" },
-    { name = "babel" },
-    { name = "cleanco" },
-    { name = "defusedxml" },
-    { name = "fastapi" },
-    { name = "genai-prices" },
-    { name = "httpx" },
-    { name = "keyring" },
-    { name = "lxml" },
-    { name = "openai" },
-    { name = "platformdirs" },
-    { name = "playwright" },
-    { name = "protego" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pypdfium2" },
-    { name = "sqlalchemy" },
-    { name = "starlette" },
-    { name = "starlette-admin" },
-    { name = "trafilatura" },
-    { name = "typer" },
-    { name = "uvicorn" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "complexipy" },
-    { name = "deptry" },
-    { name = "geonamescache" },
-    { name = "hypothesis" },
-    { name = "import-linter" },
-    { name = "libcst" },
-    { name = "mypy" },
-    { name = "pip-audit" },
-    { name = "pip-licenses" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-xdist" },
-    { name = "ruff" },
-    { name = "vulture" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.18.5,<2" },
-    { name = "anthropic", specifier = ">=0.69,<1" },
-    { name = "anyio", specifier = ">=4,<5" },
-    { name = "babel", specifier = ">=2.18,<3" },
-    { name = "cleanco", specifier = ">=2.3,<3" },
-    { name = "defusedxml", specifier = ">=0.7,<1" },
-    { name = "fastapi", specifier = ">=0.139.2,<1" },
-    { name = "genai-prices", specifier = "==0.2.1" },
-    { name = "httpx", specifier = ">=0.28" },
-    { name = "keyring", specifier = ">=25.5" },
-    { name = "lxml", specifier = ">=6,<7" },
-    { name = "openai", specifier = ">=1.99,<3" },
-    { name = "platformdirs", specifier = ">=4.3" },
-    { name = "playwright", specifier = ">=1.62,<2" },
-    { name = "protego", specifier = ">=0.7,<1" },
-    { name = "pydantic", specifier = ">=2.9" },
-    { name = "pydantic-settings", specifier = ">=2.7" },
-    { name = "pypdfium2", specifier = ">=5.0" },
-    { name = "sqlalchemy", specifier = ">=2.0.51,<2.1" },
-    { name = "starlette", specifier = ">=1.4,<2" },
-    { name = "starlette-admin", specifier = ">=1.0.1,<2" },
-    { name = "trafilatura", specifier = ">=2.0" },
-    { name = "typer", specifier = ">=0.15" },
-    { name = "uvicorn", specifier = ">=0.51,<1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "complexipy", specifier = "==8.0.1" },
-    { name = "deptry", specifier = ">=0.25" },
-    { name = "geonamescache", specifier = "==3.0.2" },
-    { name = "hypothesis", specifier = ">=6.167.1" },
-    { name = "import-linter", specifier = ">=2.7" },
-    { name = "libcst", specifier = ">=1.9" },
-    { name = "mypy", specifier = ">=1.14" },
-    { name = "pip-audit", specifier = "==2.10.1" },
-    { name = "pip-licenses", specifier = "==5.5.5" },
-    { name = "pytest", specifier = ">=8.3" },
-    { name = "pytest-cov", specifier = ">=6.0" },
-    { name = "pytest-xdist", specifier = ">=3.6" },
-    { name = "ruff", specifier = ">=0.9" },
-    { name = "vulture", specifier = "==2.16" },
 ]
 
 [[package]]

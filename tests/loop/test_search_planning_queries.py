@@ -7,13 +7,13 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.search_planning_queries import SearchPlanningQueries
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Source
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.search_planning_queries import SearchPlanningQueries
+from clearscout.application.failures import ValidationError
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Source
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 

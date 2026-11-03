@@ -12,10 +12,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.application.config import DEFAULT_MODELS, ProviderName, Settings
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.providers.credentials import ENVIRONMENT_VARIABLES, KeyStore
-from tailorcv.shared.errors import AuthError
+from clearscout.application.config import DEFAULT_MODELS, ProviderName, Settings
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.providers.credentials import ENVIRONMENT_VARIABLES, KeyStore
+from clearscout.shared.errors import AuthError
 from tests.support.doubles import MemoryStore
 from tests.support.suite import SUITE_KEY_VARIABLE, SUITE_PROVIDER
 

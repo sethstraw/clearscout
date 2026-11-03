@@ -15,25 +15,25 @@ from typing import Any, TypeVar
 from genai_prices.data_snapshot import DataSnapshot
 from pydantic import BaseModel
 
-from tailorcv.application.config import ModelChoice, ProviderName
-from tailorcv.application.discovery.content_resolution import ResolvedPostingContent
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.source_reading import SourceListing, SourceRead, SourceReader
-from tailorcv.application.tailoring.batch.analysis import Recommendation
-from tailorcv.application.tailoring.pipeline.models import SerializedRunArtifacts
-from tailorcv.application.tailoring.stages.verify import Report
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.domain.records import PostingReadIntent
-from tailorcv.infrastructure.providers.base import (
+from clearscout.application.config import ModelChoice, ProviderName
+from clearscout.application.discovery.content_resolution import ResolvedPostingContent
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.source_reading import SourceListing, SourceRead, SourceReader
+from clearscout.application.tailoring.batch.analysis import Recommendation
+from clearscout.application.tailoring.pipeline.models import SerializedRunArtifacts
+from clearscout.application.tailoring.stages.verify import Report
+from clearscout.domain import SourceReadOutcome
+from clearscout.domain.records import PostingReadIntent
+from clearscout.infrastructure.providers.base import (
     BackgroundDispatch,
     BackgroundPoll,
     CallRecord,
     Search,
     SearchSource,
 )
-from tailorcv.infrastructure.providers.plan import RequestPlan
-from tailorcv.infrastructure.web_fetch.board_adapters import DETECT_BYTES, BoardApiFetcher
-from tailorcv.shared.costs import Ledger, Usage
+from clearscout.infrastructure.providers.plan import RequestPlan
+from clearscout.infrastructure.web_fetch.board_adapters import DETECT_BYTES, BoardApiFetcher
+from clearscout.shared.costs import Ledger, Usage
 from tests.support.suite import SUITE_PROVIDER
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -267,7 +267,7 @@ class ScriptedProvider:
         return value, replace(record, searches=(searched,), tool_version="scripted_web_search")
 
     def check_credentials(self) -> None:
-        from tailorcv.shared.errors import AuthError
+        from clearscout.shared.errors import AuthError
 
         if not self.credentials_ok:
             raise AuthError("that key was rejected")

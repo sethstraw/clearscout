@@ -9,36 +9,41 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import EvaluationCommit
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.job_search.fit_reports import render_fit_report
-from tailorcv.application.job_search.models import ClosingDateEditInput
-from tailorcv.application.master_cv.cv import CvInventory, Entry, EntryKind
-from tailorcv.application.tailoring import fit
-from tailorcv.application.tailoring.fit.structure import Answer
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application import job_search
+from clearscout.application.contracts import EvaluationCommit
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.job_search.fit_reports import render_fit_report
+from clearscout.application.job_search.models import ClosingDateEditInput
+from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind
+from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.fit.structure import Answer
+from clearscout.application.tailoring.stages.jobspec import (
     HardGate,
     Importance,
     JobSpec,
     Requirement,
 )
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.stages.spans import locate
-from tailorcv.application.tailoring.workflows.evaluation_commit import (
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.stages.spans import locate
+from clearscout.application.tailoring.workflows.evaluation_commit import (
     EvaluationCommitInputs,
     build_evaluation_commit,
     build_refusal_commit,
 )
-from tailorcv.application.tailoring.workflows.models import EvaluationOutput
-from tailorcv.domain.records import EvaluationDecision
-from tailorcv.domain.search_parameters import Acceptance, Arrangement, JobSearchParameters
-from tailorcv.domain.staged_facts import PublisherClosingDate
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import JobPosting, PendingDiscovery
-from tailorcv.infrastructure.web_fetch.ingest import JDText
-from tailorcv.shared.costs import CallManifest, Ledger, Usage
+from clearscout.application.tailoring.workflows.models import EvaluationOutput
+from clearscout.domain.records import EvaluationDecision
+from clearscout.domain.search_parameters import Acceptance, Arrangement, JobSearchParameters
+from clearscout.domain.staged_facts import PublisherClosingDate
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import JobPosting, PendingDiscovery
+from clearscout.infrastructure.web_fetch.ingest import JDText
+from clearscout.shared.costs import CallManifest, Ledger, Usage
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import evaluation_commit, scan_workspace, seed_pending_discovery
 

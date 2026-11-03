@@ -204,7 +204,7 @@ export function JobOverview({
       <section className="panel">
         <h2>Your review</h2>
         <p className="field-note">
-          Your recorded values stay separate from TailorCV evaluations. Blank fields mean no value
+          Your recorded values stay separate from ClearScout evaluations. Blank fields mean no value
           was recorded; changing one does not run an evaluation.
         </p>
         <form
@@ -251,7 +251,7 @@ export function JobOverview({
           <h3>Recorded scores</h3>
           <p className="field-note">
             A score you enter here takes precedence in the tracked-postings review. Leave it blank
-            to use the TailorCV evaluation score. Pay alone does not supply a compensation score.
+            to use the ClearScout evaluation score. Pay alone does not supply a compensation score.
           </p>
           <div className="manual-review__fields">
             {(

@@ -14,8 +14,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from clearscout.application.config import ProviderName, Settings, Stage
+from clearscout.application.prompts import overriding
+from clearscout.application.tailoring.stages.jobspec import JobSpec, extract
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.web_fetch.ingest.text import JDText
+from clearscout.shared.costs import Ledger
+from clearscout.shared.costs.prices import table as price_table
+from clearscout.shared.layout import plain_layout
 from evals.inspect.labeling import bytes_sha256
-from evals.inspect.solvers.tailorcv_live import (
+from evals.inspect.solvers.clearscout_live import (
     PromptArm,
     arms_metadata,
     bill_sample,
@@ -29,14 +37,6 @@ from evals.inspect.solvers.tailorcv_live import (
     sample_provenance,
 )
 from evals.support.client import build_live_client
-from tailorcv.application.config import ProviderName, Settings, Stage
-from tailorcv.application.prompts import overriding
-from tailorcv.application.tailoring.stages.jobspec import JobSpec, extract
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.web_fetch.ingest.text import JDText
-from tailorcv.shared.costs import Ledger
-from tailorcv.shared.costs.prices import table as price_table
-from tailorcv.shared.layout import plain_layout
 
 JOBSPEC_PROMPTS = ("jobspec_system", "jobspec_user")
 BILLING_ORIGIN = "eval.jobspec_boundary_live"

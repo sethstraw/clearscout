@@ -16,35 +16,35 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceDetailCheckpoint,
     SourceRead,
     SourceReadOptions,
 )
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.infrastructure.web_fetch import board_adapters, boards
-from tailorcv.infrastructure.web_fetch import platforms as platform_package
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.domain import SourceReadOutcome
+from clearscout.infrastructure.web_fetch import board_adapters, boards
+from clearscout.infrastructure.web_fetch import platforms as platform_package
+from clearscout.infrastructure.web_fetch.board_adapters import (
     STRUCTURED_PAGE_CURSOR_REASONS,
     BoardApiFetcher,
     identify_board,
     identify_board_url,
 )
-from tailorcv.infrastructure.web_fetch.board_platform import BoardKind
-from tailorcv.infrastructure.web_fetch.ingest.sitemap import SitemapLimits, discover_job_urls
-from tailorcv.infrastructure.web_fetch.ingest.url import posting_readers
-from tailorcv.infrastructure.web_fetch.listing_facts import (
+from clearscout.infrastructure.web_fetch.board_platform import BoardKind
+from clearscout.infrastructure.web_fetch.ingest.sitemap import SitemapLimits, discover_job_urls
+from clearscout.infrastructure.web_fetch.ingest.url import posting_readers
+from clearscout.infrastructure.web_fetch.listing_facts import (
     EXHAUSTIVE_LOCATION_PROVIDERS,
     NON_EXHAUSTIVE_LOCATION_PROVIDERS,
 )
-from tailorcv.infrastructure.web_fetch.platforms import PLATFORMS, workday
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.infrastructure.web_fetch.platforms import PLATFORMS, workday
+from clearscout.infrastructure.web_fetch.policy import (
     HostHeldError,
     PoliteHttpClient,
     RobotsDeniedError,
 )
-from tailorcv.infrastructure.web_fetch.publisher_sources import (
+from clearscout.infrastructure.web_fetch.publisher_sources import (
     REGISTERED_POSTING_LINK,
     PublisherReadLimits,
     PublisherSourceFetcher,
@@ -143,7 +143,7 @@ def test_a_deadline_cursor_is_continuation_work_not_a_time_limit_skip(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 0.0
+        "clearscout.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 0.0
     )
     fetcher = _ScriptedSmartRecruiters(total=250)
 
@@ -167,7 +167,7 @@ def test_a_held_host_leaves_a_cursor_retryable_without_a_request() -> None:
         return httpx.Response(429, headers={"Retry-After": "300"}, request=request)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         jitter=lambda _low, _high: 0.0,
         getter=get,
@@ -317,7 +317,7 @@ class _PagedBoard:
     def client(self, *, interval: float = 0.0) -> PoliteHttpClient:
         """Wire these pages behind the outbound policy, pacing each host by ``interval``."""
         return PoliteHttpClient(
-            user_agent="tailorcv/test",
+            user_agent="clearscout/test",
             sleeper=lambda seconds: self.paced.append(("wait", seconds)),
             jitter=lambda _low, _high: interval,
             getter=self.get,
@@ -843,7 +843,7 @@ def _polite(
         )
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=sleeps.append,
         jitter=lambda _low, _high: 0.5,
         getter=get,
@@ -1152,7 +1152,7 @@ def test_board_api_reads_use_the_shared_politeness_policy() -> None:
         )
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=pauses.append,
         jitter=lambda low, high: 0.5,
         getter=get,
@@ -1187,7 +1187,7 @@ def test_dayforce_feed_is_never_requested_when_robots_refuses_it() -> None:
         pytest.fail(f"robots-refused Dayforce target reached the network: {url}")
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         getter=get,
         resolver=lambda _host, port: [(2, 1, 6, "", ("93.184.216.34", port))],

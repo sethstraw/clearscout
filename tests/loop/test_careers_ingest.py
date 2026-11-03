@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.domain.records import PageClassification
-from tailorcv.infrastructure.web_fetch.ingest.careers import (
+from clearscout.domain.records import PageClassification
+from clearscout.infrastructure.web_fetch.ingest.careers import (
     LinkRelation,
     PublisherLink,
     inspect_publisher_page,

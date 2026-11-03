@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import uuid
 
-from tailorcv.application.job_search.postings.rulings import (
+from clearscout.application.job_search.postings.rulings import (
     RequirementRulingService,
     cited_in_body,
     dispute_block,
 )
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain.rulings import Ruling
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain.rulings import Ruling
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import runtime_storage
 
 

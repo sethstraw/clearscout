@@ -10,7 +10,7 @@ no money.
         --config tests/cassettes/record.toml \
         --out tests/cassettes/run_openai.json --provider openai
 
-Record OpenAI. It is the only provider tailorcv has been validated against, and
+Record OpenAI. It is the only provider clearscout has been validated against, and
 a cassette is the record of that validation. The replay test reads the provider
 back out of the filename, so renaming a cassette breaks its replay.
 
@@ -49,9 +49,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tests.support.cassette import Cassette, recording_client
 
-from tailorcv.application.config import ProviderName, load_settings
-from tailorcv.delivery.cli.console import Terminal
-from tailorcv.infrastructure.providers.credentials import resolve
+from clearscout.application.config import ProviderName, load_settings
+from clearscout.delivery.cli.console import Terminal
+from clearscout.infrastructure.providers.credentials import resolve
 
 
 def recording_provider(cassette: Cassette) -> Any:
@@ -67,12 +67,12 @@ def recording_provider(cassette: Cassette) -> Any:
         if name is ProviderName.ANTHROPIC:
             from anthropic import Anthropic
 
-            from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
+            from clearscout.infrastructure.providers.anthropic import AnthropicProvider
 
             return AnthropicProvider(api_key=key, client=Anthropic(api_key=key, http_client=http))
         from openai import OpenAI
 
-        from tailorcv.infrastructure.providers.openai import OpenAIProvider
+        from clearscout.infrastructure.providers.openai import OpenAIProvider
 
         return OpenAIProvider(api_key=key, client=OpenAI(api_key=key, http_client=http))
 
@@ -86,7 +86,7 @@ def main() -> int:
     )
     parser.add_argument("source", help="Posting URL, PDF, screenshot, or text file.")
     parser.add_argument("--out", type=Path, required=True, help="Cassette file to write.")
-    parser.add_argument("--config", type=Path, default=None, help="Path to tailorcv.toml.")
+    parser.add_argument("--config", type=Path, default=None, help="Path to clearscout.toml.")
     parser.add_argument(
         "--provider",
         type=ProviderName,
@@ -101,7 +101,7 @@ def main() -> int:
     )
     arguments = parser.parse_args()
 
-    output_dir = arguments.output_dir or Path(tempfile.mkdtemp(prefix="tailorcv-cassette-"))
+    output_dir = arguments.output_dir or Path(tempfile.mkdtemp(prefix="clearscout-cassette-"))
     settings = load_settings(
         arguments.config,
         overrides={"provider": arguments.provider, "output_dir": output_dir},
@@ -109,8 +109,8 @@ def main() -> int:
     cassette = Cassette(path=arguments.out)
     credential = resolve(settings.provider, prompter=Terminal())
 
-    from tailorcv.application.tailoring import pipeline
-    from tailorcv.application.tailoring.pipeline import service as pipeline_service
+    from clearscout.application.tailoring import pipeline
+    from clearscout.application.tailoring.pipeline import service as pipeline_service
 
     # Patch the service module; the pipeline package does not re-export provider_for.
     service_module: Any = pipeline_service

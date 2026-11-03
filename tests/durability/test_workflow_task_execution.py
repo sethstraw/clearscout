@@ -13,22 +13,22 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from tailorcv.application.documents.approvals import ApprovalService
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.master_cv import cv
-from tailorcv.application.tailoring.workflows import (
+from clearscout.application.documents.approvals import ApprovalService
+from clearscout.application.failures import ValidationError
+from clearscout.application.master_cv import cv
+from clearscout.application.tailoring.workflows import (
     BatchOutput,
     TailoringHandler,
     TailorOutput,
     WorkflowService,
 )
-from tailorcv.application.tasks import TaskQueueService, validate_task_payload
-from tailorcv.application.workspaces.records import WorkspaceRecords
-from tailorcv.bootstrap.api import create_app
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import TailoringOutcome
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.tasks import TaskQueueService, validate_task_payload
+from clearscout.application.workspaces.records import WorkspaceRecords
+from clearscout.bootstrap.api import create_app
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import TailoringOutcome
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     EvaluationFactor,
     JobEvaluation,
@@ -36,8 +36,8 @@ from tailorcv.infrastructure.persistence.models import (
     ReviewProposal,
     TailoringRun,
 )
-from tailorcv.infrastructure.web_fetch.company_research import ResearchSource
-from tailorcv.shared.costs import Ledger
+from clearscout.infrastructure.web_fetch.company_research import ResearchSource
+from clearscout.shared.costs import Ledger
 from tests.support.artifacts import runtime_storage
 from tests.support.runners import ScriptedPipelineRunner, serialized_artifacts
 from tests.support.scenarios import seed_reusable_tailoring_run, studio_workspace
@@ -473,7 +473,7 @@ def test_discovery_refuses_a_write_that_would_leave_a_non_canonical_master_cv(
             version.byte_size = len(content)
     master_before = master.read_bytes()
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.import_cv",
+        "clearscout.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: pytest.fail("a discovery write must not call a provider"),
     )
     discovered = _answer_the_gap(workspace_id, job_id, queue, worker)
@@ -523,7 +523,7 @@ def test_discovery_parses_one_master_cv_across_proposal_and_write_phases(
         parse_calls.append(path)
         return cv.parse_cv(path)
 
-    monkeypatch.setattr("tailorcv.application.tailoring.workflows.handlers.parse_cv", count_parse)
+    monkeypatch.setattr("clearscout.application.tailoring.workflows.handlers.parse_cv", count_parse)
     queue = TaskQueueService(durable_database)
     worker = Worker(
         durable_database,

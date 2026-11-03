@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from tailorcv.application.config import ProviderName
+from clearscout.application.config import ProviderName
 
 
 def provider_for_http(
@@ -20,7 +20,7 @@ def provider_for_http(
     if provider is ProviderName.ANTHROPIC:
         from anthropic import Anthropic
 
-        from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
+        from clearscout.infrastructure.providers.anthropic import AnthropicProvider
 
         return AnthropicProvider(
             api_key="not-a-real-key",
@@ -29,7 +29,7 @@ def provider_for_http(
 
     from openai import OpenAI
 
-    from tailorcv.infrastructure.providers.openai import OpenAIProvider
+    from clearscout.infrastructure.providers.openai import OpenAIProvider
 
     return OpenAIProvider(
         api_key="not-a-real-key",

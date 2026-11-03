@@ -22,7 +22,7 @@ const workspace = {
   id: "workspace-1",
   slug: "my-search",
   name: "My Search",
-  root_path: "/Documents/TailorCV/workspaces/my-search",
+  root_path: "/Documents/ClearScout/workspaces/my-search",
   provider: "openai",
   created_at: "2026-08-05T12:00:00Z",
 } satisfies Workspace;
@@ -111,7 +111,7 @@ describe("WelcomePage", () => {
   it.each([false, true])(
     "keeps onboarding recovery available after another tab saves (failed read: %s)",
     async (failRead) => {
-      window.localStorage.setItem("tailorcv.workspace", workspace.id);
+      window.localStorage.setItem("clearscout.workspace", workspace.id);
       let version = 0;
       let readFailed = false;
       const attempts: {
@@ -266,12 +266,12 @@ describe("WelcomePage", () => {
     expect(folder.getAttribute("placeholder")).toBeNull();
     expect(folder).toHaveProperty("value", "");
     expect(
-      screen.getByRole("textbox", { description: "Leave blank to use Documents/TailorCV." }),
+      screen.getByRole("textbox", { description: "Leave blank to use Documents/ClearScout." }),
     ).toBe(folder);
   });
 
   it("opens the existing search setup without a CV or provider key", async () => {
-    window.localStorage.setItem("tailorcv.workspace", workspace.id);
+    window.localStorage.setItem("clearscout.workspace", workspace.id);
     server.use(...welcomeReads({ workspaces: [workspace] }));
     renderPage();
     expect(await screen.findByRole("heading", { name: "Basic search preferences" })).toBeTruthy();
@@ -281,7 +281,7 @@ describe("WelcomePage", () => {
   });
 
   it("keeps an unsaved search draft when skipping to discovery and returning", async () => {
-    window.localStorage.setItem("tailorcv.workspace", workspace.id);
+    window.localStorage.setItem("clearscout.workspace", workspace.id);
     server.use(...welcomeReads({ workspaces: [workspace] }));
     renderPage();
     const titles = await screen.findByLabelText("Target titles");
@@ -301,7 +301,7 @@ describe("WelcomePage", () => {
   });
 
   it("explains the optional paid requirements and links their existing routes", async () => {
-    window.localStorage.setItem("tailorcv.workspace", workspace.id);
+    window.localStorage.setItem("clearscout.workspace", workspace.id);
     server.use(...welcomeReads({ workspaces: [workspace] }));
     renderPage();
     await screen.findByRole("heading", { name: "Basic search preferences" });
@@ -319,7 +319,7 @@ describe("WelcomePage", () => {
   });
 
   it("offers free discovery after search parameters are saved without a CV or key", async () => {
-    window.localStorage.setItem("tailorcv.workspace", workspace.id);
+    window.localStorage.setItem("clearscout.workspace", workspace.id);
     server.use(...welcomeReads({ workspaces: [workspace], parametersVersion: 1 }));
     renderPage();
     expect(

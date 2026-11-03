@@ -8,19 +8,19 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.config import Settings
-from tailorcv.application.master_cv.cv import CvInventory, Entry, EntryKind, parse_cv
-from tailorcv.application.tailoring.pipeline import RunCommand, run
-from tailorcv.application.tailoring.stages.draft import DraftedLine, DraftedRole, ResumeDraft
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.config import Settings
+from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind, parse_cv
+from clearscout.application.tailoring.pipeline import RunCommand, run
+from clearscout.application.tailoring.stages.draft import DraftedLine, DraftedRole, ResumeDraft
+from clearscout.application.tailoring.stages.jobspec import (
     HardGate,
     Importance,
     JobSpec,
     Requirement,
 )
-from tailorcv.application.tailoring.stages.match import EvidenceMap
-from tailorcv.application.tailoring.stages.select import Plan, build_plan
-from tailorcv.application.tailoring.stages.verify import (
+from clearscout.application.tailoring.stages.match import EvidenceMap
+from clearscout.application.tailoring.stages.select import Plan, build_plan
+from clearscout.application.tailoring.stages.verify import (
     CRITIC_CHECK,
     LETTER_CRITIC,
     CriticVerdict,
@@ -216,7 +216,7 @@ def test_the_length_section_names_a_role_printed_past_the_cap(
     assert past, "the fixture no longer passes the cap"
     assert f"{past[0].organization} ({past[0].title}, {past[0].dates}) prints " in length
     assert f"past max_bullets_per_role = {settings.max_bullets_per_role}" in length
-    assert "tailorcv.toml" not in length
+    assert "clearscout.toml" not in length
     assert "below the cap" not in length, "no role sits below the cap, so none can explain it"
 
 
@@ -419,7 +419,7 @@ def test_the_cap_is_named_only_for_bullets_the_page_would_hold(
         settings=one_page,
     )
 
-    assert ("raise it in tailorcv.toml" in report_section(report, "Length")) is held_back
+    assert ("raise it in clearscout.toml" in report_section(report, "Length")) is held_back
 
 
 SQL_REQUIREMENT = "Proficiency in SQL and dbt"
@@ -438,8 +438,8 @@ SQL_REQUIREMENT = "Proficiency in SQL and dbt"
 def test_a_named_tool_no_cited_entry_names_is_advised_in_the_report_and_run_notes(
     importance: Importance, cited_text: str, advised: bool
 ) -> None:
-    from tailorcv.application.tailoring.pipeline.report import named_tool_notes
-    from tailorcv.application.tailoring.stages.match import Classification, Match, Strength
+    from clearscout.application.tailoring.pipeline.report import named_tool_notes
+    from clearscout.application.tailoring.stages.match import Classification, Match, Strength
 
     inventory = CvInventory(
         source=Path("master_cv.md"),
@@ -513,7 +513,7 @@ def test_a_dropped_named_tool_is_recorded_in_the_report() -> None:
 def test_a_note_calling_a_listed_example_missing_is_advised_in_the_report(
     note: str, advised: bool
 ) -> None:
-    from tailorcv.application.tailoring.stages.match import Classification, Match, Strength
+    from clearscout.application.tailoring.stages.match import Classification, Match, Strength
 
     text = EXAMPLE_ASK
     spec = _spec().model_copy(
@@ -560,7 +560,7 @@ def test_a_run_whose_note_calls_a_listed_example_missing_records_it_in_the_run_n
     answers["EvidenceMap"] = holds_an_example_against_the_record
     provider = ScriptedProvider(answers)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")

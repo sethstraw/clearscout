@@ -33,7 +33,7 @@ def git_repo(tmp_path: Path) -> Path:
 
 def test_migration_guard_reads_claude_serena_and_codex_payloads(load_hook, run_hook) -> None:
     migration = load_hook("block-extra-migration")
-    target = "src/tailorcv/infrastructure/persistence/migrations/versions/v0002.py"
+    target = "src/clearscout/infrastructure/persistence/migrations/versions/v0002.py"
     assert migration.paths_from_payload({"tool_name": "Write", "tool_input": {"file_path": target}})
     serena = {
         "tool_name": "mcp__serena__replace_symbol_body",
@@ -54,7 +54,7 @@ def test_migration_guard_reads_claude_serena_and_codex_payloads(load_hook, run_h
 
 
 def test_migration_guard_allows_serena_reads_of_the_versions_directory(run_hook) -> None:
-    versions = "src/tailorcv/infrastructure/persistence/migrations/versions"
+    versions = "src/clearscout/infrastructure/persistence/migrations/versions"
     for tool in ("mcp__serena__find_symbol", "mcp__serena__search_for_pattern"):
         payload = {"tool_name": tool, "tool_input": {"relative_path": versions}}
         assert run_hook("block-extra-migration", payload).returncode == 0, tool
@@ -110,7 +110,7 @@ def test_codex_matcher_and_guard_take_serena_edits_under_any_server_name(load_ho
         if any("block-extra-migration" in hook["command"] for hook in group["hooks"])
     )
     payload = {"relative_path": "src/a.py"}
-    for server in ("serena", "serena_tailorcv"):
+    for server in ("serena", "serena_clearscout"):
         for tool, expected in [
             *((t, True) for t in SERENA_EDITS),
             *((t, False) for t in SERENA_READS),
@@ -166,11 +166,11 @@ def test_comment_policy_matcher_covers_the_tools_the_hook_reads(load_hook) -> No
 @pytest.mark.parametrize(
     ("agent_type", "file_path", "refused"),
     [
-        ("cto-review", "src/tailorcv/domain/identity.py", True),
+        ("cto-review", "src/clearscout/domain/identity.py", True),
         ("cto-review", ".claude/agent-memory-local/cto-review/MEMORY.md", False),
         ("cto-review", ".claude/agent-memory-local/../agents/cto-review.md", True),
-        ("writer", "src/tailorcv/domain/identity.py", False),
-        ("", "src/tailorcv/domain/identity.py", False),
+        ("writer", "src/clearscout/domain/identity.py", False),
+        ("", "src/clearscout/domain/identity.py", False),
     ],
 )
 def test_a_review_agent_writes_only_inside_its_memory(
@@ -216,7 +216,7 @@ def test_codex_stop_hooks_run_on_a_codex_stop_payload(run_hook, git_repo: Path) 
 
 def test_migration_guard_stands_down_once_a_release_is_tagged(run_hook, git_repo: Path) -> None:
     """After the first tag, a schema change is a new revision, so the guard allows it."""
-    target = "src/tailorcv/infrastructure/persistence/migrations/versions/v0002.py"
+    target = "src/clearscout/infrastructure/persistence/migrations/versions/v0002.py"
     payload = {"tool_name": "Write", "tool_input": {"file_path": target}}
     env = {"CLAUDE_PROJECT_DIR": str(git_repo)}
     assert run_hook("block-extra-migration", payload, env=env).returncode == 2

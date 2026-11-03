@@ -15,8 +15,8 @@ from evals.inspect.relevance_review_dataset import (
 )
 from evals.support.inventory import synthetic_inventory
 
-from tailorcv.application.discovery.search_parameter_summary import search_summary
-from tailorcv.domain.search_parameters import (
+from clearscout.application.discovery.search_parameter_summary import search_summary
+from clearscout.domain.search_parameters import (
     Employment,
     JobSearchParameters,
     Lane,

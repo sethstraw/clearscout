@@ -13,10 +13,10 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
-from tailorcv.application.config import ModelChoice, ProviderName
-from tailorcv.infrastructure.providers.base import CallRecord, Search, SearchSource
-from tailorcv.infrastructure.providers.plan import RequestPlan
-from tailorcv.shared.costs import Usage
+from clearscout.application.config import ModelChoice, ProviderName
+from clearscout.infrastructure.providers.base import CallRecord, Search, SearchSource
+from clearscout.infrastructure.providers.plan import RequestPlan
+from clearscout.shared.costs import Usage
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -77,7 +77,7 @@ class ScriptedProvider:
 
     def check_credentials(self) -> None:
         """Raise when the script marks the credential invalid."""
-        from tailorcv.shared.errors import AuthError
+        from clearscout.shared.errors import AuthError
 
         if not self.credentials_ok:
             raise AuthError("scripted credential refused")

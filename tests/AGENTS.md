@@ -35,11 +35,11 @@ no `SimpleNamespace` stand-in for a payload: construct the real Pydantic model.
 ## Put the case in the owner's file
 
 A test belongs to the test module of the production owner it exercises, found
-from the package docstrings under `src/tailorcv/`. Extend that module rather
+from the package docstrings under `src/clearscout/`. Extend that module rather
 than starting a parallel one, and start one only when the owner has none.
 
 `tests/loop/test_discovery_screening.py` is the test module for
-the `src/tailorcv/application/discovery/screening/` package, and a new case about screening
+the `src/clearscout/application/discovery/screening/` package, and a new case about screening
 boundaries, bulk staging, holdouts, or arrangement vocabulary belongs in it.
 Role-family, adjacency, rung, and bare-function title rules live in
 `tests/loop/test_titles.py` with their production owner, so a case about what a
@@ -61,5 +61,5 @@ for its route. The service branches behind the route are tested at the service.
   the root `AGENTS.md` rule that tests never wait on the clock.
 - When a change removes behavior, delete its tests in the same change.
 
-Run what you touched in the focused form the `tailorcv-command-card` skill
+Run what you touched in the focused form the `clearscout-command-card` skill
 gives, and read the log once.

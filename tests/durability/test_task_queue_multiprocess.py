@@ -9,12 +9,12 @@ from multiprocessing.process import BaseProcess
 from pathlib import Path
 from queue import Empty
 
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import utc_now
-from tailorcv.infrastructure.persistence.database import Database, sqlite_path
-from tailorcv.infrastructure.persistence.models import BackgroundTask, WorkerPresence
-from tailorcv.infrastructure.persistence.types import UTCDateTime
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import utc_now
+from clearscout.infrastructure.persistence.database import Database, sqlite_path
+from clearscout.infrastructure.persistence.models import BackgroundTask, WorkerPresence
+from clearscout.infrastructure.persistence.types import UTCDateTime
 from tests.support.artifacts import runtime_storage
 
 _TIMEOUT_SECONDS = 15

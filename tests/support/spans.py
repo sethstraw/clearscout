@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tailorcv.application.tailoring.stages.spans import Span
-from tailorcv.domain import SpanStatus
+from clearscout.application.tailoring.stages.spans import Span
+from clearscout.domain import SpanStatus
 
 
 def found(start: int = 0, end: int = 1) -> Span:

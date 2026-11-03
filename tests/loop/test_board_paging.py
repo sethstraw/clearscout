@@ -10,7 +10,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     MAX_SOURCE_READ_ATTEMPTS,
     PostingCheck,
     SourceContinuationTarget,
@@ -19,13 +19,13 @@ from tailorcv.application.discovery.source_reading import (
     SourceRead,
     SourceReadOptions,
 )
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.infrastructure.web_fetch import board_reads
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.infrastructure.web_fetch.platforms import icims, oracle, phenom, teamtailor, workday
-from tailorcv.infrastructure.web_fetch.policy import HostHeldError
+from clearscout.domain import SourceReadOutcome
+from clearscout.domain.artifacts import PostingSource
+from clearscout.infrastructure.web_fetch import board_reads
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.platforms import icims, oracle, phenom, teamtailor, workday
+from clearscout.infrastructure.web_fetch.policy import HostHeldError
 from tests.loop.test_board_mappings_declared_search import _SearchSite
 from tests.loop.test_fxrecruiter_reader import _FeedSite
 from tests.loop.test_taleo_reader import _TaleoSite
@@ -1540,7 +1540,7 @@ def test_a_deadline_cutting_the_verifying_pass_keeps_the_hold_without_a_reset_cu
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: now[0],
     )
     fetcher = _SettlingWorkday(now=now, seconds_per_page=8.0)
@@ -1898,7 +1898,8 @@ def test_a_workday_detail_interrupted_at_the_deadline_does_not_spend_a_failed_at
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
 
     class InterruptedDetail(_WorkdayDetailReader):
@@ -1930,7 +1931,8 @@ def test_workday_detail_transport_timeout_preserves_the_operation_deadline(
 
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     requests: list[str] = []
 
@@ -2121,7 +2123,7 @@ def test_a_workday_continuation_reads_pages_until_the_deadline_and_carries_the_n
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: now[0],
     )
     fetcher = _ListedWorkday(900, stated_total=900, now=now, seconds_per_page=8.0)
@@ -2145,7 +2147,7 @@ def test_batch_neighbours_already_read_are_not_cut_off_by_the_deadline(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: now[0],
     )
     fetcher = _ListedWorkday(460, stated_total=0, now=now, seconds_per_page=12.0)
@@ -2249,7 +2251,7 @@ def test_workday_paging_uses_one_operation_deadline(
     now = [100.0]
     budgets: list[float] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: now[0],
     )
 
@@ -2286,7 +2288,7 @@ def test_workday_timeout_at_the_deadline_retains_prior_pages(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: now[0],
     )
 
@@ -2423,7 +2425,7 @@ def test_oracle_paging_uses_one_operation_deadline(
     now = [50.0]
     budgets: list[float] = []
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: now[0],
     )
 
@@ -2629,7 +2631,7 @@ def test_oracle_read_cut_by_the_deadline_carries_a_cursor(
         {offset: list(range(offset, offset + 9)) for offset in range(0, 500, 25)}, 500, tick=16.0
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: board.now[0],
     )
 
@@ -2646,7 +2648,7 @@ def test_oracle_continuation_reads_several_pages_until_the_end_or_the_deadline(
     pages = {offset: list(range(offset, offset + 10)) for offset in range(0, 200, 25)}
     board = _OracleBoard(pages, 200, tick=7.0)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: board.now[0],
     )
     first = board.listings("Example", _ORACLE_SITE)
@@ -2669,7 +2671,7 @@ def test_oracle_continuation_carries_its_cursor_when_the_deadline_cuts_it(
     pages = {offset: list(range(offset, offset + 25)) for offset in range(0, 1000, 25)}
     board = _OracleBoard(pages, 1000, tick=11.0)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: board.now[0],
     )
     first = board.listings("Example", _ORACLE_SITE)
@@ -3636,12 +3638,12 @@ def test_publisher_detail_deadline_counts_only_a_dispatched_request(
 
     site.fetcher.client.getter = answer
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: site.now,
     )
     site.fetcher.client.get(site.root)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS",
+        "clearscout.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS",
         1.0 if boundary == "pacing" else 3.0,
     )
     target = SourceContinuationTarget(
@@ -3680,7 +3682,7 @@ def test_publisher_detail_deadline_counts_only_a_dispatched_request(
         return
     site.fetcher.client.getter = lambda address, **_kwargs: original(address)
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 30.0
+        "clearscout.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 30.0
     )
 
     resumed = site.fetcher.continue_listings(

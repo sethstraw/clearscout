@@ -240,7 +240,9 @@ def test_comment_policy_allows_a_usage_header_that_names_its_own_file(tmp_path: 
 def test_comment_policy_reads_a_path_in_configuration_as_data(tmp_path: Path) -> None:
     """A path in a configuration file is a value the file needs, not a pointer."""
     source = tmp_path / "pyproject.toml"
-    source.write_text("# The wheel carries src/tailorcv/prompts.py.\nvalue = 1\n", encoding="utf-8")
+    source.write_text(
+        "# The wheel carries src/clearscout/prompts.py.\nvalue = 1\n", encoding="utf-8"
+    )
 
     assert file_violations(source) == []
 

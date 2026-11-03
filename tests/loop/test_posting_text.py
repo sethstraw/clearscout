@@ -8,7 +8,7 @@ from itertools import product
 
 import pytest
 
-from tailorcv.application.discovery.posting_text import (
+from clearscout.application.discovery.posting_text import (
     closure_signal,
     lists_many_postings,
     posting_facts,
@@ -16,7 +16,7 @@ from tailorcv.application.discovery.posting_text import (
     publisher_closing_date,
     role_based_place,
 )
-from tailorcv.infrastructure.web_fetch.ingest.url import from_html
+from clearscout.infrastructure.web_fetch.ingest.url import from_html
 from tests.support.suite import FIXTURES
 
 _POSTING_FORMATS = FIXTURES / "posting_formats"
@@ -863,7 +863,7 @@ def test_two_end_labels_that_agree_close_the_posting() -> None:
 def test_publisher_closing_date_preserves_precision_and_missing_timezone(
     value: str, normalized: str | None, precision: str | None, zone: str | None, uncertain: bool
 ) -> None:
-    from tailorcv.application.discovery.posting_text import publisher_closing_date
+    from clearscout.application.discovery.posting_text import publisher_closing_date
 
     fact = publisher_closing_date(
         "", valid_through=value, source_url="https://example.test/jobs/42", observed_at=_READ_AT
@@ -884,7 +884,7 @@ def test_publisher_closing_date_preserves_precision_and_missing_timezone(
     [(label, form(date(2026, 10, 19))) for label, form in product(_END_LABELS, _DATE_FORMATS)],
 )
 def test_labelled_closing_dates_retain_original_publisher_wording(label: str, value: str) -> None:
-    from tailorcv.application.discovery.posting_text import publisher_closing_date
+    from clearscout.application.discovery.posting_text import publisher_closing_date
 
     wording = f"{label} {value}"
     fact = publisher_closing_date(_end_date_body(wording), observed_at=_READ_AT)
@@ -897,7 +897,7 @@ def test_labelled_closing_dates_retain_original_publisher_wording(label: str, va
 
 
 def test_conflicting_closing_dates_are_not_resolved_to_the_earliest() -> None:
-    from tailorcv.application.discovery.posting_text import publisher_closing_date
+    from clearscout.application.discovery.posting_text import publisher_closing_date
 
     fact = publisher_closing_date(
         _end_date_body("Closing date: October 20, 2026"),
@@ -912,7 +912,7 @@ def test_conflicting_closing_dates_are_not_resolved_to_the_earliest() -> None:
 
 @pytest.mark.parametrize("value", ["Until filled", "Open until filled", "Rolling applications"])
 def test_rolling_closing_statements_are_retained_without_an_invented_date(value: str) -> None:
-    from tailorcv.application.discovery.posting_text import publisher_closing_date
+    from clearscout.application.discovery.posting_text import publisher_closing_date
 
     fact = publisher_closing_date(_end_date_body(f"Closing date: {value}"), observed_at=_READ_AT)
 
@@ -931,7 +931,7 @@ def test_rolling_closing_statements_are_retained_without_an_invented_date(value:
     ],
 )
 def test_other_dates_are_not_publisher_closing_dates(line: str) -> None:
-    from tailorcv.application.discovery.posting_text import publisher_closing_date
+    from clearscout.application.discovery.posting_text import publisher_closing_date
 
     fact = publisher_closing_date(_end_date_body(line), observed_at=_READ_AT)
 
@@ -941,7 +941,7 @@ def test_other_dates_are_not_publisher_closing_dates(line: str) -> None:
 
 
 def test_a_body_time_suffix_is_never_silently_dropped() -> None:
-    from tailorcv.application.discovery.posting_text import publisher_closing_date
+    from clearscout.application.discovery.posting_text import publisher_closing_date
 
     fact = publisher_closing_date(
         _end_date_body("Closing date: October 19, 2026 at 5 pm Mountain"), observed_at=_READ_AT
@@ -1008,8 +1008,8 @@ def test_a_body_time_suffix_is_never_silently_dropped() -> None:
 def test_publisher_posted_dates_normalize_each_board_format(
     value: str, normalized: str, precision: str, zone: str | None, day: date
 ) -> None:
-    from tailorcv.application.discovery.posting_text import publisher_posted_date
-    from tailorcv.domain.staged_facts import PostedDateGrade
+    from clearscout.application.discovery.posting_text import publisher_posted_date
+    from clearscout.domain.staged_facts import PostedDateGrade
 
     fact = publisher_posted_date(value, basis="published", grade=PostedDateGrade.FIRST_POSTED)
 
@@ -1025,16 +1025,16 @@ def test_publisher_posted_dates_normalize_each_board_format(
 
 @pytest.mark.parametrize("value", ["Posted 30+ Days Ago", "Posted Today", "about 4 hours", " "])
 def test_relative_posted_text_is_never_a_posted_date(value: str) -> None:
-    from tailorcv.application.discovery.posting_text import publisher_posted_date
-    from tailorcv.domain.staged_facts import PostedDateGrade
+    from clearscout.application.discovery.posting_text import publisher_posted_date
+    from clearscout.domain.staged_facts import PostedDateGrade
 
     assert publisher_posted_date(value, basis="postedOn", grade=PostedDateGrade.BOARD_DATE) is None
 
 
 @pytest.mark.parametrize("value", ["2026-02-30", "2026-10-19T17:30:00+24:00", "Week 40 of 2026"])
 def test_an_unreadable_posted_date_keeps_its_wording_and_needs_clarification(value: str) -> None:
-    from tailorcv.application.discovery.posting_text import publisher_posted_date
-    from tailorcv.domain.staged_facts import PostedDateGrade
+    from clearscout.application.discovery.posting_text import publisher_posted_date
+    from clearscout.domain.staged_facts import PostedDateGrade
 
     fact = publisher_posted_date(value, basis="datePosted", grade=PostedDateGrade.BOARD_DATE)
 

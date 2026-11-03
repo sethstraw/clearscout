@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from tailorcv.application.tailoring.stages.verify import FUNCTION_WORDS, doubted_span
-from tailorcv.domain.identity import normalize_text
-from tailorcv.shared.results import Outcome
+from clearscout.application.tailoring.stages.verify import FUNCTION_WORDS, doubted_span
+from clearscout.domain.identity import normalize_text
+from clearscout.shared.results import Outcome
 
 _CRITIC_OUTCOMES = frozenset(outcome.value for outcome in Outcome)
 

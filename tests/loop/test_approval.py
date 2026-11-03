@@ -15,15 +15,15 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner
 
-from tailorcv.application.tailoring import approval as approval_store
-from tailorcv.application.tailoring import changes
-from tailorcv.application.tailoring.layout import markdown_lines
-from tailorcv.application.tailoring.pipeline import MaterializedRun, RunCommand, RunResult, run
-from tailorcv.application.tailoring.pipeline.models import PageSelection
-from tailorcv.application.tailoring.stages.verify import CRITIC_CHECK
-from tailorcv.bootstrap.cli import app
-from tailorcv.shared.errors import ApprovalError
-from tailorcv.shared.results import Finding, Outcome
+from clearscout.application.tailoring import approval as approval_store
+from clearscout.application.tailoring import changes
+from clearscout.application.tailoring.layout import markdown_lines
+from clearscout.application.tailoring.pipeline import MaterializedRun, RunCommand, RunResult, run
+from clearscout.application.tailoring.pipeline.models import PageSelection
+from clearscout.application.tailoring.stages.verify import CRITIC_CHECK
+from clearscout.bootstrap.cli import app
+from clearscout.shared.errors import ApprovalError
+from clearscout.shared.results import Finding, Outcome
 from tests.support.doubles import ScriptedProvider
 from tests.support.payloads import script
 from tests.support.suite import POSTING, SUITE_KEY_VARIABLE, settings_for
@@ -43,7 +43,7 @@ def scripted(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     sources: dict[str, Any] = {}
     provider = ScriptedProvider(script(sources))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -221,7 +221,7 @@ def test_replacement_text_citing_nothing_is_refused(
     message = refusal(master_cv, tmp_path, payload, force=False)
     assert "sources cited" in message
     assert "cite no evidence" in message
-    assert "tailorcv discover" in message
+    assert "clearscout discover" in message
 
 
 def test_replacement_text_citing_evidence_outside_the_run_is_refused(
@@ -561,7 +561,7 @@ def test_the_written_review_records_the_decisions_that_were_applied(
 def test_the_command_line_applies_an_approval_end_to_end(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:
-    config = tmp_path / "tailorcv.toml"
+    config = tmp_path / "clearscout.toml"
     config.write_text(
         f'cv = "{master_cv}"\noutput_dir = "{tmp_path / "runs"}"\ncache = false\n',
         encoding="utf-8",
@@ -591,15 +591,15 @@ def test_the_command_line_reports_a_refused_approval_with_its_own_exit_code(
     master_cv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.base.provider_for",
+        "clearscout.infrastructure.providers.base.provider_for",
         lambda name, key, timeout=None: ScriptedProvider({}),
     )
 
     def refuse(*_: Any, **__: Any) -> Any:
         raise ApprovalError("That approval is stale.")
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.run", refuse)
-    config = tmp_path / "tailorcv.toml"
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.run", refuse)
+    config = tmp_path / "clearscout.toml"
     config.write_text(
         f'cv = "{master_cv}"\noutput_dir = "{tmp_path / "runs"}"\ncache = false\n',
         encoding="utf-8",
@@ -623,7 +623,7 @@ def test_the_command_line_reports_a_refused_approval_with_its_own_exit_code(
 
 
 def _roles(master_cv: Path) -> Any:
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     return parse_cv(master_cv).roles
 

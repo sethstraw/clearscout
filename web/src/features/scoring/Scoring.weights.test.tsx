@@ -14,7 +14,7 @@ import { ScoringPage } from "./Scoring";
 const POLICIES = [
   {
     id: "policy-2",
-    name: "TailorCV default",
+    name: "ClearScout default",
     version: 2,
     effective_at: "2026-08-07T00:00:00Z",
     is_shipped_default: true,
@@ -90,7 +90,7 @@ afterEach(() => window.localStorage.clear());
 
 describe("scoring weight editor", () => {
   it("previews a reorder using the same rule the server applies", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "weights-test");
+    window.localStorage.setItem("clearscout.workspace", "weights-test");
     installApi();
 
     render(
@@ -123,7 +123,7 @@ describe("scoring weight editor", () => {
   });
 
   it("says how much of the ledger the preview actually covers", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "weights-count-test");
+    window.localStorage.setItem("clearscout.workspace", "weights-count-test");
     installApi();
 
     render(
@@ -138,7 +138,7 @@ describe("scoring weight editor", () => {
   });
 
   it("refuses to save weights that do not total one", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "weights-invalid-test");
+    window.localStorage.setItem("clearscout.workspace", "weights-invalid-test");
     installApi();
 
     render(

@@ -25,7 +25,7 @@ private data on disk; `.gitignore` is not a privacy boundary.
   even when the read is refused.
 - HTTP payloads use typed contract models. The SPA derives closed vocabularies
   from the generated schema.
-- `pressume` is an external renderer. TailorCV does not bundle or depend on it.
+- `pressume` is an external renderer. ClearScout does not bundle or depend on it.
   Explicit rendering actions may invoke an installed renderer with fixed arguments.
 
 A smaller change that weakens one of those rules is still a regression. The
@@ -44,11 +44,11 @@ npm run --prefix web build
 uv sync --all-groups
 ```
 
-`tailorcv serve`, `tailorcv worker`, and the other commands default to
-`TailorCV/` in the operating system's Documents directory. That holds in a
-clone too, unless you pass `--data-root`. `scripts/tailorcv-local-app` is the
+`clearscout serve`, `clearscout worker`, and the other commands default to
+`ClearScout/` in the operating system's Documents directory. That holds in a
+clone too, unless you pass `--data-root`. `scripts/clearscout-local-app` is the
 one launcher that uses the ignored `local-data/` directory instead. It does so
-unless `TAILORCV_DATA_ROOT` is already set. Keep development data synthetic.
+unless `CLEARSCOUT_DATA_ROOT` is already set. Keep development data synthetic.
 
 To run the local application without supplying a real CV, seed a scratch data
 root as [Try the synthetic workspace](README.md#try-the-synthetic-workspace)
@@ -56,7 +56,7 @@ shows. Background work also needs a worker on the same root, in a second
 terminal:
 
 ```bash
-uv run tailorcv worker --data-root /tmp/tailorcv-demo
+uv run clearscout worker --data-root /tmp/clearscout-demo
 ```
 
 Neither the server nor the worker starts or upgrades the database implicitly.
@@ -141,7 +141,7 @@ suite is red deletes the evidence of the regression.
 
 Use the demo seed from
 [Try the synthetic workspace](README.md#try-the-synthetic-workspace) for
-reproducible screenshots and demo records. Pass `--port` to `tailorcv serve` to
+reproducible screenshots and demo records. Pass `--port` to `clearscout serve` to
 run a screenshot workspace beside another server.
 
 The seed refuses a populated database unless `--force` is explicit. It makes no

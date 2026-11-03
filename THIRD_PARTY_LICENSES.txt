@@ -1,4 +1,4 @@
-TAILORCV BUNDLED WEB DEPENDENCY LICENSES
+CLEARSCOUT BUNDLED WEB DEPENDENCY LICENSES
 
 Generated from exact production packages in web/package-lock.json.
 The package names and license texts below remain the property of their owners.

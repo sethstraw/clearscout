@@ -17,7 +17,7 @@ from sqlalchemy import event, select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     CUT_OFF_SKIP_REASON,
     LISTING_PAGE_NOTE,
     CurrentPostingContentReader,
@@ -27,43 +27,43 @@ from tailorcv.application.discovery.content_resolution import (
     pending_discovery_readiness,
     retained_text_cut_off,
 )
-from tailorcv.application.discovery.dispositions import DiscoveryDispositionService
-from tailorcv.application.discovery.hints import PendingDiscoveryHintsService
-from tailorcv.application.discovery.pending import (
+from clearscout.application.discovery.dispositions import DiscoveryDispositionService
+from clearscout.application.discovery.hints import PendingDiscoveryHintsService
+from clearscout.application.discovery.pending import (
     latest_disposition_statement,
     reset_pending_queue,
     set_pending_markers,
 )
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.posting_refresh import PostingRefreshService
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.discovery.relevance_disputes import RelevanceDisputeService
-from tailorcv.application.discovery.relevance_review import current_review_contract
-from tailorcv.application.discovery.relevance_review_preparation import (
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.posting_refresh import PostingRefreshService
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.relevance_disputes import RelevanceDisputeService
+from clearscout.application.discovery.relevance_review import current_review_contract
+from clearscout.application.discovery.relevance_review_preparation import (
     RelevanceReviewPreparationService,
 )
-from tailorcv.application.discovery.relevance_review_queries import RelevanceReviewQueries
-from tailorcv.application.discovery.relevance_review_records import ValidatedRelevanceReview
-from tailorcv.application.discovery.relevance_review_rejections import (
+from clearscout.application.discovery.relevance_review_queries import RelevanceReviewQueries
+from clearscout.application.discovery.relevance_review_records import ValidatedRelevanceReview
+from clearscout.application.discovery.relevance_review_rejections import (
     RelevanceReviewItemFailure,
     RelevanceReviewRejectionService,
 )
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.discovery.scan_staging import DiscoveryStaging
-from tailorcv.application.discovery.source_reading import SourceListing, SourceReadOptions
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.job_search.evaluation_targets import evaluated_jobs_for_pending
-from tailorcv.application.job_search.models import (
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.discovery.scan_staging import DiscoveryStaging
+from clearscout.application.discovery.source_reading import SourceListing, SourceReadOptions
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.job_search.evaluation_targets import evaluated_jobs_for_pending
+from clearscout.application.job_search.models import (
     PendingDiscoveryResponse,
     StagedListingFactsResponse,
 )
-from tailorcv.application.tailoring import fit
-from tailorcv.application.tailoring.workflows import EvaluationWorkflowService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.tasks.payloads import DiscoveryEvaluateBatchPayload
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.domain import (
+from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.workflows import EvaluationWorkflowService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.tasks.payloads import DiscoveryEvaluateBatchPayload
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.domain import (
     PendingDiscoveryReadiness,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
@@ -71,10 +71,10 @@ from tailorcv.domain import (
     PostingStatus,
     utc_now,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.identity import url_sha256
-from tailorcv.domain.records import PostingReadIntent, RobotsReadBasis
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.identity import url_sha256
+from clearscout.domain.records import PostingReadIntent, RobotsReadBasis
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     CountryNames,
@@ -82,10 +82,10 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import ListingIdentityTrust, PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.artifacts.store import file_uri_path
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import ListingIdentityTrust, PublishedFact, StagedListingFacts
+from clearscout.infrastructure.artifacts.store import file_uri_path
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     AuditEvent,
     PendingDiscovery,
@@ -95,11 +95,11 @@ from tailorcv.infrastructure.persistence.models import (
     RelevanceReviewDispute,
     Workspace,
 )
-from tailorcv.infrastructure.web_fetch.ingest.url import guarded_posting_reads
-from tailorcv.infrastructure.web_fetch.posting_resolution import (
+from clearscout.infrastructure.web_fetch.ingest.url import guarded_posting_reads
+from clearscout.infrastructure.web_fetch.posting_resolution import (
     DeterministicPostingContentResolver,
 )
-from tailorcv.infrastructure.web_fetch.rendered import RenderRuntimeUnavailableError
+from clearscout.infrastructure.web_fetch.rendered import RenderRuntimeUnavailableError
 from tests.support.application_forms import (
     FORM_PLATFORMS,
     US_STATE_OPTIONS,
@@ -1550,7 +1550,7 @@ _ORACLE_REQUISITION = {
     "ExternalQualificationsStr": _QUALIFICATIONS,
 }
 _DAYFORCE_ROW = {**dayforce_feed_row("12345", "Operations Lead"), "Description": _DUTIES}
-_MAPPINGS = "tailorcv.infrastructure.web_fetch.board_mappings"
+_MAPPINGS = "clearscout.infrastructure.web_fetch.board_mappings"
 # Each board's posting URL, the API address it answers on, the answer, the one
 # per-posting record in it, and the description markup the body converts.
 _BOARD_READS = [
@@ -3289,7 +3289,9 @@ def test_automatic_resolution_overlaps_a_bounded_group_of_independent_reads(
         automatic_lanes=2,
     )
 
-    with caplog.at_level("INFO", logger="tailorcv.application.discovery.content_resolution.reads"):
+    with caplog.at_level(
+        "INFO", logger="clearscout.application.discovery.content_resolution.reads"
+    ):
         result = service.resolve_automatic(
             workspace_id,
             [first_id, second_id],
@@ -5123,7 +5125,7 @@ def test_a_read_names_a_hinted_row_from_its_own_sites_page_title(
 def test_a_re_read_expects_only_an_employer_the_publisher_stated(
     durable_database: Database, tmp_path: Path, provenance: str, expected: str
 ) -> None:
-    from tailorcv.infrastructure.web_fetch.posting_resolution import _publisher_identity
+    from clearscout.infrastructure.web_fetch.posting_resolution import _publisher_identity
 
     url = "https://jobs.acme.test/job/Ridgefield-Principal-Scientist/1435902733/"
     title = "Principal Scientist"

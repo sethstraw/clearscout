@@ -7,19 +7,19 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import (
+from clearscout.application import job_search
+from clearscout.application.contracts import (
     ApplicationEventInput,
     EvaluationCommit,
     EvaluationScores,
     ScoreComponentInput,
 )
-from tailorcv.application.failures import NotFoundError
-from tailorcv.application.job_search.models import JobListQuery, ManualJobReviewInput
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import ApplicationStatus, EvaluationDecision
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import PostingObservation
+from clearscout.application.failures import NotFoundError
+from clearscout.application.job_search.models import JobListQuery, ManualJobReviewInput
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import ApplicationStatus, EvaluationDecision
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PostingObservation
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import (
     NOW,

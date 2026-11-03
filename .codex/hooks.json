@@ -1,5 +1,5 @@
 {
-  "description": "TailorCV repository guards shared with the Claude adapter.",
+  "description": "ClearScout repository guards shared with the Claude adapter.",
   "hooks": {
     "PreToolUse": [
       {

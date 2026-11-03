@@ -136,7 +136,7 @@ afterEach(() => {
 
 describe("JobSearchPage", () => {
   it("starts pending-queue paging fresh after the active workspace changes", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-one");
+    window.localStorage.setItem("clearscout.workspace", "workspace-one");
     const pageRequests: URL[] = [];
     useFindPage({
       onPageRequest: (url) => {
@@ -203,7 +203,7 @@ describe("JobSearchPage", () => {
   });
 
   it("persists source changes and clears the URL filter across router remounts", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-search");
+    window.localStorage.setItem("clearscout.workspace", "workspace-search");
     const requested: URL[] = [];
     useFindPage({
       outcomes: sourceScanOutcomePage({ items: [], total: 0, sources: ["Acme & Partners"] }),
@@ -250,7 +250,7 @@ describe("JobSearchPage", () => {
   });
 
   it("keeps recurring search actions separate from setup", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-search");
+    window.localStorage.setItem("clearscout.workspace", "workspace-search");
     useFindPage({
       sources: sourceList([
         boardSource({
@@ -290,7 +290,7 @@ describe("JobSearchPage", () => {
   });
 
   it("marks the tour targets and opens the help for the selected tab", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-search");
+    window.localStorage.setItem("clearscout.workspace", "workspace-search");
     useFindPage({ sources: sourceList([boardSource()]) });
 
     render(
@@ -316,7 +316,7 @@ describe("JobSearchPage", () => {
   });
 
   it("renders the Find new jobs panels without a duplicate-key warning", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-search");
+    window.localStorage.setItem("clearscout.workspace", "workspace-search");
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     useFindPage();
     try {
@@ -336,7 +336,7 @@ describe("JobSearchPage", () => {
   });
 
   it("keeps board sources up front and scan history under a closed History", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-search");
+    window.localStorage.setItem("clearscout.workspace", "workspace-search");
     useFindPage({
       scans: sourceScanHistory([
         sourceScan({
@@ -377,7 +377,7 @@ describe("JobSearchPage", () => {
   });
 
   it("shows the screened-out summary on the Boards tab and scrolls a deep-linked ledger into view", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-search");
+    window.localStorage.setItem("clearscout.workspace", "workspace-search");
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
     useFindPage({
@@ -416,7 +416,7 @@ describe("JobSearchPage", () => {
   });
 
   it("states evaluation cost and evaluates the whole selection as one batch", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-evaluate");
+    window.localStorage.setItem("clearscout.workspace", "workspace-evaluate");
     const pending = Array.from({ length: 11 }, (_, index) =>
       pendingDiscoveryRow({
         id: `pending-${index + 1}`,

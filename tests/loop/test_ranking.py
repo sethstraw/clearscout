@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tailorcv.application.discovery.ranking import DiscoverySignal, rank
-from tailorcv.domain.search_parameters import (
+from clearscout.application.discovery.ranking import DiscoverySignal, rank
+from clearscout.domain.search_parameters import (
     MAX_CLUSTERS,
     Cluster,
     CountryNames,

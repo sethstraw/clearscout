@@ -9,16 +9,16 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 
-from tailorcv.application.master_cv.cv import CvInventory, EntryKind, parse_cv
-from tailorcv.application.tailoring.stages.draft import (
+from clearscout.application.master_cv.cv import CvInventory, EntryKind, parse_cv
+from clearscout.application.tailoring.stages.draft import (
     DraftedLine,
     DraftedRole,
     DraftedSkill,
     ResumeDraft,
 )
-from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, Match, Strength
-from tailorcv.application.tailoring.stages.select import Plan
+from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+from clearscout.application.tailoring.stages.match import Classification, Match, Strength
+from clearscout.application.tailoring.stages.select import Plan
 
 PROSE = (
     "migrated the claims warehouse to a streaming design, cut the nightly load from 7 "

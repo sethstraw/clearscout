@@ -13,17 +13,17 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from tailorcv import __version__
-from tailorcv.application.config import ImageDetail, Settings, Stage
-from tailorcv.infrastructure.providers.base import CallRecord, Finish, UnusableResponseError
-from tailorcv.infrastructure.providers.plan import (
+from clearscout import __version__
+from clearscout.application.config import ImageDetail, Settings, Stage
+from clearscout.infrastructure.providers.base import CallRecord, Finish, UnusableResponseError
+from clearscout.infrastructure.providers.plan import (
     Image,
     RequestPlan,
     SearchPolicy,
     Segment,
     digest_of,
 )
-from tailorcv.shared.errors import ProviderError
+from clearscout.shared.errors import ProviderError
 from tests.durability.test_image_budget import png as _png
 from tests.support.plans import plan_for
 
@@ -201,7 +201,7 @@ def test_a_billed_response_that_cannot_be_used_is_still_recorded(client_factory)
 
 def test_a_cache_hit_names_the_request_and_costs_nothing(client_factory, tmp_path) -> None:
     """A reused answer is still a call the run made, and it is still identifiable."""
-    from tailorcv.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.cache import ResponseCache
 
     client = client_factory(SCRIPT)
     with ResponseCache(enabled=True, directory=tmp_path / "manifest") as cache:
@@ -220,6 +220,6 @@ def test_a_cache_hit_names_the_request_and_costs_nothing(client_factory, tmp_pat
 
 def _usage() -> Any:
     """Return the usage a truncated response still bills for."""
-    from tailorcv.shared.costs import Usage
+    from clearscout.shared.costs import Usage
 
     return Usage(input_tokens=11, output_tokens=5, reasoning_tokens=5)

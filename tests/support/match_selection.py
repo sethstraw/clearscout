@@ -45,8 +45,8 @@ from evals.inspect.selection import (
 )
 from evals.support.inventory import synthetic_inventory
 
-from tailorcv.application.tailoring.stages.jobspec import Dimension
-from tailorcv.application.tailoring.stages.match import Classification, Strength
+from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.match import Classification, Strength
 
 MATCH = ReviewFamily.MATCH
 CONTEXT_HASH = "c" * 64

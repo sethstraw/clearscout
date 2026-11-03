@@ -12,9 +12,9 @@ import pytest
 from sqlalchemy.exc import OperationalError
 from typer.testing import CliRunner
 
-from tailorcv import __version__
-from tailorcv.bootstrap.cli import app
-from tailorcv.infrastructure.artifacts import rendering
+from clearscout import __version__
+from clearscout.bootstrap.cli import app
+from clearscout.infrastructure.artifacts import rendering
 from tests.support.doubles import ScriptedProvider
 from tests.support.imported_cv import MESSY_CV, tidy_extraction
 from tests.support.payloads import script
@@ -26,9 +26,9 @@ DEFERRED_UNTIL_A_COMMAND_RUNS = ("sqlalchemy", "anthropic", "openai", "trafilatu
 
 
 def test_naming_a_command_does_not_import_what_running_it_would_need() -> None:
-    """`tailorcv --help` builds the command tree, and that is all it should cost."""
+    """`clearscout --help` builds the command tree, and that is all it should cost."""
     probe = (
-        "import sys; import tailorcv.bootstrap.cli; "
+        "import sys; import clearscout.bootstrap.cli; "
         f"print(','.join(name for name in {DEFERRED_UNTIL_A_COMMAND_RUNS!r} "
         "if name in sys.modules))"
     )
@@ -53,7 +53,7 @@ POSTING = (
 def offline_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     """No command in this suite may construct a real SDK client."""
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.base.provider_for",
+        "clearscout.infrastructure.providers.base.provider_for",
         lambda name, key, timeout=None: ScriptedProvider({}),
     )
 
@@ -61,7 +61,7 @@ def offline_provider(monkeypatch: pytest.MonkeyPatch) -> None:
 def config_at(tmp_path: Path, master_cv: Path) -> Path:
     # `cache = false`: the response cache otherwise defaults to the user's own
     # directory, and the next test is answered from it.
-    path = tmp_path / "tailorcv.toml"
+    path = tmp_path / "clearscout.toml"
     path.write_text(
         f'cv = "{master_cv}"\noutput_dir = "{tmp_path / "runs"}"\ncache = false\n',
         encoding="utf-8",
@@ -158,7 +158,7 @@ def test_auth_set_walks_through_and_stores(monkeypatch: pytest.MonkeyPatch) -> N
         "keyring.set_password", lambda service, name, key: stored.update({name: key})
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.providers.credentials.check_key", lambda provider, key: None
+        "clearscout.infrastructure.providers.credentials.check_key", lambda provider, key: None
     )
     result = runner.invoke(app, ["auth", "set", "anthropic"], input="n\nsk-test-key\n")
     assert result.exit_code == 0
@@ -167,12 +167,12 @@ def test_auth_set_walks_through_and_stores(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_auth_set_reports_a_key_the_provider_rejects(monkeypatch: pytest.MonkeyPatch) -> None:
-    from tailorcv.shared.errors import AuthError
+    from clearscout.shared.errors import AuthError
 
     def reject(provider: Any, key: str) -> None:
         raise AuthError("that key was not accepted: HTTP 401")
 
-    monkeypatch.setattr("tailorcv.infrastructure.providers.credentials.check_key", reject)
+    monkeypatch.setattr("clearscout.infrastructure.providers.credentials.check_key", reject)
     monkeypatch.setattr("keyring.set_password", lambda service, name, key: None)
     result = runner.invoke(app, ["auth", "set", "anthropic"], input="n\nbad\nbad\nbad\n")
     assert result.exit_code == 2
@@ -190,15 +190,15 @@ def test_auth_forget_removes_a_stored_key(monkeypatch: pytest.MonkeyPatch) -> No
 def test_a_run_with_failing_checks_exits_non_zero(
     tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from tailorcv.application.tailoring.pipeline import (
+    from clearscout.application.tailoring.pipeline import (
         MaterializedRun,
         RunResult,
         SerializedRunArtifacts,
     )
-    from tailorcv.application.tailoring.stages.jobspec import JobSpec
-    from tailorcv.application.tailoring.stages.verify import KeywordCoverage, Report
-    from tailorcv.shared.costs import Ledger
-    from tailorcv.shared.results import Finding, Outcome
+    from clearscout.application.tailoring.stages.jobspec import JobSpec
+    from clearscout.application.tailoring.stages.verify import KeywordCoverage, Report
+    from clearscout.shared.costs import Ledger
+    from clearscout.shared.results import Finding, Outcome
 
     def fake_run(*args: Any, **kwargs: Any) -> RunResult:
         return RunResult(
@@ -239,7 +239,7 @@ def test_a_run_with_failing_checks_exits_non_zero(
             notes=["Checks still failing."],
         )
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.run", fake_run)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.run", fake_run)
     result = runner.invoke(
         app, ["run", "posting.txt", "--config", str(config_at(tmp_path, master_cv))]
     )
@@ -254,7 +254,7 @@ def scripted(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     sources: dict[str, Any] = {}
     provider = ScriptedProvider(script(sources))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider,
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -270,7 +270,7 @@ def posting_at(tmp_path: Path) -> str:
 
 def rules_config(tmp_path: Path, master_cv: Path, body: str) -> Path:
     """Write a settings file carrying a `[rules]` block."""
-    path = tmp_path / "tailorcv.toml"
+    path = tmp_path / "clearscout.toml"
     path.write_text(
         f'cv = "{master_cv}"\noutput_dir = "{tmp_path / "runs"}"\ncache = false\n'
         f"\n[rules]\n{body}\n",
@@ -281,14 +281,14 @@ def rules_config(tmp_path: Path, master_cv: Path, body: str) -> Path:
 
 def test_template_writes_a_skeleton_that_the_rest_of_the_tool_can_read(tmp_path: Path) -> None:
     """A format described in prose is not a format somebody can start from."""
-    from tailorcv.application.master_cv.cv import parse_cv
+    from clearscout.application.master_cv.cv import parse_cv
 
     destination = tmp_path / "CV_Master.md"
     result = runner.invoke(app, ["template", str(destination)])
     assert result.exit_code == 0
     assert f"Wrote {destination}" in result.output
     assert parse_cv(destination).entries
-    assert "tailorcv import" in result.output, "the alternative route is not offered"
+    assert "clearscout import" in result.output, "the alternative route is not offered"
 
 
 def test_template_refuses_to_overwrite_a_master_cv(tmp_path: Path) -> None:
@@ -303,7 +303,7 @@ def test_template_refuses_to_overwrite_a_master_cv(tmp_path: Path) -> None:
 
 def test_init_without_a_terminal_says_what_to_do_instead(tmp_path: Path) -> None:
     """It asks questions, and a piped run must not block on a hidden prompt."""
-    result = runner.invoke(app, ["init", "--config", str(tmp_path / "tailorcv.toml")])
+    result = runner.invoke(app, ["init", "--config", str(tmp_path / "clearscout.toml")])
     assert result.exit_code == 2
     assert "no terminal attached" in result.output
     assert "Traceback" not in result.output
@@ -312,8 +312,8 @@ def test_init_without_a_terminal_says_what_to_do_instead(tmp_path: Path) -> None
 def test_init_can_create_a_complete_workspace_noninteractively(
     tmp_path: Path, master_cv: Path
 ) -> None:
-    root = tmp_path / "TailorCV" / "workspaces" / "scripted"
-    database = tmp_path / "TailorCV" / "tailorcv.sqlite3"
+    root = tmp_path / "ClearScout" / "workspaces" / "scripted"
+    database = tmp_path / "ClearScout" / "clearscout.sqlite3"
     result = runner.invoke(
         app,
         [
@@ -336,13 +336,13 @@ def test_init_can_create_a_complete_workspace_noninteractively(
     assert f"Initialized {root}" in result.output
     assert "CV import: adopted" in result.output
     assert (root / "master-cv" / "CV_Master.md").is_file()
-    assert (root / "tailorcv.toml").is_file()
+    assert (root / "clearscout.toml").is_file()
     assert database.is_file()
 
 
 def setup_result(path: Path, master_cv: Path) -> Any:
-    from tailorcv.application.master_cv.cv import parse_cv
-    from tailorcv.bootstrap.setup import ApplicationSetupResult
+    from clearscout.application.master_cv.cv import parse_cv
+    from clearscout.bootstrap.setup import ApplicationSetupResult
 
     return ApplicationSetupResult(
         config_path=path,
@@ -352,7 +352,7 @@ def setup_result(path: Path, master_cv: Path) -> Any:
         had_credential=True,
         workspace_id="workspace-1",
         workspace_root=path.parent,
-        database_url=f"sqlite+pysqlite:///{path.parent / 'tailorcv.sqlite3'}",
+        database_url=f"sqlite+pysqlite:///{path.parent / 'clearscout.sqlite3'}",
         import_method="adopted",
     )
 
@@ -361,9 +361,9 @@ def test_init_reports_what_it_wrote_and_the_one_thing_left_to_do(
     tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Distinctions are the setting that makes the output trustworthy."""
-    path = tmp_path / "tailorcv.toml"
+    path = tmp_path / "clearscout.toml"
     monkeypatch.setattr(
-        "tailorcv.bootstrap.setup.run_application_setup",
+        "clearscout.bootstrap.setup.run_application_setup",
         lambda *a, **k: setup_result(path, master_cv),
     )
     result = runner.invoke(app, ["init", "--config", str(path)])
@@ -380,7 +380,7 @@ def importable(monkeypatch: pytest.MonkeyPatch) -> Any:
     extracted = tidy_extraction()
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(
             {"ImportedCv": lambda schema: extracted.model_dump(mode="json")}
         ),
@@ -467,7 +467,7 @@ def test_import_whose_checks_fail_still_writes_and_exits_four(
     invented["summary"][0]["text"] = "A globally recognised authority on data platforms."
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider({"ImportedCv": lambda schema: invented}),
     )
 
@@ -530,7 +530,7 @@ def test_screen_leads_with_the_gates_and_costs_no_draft(
     assert output.index("Deal-breakers") < output.index("requirements,")
     assert "sponsorship" in output
     assert "answered by" in output
-    assert "tailorcv run" in output
+    assert "clearscout run" in output
     # Two calls, and neither of them writes anything: no draft, no critic.
     names = [name for name, _ in scripted["provider"].calls]
     assert len(names) == 2
@@ -548,8 +548,8 @@ def test_screen_reads_the_posting_with_single_posting_intent(
     tmp_path: Path, master_cv: Path, scripted: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A person typing one posting URL earns the robots single-read exemption."""
-    from tailorcv.domain.records import PostingReadIntent
-    from tailorcv.infrastructure.web_fetch.ingest import JDText
+    from clearscout.domain.records import PostingReadIntent
+    from clearscout.infrastructure.web_fetch.ingest import JDText
 
     seen: list[PostingReadIntent] = []
 
@@ -558,7 +558,7 @@ def test_screen_reads_the_posting_with_single_posting_intent(
         seen.append(intent)
         return JDText(text=POSTING, origin=argument, method="plain text")
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.service.ingest", scripted_ingest)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.service.ingest", scripted_ingest)
 
     result = runner.invoke(
         app,
@@ -578,8 +578,8 @@ def test_batch_reads_each_named_posting_with_single_posting_intent(
     tmp_path: Path, master_cv: Path, scripted: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Guard: postings a person names on the command line are single-posting reads."""
-    from tailorcv.domain.records import PostingReadIntent
-    from tailorcv.infrastructure.web_fetch.ingest import JDText
+    from clearscout.domain.records import PostingReadIntent
+    from clearscout.infrastructure.web_fetch.ingest import JDText
 
     seen: list[PostingReadIntent] = []
 
@@ -588,7 +588,7 @@ def test_batch_reads_each_named_posting_with_single_posting_intent(
         seen.append(intent)
         return JDText(text=POSTING, origin=argument, method="plain text")
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.service.ingest", scripted_ingest)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.service.ingest", scripted_ingest)
 
     result = runner.invoke(
         app,
@@ -617,7 +617,7 @@ def test_screen_lists_the_requirements_the_cv_does_not_support(
 
     built["EvidenceMap"] = gapped
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(built),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -649,7 +649,7 @@ def test_screen_labels_an_hours_or_language_gate_as_one_no_record_answers(
 
     built["JobSpecExtraction"] = personal_gate
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(built),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -697,7 +697,7 @@ def test_a_page_that_yielded_no_requirements_is_refused_rather_than_screened(
         "hard_gates": [],
     }
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(built),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -724,7 +724,7 @@ def test_screen_says_a_posting_states_no_deal_breakers_only_when_it_checked_some
 
     built["JobSpecExtraction"] = ungated
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: ScriptedProvider(built),
     )
     monkeypatch.setenv(SUITE_KEY_VARIABLE, "test-key")
@@ -781,7 +781,7 @@ def test_a_render_that_warned_prints_the_warning_beside_what_it_wrote(
         )
 
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.rendering.render", rendered
+        "clearscout.application.tailoring.pipeline.service.rendering.render", rendered
     )
     result = runner.invoke(
         app,
@@ -829,7 +829,7 @@ def test_the_exit_codes_are_the_ones_the_user_guide_promises(
     tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A script batching postings reads these, and the table is a promise."""
-    from tailorcv.shared.errors import (
+    from clearscout.shared.errors import (
         AuthError,
         BudgetError,
         ConfigError,
@@ -854,7 +854,7 @@ def test_the_exit_codes_are_the_ones_the_user_guide_promises(
         def failing(*args: Any, _error: type[Exception] = error, **kwargs: Any) -> None:
             raise _error("the reason, stated plainly")
 
-        monkeypatch.setattr("tailorcv.application.tailoring.pipeline.run", failing)
+        monkeypatch.setattr("clearscout.application.tailoring.pipeline.run", failing)
         result = runner.invoke(app, ["run", "posting.txt", "--config", config])
         assert result.exit_code == code, f"{error.__name__} should exit {code}"
         assert "the reason, stated plainly" in result.output
@@ -890,7 +890,7 @@ def test_batch_screens_several_postings_and_writes_a_report(
     assert "None of the above is a score." in result.output
     assert (tmp_path / "batch" / "Batch_Report.md").is_file()
     assert (tmp_path / "batch" / "batch.json").is_file()
-    assert "tailorcv discover --queue" in result.output
+    assert "clearscout discover --queue" in result.output
 
 
 def test_batch_refuses_arguments_and_a_plan_file_at_once(tmp_path: Path, master_cv: Path) -> None:
@@ -933,7 +933,7 @@ def test_discover_refuses_when_nobody_is_at_the_terminal(tmp_path: Path, master_
 def test_discover_refuses_when_there_is_nothing_to_ask_about(
     tmp_path: Path, master_cv: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from tailorcv.delivery.cli.support import terminal
+    from clearscout.delivery.cli.support import terminal
 
     monkeypatch.setattr(terminal, "interactive", lambda: True)
     result = runner.invoke(app, ["discover", "--config", str(config_at(tmp_path, master_cv))])
@@ -947,8 +947,8 @@ def test_discover_asks_confirms_and_writes_to_the_master_cv(
     """The whole command, with a scripted person and no model anywhere."""
     import shutil
 
-    from tailorcv.application.master_cv.cv import parse_cv
-    from tailorcv.delivery.cli.support import terminal
+    from clearscout.application.master_cv.cv import parse_cv
+    from clearscout.delivery.cli.support import terminal
 
     copied = tmp_path / "CV_Master.md"
     shutil.copy(master_cv, copied)
@@ -986,7 +986,7 @@ def test_discover_reports_gaps_it_could_not_close(
     import json
     import shutil
 
-    from tailorcv.delivery.cli.support import terminal
+    from clearscout.delivery.cli.support import terminal
 
     copied = tmp_path / "CV_Master.md"
     shutil.copy(master_cv, copied)
@@ -1020,12 +1020,12 @@ def _sqlite_operational_error(message: str, code: int, name: str) -> Operational
 
 
 def _start_raising(monkeypatch: pytest.MonkeyPatch, error: OperationalError) -> Any:
-    """Run `tailorcv start` with its startup work raising ``error``."""
+    """Run `clearscout start` with its startup work raising ``error``."""
 
     def fail(*args: object, **kwargs: object) -> None:
         raise error
 
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.start_local_application", fail)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.start_local_application", fail)
     return runner.invoke(app, ["start"])
 
 

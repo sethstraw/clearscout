@@ -1,6 +1,6 @@
 """Scripted-provider cover-letter task loaded by the bespoke runner.
 
-Runs the shipped ``tailorcv.application.tailoring.stages.draft.cover_letter`` against a
+Runs the shipped ``clearscout.application.tailoring.stages.draft.cover_letter`` against a
 canned provider and scores the letter through ``verify.check_letter``. Catches a
 stale prompt template, a closed-vocabulary regression, or a verifier that stopped
 catching a planted defect; it does not test prompt quality.

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-from tailorcv.application.tailoring.stages.match import Match, response_schema
-from tailorcv.infrastructure.providers.base import json_schema
+from clearscout.application.tailoring.stages.match import Match, response_schema
+from clearscout.infrastructure.providers.base import json_schema
 
 
 def test_the_matching_stamp_describes_what_a_provider_is_sent() -> None:

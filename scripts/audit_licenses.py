@@ -61,7 +61,7 @@ PROHIBITED = ("PROPRIETARY", "UNKNOWN", "OTHER/PROPRIETARY", "UNLICENSED")
 WEAK_OR_AMBIGUOUS = ("MPL", "LGPL", "dependency licenses")
 # Network copyleft is prohibited for every dependency tier.
 NETWORK_COPYLEFT = ("AGPL", "SSPL")
-IGNORE_PYTHON = {"tailorcv"}
+IGNORE_PYTHON = {"clearscout"}
 
 # Inventory platform-specific locked packages even when the current interpreter omits them.
 PLATFORM_CONDITIONAL_PYTHON = {
@@ -437,7 +437,7 @@ def _write_notices(path: Path, outcomes: list[tuple[Dependency, str]]) -> None:
 
 def _write_bundled_license_texts(path: Path, outcomes: list[tuple[Dependency, str]]) -> None:
     sections = [
-        "TAILORCV BUNDLED WEB DEPENDENCY LICENSES",
+        "CLEARSCOUT BUNDLED WEB DEPENDENCY LICENSES",
         "",
         "Generated from exact production packages in web/package-lock.json.",
         "The package names and license texts below remain the property of their owners.",

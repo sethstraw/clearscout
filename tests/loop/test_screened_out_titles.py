@@ -8,16 +8,16 @@ from itertools import count
 import pytest
 from sqlalchemy import delete
 
-from tailorcv.application.discovery import screened_out_titles
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.job_search.models import ScreenedOutTitleResponse
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain.search_parameters import JobSearchParameters, Seniority
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import ScreenedOutTitle
+from clearscout.application.discovery import screened_out_titles
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.failures import ValidationError
+from clearscout.application.job_search.models import ScreenedOutTitleResponse
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain.search_parameters import JobSearchParameters, Seniority
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import ScreenedOutTitle
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedBoards, UnexpectedPostingFetcher
 from tests.support.scenarios import (

@@ -13,7 +13,7 @@ from evals.stage_comparison import (
     one_level_lower,
 )
 
-from tailorcv.application.config import Effort, ModelChoice, ProviderName, Settings, Stage
+from clearscout.application.config import Effort, ModelChoice, ProviderName, Settings, Stage
 
 
 def test_anthropic_is_not_offered_the_two_rungs_it_rejects() -> None:

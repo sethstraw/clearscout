@@ -15,16 +15,16 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.failures import ConflictError
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.workspaces import (
+from clearscout.application.failures import ConflictError
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.workspaces import (
     GuardrailService,
     SearchParametersService,
     WorkspaceService,
 )
-from tailorcv.application.workspaces.versioned import VersionedDocumentService
-from tailorcv.domain.search_parameters import JobSearchParameters
-from tailorcv.infrastructure.persistence.database import Database
+from clearscout.application.workspaces.versioned import VersionedDocumentService
+from clearscout.domain.search_parameters import JobSearchParameters
+from clearscout.infrastructure.persistence.database import Database
 from tests.support.artifacts import runtime_storage
 
 

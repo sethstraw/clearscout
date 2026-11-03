@@ -8,10 +8,10 @@ from types import SimpleNamespace
 import pytest
 from pydantic import AnyHttpUrl, BaseModel, Field
 
-from tailorcv.application.config import Effort, ModelChoice, Stage
-from tailorcv.application.tailoring.stages.jobspec import requirement_vocabulary
-from tailorcv.application.tailoring.stages.match import response_schema as match_schema
-from tailorcv.infrastructure.providers.base import (
+from clearscout.application.config import Effort, ModelChoice, Stage
+from clearscout.application.tailoring.stages.jobspec import requirement_vocabulary
+from clearscout.application.tailoring.stages.match import response_schema as match_schema
+from clearscout.infrastructure.providers.base import (
     CallRecord,
     Finish,
     _response_field,
@@ -23,11 +23,11 @@ from tailorcv.infrastructure.providers.base import (
     json_schema,
     parse_or_raise,
 )
-from tailorcv.infrastructure.providers.cache import ResponseCache
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.infrastructure.providers.plan import SearchPolicy
-from tailorcv.shared.costs import Ledger, Usage
-from tailorcv.shared.errors import ProviderError
+from clearscout.infrastructure.providers.cache import ResponseCache
+from clearscout.infrastructure.providers.client import Client
+from clearscout.infrastructure.providers.plan import SearchPolicy
+from clearscout.shared.costs import Ledger, Usage
+from clearscout.shared.errors import ProviderError
 from tests.support.plans import plan_for
 from tests.support.schema import production_schemas
 from tests.support.suite import SUITE_PROVIDER

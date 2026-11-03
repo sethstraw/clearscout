@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.tailoring.fit import Standing, gates, read
-from tailorcv.domain.search_parameters import JobSearchParameters
-from tailorcv.domain.search_parameters.conditions import excluded_by
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.tailoring.fit import Standing, gates, read
+from clearscout.domain.search_parameters import JobSearchParameters
+from clearscout.domain.search_parameters.conditions import excluded_by
 from tests.support.suite import FIXTURES
 
 TRADE = ("Requires an active locksmith or master electrician license", "not held")

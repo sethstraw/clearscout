@@ -9,9 +9,9 @@ from pydantic import ValidationError
 from sqlalchemy import event, func, select, update
 from sqlalchemy.orm import Session
 
-from tailorcv.application.discovery import board_scan
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.funnel_audit import (
+from clearscout.application.discovery import board_scan
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.funnel_audit import (
     FunnelAuditBuilder,
     FunnelCandidateKind,
     FunnelOutcome,
@@ -19,7 +19,7 @@ from tailorcv.application.discovery.funnel_audit import (
     FunnelStage,
     bulk_staging_refusal_outcome,
 )
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery.screening import (
     BulkStagingRefusal,
     DiscoveryScreening,
     ScreeningCode,
@@ -27,26 +27,26 @@ from tailorcv.application.discovery.screening import (
     ScreeningFinding,
     ScreeningStanding,
 )
-from tailorcv.application.discovery.source_continuation import (
+from clearscout.application.discovery.source_continuation import (
     SourceContinuationHandler,
     continuation_task_ids,
 )
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceListing,
     SourceRead,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.bootstrap.worker import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.bootstrap.worker import (
     Worker,
     _LeaseKeeper,
     _WorkerTaskContext,
     default_handlers,
 )
-from tailorcv.domain import SourceReadOutcome, new_id, utc_now
-from tailorcv.domain.identity import normalize_url, url_sha256
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain import SourceReadOutcome, new_id, utc_now
+from clearscout.domain.identity import normalize_url, url_sha256
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
     PendingDiscovery,
     SourceScan,
@@ -54,7 +54,7 @@ from tailorcv.infrastructure.persistence.models import (
     SourceScanMember,
     SourceScanOutcome,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedBoards, UnexpectedPostingFetcher
 from tests.support.scenarios import (

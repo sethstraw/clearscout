@@ -8,33 +8,33 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery.screening import (
     ScreeningCode,
     ScreeningDimension,
     screen_discovery,
 )
-from tailorcv.application.discovery.source_reading import SourceReadOptions
-from tailorcv.domain.search_parameters import CountryNames, JobSearchParameters, Location
-from tailorcv.domain.staged_facts import PostedDateGrade
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.board_mappings.ashby import (
+from clearscout.application.discovery.source_reading import SourceReadOptions
+from clearscout.domain.search_parameters import CountryNames, JobSearchParameters, Location
+from clearscout.domain.staged_facts import PostedDateGrade
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_mappings.ashby import (
     ASHBY_MAPPING,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import (
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     Posting,
     posting_check,
     source_listing,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.oracle import (
+from clearscout.infrastructure.web_fetch.board_mappings.oracle import (
     ORACLE_DETAIL_MAPPING,
     ORACLE_LISTING_MAPPING,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings.workday import (
+from clearscout.infrastructure.web_fetch.board_mappings.workday import (
     WORKDAY_DETAIL_MAPPING,
     WORKDAY_LISTING_MAPPING,
     workday_country_from_path,
 )
-from tailorcv.infrastructure.web_fetch.board_slugs import title_from_url_slug
+from clearscout.infrastructure.web_fetch.board_slugs import title_from_url_slug
 from tests.support.doubles import ScriptedApi, published_listings
 from tests.support.http import policy_client
 

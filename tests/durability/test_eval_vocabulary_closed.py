@@ -7,9 +7,9 @@ from collections.abc import Callable
 from evals.case import Case, Responses, ScriptedSpec
 from evals.scorers import CaseRun, score
 
-from tailorcv.application.master_cv.cv import CvInventory, EntryKind
-from tailorcv.application.tailoring.stages.select import Plan
-from tailorcv.shared.costs import Ledger
+from clearscout.application.master_cv.cv import CvInventory, EntryKind
+from clearscout.application.tailoring.stages.select import Plan
+from clearscout.shared.costs import Ledger
 
 
 def _closed(inventory: CvInventory, stage: str, offered: Callable[[Plan], tuple[str, ...]]) -> bool:

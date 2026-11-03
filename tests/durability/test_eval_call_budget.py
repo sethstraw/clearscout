@@ -7,7 +7,7 @@ from evals.case import Case, Expectations, Responses, ScriptedSpec
 from evals.scorers import CaseRun, score
 from evals.support.inventory import synthetic_inventory
 
-from tailorcv.shared.costs import Ledger
+from clearscout.shared.costs import Ledger
 
 
 def _run(trials: int, critic_calls: int | None = None) -> CaseRun:

@@ -7,8 +7,8 @@ export type ReviewScore = {
 
 export function reviewScoreSource(score: ReviewScore): string {
   if (score.source === "review") return "From your review";
-  if (score.source === "evaluation") return "From TailorCV evaluation";
-  if (score.source === "minimum") return "Conservative minimum from TailorCV evaluation";
+  if (score.source === "evaluation") return "From ClearScout evaluation";
+  if (score.source === "minimum") return "Conservative minimum from ClearScout evaluation";
   return "No score recorded";
 }
 

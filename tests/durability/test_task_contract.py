@@ -6,13 +6,13 @@ from pathlib import Path
 import pytest
 from sqlalchemy import func, select
 
-from tailorcv.application.failures import FreeModeError
-from tailorcv.application.tasks import TaskQueueService, task_types
-from tailorcv.bootstrap.api import create_app
-from tailorcv.delivery.api.models.tasks import TaskCreate
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import BackgroundTask, ModelCall
-from tailorcv.infrastructure.providers.credentials import find
+from clearscout.application.failures import FreeModeError
+from clearscout.application.tasks import TaskQueueService, task_types
+from clearscout.bootstrap.api import create_app
+from clearscout.delivery.api.models.tasks import TaskCreate
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import BackgroundTask, ModelCall
+from clearscout.infrastructure.providers.credentials import find
 from tests.support.doubles import MemoryStore
 from tests.support.scenarios import board_source, scan_workspace, tracked_board_posting
 from tests.support.suite import SUITE_PROVIDER
@@ -157,7 +157,7 @@ def test_a_free_task_is_queued_without_a_provider_key(durable_database: Database
 
 
 def test_a_source_scan_accepts_an_entire_large_selection() -> None:
-    from tailorcv.application.tasks.payloads import SourceScanPayload
+    from clearscout.application.tasks.payloads import SourceScanPayload
 
     selected = [f"source-{index}" for index in range(301)]
     assert SourceScanPayload(source_ids=selected).source_ids == selected
@@ -165,8 +165,8 @@ def test_a_source_scan_accepts_an_entire_large_selection() -> None:
 
 @pytest.mark.parametrize("fresh", [False, True])
 def test_a_source_scan_retains_only_an_explicit_fresh_details_request(fresh: bool) -> None:
-    from tailorcv.application.tasks import validate_task_payload
-    from tailorcv.application.tasks.payloads import SourceScanPayload
+    from clearscout.application.tasks import validate_task_payload
+    from clearscout.application.tasks.payloads import SourceScanPayload
 
     payload = validate_task_payload("source.scan", {"fresh_details": fresh})
 
@@ -177,7 +177,7 @@ def test_a_source_scan_retains_only_an_explicit_fresh_details_request(fresh: boo
 def test_an_ordinary_source_scan_omits_the_resume_selector_on_replay(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.tasks import TaskQueueService, validate_task_payload
+    from clearscout.application.tasks import TaskQueueService, validate_task_payload
     from tests.support.scenarios import scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)
@@ -203,8 +203,8 @@ def test_an_ordinary_source_scan_omits_the_resume_selector_on_replay(
 
 
 def test_a_source_scan_requires_a_manually_saved_target_title(durable_database: Database) -> None:
-    from tailorcv.application.failures import ValidationError
-    from tailorcv.application.tasks import TaskQueueService
+    from clearscout.application.failures import ValidationError
+    from clearscout.application.tasks import TaskQueueService
     from tests.support.scenarios import scan_workspace
 
     workspace_id = scan_workspace(durable_database)
@@ -222,8 +222,8 @@ def test_overlapping_source_batches_report_busy_sources_and_keep_the_rest(
 ) -> None:
     from sqlalchemy import select
 
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.infrastructure.persistence.models.discovery import SourceScanMember
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.infrastructure.persistence.models.discovery import SourceScanMember
     from tests.support.scenarios import board_source, scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)
@@ -263,10 +263,10 @@ def test_a_source_batch_replay_keeps_its_payload_digest_and_selection(
 ) -> None:
     from sqlalchemy import select
 
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.application.tasks.records import payload_digest
-    from tailorcv.infrastructure.persistence.models import BackgroundTask
-    from tailorcv.infrastructure.persistence.models.discovery import SourceScanMember
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.application.tasks.records import payload_digest
+    from clearscout.infrastructure.persistence.models import BackgroundTask
+    from clearscout.infrastructure.persistence.models.discovery import SourceScanMember
     from tests.support.scenarios import board_source, scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)
@@ -300,7 +300,7 @@ def test_a_source_batch_replay_keeps_its_payload_digest_and_selection(
 def test_source_selection_survives_progress_updates(
     durable_database: Database, initial_source: bool
 ) -> None:
-    from tailorcv.application.tasks import TaskQueueService
+    from clearscout.application.tasks import TaskQueueService
     from tests.support.scenarios import board_source, scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)
@@ -326,8 +326,8 @@ def test_source_selection_survives_progress_updates(
 
 
 def test_a_source_batch_refuses_a_source_outside_its_workspace(durable_database: Database) -> None:
-    from tailorcv.application.failures import NotFoundError
-    from tailorcv.application.tasks import TaskQueueService
+    from clearscout.application.failures import NotFoundError
+    from clearscout.application.tasks import TaskQueueService
     from tests.support.scenarios import scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)
@@ -346,9 +346,9 @@ def test_resume_refuses_a_batch_that_is_still_in_progress_without_creating_a_tas
 ) -> None:
     from sqlalchemy import func, select
 
-    from tailorcv.application.failures import ConflictError
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.infrastructure.persistence.models import BackgroundTask
+    from clearscout.application.failures import ConflictError
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.infrastructure.persistence.models import BackgroundTask
     from tests.support.scenarios import board_source, scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)
@@ -370,8 +370,8 @@ def test_recovery_keeps_a_source_reserved_when_its_reader_is_alive_or_unknown(
 ) -> None:
     from sqlalchemy import select
 
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.infrastructure.persistence.models import SourceScanMember
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.infrastructure.persistence.models import SourceScanMember
     from tests.support.scenarios import board_source, scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)
@@ -415,8 +415,8 @@ def test_a_confirmed_dead_reader_can_recover_without_releasing_a_live_generation
 ) -> None:
     from sqlalchemy import select
 
-    from tailorcv.application.tasks import TaskQueueService
-    from tailorcv.infrastructure.persistence.models import SourceScanMember
+    from clearscout.application.tasks import TaskQueueService
+    from clearscout.infrastructure.persistence.models import SourceScanMember
     from tests.support.scenarios import board_source, scan_workspace, state_target_titles
 
     workspace_id = scan_workspace(durable_database)

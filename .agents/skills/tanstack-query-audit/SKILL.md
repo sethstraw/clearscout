@@ -1,6 +1,6 @@
 ---
 name: tanstack-query-audit
-description: Audit TailorCV TanStack Query keys, invalidation, and cache behavior. Use for explicit query or cache work, or for a demonstrated stale-data defect in the SPA. Do not use merely because a component imports a Query hook, or for non-Query state.
+description: Audit ClearScout TanStack Query keys, invalidation, and cache behavior. Use for explicit query or cache work, or for a demonstrated stale-data defect in the SPA. Do not use merely because a component imports a Query hook, or for non-Query state.
 ---
 
 # Query cache audit
@@ -52,7 +52,7 @@ Report a table of findings, one row per hook. Mark:
 
 ## Verify
 
-Reproduce any invalidation gap with `tailorcv-ui-debug`: trigger the mutation,
+Reproduce any invalidation gap with `clearscout-ui-debug`: trigger the mutation,
 then observe the stale render, or the missing refetch in the network panel. Do not
 propose a fix without a reproduced miss.
 

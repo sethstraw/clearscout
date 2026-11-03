@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 
 DAYFORCE_POSTING_URL = "https://jobs.dayforcehcm.com/en-US/globex/CANDIDATEPORTAL/jobs/{reference}"
 SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -111,7 +111,7 @@ def policy_client(
         return handler(url) if poster is None else poster(url, json)
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         jitter=lambda _low, _high: 0.0,
         getter=get,

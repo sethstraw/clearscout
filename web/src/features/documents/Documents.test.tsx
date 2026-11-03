@@ -15,7 +15,7 @@ const JOB = jobSummary({ title: "Staff Data Platform Lead" });
 const RESUME = documentArtifact({ id: "artifact-1", byte_size: 2048, provenance: {} });
 
 function renderPage(artifacts: Artifact[]) {
-  window.localStorage.setItem("tailorcv.workspace", "workspace-1");
+  window.localStorage.setItem("clearscout.workspace", "workspace-1");
   server.use(
     http.get("*/api/v1/artifacts", () => HttpResponse.json(artifacts)),
     http.get("*/api/v1/jobs", ({ request }) => {

@@ -1,0 +1,10 @@
+name = "clearscout-experience-reviewer"
+description = "Read-only experience review when rendered SPA behavior, layout, interaction, accessibility, or visible copy changes. Not for backend-only or non-rendered frontend changes."
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
+Read .agents/roles/cuxo-review.md and follow it. Review only the stated
+question and the diff or rendered surface that bears on it. Do not spawn
+subagents.
+"""

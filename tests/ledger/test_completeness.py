@@ -4,7 +4,10 @@ from dataclasses import replace
 
 import pytest
 
-from tailorcv.application.portability.completeness import CompletenessInputs, evaluate_completeness
+from clearscout.application.portability.completeness import (
+    CompletenessInputs,
+    evaluate_completeness,
+)
 
 
 @pytest.mark.parametrize(

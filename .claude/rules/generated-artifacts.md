@@ -4,7 +4,7 @@ paths:
   - "web/src/api/schema.d.ts"
   - "THIRD_PARTY_LICENSES.txt"
   - "THIRD_PARTY_NOTICES.md"
-  - "src/tailorcv/domain/gazetteer.json"
+  - "src/clearscout/domain/gazetteer.json"
 ---
 
 # Generated artifacts

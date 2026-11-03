@@ -23,19 +23,19 @@ from starlette.types import ASGIApp, Message, Scope
 from typer.testing import CliRunner
 from uvicorn.lifespan.on import LifespanOn
 
-from tailorcv.application.documents.evidence_artifacts import EvidenceArtifactService
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.bootstrap import local_runtime
-from tailorcv.bootstrap.cli import app
-from tailorcv.bootstrap.local_runtime import LocalApplicationState
-from tailorcv.bootstrap.worker import Worker
-from tailorcv.domain import new_id, utc_now
-from tailorcv.domain.search_parameters import JobSearchParameters, Location
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Artifact, PendingDiscovery, PostingRefusal
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.documents.evidence_artifacts import EvidenceArtifactService
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.bootstrap import local_runtime
+from clearscout.bootstrap.cli import app
+from clearscout.bootstrap.local_runtime import LocalApplicationState
+from clearscout.bootstrap.worker import Worker
+from clearscout.domain import new_id, utc_now
+from clearscout.domain.search_parameters import JobSearchParameters, Location
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Artifact, PendingDiscovery, PostingRefusal
+from clearscout.shared.errors import ConfigError
 from tests.support.artifacts import runtime_storage, strand_promotion
 from tests.support.http import recorded_web_clients
 
@@ -51,7 +51,7 @@ def test_source_reader_recovery_distinguishes_live_reused_and_unknown_processes(
     expected: bool | None,
 ) -> None:
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.subprocess.run",
+        "clearscout.bootstrap.local_runtime.subprocess.run",
         lambda *args, **kwargs: subprocess.CompletedProcess(
             args=[], returncode=returncode, stdout=observed_start
         ),
@@ -65,7 +65,7 @@ def test_source_reader_recovery_keeps_ownership_when_process_inspection_is_denie
     def denied(*args: object, **kwargs: object) -> None:
         raise PermissionError("process inspection unavailable")
 
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.subprocess.run", denied)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.subprocess.run", denied)
     assert local_runtime.reader_process_alive(41, "original") is None
 
 
@@ -74,12 +74,12 @@ runner = CliRunner()
 
 @contextmanager
 def _restored_application_logging() -> Iterator[logging.Logger]:
-    """Undo what the worker command does to the process-global `tailorcv` logger.
+    """Undo what the worker command does to the process-global `clearscout` logger.
 
     An in-process CLI run reaches `configure_application_logging`, which owns the
     namespace's level, propagation, and handlers for the rest of the process.
     """
-    application = logging.getLogger("tailorcv")
+    application = logging.getLogger("clearscout")
     original_handlers = list(application.handlers)
     original_level = application.level
     original_propagate = application.propagate
@@ -302,7 +302,7 @@ def test_runtime_children_detach_and_write_private_logs(
         calls.append((arguments, options))
         return Process()
 
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.subprocess.Popen", popen)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.subprocess.Popen", popen)
 
     process = local_runtime._start_child("serve", storage, 8899)
 
@@ -313,7 +313,7 @@ def test_runtime_children_detach_and_write_private_logs(
     assert options["stderr"] is subprocess.STDOUT
     assert options["start_new_session"] is True
     log_file = cast(BinaryIO, options["stdout"])
-    assert log_file.name == str(storage.data_root / ".tailorcv-runtime" / "tailorcv-serve.log")
+    assert log_file.name == str(storage.data_root / ".clearscout-runtime" / "clearscout-serve.log")
     assert log_file.closed is True
 
 
@@ -338,7 +338,7 @@ def test_runtime_children_carry_only_an_explicit_workspaces_root(
         calls.append(arguments)
         return Process()
 
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.subprocess.Popen", popen)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.subprocess.Popen", popen)
 
     local_runtime._start_child("worker", storage, 8899)
 
@@ -357,7 +357,7 @@ def test_runtime_child_hands_its_workspaces_root_to_the_server(
     def serve(*arguments: object, workspaces_root: Path | None = None) -> None:
         received.append(workspaces_root)
 
-    monkeypatch.setattr("tailorcv.delivery.cli.runtime.serve", serve)
+    monkeypatch.setattr("clearscout.delivery.cli.runtime.serve", serve)
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -506,7 +506,7 @@ def test_runtime_process_observation_failure_preserves_owned_state(
     def unavailable(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         raise PermissionError("process inspection unavailable")
 
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.subprocess.run", unavailable)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.subprocess.run", unavailable)
 
     with pytest.raises(
         ConfigError,
@@ -553,9 +553,9 @@ def test_stop_keeps_ownership_until_both_children_exit(
 
     monkeypatch.setattr(local_runtime, "_is_owned", lambda _pid, role: alive[role])
     monkeypatch.setattr(local_runtime, "_is_healthy", lambda _port: "serve" not in stopping)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.os.kill", signal_child)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.sleep", pause)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.os.kill", signal_child)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.sleep", pause)
 
     assert local_runtime.stop_local_application(durable_database.url)
     assert observed == ["worker", "serve"]
@@ -583,8 +583,8 @@ def test_stop_timeout_keeps_process_ownership_for_a_later_retry(
 
     monkeypatch.setattr(local_runtime, "_is_owned", lambda _pid, role: alive[role])
     monkeypatch.setattr(local_runtime, "_is_healthy", lambda _port: alive["serve"])
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.os.kill", signal_child)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.os.kill", signal_child)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
     monkeypatch.setattr(
         local_runtime, "_start_child", lambda role, _storage, _port: started.append(role)
     )
@@ -600,7 +600,7 @@ def test_stop_timeout_keeps_process_ownership_for_a_later_retry(
     assert started == []
 
     alive["worker"] = False
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
 
     assert local_runtime.stop_local_application(durable_database.url)
     assert signaled == [state.worker_pid, state.worker_pid, state.server_pid]
@@ -628,9 +628,9 @@ def test_stop_kills_a_worker_still_running_a_task_after_the_wait(
             alive[role] = False
 
     monkeypatch.setattr(local_runtime, "_is_owned", lambda _pid, role: alive[role])
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.os.kill", signal_child)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.sleep", lambda _seconds: None)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.os.kill", signal_child)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.sleep", lambda _seconds: None)
 
     assert local_runtime.stop_local_application(durable_database.url)
     assert signaled == [
@@ -666,11 +666,11 @@ def test_stop_never_kills_a_worker_running_a_paid_task(
 
     monkeypatch.setattr(local_runtime, "_is_owned", lambda _pid, _role: True)
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.os.kill",
+        "clearscout.bootstrap.local_runtime.os.kill",
         lambda pid, signum: signaled.append((pid, signum)),
     )
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.sleep", lambda _seconds: None)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.sleep", lambda _seconds: None)
 
     with pytest.raises(ConfigError, match="still finishing posting.refresh"):
         local_runtime.stop_local_application(durable_database.url)
@@ -688,9 +688,9 @@ def test_stop_api_timeout_names_the_api_and_preserves_ownership(
     local_runtime._write_state(state_file, LocalApplicationState(41, 42, 8899))
     ticks = iter([0.0, 0.0, local_runtime.STOP_WAIT_SECONDS])
     monkeypatch.setattr(local_runtime, "_is_owned", lambda _pid, role: role == "serve")
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.os.kill", lambda _pid, _signal: None)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.sleep", lambda _seconds: None)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.os.kill", lambda _pid, _signal: None)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.sleep", lambda _seconds: None)
 
     with pytest.raises(ConfigError, match="local API is still stopping") as error:
         local_runtime.stop_local_application(durable_database.url)
@@ -729,8 +729,8 @@ def test_stop_failure_preserves_ownership_and_the_api(
             alive["serve"] = False
 
     monkeypatch.setattr(local_runtime, "_is_owned", owned)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.os.kill", signal_child)
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.os.kill", signal_child)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
 
     error = PermissionError if failure.endswith("signal") else ConfigError
     with pytest.raises(error, match="unavailable"):
@@ -755,16 +755,16 @@ def test_stop_removes_stale_state_without_signaling_unowned_processes(
     local_runtime._write_state(state_file, LocalApplicationState(41, 42, 8899))
     signaled: list[int] = []
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.subprocess.run",
+        "clearscout.bootstrap.local_runtime.subprocess.run",
         lambda *args, **kwargs: subprocess.CompletedProcess(
             args=[], returncode=returncode, stdout=command
         ),
     )
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.os.kill",
+        "clearscout.bootstrap.local_runtime.os.kill",
         lambda pid, _signal: signaled.append(pid),
     )
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.time.monotonic", lambda: 0.0)
 
     assert local_runtime.stop_local_application(durable_database.url)
     assert signaled == []
@@ -776,7 +776,7 @@ def test_runtime_process_probe_refuses_an_unexpected_failure(
 ) -> None:
     """A failed process tool is unknown ownership, not proof that a PID is stale."""
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.subprocess.run",
+        "clearscout.bootstrap.local_runtime.subprocess.run",
         lambda *args, **kwargs: subprocess.CompletedProcess(args=[], returncode=2, stdout=""),
     )
 
@@ -797,12 +797,12 @@ def test_start_stop_and_status_delegate_to_the_owned_runtime(
         )
         return state, {"finalized": 0, "unresolved": 0, "outside_root": 0, "retrying": 0}
 
-    monkeypatch.setattr("tailorcv.bootstrap.local_runtime.start_local_application", start)
+    monkeypatch.setattr("clearscout.bootstrap.local_runtime.start_local_application", start)
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.local_application_status", lambda *args, **kwargs: state
+        "clearscout.bootstrap.local_runtime.local_application_status", lambda *args, **kwargs: state
     )
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.stop_local_application", lambda *args, **kwargs: True
+        "clearscout.bootstrap.local_runtime.stop_local_application", lambda *args, **kwargs: True
     )
 
     data_root = tmp_path / "data"
@@ -816,7 +816,7 @@ def test_start_stop_and_status_delegate_to_the_owned_runtime(
     assert status_result.exit_code == 0, status_result.output
     assert "http://127.0.0.1:8899" in status_result.output
     assert stopped_result.exit_code == 0, stopped_result.output
-    assert "TailorCV stopped." in stopped_result.output
+    assert "ClearScout stopped." in stopped_result.output
 
 
 def test_start_names_the_staged_artifacts_it_left_unsettled(
@@ -825,7 +825,7 @@ def test_start_names_the_staged_artifacts_it_left_unsettled(
     """Rows reconcile could not recover, could not reach, or left to another root are reported."""
     state = LocalApplicationState(server_pid=11, worker_pid=12, port=8899)
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.start_local_application",
+        "clearscout.bootstrap.local_runtime.start_local_application",
         lambda *args, **kwargs: (
             state,
             {"finalized": 0, "unresolved": 2, "outside_root": 1, "retrying": 3},
@@ -914,7 +914,7 @@ def test_stopping_a_polling_worker_says_the_lease_survives(
     def interrupted(self: object, *, poll_seconds: float) -> None:
         raise KeyboardInterrupt
 
-    monkeypatch.setattr("tailorcv.bootstrap.worker.Worker.run_forever", interrupted)
+    monkeypatch.setattr("clearscout.bootstrap.worker.Worker.run_forever", interrupted)
 
     result = runner.invoke(app, ["worker", "--database-url", durable_database_url])
 
@@ -963,8 +963,8 @@ def test_the_worker_reads_its_continuation_slots_from_the_flag_or_environment(
         started.append(self.continuation_slots)
         raise KeyboardInterrupt
 
-    monkeypatch.setattr("tailorcv.bootstrap.worker.Worker.run_forever", interrupted)
-    monkeypatch.setenv("TAILORCV_CONTINUATION_SLOTS", environment)
+    monkeypatch.setattr("clearscout.bootstrap.worker.Worker.run_forever", interrupted)
+    monkeypatch.setenv("CLEARSCOUT_CONTINUATION_SLOTS", environment)
 
     result = runner.invoke(app, ["worker", "--database-url", durable_database_url, *arguments])
 
@@ -975,8 +975,8 @@ def test_the_worker_reads_its_continuation_slots_from_the_flag_or_environment(
 @pytest.mark.parametrize(
     ("environment", "arguments", "named"),
     [
-        ("0", [], "TAILORCV_CONTINUATION_SLOTS"),
-        ("four", [], "TAILORCV_CONTINUATION_SLOTS"),
+        ("0", [], "CLEARSCOUT_CONTINUATION_SLOTS"),
+        ("four", [], "CLEARSCOUT_CONTINUATION_SLOTS"),
         ("", ["--continuation-slots", "9"], "--continuation-slots"),
     ],
     ids=["zero", "not-a-number", "flag-past-the-cap"],
@@ -988,7 +988,7 @@ def test_the_worker_refuses_an_unusable_continuation_slot_setting(
     arguments: list[str],
     named: str,
 ) -> None:
-    monkeypatch.setenv("TAILORCV_CONTINUATION_SLOTS", environment)
+    monkeypatch.setenv("CLEARSCOUT_CONTINUATION_SLOTS", environment)
 
     result = runner.invoke(
         app, ["worker", "--once", "--database-url", durable_database_url, *arguments]

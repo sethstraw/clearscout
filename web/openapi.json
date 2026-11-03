@@ -8158,7 +8158,7 @@
       },
       "OpenAiActualSpendResponse": {
         "additionalProperties": false,
-        "description": "OpenAI's actual billed cost beside TailorCV's recorded cost for a window.",
+        "description": "OpenAI's actual billed cost beside ClearScout's recorded cost for a window.",
         "properties": {
           "available": {
             "title": "Available",
@@ -8212,7 +8212,7 @@
             "title": "Recorded Usd"
           },
           "scope_note": {
-            "default": "OpenAI reports cost for the whole organization the admin key belongs to, which can include usage from other tools or projects that share the key. The recorded figure counts only the OpenAI model calls TailorCV priced in this database. This is an organization-level cross-check, not a per-task or per-workspace reconciliation.",
+            "default": "OpenAI reports cost for the whole organization the admin key belongs to, which can include usage from other tools or projects that share the key. The recorded figure counts only the OpenAI model calls ClearScout priced in this database. This is an organization-level cross-check, not a per-task or per-workspace reconciliation.",
             "title": "Scope Note",
             "type": "string"
           },
@@ -17307,8 +17307,8 @@
     }
   },
   "info": {
-    "description": "Loopback-only API for TailorCV's durable evidence ledger, document workflows, and recoverable task queue. Contracts are generated from the same validated request and response fields used by the application.",
-    "title": "TailorCV local API",
+    "description": "Loopback-only API for ClearScout's durable evidence ledger, document workflows, and recoverable task queue. Contracts are generated from the same validated request and response fields used by the application.",
+    "title": "ClearScout local API",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -19625,7 +19625,7 @@
                 }
               }
             },
-            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+            "description": "Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict."
           },
           "422": {
             "content": {
@@ -21236,7 +21236,7 @@
                 }
               }
             },
-            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+            "description": "Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict."
           },
           "422": {
             "content": {
@@ -21610,7 +21610,7 @@
                 }
               }
             },
-            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+            "description": "Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict."
           },
           "422": {
             "content": {
@@ -22295,7 +22295,7 @@
                 }
               }
             },
-            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+            "description": "Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict."
           },
           "422": {
             "content": {
@@ -22700,7 +22700,7 @@
                 }
               }
             },
-            "description": "Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict."
+            "description": "Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict."
           },
           "422": {
             "content": {

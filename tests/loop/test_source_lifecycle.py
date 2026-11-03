@@ -7,19 +7,19 @@ from datetime import UTC, date, datetime
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.source_lifecycle import NAME_CORRECTED_ACTION, SourceCatalog
-from tailorcv.application.discovery.source_reading import SourceRead
-from tailorcv.application.failures import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.source_lifecycle import NAME_CORRECTED_ACTION, SourceCatalog
+from clearscout.application.discovery.source_reading import SourceRead
+from clearscout.application.failures import (
     CareerPageRefusedError,
     ConflictError,
     ValidationError,
 )
-from tailorcv.application.job_search.models import SourceTerms
-from tailorcv.domain import SourceKind, SourceReadOutcome, new_id, utc_now
-from tailorcv.domain.identity import normalize_text
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.job_search.models import SourceTerms
+from clearscout.domain import SourceKind, SourceReadOutcome, new_id, utc_now
+from clearscout.domain.identity import normalize_text
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
     Employer,
@@ -29,7 +29,7 @@ from tailorcv.infrastructure.persistence.models import (
     Source,
     SourceScan,
 )
-from tailorcv.infrastructure.web_fetch.policy import RobotsDeniedError
+from clearscout.infrastructure.web_fetch.policy import RobotsDeniedError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedBoards, ScriptedPage, UnexpectedPostingFetcher
 from tests.support.scenarios import (

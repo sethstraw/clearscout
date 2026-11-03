@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.shared.results import Finding, Outcome, table_cell, worst
+from clearscout.shared.results import Finding, Outcome, table_cell, worst
 
 
 def test_a_run_fails_on_a_failure_and_survives_a_warning() -> None:

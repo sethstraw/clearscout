@@ -7,18 +7,18 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import EligibilityInput
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.job_search.evaluation_targets import (
+from clearscout.application import job_search
+from clearscout.application.contracts import EligibilityInput
+from clearscout.application.failures import ValidationError
+from clearscout.application.job_search.evaluation_targets import (
     evaluated_jobs_for_pending,
     find_job_by_durable_identifier,
 )
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.search_parameters import JobSearchParameters, Location, WorkEligibility
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.search_parameters import JobSearchParameters, Location, WorkEligibility
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Employer,
     JobPosting,
     PostingIdentifier,

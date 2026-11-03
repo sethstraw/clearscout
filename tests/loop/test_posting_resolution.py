@@ -9,43 +9,43 @@ from typing import Any, cast
 import httpx
 import pytest
 
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
     pending_discovery_readiness,
 )
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import (
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import (
     PendingDiscoveryReadiness,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
     PostingStatus,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.records import PageClassification, PostingReadIntent, RobotsReadBasis
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import PendingDiscovery, PendingPostingContent
-from tailorcv.infrastructure.web_fetch import posting_resolution
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.records import PageClassification, PostingReadIntent, RobotsReadBasis
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PendingDiscovery, PendingPostingContent
+from clearscout.infrastructure.web_fetch import posting_resolution
+from clearscout.infrastructure.web_fetch.policy import (
     UNRESOLVED_DESTINATION_NOTE,
     DestinationUnresolvableError,
     HostHeldError,
     PoliteHttpClient,
 )
-from tailorcv.infrastructure.web_fetch.posting_fetch import UNRESOLVED_DESTINATION_METHOD
-from tailorcv.infrastructure.web_fetch.posting_resolution import (
+from clearscout.infrastructure.web_fetch.posting_fetch import UNRESOLVED_DESTINATION_METHOD
+from clearscout.infrastructure.web_fetch.posting_resolution import (
     DeterministicPostingContentResolver,
 )
-from tailorcv.infrastructure.web_fetch.rendered import (
+from clearscout.infrastructure.web_fetch.rendered import (
     RESPONSE_BYTE_LIMIT_REASON,
     BlockedRenderedRequest,
     RenderedPage,
     RenderedPageFetcher,
 )
-from tailorcv.shared.errors import IngestError
+from clearscout.shared.errors import IngestError
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import pending_discovery
 
@@ -952,7 +952,7 @@ def test_content_resolution_shares_one_deadline_across_static_and_rendered_tiers
             return page
 
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.posting_resolution.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.posting_resolution.time.monotonic", lambda: now[0]
     )
     resolver = DeterministicPostingContentResolver.__new__(DeterministicPostingContentResolver)
     resolver.static = cast(Any, SlowStatic())
@@ -994,7 +994,7 @@ def _robots_disallowed_single_read_client(page: str, requested: list[str]) -> Po
         return httpx.Response(200, request=httpx.Request("GET", url), text=page)
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _: None,
         getter=get,
         resolver=lambda host, port: [(2, 1, 6, "", ("93.184.216.34", port))],
@@ -1053,7 +1053,7 @@ def _allowed_page_client(page: str) -> PoliteHttpClient:
         return httpx.Response(200, request=httpx.Request("GET", url), text=page)
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _: None,
         getter=get,
         resolver=lambda host, port: [(2, 1, 6, "", ("93.184.216.34", port))],
@@ -1126,7 +1126,7 @@ def test_a_workday_api_refusal_is_access_blocked_without_a_rendered_read() -> No
         return httpx.Response(403, json={"errorCode": "S22"}, request=request)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         jitter=lambda _low, _high: 0.0,
         getter=get,
@@ -1203,7 +1203,7 @@ def _redirecting_client(location: str, target_robots: httpx.Response) -> PoliteH
         return httpx.Response(200, text=_body("Operations Lead"), request=request)
 
     return PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         jitter=lambda _low, _high: 0.0,
         getter=get,

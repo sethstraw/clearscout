@@ -14,7 +14,7 @@ from typing import Any
 from evals.inspect.diff import diff
 from evals.semantic import StageMeasurement
 
-from tailorcv.shared.costs import Usage
+from clearscout.shared.costs import Usage
 
 
 def _log(path: Path, rows: list[dict[str, Any]], requested_model: str = "") -> Path:

@@ -39,7 +39,7 @@ naming it as new.
 
 Contrast, focus, and state legibility are claims about rendered output, so
 drive the page against synthetic data and look before filing one. The
-`tailorcv-ui-debug` skill carries the browser workflow. A concrete Reproduce
+`clearscout-ui-debug` skill carries the browser workflow. A concrete Reproduce
 step is what makes a finding VERIFIED. When a defect was inferred from reading
 code rather than seen in the rendered state, mark it ASSERTED and say so
 plainly instead of writing a Reproduce step that did not happen.

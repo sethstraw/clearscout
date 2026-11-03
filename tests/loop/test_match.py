@@ -7,17 +7,17 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from tailorcv.application.master_cv.cv import CvInventory, Entry, EntryKind
-from tailorcv.application.tailoring.batch.analysis import Verdict, recommend
-from tailorcv.application.tailoring.stages.context import record_block
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind
+from clearscout.application.tailoring.batch.analysis import Verdict, recommend
+from clearscout.application.tailoring.stages.context import record_block
+from clearscout.application.tailoring.stages.jobspec import (
     Dimension,
     HardGate,
     Importance,
     JobSpec,
     Requirement,
 )
-from tailorcv.application.tailoring.stages.match import (
+from clearscout.application.tailoring.stages.match import (
     Classification,
     EvidenceMap,
     Match,
@@ -27,9 +27,9 @@ from tailorcv.application.tailoring.stages.match import (
     decided_by_parameters,
     response_schema,
 )
-from tailorcv.application.tailoring.stages.spans import Span
-from tailorcv.domain import EvidenceStatus, GapClass, SpanStatus
-from tailorcv.domain.requirements import GATE_KINDS, GateKind
+from clearscout.application.tailoring.stages.spans import Span
+from clearscout.domain import EvidenceStatus, GapClass, SpanStatus
+from clearscout.domain.requirements import GATE_KINDS, GateKind
 from tests.support.resumes import DETAIL, DETAILED_BULLET, detailed_record
 from tests.support.spans import found
 
@@ -566,8 +566,8 @@ def test_the_matcher_is_shown_the_rules_it_must_classify_against() -> None:
     With no rule in front of it, a matcher reads "prototype dbt" work as
     answering a requirement for production dbt.
     """
-    from tailorcv.application.prompts import render
-    from tailorcv.application.tailoring.guardrails import Guardrails
+    from clearscout.application.prompts import render
+    from clearscout.application.tailoring.guardrails import Guardrails
 
     rules = Guardrails(distinctions=["dbt, Airflow, and Dagster are non-production prototypes."])
     rendered = render("match_system", distinctions=rules.prompt_block())
@@ -605,7 +605,7 @@ def gate_spec() -> JobSpec:
 
 
 def test_gate_matching_includes_the_exact_product_threshold() -> None:
-    from tailorcv.application.tailoring.stages.match import answered_gates
+    from clearscout.application.tailoring.stages.match import answered_gates
 
     spec = JobSpec(
         title="Product Manager",
@@ -636,7 +636,7 @@ def test_gate_matching_includes_the_exact_product_threshold() -> None:
 
 
 def test_gate_matching_abstains_when_equal_best_verdicts_conflict() -> None:
-    from tailorcv.application.tailoring.stages.match import answered_gates
+    from clearscout.application.tailoring.stages.match import answered_gates
 
     spec = JobSpec(
         title="Product Manager",
@@ -683,7 +683,7 @@ def test_a_gate_answered_only_transferably_is_reported_as_such() -> None:
     It is not a GAP, so the gaps table skips it; the gate answer reads the
     evidence and hands it to a person.
     """
-    from tailorcv.application.tailoring.stages.match import answered_gates
+    from clearscout.application.tailoring.stages.match import answered_gates
 
     evidence = EvidenceMap(
         matches=(
@@ -704,7 +704,7 @@ def test_a_gate_answered_only_transferably_is_reported_as_such() -> None:
 
 def test_a_gate_answered_directly_needs_nobody() -> None:
     """Direct evidence for an absolute condition is the case that should stay quiet."""
-    from tailorcv.application.tailoring.stages.match import answered_gates
+    from clearscout.application.tailoring.stages.match import answered_gates
 
     evidence = EvidenceMap(
         matches=(
@@ -729,7 +729,7 @@ def test_a_gate_whose_quote_is_not_in_the_posting_is_not_a_verified_gate() -> No
     as clearing it, so the gate stays out of verified scoring and goes to a
     person instead.
     """
-    from tailorcv.application.tailoring.stages.match import answered_gates
+    from clearscout.application.tailoring.stages.match import answered_gates
 
     spec = gate_spec()
     unplaced = spec.hard_gates[0].model_copy(update={"source_span": Span()})
@@ -755,7 +755,7 @@ def test_a_gate_whose_quote_is_not_in_the_posting_is_not_a_verified_gate() -> No
 
 def test_a_gate_no_requirement_restates_is_reported_as_unchecked() -> None:
     """Nothing matched it, so nothing judged it, and saying so is the honest answer."""
-    from tailorcv.application.tailoring.stages.match import answered_gates
+    from clearscout.application.tailoring.stages.match import answered_gates
 
     answer = answered_gates(gate_spec(), EvidenceMap())[0]
     assert answer.classification is None
@@ -765,7 +765,7 @@ def test_a_gate_no_requirement_restates_is_reported_as_unchecked() -> None:
 
 def test_a_gate_is_not_matched_to_an_unrelated_requirement() -> None:
     """Overlap has to mean something, or every gate matches the first requirement."""
-    from tailorcv.application.tailoring.stages.match import answered_gates
+    from clearscout.application.tailoring.stages.match import answered_gates
 
     evidence = EvidenceMap(
         matches=(

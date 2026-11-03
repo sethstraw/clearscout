@@ -7,15 +7,15 @@ from datetime import UTC, datetime
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.failures import NotFoundError
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.metrics import LearningLoopMetricsService
-from tailorcv.domain import SearchProposalState, new_id, utc_now
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.statements import derived_proposal_identity
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.failures import NotFoundError
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.metrics import LearningLoopMetricsService
+from clearscout.domain import SearchProposalState, new_id, utc_now
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.statements import derived_proposal_identity
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     CandidateProfile,
     DerivedSearchTitle,
     MasterCvProposal,

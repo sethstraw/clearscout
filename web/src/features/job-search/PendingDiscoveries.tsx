@@ -29,10 +29,10 @@ export const PENDING_DISCOVERIES_LIMIT = 50;
 // Mirrors the page route's own ceiling, so "All" asks for the whole lane and
 // mounts every row's remediation controls at once.
 const PENDING_DISCOVERIES_ALL_LIMIT = 2000;
-const PAGE_SIZE_KEY = "tailorcv.pendingPageSize";
+const PAGE_SIZE_KEY = "clearscout.pendingPageSize";
 // A link to /find?tab=review&constraint=excluded_only opens the queue on Screened out.
 const SCREENED_OUT_PARAM = "constraint";
-const STRICT_UNCERTAINTY_KEY = "tailorcv.pendingStrictUncertainty.";
+const STRICT_UNCERTAINTY_KEY = "clearscout.pendingStrictUncertainty.";
 
 function readStrictUncertainty(workspaceId: string): boolean {
   try {

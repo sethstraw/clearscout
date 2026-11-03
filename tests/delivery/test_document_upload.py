@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tailorcv.bootstrap.api import create_app
+from clearscout.bootstrap.api import create_app
 from tests.support.scenarios import evaluation_commit
 
 

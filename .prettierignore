@@ -9,7 +9,7 @@ web/openapi.json
 web/src/api/schema.d.ts
 web/package-lock.json
 THIRD_PARTY_NOTICES.md
-src/tailorcv/domain/gazetteer.json
+src/clearscout/domain/gazetteer.json
 
 # Prompt text. prompts.suite_fingerprint hashes these bytes, so reformatting one
 # changes the fingerprint, invalidates every cached run, and moves every eval

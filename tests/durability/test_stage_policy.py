@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from evals.stage_comparison import one_level_lower
 
-from tailorcv.application.config import (
+from clearscout.application.config import (
     DEFAULT_STAGES,
     FLEX_TIMEOUT_FLOOR,
     Effort,
@@ -17,8 +17,8 @@ from tailorcv.application.config import (
     Tier,
     Verbosity,
 )
-from tailorcv.shared.costs import ServiceTier
-from tailorcv.shared.errors import ConfigError
+from clearscout.shared.costs import ServiceTier
+from clearscout.shared.errors import ConfigError
 
 # These values are in the cache key, so moving one invalidates every recorded
 # answer and the cassette under it.

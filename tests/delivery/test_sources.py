@@ -16,22 +16,22 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event, select
 from sqlalchemy.engine import Engine
 
-from tailorcv.application.discovery.funnel_audit import (
+from clearscout.application.discovery.funnel_audit import (
     FunnelCandidateKind,
     FunnelReason,
     FunnelStage,
 )
-from tailorcv.application.discovery.scan_queries import ScanOutcomeFilters
-from tailorcv.application.job_search.models import SourceScanOutcomeResponse
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.scan_schedule import ScanScheduleService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.delivery.api.dependencies import provide_scan_schedule
-from tailorcv.domain import SourceReadOutcome, new_id, utc_now
-from tailorcv.domain.identity import normalize_text, url_sha256
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.discovery.scan_queries import ScanOutcomeFilters
+from clearscout.application.job_search.models import SourceScanOutcomeResponse
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.scan_schedule import ScanScheduleService
+from clearscout.bootstrap.api import create_app
+from clearscout.delivery.api.dependencies import provide_scan_schedule
+from clearscout.domain import SourceReadOutcome, new_id, utc_now
+from clearscout.domain.identity import normalize_text, url_sha256
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
     Employer,
     ScreenedOutTitle,
@@ -39,8 +39,8 @@ from tailorcv.infrastructure.persistence.models import (
     SourceScan,
     SourceScanOutcome,
 )
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.policy import (
     DestinationUnresolvableError,
     HostHeldError,
     InvalidFetchUrlError,
@@ -64,7 +64,7 @@ def test_scan_outcome_export_closes_records_when_the_client_disconnects(
 ) -> None:
     from starlette.requests import ClientDisconnect
 
-    from tailorcv.delivery.api.routers.workspaces.sources import export_source_scan_outcomes
+    from clearscout.delivery.api.routers.workspaces.sources import export_source_scan_outcomes
 
     closed: list[bool] = []
 
@@ -343,7 +343,7 @@ def _raising(error: Exception) -> Callable[..., str]:
 def _assert_page_problem(
     status: int, content_type: str, body: dict[str, Any], expected: tuple[int, str], cause: str
 ) -> None:
-    assert (status, body["type"]) == (expected[0], f"urn:tailorcv:problem:{expected[1]}")
+    assert (status, body["type"]) == (expected[0], f"urn:clearscout:problem:{expected[1]}")
     assert content_type == "application/problem+json"
     assert body["detail"].startswith(f"The career page at {_CAREERS} could not be read:")
     assert cause in body["detail"]
@@ -454,7 +454,7 @@ def test_adding_a_source_to_an_unknown_workspace_reads_no_page(
         )
 
     assert response.status_code == 404
-    assert response.json()["type"] == "urn:tailorcv:problem:not-found"
+    assert response.json()["type"] == "urn:clearscout:problem:not-found"
 
 
 def test_revalidating_a_source_whose_career_page_fails_keeps_the_saved_row(
@@ -523,7 +523,7 @@ def test_preview_of_an_address_the_client_may_not_fetch_is_a_validation_failure(
         database.dispose()
 
     assert response.status_code == 422
-    assert response.json()["type"] == "urn:tailorcv:problem:validation"
+    assert response.json()["type"] == "urn:clearscout:problem:validation"
     assert "not a public web address" in response.json()["detail"]
 
 
@@ -676,7 +676,7 @@ def test_adding_a_held_name_at_another_address_is_refused_and_the_same_address_i
         database.dispose()
 
     assert clash.status_code == 409
-    assert clash.json()["type"] == "urn:tailorcv:problem:conflict"
+    assert clash.json()["type"] == "urn:clearscout:problem:conflict"
     assert clash.json()["detail"] == f"A source named Acme already reads {first}."
     assert repeat.status_code == 200
     assert repeat.json()["id"] == created["id"]

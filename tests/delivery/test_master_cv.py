@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.application.config import Settings
-from tailorcv.bootstrap.api import create_app
+from clearscout.application.config import Settings
+from clearscout.bootstrap.api import create_app
 from tests.support.doubles import MemoryStore
 from tests.support.suite import SUITE_PROVIDER
 
@@ -48,10 +48,10 @@ def test_an_import_that_needs_the_model_is_refused_as_free_mode_without_a_key(
         documented = client.get("/api/v1/openapi.json").json()
 
     assert unconfirmed.status_code == 409
-    assert unconfirmed.json()["type"] == "urn:tailorcv:problem:conflict"
+    assert unconfirmed.json()["type"] == "urn:clearscout:problem:conflict"
     assert "re-read" in unconfirmed.json()["detail"]
     assert refused.status_code == 409
-    assert refused.json()["type"] == "urn:tailorcv:problem:free-mode"
+    assert refused.json()["type"] == "urn:clearscout:problem:free-mode"
     assert versions == []
     route = documented["paths"]["/api/v1/workspaces/{workspace_id}/master-cv/import"]
     assert "409" in route["post"]["responses"]
@@ -169,7 +169,7 @@ def test_master_cv_is_checked_for_impact_and_then_edited_in_place(
             f"/api/v1/workspaces/{workspace_id}/master-cv", json={"content": undated}
         )
         assert refused.status_code == 409
-        assert refused.json()["type"] == "urn:tailorcv:problem:conflict"
+        assert refused.json()["type"] == "urn:clearscout:problem:conflict"
         assert "no dated role" in refused.text
 
 
@@ -197,5 +197,5 @@ def test_a_confirmed_re_read_is_refused_as_free_mode_without_a_key(
 
     assert estimate.json() == {"past_rereads": 0, "average_usd": None}
     assert refused.status_code == 409
-    assert refused.json()["type"] == "urn:tailorcv:problem:free-mode"
+    assert refused.json()["type"] == "urn:clearscout:problem:free-mode"
     assert len(versions) == 1

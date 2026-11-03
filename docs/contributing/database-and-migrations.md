@@ -13,10 +13,10 @@ installed command help is the real answer.
 ## What the schema guarantees
 
 The tables are normalized rather than one wide blob. The mapped models under
-`src/tailorcv/infrastructure/persistence/models/` are the list.
+`src/clearscout/infrastructure/persistence/models/` are the list.
 
 History cannot be quietly rewritten. Every table named in `IMMUTABLE_TABLES`, in
-[the initial schema migration](../../src/tailorcv/infrastructure/persistence/migrations/versions/v0001_schema.py),
+[the initial schema migration](../../src/clearscout/infrastructure/persistence/migrations/versions/v0001_schema.py),
 carries database triggers that refuse UPDATE and DELETE, so a bug cannot edit a
 decision you already made. Evaluation version N+1 has to name version N, and a changed
 commit has to name the current version, which is what stops duplicate, stale, or

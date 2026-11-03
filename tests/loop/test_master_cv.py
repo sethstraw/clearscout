@@ -6,37 +6,37 @@ from typing import Any
 import pytest
 from sqlalchemy import func, select
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import EvaluationCommit, ScoreEvidenceInput
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.master_cv import MasterCvService
-from tailorcv.application.master_cv.artifacts import MasterCvArtifacts
-from tailorcv.application.master_cv.commands import MasterCvVersionCommands
-from tailorcv.application.master_cv.cv import Entry, EntryKind, parse_cv
-from tailorcv.application.master_cv.intake import MasterCvIntake
-from tailorcv.application.master_cv.queries import MasterCvQueries
-from tailorcv.application.workspaces import (
+from clearscout.application import job_search
+from clearscout.application.contracts import EvaluationCommit, ScoreEvidenceInput
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.master_cv import MasterCvService
+from clearscout.application.master_cv.artifacts import MasterCvArtifacts
+from clearscout.application.master_cv.commands import MasterCvVersionCommands
+from clearscout.application.master_cv.cv import Entry, EntryKind, parse_cv
+from clearscout.application.master_cv.intake import MasterCvIntake
+from clearscout.application.master_cv.queries import MasterCvQueries
+from clearscout.application.workspaces import (
     WorkspaceResponse,
     WorkspaceService,
     layout_for,
     prepare_layout,
 )
-from tailorcv.domain import (
+from clearscout.domain import (
     EvidenceClassification,
     EvidenceSourceKind,
     EvidenceStrength,
     ScoreComponent,
 )
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     JobEvaluation,
     MasterCvEntry,
     MasterCvVersion,
     ModelCall,
 )
-from tailorcv.shared.costs import CallManifest, Ledger, ModelPrice, Usage
-from tailorcv.shared.errors import AuthError, CvParseError
+from clearscout.shared.costs import CallManifest, Ledger, ModelPrice, Usage
+from clearscout.shared.errors import AuthError, CvParseError
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.doubles import FakeImportResult
 from tests.support.scenarios import NOW, evaluation_commit
@@ -45,11 +45,11 @@ from tests.support.scenarios import NOW, evaluation_commit
 def test_default_application_data_is_visible_under_documents(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from tailorcv.infrastructure.persistence import database as database_module
+    from clearscout.infrastructure.persistence import database as database_module
 
     monkeypatch.setattr(database_module, "user_documents_path", lambda: tmp_path / "Documents")
-    assert database_module.default_data_directory() == tmp_path / "Documents" / "TailorCV"
-    assert database_module.default_database_path().name == "tailorcv.sqlite3"
+    assert database_module.default_data_directory() == tmp_path / "Documents" / "ClearScout"
+    assert database_module.default_database_path().name == "clearscout.sqlite3"
 
 
 def _workspace(database: Database, tmp_path: Path) -> WorkspaceResponse:
@@ -127,7 +127,7 @@ def test_parseable_markdown_is_adopted_without_a_model(
 ) -> None:
     workspace = _workspace(durable_database, tmp_path)
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.import_cv",
+        "clearscout.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: pytest.fail("canonical Markdown must not call a provider"),
     )
 
@@ -306,7 +306,7 @@ def test_unstructured_source_reuses_the_checked_pipeline(
             ledger=Ledger(),
         )
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.import_cv", import_cv)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.import_cv", import_cv)
     result = MasterCvService(
         durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
     ).import_source(
@@ -345,7 +345,7 @@ def test_standardizing_a_cv_files_the_calls_it_was_billed_for(
             ledger=ledger,
         )
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.import_cv", import_cv)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.import_cv", import_cv)
     MasterCvService(
         durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
     ).import_source(
@@ -378,7 +378,7 @@ def test_failed_standardized_parse_leaves_canonical_and_registration_unchanged(
         versions_before = session.scalar(select(func.count()).select_from(MasterCvVersion))
         artifacts_before = session.scalar(select(func.count()).select_from(Artifact))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.import_cv",
+        "clearscout.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: FakeImportResult(
             passed=True,
             markdown="not a CV any more\n",
@@ -453,7 +453,7 @@ def test_failed_database_registration_never_replaces_the_canonical_master_cv(
         raise RuntimeError("synthetic database registration failure")
 
     monkeypatch.setattr(
-        "tailorcv.application.master_cv.commands.register_master_cv", fail_registration
+        "clearscout.application.master_cv.commands.register_master_cv", fail_registration
     )
     with pytest.raises(RuntimeError, match="synthetic database registration failure"):
         service.import_source(
@@ -505,14 +505,14 @@ def test_pipeline_errors_and_failed_checks_never_register_a_version(
         durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
     )
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.import_cv",
+        "clearscout.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: (_ for _ in ()).throw(AuthError("No provider key.")),
     )
     with pytest.raises(ValidationError, match="No provider key"):
         service.import_source(workspace_id=str(workspace.id), filename="resume.pdf", content=b"pdf")
 
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.import_cv",
+        "clearscout.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: FakeImportResult(
             passed=False,
             markdown="# Rejected\n",
@@ -616,7 +616,7 @@ def test_an_unconfirmed_import_the_model_must_re_read_is_refused_without_a_model
         durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
     )
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.import_cv",
+        "clearscout.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: pytest.fail("an unconfirmed import must not call a provider"),
     )
 
@@ -642,7 +642,7 @@ def test_an_unconfirmed_edit_that_needs_a_re_read_is_refused_without_a_model(
         workspace_id=str(workspace.id), filename="CV.md", content=master_cv.read_bytes()
     )
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.import_cv",
+        "clearscout.application.tailoring.pipeline.import_cv",
         lambda *args, **kwargs: pytest.fail("saving an edit must not call a provider"),
     )
 
@@ -675,7 +675,7 @@ def test_a_confirmed_re_read_standardizes_the_edit_and_appends_a_version(
             report=report,
         )
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.import_cv", import_cv)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.import_cv", import_cv)
 
     saved = service.save_edit(str(workspace.id), UNDATED_EDIT, confirm_reread=True)
 
@@ -727,7 +727,7 @@ def test_the_re_read_estimate_averages_past_re_reads_and_stays_blank_without_one
             ledger=ledger,
         )
 
-    monkeypatch.setattr("tailorcv.application.tailoring.pipeline.import_cv", import_cv)
+    monkeypatch.setattr("clearscout.application.tailoring.pipeline.import_cv", import_cv)
     service.import_source(
         workspace_id=str(workspace.id), filename="Resume.docx", content=b"synthetic Word package"
     )

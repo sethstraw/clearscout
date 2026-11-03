@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.domain.identity import (
+from clearscout.domain.identity import (
     employer_name_words,
     exact_url_key,
     is_absolute_http_url,

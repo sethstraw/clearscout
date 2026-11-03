@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from tailorcv.application.job_search.fit_reports import render_fit_report
+from clearscout.application.job_search.fit_reports import render_fit_report
 from tests.support.scenarios import evaluation_commit
 
 
 def test_markdown_reports_unknown_cost_without_claiming_it_was_free() -> None:
-    from tailorcv.application.contracts import ReportCostInput
+    from clearscout.application.contracts import ReportCostInput
 
     proposal = evaluation_commit("workspace")
     proposal = proposal.model_copy(

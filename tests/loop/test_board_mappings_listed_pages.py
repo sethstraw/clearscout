@@ -16,34 +16,34 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceDetailCheckpoint,
     SourceReadOptions,
 )
-from tailorcv.domain import SourceReadOutcome
-from tailorcv.domain.identity import normalize_fetch_url
-from tailorcv.domain.staged_facts import PostedDateGrade
-from tailorcv.infrastructure.web_fetch import boards
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.domain import SourceReadOutcome
+from clearscout.domain.identity import normalize_fetch_url
+from clearscout.domain.staged_facts import PostedDateGrade
+from clearscout.infrastructure.web_fetch import boards
+from clearscout.infrastructure.web_fetch.board_adapters import (
     BoardApiFetcher,
     identify_board,
     identify_board_url,
 )
-from tailorcv.infrastructure.web_fetch.board_mappings import avature_page_posting
-from tailorcv.infrastructure.web_fetch.board_reads import (
+from clearscout.infrastructure.web_fetch.board_mappings import avature_page_posting
+from clearscout.infrastructure.web_fetch.board_reads import (
     SITEMAP_CHILDREN,
     page_continuation_target,
     publisher_search_scope,
     scope_owned_by_root,
 )
-from tailorcv.infrastructure.web_fetch.board_reads.scope import _registered_publisher_source
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.infrastructure.web_fetch.board_reads.scope import _registered_publisher_source
+from clearscout.infrastructure.web_fetch.policy import (
     FetchPolicyError,
     HostHeldError,
     PoliteHttpClient,
 )
-from tailorcv.infrastructure.web_fetch.publisher_sources import (
+from clearscout.infrastructure.web_fetch.publisher_sources import (
     PublisherReadLimits,
     PublisherSourceFetcher,
 )
@@ -770,7 +770,7 @@ def _hibob_fetcher(
         return httpx.Response(200, request=request, json=payload)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         sleeper=lambda _seconds: None,
         jitter=lambda _low, _high: 0.0,
         getter=get,
@@ -1319,7 +1319,8 @@ def test_employer_domain_portal_continuations_stay_scoped_and_resume(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     later = f"{_OWN_PORTAL}/sitemap-2.xml"
     pages = {
@@ -1433,7 +1434,8 @@ def test_jobvite_counts_every_distinct_owned_row_when_details_hit_the_deadline(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     pages = _jobvite_pages(**{_JOBVITE_BOARD: board_page})
     requested: list[str] = []
@@ -1478,7 +1480,8 @@ def test_jobvite_counts_failed_protected_and_capped_declared_rows(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     third = _JOBVITE_ENGINEER.rsplit("/", 1)[0] + "/oKl56mNo"
     board_page = (
@@ -1729,7 +1732,8 @@ def test_postings_the_read_deadline_cuts_off_are_continuation_targets(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     third = f"{_AVATURE}/JobDetail/Data-Engineer/5905"
     fetcher = _ClockedPages(
@@ -2629,7 +2633,8 @@ def test_successfactors_detail_counts_distinguish_deadline_cuts(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     requested: list[str] = []
 
@@ -2672,7 +2677,8 @@ def test_a_protected_posting_past_the_deadline_is_never_capped_or_rearmed(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     requested: list[str] = []
     sitemap = f"{_SF_SITE}/sitemap.xml"
@@ -2709,7 +2715,8 @@ def test_a_continuation_batch_counts_postings_left_unattempted_at_its_deadline(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
     fetcher = _ClockedPages(
         {_SF_PRODUCT: declaring_page(_posting("Product Manager", {"addressLocality": "Remote"}))},
@@ -2736,7 +2743,8 @@ def test_a_continued_posting_records_only_actual_detail_outcomes(
 ) -> None:
     now = [100.0]
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic", lambda: now[0]
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        lambda: now[0],
     )
 
     class RefusedPage(BoardApiFetcher):

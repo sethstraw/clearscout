@@ -5,13 +5,13 @@ from pathlib import Path
 import pytest
 from sqlalchemy import delete, select
 
-from tailorcv.application.discovery.relevance_disputes import RelevanceDisputeService
-from tailorcv.application.discovery.relevance_review_queries import RelevanceReviewQueries
-from tailorcv.application.failures import ConflictError, NotFoundError
-from tailorcv.application.job_search.models import RelevanceReviewResponse
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import AuditEvent, RelevanceReview
+from clearscout.application.discovery.relevance_disputes import RelevanceDisputeService
+from clearscout.application.discovery.relevance_review_queries import RelevanceReviewQueries
+from clearscout.application.failures import ConflictError, NotFoundError
+from clearscout.application.job_search.models import RelevanceReviewResponse
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import AuditEvent, RelevanceReview
 from tests.support.scenarios import workspace_with_relevance_review
 
 

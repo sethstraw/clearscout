@@ -117,11 +117,11 @@ export function WelcomePage() {
               </Link>
             </div>
             <p>
-              <a href="https://github.com/sethstraw/tailorcv/blob/main/docs/user-guide.md#choose-the-free-or-paid-path">
+              <a href="https://github.com/sethstraw/clearscout/blob/main/docs/user-guide.md#choose-the-free-or-paid-path">
                 When to use each free or paid route
               </a>
               {" | "}
-              <a href="https://github.com/sethstraw/tailorcv/blob/main/docs/validation.md#known-limits-in-010">
+              <a href="https://github.com/sethstraw/clearscout/blob/main/docs/validation.md#known-limits-in-010">
                 Current release limitations
               </a>
             </p>
@@ -201,7 +201,7 @@ function WorkspaceStep({ onCreated }: { onCreated: (id: string) => void }) {
             Workspace folder <span>(optional)</span>
             <input {...register("root_path")} aria-describedby="workspace-folder-note" />
             <small className="field-note" id="workspace-folder-note">
-              Leave blank to use Documents/TailorCV.
+              Leave blank to use Documents/ClearScout.
             </small>
           </label>
         </details>

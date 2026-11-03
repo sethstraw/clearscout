@@ -8,13 +8,13 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.infrastructure.web_fetch.board_adapters import (
     BoardApiFetcher,
     identify_board,
     identify_board_url,
 )
-from tailorcv.infrastructure.web_fetch.boards import job_board_address
-from tailorcv.infrastructure.web_fetch.policy import RobotsDeniedError
+from clearscout.infrastructure.web_fetch.boards import job_board_address
+from clearscout.infrastructure.web_fetch.policy import RobotsDeniedError
 from tests.support.http import policy_client
 
 _SITE = "0f6c2a4e-8b1d-4e7a-9c3f-5d2b7a1e6c90"

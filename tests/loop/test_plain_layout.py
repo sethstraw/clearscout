@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.shared.layout import plain_layout
+from clearscout.shared.layout import plain_layout
 from tests.support.posting_bodies import BODY_SHAPES, canonical_body
 
 

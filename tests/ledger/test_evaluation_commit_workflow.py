@@ -8,14 +8,14 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application import job_search
-from tailorcv.application.failures import ConflictError, ValidationError
-from tailorcv.application.job_search import evaluations
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.application.workspaces.parameters import parameter_snapshot_in
-from tailorcv.domain.search_parameters import JobSearchParameters, Seniority
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application import job_search
+from clearscout.application.failures import ConflictError, ValidationError
+from clearscout.application.job_search import evaluations
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.application.workspaces.parameters import parameter_snapshot_in
+from clearscout.domain.search_parameters import JobSearchParameters, Seniority
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     EvaluationScore,
     JobEvaluation,

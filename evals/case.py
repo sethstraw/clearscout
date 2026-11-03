@@ -15,12 +15,12 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.stages.jobspec import Dimension, Importance
-from tailorcv.application.tailoring.stages.match import Classification, Strength
-from tailorcv.domain import ClaimBoundary
-from tailorcv.domain.requirements import GateKind
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.stages.jobspec import Dimension, Importance
+from clearscout.application.tailoring.stages.match import Classification, Strength
+from clearscout.domain import ClaimBoundary
+from clearscout.domain.requirements import GateKind
 
 CASES = Path(__file__).parent / "cases"
 CVS = Path(__file__).parent / "cvs"

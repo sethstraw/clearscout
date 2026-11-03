@@ -13,12 +13,12 @@ then that configuration does not move. It holds the database URL and SQLite path
 the data root, the writable artifact root, the workspace-root policy, and any
 read-only import roots you explicitly allowed.
 
-Left alone, the data root is a `TailorCV` folder in your platform's Documents
+Left alone, the data root is a `ClearScout` folder in your platform's Documents
 directory, and it looks like this:
 
 ```text
-TailorCV/
-  tailorcv.sqlite3
+ClearScout/
+  clearscout.sqlite3
   artifacts/
   workspaces/
     <slug>/
@@ -26,12 +26,12 @@ TailorCV/
       imports/
       work/
       backups/
-      tailorcv.toml
+      clearscout.toml
 ```
 
 `--data-root` moves the whole boundary. `--artifact-root` moves only the
 writable artifact directory. `--workspaces-root` moves the folder new
-workspaces are created under, as `<workspaces-root>/<slug>`. `tailorcv init
+workspaces are created under, as `<workspaces-root>/<slug>`. `clearscout init
 --root` moves only the new workspace's own directory, and wins over
 `--workspaces-root`.
 
@@ -64,7 +64,7 @@ foreign keys, writes `0600` where the platform allows it, refuses to overwrite
 anything, and only names the file once the snapshot is complete:
 
 ```bash
-tailorcv db backup ./private-backups/tailorcv-backup.sqlite3 \
+clearscout db backup ./private-backups/clearscout-backup.sqlite3 \
   --data-root ./private-data
 ```
 
@@ -74,12 +74,12 @@ and your settings. Treat the whole set as sensitive.
 
 To restore into the same root:
 
-1. Stop `tailorcv serve` and `tailorcv worker`.
+1. Stop `clearscout serve` and `clearscout worker`.
 2. Preserve the damaged database separately; do not overwrite the backup.
-3. Put the verified snapshot back at that data root's `tailorcv.sqlite3` path.
+3. Put the verified snapshot back at that data root's `clearscout.sqlite3` path.
 4. Restore the matching `artifacts` and `workspaces` directories if they were
    lost. Do not mix them with a snapshot from another point in time.
-5. Run `tailorcv db status --data-root ./private-data` before starting the API.
+5. Run `clearscout db status --data-root ./private-data` before starting the API.
 6. Open detail or verification workflows to byte-verify referenced artifacts.
 
 The backup test opens the snapshot on its own and checks integrity, foreign
@@ -89,7 +89,7 @@ from.
 
 ## Importing from another database
 
-`tailorcv db import` takes a recognizable TailorCV SQLite database and a fresh,
+`clearscout db import` takes a recognizable ClearScout SQLite database and a fresh,
 migrated target, and nothing else. Preflight checks integrity on both sides,
 checks the schema columns it needs, orders dependent history, and produces a
 stable plan. Deterministic seed rows already in the target are compared across
@@ -106,8 +106,8 @@ them explicitly after starting the destination worker.
 Look at a dry run first, every time:
 
 ```bash
-tailorcv db upgrade --data-root ./new-private-data
-tailorcv db import ./old-tailorcv.sqlite3 \
+clearscout db upgrade --data-root ./new-private-data
+clearscout db import ./old-clearscout.sqlite3 \
   --source-data-root ./old-private-data \
   --data-root ./new-private-data \
   --dry-run
@@ -124,7 +124,7 @@ Local references that sit outside an explicit root come back reported as
 unresolved rather than guessed at.
 
 When both the old and new roots are explicit, these are the only columns
-TailorCV will rewrite:
+ClearScout will rewrite:
 
 | Column                          | Rule                                                                                |
 | ------------------------------- | ----------------------------------------------------------------------------------- |
@@ -140,7 +140,7 @@ privately and undone if finalization or the database commit fails.
 
 Anything with a non-file URI scheme is kept as an external reference. An absolute
 local path is only preserved under an explicit, repeatable `--allow-read-root`,
-and otherwise stays unresolved in the report. TailorCV will not rewrite arbitrary
+and otherwise stays unresolved in the report. ClearScout will not rewrite arbitrary
 text, or an unknown column that happens to look like a path.
 
 Keep the old data root until the finished report has no unresolved references you
@@ -150,11 +150,11 @@ did not expect and the new database's artifact checks pass.
 
 The provider response cache is a per-user file outside the data root, and it
 upserts on its key, so an answer is gone the moment the same request is made
-again. `tailorcv db archive-cache` copies the answers it still holds into the
+again. `clearscout db archive-cache` copies the answers it still holds into the
 database:
 
 ```bash
-tailorcv db archive-cache --data-root ./private-data
+clearscout db archive-cache --data-root ./private-data
 ```
 
 Pass `--cache-directory` to read a cache somewhere other than the per-user

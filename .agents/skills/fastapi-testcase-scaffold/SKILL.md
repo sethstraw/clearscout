@@ -1,9 +1,9 @@
 ---
 name: fastapi-testcase-scaffold
-description: Scaffold a pytest test for a TailorCV FastAPI route handler. Use for an explicit API test request or a change under src/tailorcv/delivery/api/. Do not use for non-HTTP unit tests.
+description: Scaffold a pytest test for a ClearScout FastAPI route handler. Use for an explicit API test request or a change under src/clearscout/delivery/api/. Do not use for non-HTTP unit tests.
 ---
 
-# TailorCV FastAPI testcase scaffold
+# ClearScout FastAPI testcase scaffold
 
 Route tests assert the observable HTTP outcome of a real request. Mock outbound
 HTTP, never the database. Match the surrounding test file's style before
@@ -11,7 +11,7 @@ adopting a new one.
 
 ## Locate
 
-Find the route handler under `src/tailorcv/delivery/api/`. Note its path, HTTP
+Find the route handler under `src/clearscout/delivery/api/`. Note its path, HTTP
 method, request model, response model, and every collaborator it calls, such as
 repositories and provider clients.
 
@@ -24,7 +24,7 @@ builders it imports instead of writing local ones.
 ## Build the app and replace collaborators
 
 There is no client fixture. Each API test builds the app with
-`tailorcv.bootstrap.api.create_app` over the `durable_database_url` fixture
+`clearscout.bootstrap.api.create_app` over the `durable_database_url` fixture
 from `tests/conftest.py`, a migrated SQLite database cloned per test, and opens
 `fastapi.testclient.TestClient` as a context manager. A collaborator the route
 receives through a dependency is replaced with `app.dependency_overrides`. This
@@ -38,9 +38,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from tailorcv.application.config import Settings
-from tailorcv.bootstrap.api import create_app
-from tailorcv.delivery.api.dependencies import provide_openai_billing
+from clearscout.application.config import Settings
+from clearscout.bootstrap.api import create_app
+from clearscout.delivery.api.dependencies import provide_openai_billing
 from tests.support.doubles import MemoryStore
 
 

@@ -13,34 +13,34 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, get_args
 
-from evals.case import Case, ScriptedReplacement
-from tailorcv.application.config import Stage
-from tailorcv.application.discovery.derived_vocabulary_rules import SearchTitle
-from tailorcv.application.discovery.relevance_review import RelevanceReviewItemFailure
-from tailorcv.application.discovery.relevance_review_records import ValidatedRelevanceReview
-from tailorcv.application.job_search.models import RelevanceReviewDecisiveBasis
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.master_cv.sources import SourceDocument
-from tailorcv.application.tailoring import batch, elicit
-from tailorcv.application.tailoring.changes import Review
-from tailorcv.application.tailoring.elicit import Line, Pending
-from tailorcv.application.tailoring.elicit.vocabulary import RANK
-from tailorcv.application.tailoring.elicit.vocabulary import figures as extract_figures
-from tailorcv.application.tailoring.fit import Reading, disagreements
-from tailorcv.application.tailoring.stages import verify as verify_stage
-from tailorcv.application.tailoring.stages.context import AUTHORIZATION_MARKERS
-from tailorcv.application.tailoring.stages.draft import CoverLetter, Fitted, ResumeDraft
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.config import Stage
+from clearscout.application.discovery.derived_vocabulary_rules import SearchTitle
+from clearscout.application.discovery.relevance_review import RelevanceReviewItemFailure
+from clearscout.application.discovery.relevance_review_records import ValidatedRelevanceReview
+from clearscout.application.job_search.models import RelevanceReviewDecisiveBasis
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.master_cv.sources import SourceDocument
+from clearscout.application.tailoring import batch, elicit
+from clearscout.application.tailoring.changes import Review
+from clearscout.application.tailoring.elicit import Line, Pending
+from clearscout.application.tailoring.elicit.vocabulary import RANK
+from clearscout.application.tailoring.elicit.vocabulary import figures as extract_figures
+from clearscout.application.tailoring.fit import Reading, disagreements
+from clearscout.application.tailoring.stages import verify as verify_stage
+from clearscout.application.tailoring.stages.context import AUTHORIZATION_MARKERS
+from clearscout.application.tailoring.stages.draft import CoverLetter, Fitted, ResumeDraft
+from clearscout.application.tailoring.stages.jobspec import (
     MAX_KEYWORD_LENGTH,
     HardGate,
     Importance,
     JobSpec,
 )
-from tailorcv.application.tailoring.stages.match import GATE_OVERLAP, EvidenceMap
-from tailorcv.application.tailoring.stages.select import Plan
-from tailorcv.application.tailoring.stages.structure import ImportedCv
-from tailorcv.shared.costs import Ledger
-from tailorcv.shared.results import Finding
+from clearscout.application.tailoring.stages.match import GATE_OVERLAP, EvidenceMap
+from clearscout.application.tailoring.stages.select import Plan
+from clearscout.application.tailoring.stages.structure import ImportedCv
+from clearscout.shared.costs import Ledger
+from clearscout.shared.results import Finding
+from evals.case import Case, ScriptedReplacement
 
 # Lexical and short: these turn a contribution into an ownership claim, and a
 # longer list would start catching ordinary verbs.

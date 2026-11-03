@@ -10,10 +10,10 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import SourceContinuationTarget
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
-from tailorcv.infrastructure.web_fetch.platforms import eightfold
-from tailorcv.infrastructure.web_fetch.policy import FetchPolicyError, PoliteHttpClient
+from clearscout.application.discovery.source_reading import SourceContinuationTarget
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher, identify_board
+from clearscout.infrastructure.web_fetch.platforms import eightfold
+from clearscout.infrastructure.web_fetch.policy import FetchPolicyError, PoliteHttpClient
 from tests.support.http import public_resolver
 
 
@@ -98,7 +98,7 @@ class _CareerSite:
 
         return Fetcher(
             client=PoliteHttpClient(
-                user_agent="tailorcv/test",
+                user_agent="clearscout/test",
                 getter=get,
                 sleeper=lambda _seconds: None,
                 jitter=lambda _low, _high: 0.0,

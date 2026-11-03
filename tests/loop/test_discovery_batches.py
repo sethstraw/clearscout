@@ -19,45 +19,45 @@ import pytest
 from sqlalchemy import select, update
 from sqlalchemy.exc import OperationalError
 
-from tailorcv.application.discovery.board_scan import (
+from clearscout.application.discovery.board_scan import (
     DiscoveryRefreshBatchHandler,
     SourceScanService,
 )
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     PostingResolutionPreflight,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.source_reading import PostingCheck
-from tailorcv.application.failures import (
+from clearscout.application.discovery.source_reading import PostingCheck
+from clearscout.application.failures import (
     DeadLinkRefreshError,
     PublisherUnverifiedRefreshError,
     UnsupportedPublisherRefreshError,
     ValidationError,
 )
-from tailorcv.application.tailoring.workflows.evaluations import (
+from clearscout.application.tailoring.workflows.evaluations import (
     DiscoveryEvaluateBatchHandler,
     EvaluationHandler,
     EvaluationWorkflowService,
 )
-from tailorcv.domain import (
+from clearscout.domain import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
     PostingStatus,
     utc_now,
 )
-from tailorcv.domain.identity import normalize_url
-from tailorcv.domain.records import PostingReadIntent
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.identity import normalize_url
+from clearscout.domain.records import PostingReadIntent
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     PendingDiscovery,
     PostingUrl,
     Source,
 )
-from tailorcv.infrastructure.web_fetch.ingest.url import check_posting
-from tailorcv.shared.errors import ProviderError, QuotaError
+from clearscout.infrastructure.web_fetch.ingest.url import check_posting
+from clearscout.shared.errors import ProviderError, QuotaError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.http import (

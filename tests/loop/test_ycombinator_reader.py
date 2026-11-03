@@ -10,10 +10,10 @@ from urllib.parse import urlsplit
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch import board_adapters
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.ingest import strip_tags
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.infrastructure.web_fetch import board_adapters
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.ingest import strip_tags
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 from tests.support.doubles import declaring_page
 from tests.support.http import public_resolver
 
@@ -84,7 +84,7 @@ class _Site:
 
         return BoardApiFetcher(
             client=PoliteHttpClient(
-                user_agent="tailorcv/test",
+                user_agent="clearscout/test",
                 getter=get,
                 sleeper=lambda _seconds: None,
                 jitter=lambda _low, _high: 0.0,

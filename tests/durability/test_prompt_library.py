@@ -13,8 +13,8 @@ import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.prompts import (
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.prompts import (
     PROMPT_NAMES,
     canonical,
     digest,
@@ -23,13 +23,13 @@ from tailorcv.application.prompts import (
     packaged,
     suite_fingerprint,
 )
-from tailorcv.application.tailoring.workflows import TailorOutput
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.application.workspaces.prompt_library import PromptLibraryService, overrides_in
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.tailoring.workflows import TailorOutput
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.prompt_library import PromptLibraryService, overrides_in
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     PromptTemplate,
     PromptVersion,
     RunPromptVersion,
@@ -280,7 +280,7 @@ def _shift_the_packaged_default(monkeypatch: pytest.MonkeyPatch, key: str, suffi
     def shifted(name: str) -> str:
         return packaged(name) + suffix if name == key else packaged(name)
 
-    monkeypatch.setattr("tailorcv.application.workspaces.prompt_library.packaged", shifted)
+    monkeypatch.setattr("clearscout.application.workspaces.prompt_library.packaged", shifted)
 
 
 def test_an_unchanged_default_leaves_an_override_alone(
@@ -413,7 +413,7 @@ def test_the_http_surface_edits_diffs_reverts_and_resets_one_prompt(
     """One pass over the surface a browser editor is built against."""
     from fastapi.testclient import TestClient
 
-    from tailorcv.bootstrap.api import create_app
+    from clearscout.bootstrap.api import create_app
 
     with TestClient(
         create_app(durable_database_url, tmp_path / "artifacts"), base_url="http://localhost"

@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.config import ProviderName
-from tailorcv.infrastructure.providers.failures import translate
-from tailorcv.shared.errors import AuthError, ProviderError, ProviderFailure, QuotaError
+from clearscout.application.config import ProviderName
+from clearscout.infrastructure.providers.failures import translate
+from clearscout.shared.errors import AuthError, ProviderError, ProviderFailure, QuotaError
 
 
 class FakeApiError(Exception):
@@ -68,7 +68,7 @@ def test_prose_uses_the_company_name_and_commands_use_the_flag_value() -> None:
     # "Your openai account" reads like a typo; "--provider OpenAI" would not work.
     text = str(translate(FakeApiError(status_code=401), ProviderName.OPENAI, "verify that key"))
     assert "Your OpenAI key" in text
-    assert "tailorcv auth set openai" in text
+    assert "clearscout auth set openai" in text
 
 
 def test_quota_message_reassures_that_nothing_was_billed() -> None:
@@ -93,7 +93,7 @@ def test_anthropic_credit_exhaustion_points_at_the_anthropic_console() -> None:
 def test_a_rejected_key_is_an_auth_error_with_the_command_to_fix_it(status: int) -> None:
     error = translate(FakeApiError(status_code=status), ProviderName.OPENAI, "verify that key")
     assert isinstance(error, AuthError)
-    assert "tailorcv auth set openai" in str(error)
+    assert "clearscout auth set openai" in str(error)
 
 
 def test_an_unknown_model_sends_the_user_to_doctor() -> None:
@@ -104,7 +104,7 @@ def test_an_unknown_model_sends_the_user_to_doctor() -> None:
     )
     error = translate(raw, ProviderName.OPENAI, "screen this posting")
     assert isinstance(error, ProviderError)
-    assert "tailorcv doctor" in str(error)
+    assert "clearscout doctor" in str(error)
 
 
 def test_a_rate_limit_is_not_confused_with_running_out_of_money() -> None:
@@ -171,7 +171,7 @@ def test_an_unclassified_failure_names_its_code_and_status(
     raw = FakeApiError("odd", status_code=status, body={"error": {"message": "Odd.", "code": code}})
     error = translate(raw, ProviderName.OPENAI, "draft the resume")
     assert (
-        str(error) == f"tailorcv could not draft the resume because OpenAI returned: Odd. {named}"
+        str(error) == f"clearscout could not draft the resume because OpenAI returned: Odd. {named}"
     )
 
 

@@ -1,9 +1,9 @@
 ---
 name: alembic-migration-author
-description: Author or modify a TailorCV Alembic migration. Use for any change under src/tailorcv/infrastructure/persistence/migrations/versions/, any request to add a revision, and any schema or data change that existing databases must receive. Do not use for read-only schema inspection or unrelated database work.
+description: Author or modify a ClearScout Alembic migration. Use for any change under src/clearscout/infrastructure/persistence/migrations/versions/, any request to add a revision, and any schema or data change that existing databases must receive. Do not use for read-only schema inspection or unrelated database work.
 ---
 
-# TailorCV Alembic migration author
+# ClearScout Alembic migration author
 
 Follow this skill before proposing any migration file. The rules are in
 `docs/contributing/database-and-migrations.md`: until the first public tag, the schema is one
@@ -26,7 +26,7 @@ revision edited in place; after it, each change adds a forward revision.
 ## Pre-release: edit v0001 in place
 
 Edit
-`src/tailorcv/infrastructure/persistence/migrations/versions/v0001_schema.py`
+`src/clearscout/infrastructure/persistence/migrations/versions/v0001_schema.py`
 directly. Do not create a second revision file. Preserve column order, server
 defaults, and index names already used elsewhere.
 
@@ -53,7 +53,7 @@ Never repair a database with ad hoc SQLite writes. Never put backfill data in
 ## Verify
 
 Run migration work only against a scratch data root, never a real workspace.
-An inherited `TAILORCV_DATABASE_URL` beats `--data-root`, so name the scratch
+An inherited `CLEARSCOUT_DATABASE_URL` beats `--data-root`, so name the scratch
 database with `--database-url` as well.
 
 ```sh

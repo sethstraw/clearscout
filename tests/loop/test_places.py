@@ -14,8 +14,8 @@ import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from tailorcv.domain.countries import DEFAULT_TABLE
-from tailorcv.domain.places import PlaceReader, PlaceReading
+from clearscout.domain.countries import DEFAULT_TABLE
+from clearscout.domain.places import PlaceReader, PlaceReading
 
 READER = PlaceReader(DEFAULT_TABLE)
 
@@ -420,8 +420,8 @@ def test_region_of_is_empty_for_an_ambiguous_bare_city() -> None:
 def test_the_city_index_loads_once() -> None:
     script = (
         "import sys; from importlib import resources;"
-        "from tailorcv.domain.countries import DEFAULT_TABLE;"
-        "from tailorcv.domain.places import PlaceReader;"
+        "from clearscout.domain.countries import DEFAULT_TABLE;"
+        "from clearscout.domain.places import PlaceReader;"
         "reads = []; files = resources.files;"
         "resources.files = lambda package: reads.append(package) or files(package);"
         "PlaceReader(DEFAULT_TABLE).read('Boston');"
@@ -431,12 +431,12 @@ def test_the_city_index_loads_once() -> None:
     completed = subprocess.run(  # noqa: S603 - fixed arguments, current interpreter
         [sys.executable, "-c", script], capture_output=True, text=True, check=True
     )
-    assert completed.stdout.strip() == "['tailorcv.domain']"
+    assert completed.stdout.strip() == "['clearscout.domain']"
 
 
 def test_importing_the_readers_does_not_import_geonamescache() -> None:
     script = (
-        "import sys, tailorcv.domain.countries, tailorcv.domain.places;"
+        "import sys, clearscout.domain.countries, clearscout.domain.places;"
         "sys.exit('geonamescache' in sys.modules)"
     )
     completed = subprocess.run([sys.executable, "-c", script], check=False)  # noqa: S603 - fixed arguments, current interpreter
@@ -445,7 +445,7 @@ def test_importing_the_readers_does_not_import_geonamescache() -> None:
 
 def test_the_shipped_index_and_the_licensing_doc_carry_the_geonames_attribution() -> None:
     data = json.loads(
-        resources.files("tailorcv.domain").joinpath("gazetteer.json").read_text(encoding="utf-8")
+        resources.files("clearscout.domain").joinpath("gazetteer.json").read_text(encoding="utf-8")
     )
     licence = "https://creativecommons.org/licenses/by/4.0/"
     assert data["attribution"]["licence_url"] == licence

@@ -1,6 +1,6 @@
 # Technical review
 
-The technical integration review for TailorCV's high-risk surfaces.
+The technical integration review for ClearScout's high-risk surfaces.
 
 ## When to dispatch
 

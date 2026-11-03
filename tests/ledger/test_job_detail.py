@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import CompensationInput, EligibilityInput
-from tailorcv.application.failures import NotFoundError
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.domain.search_parameters import JobSearchParameters, Location, WorkEligibility
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import PostingObservation
+from clearscout.application import job_search
+from clearscout.application.contracts import CompensationInput, EligibilityInput
+from clearscout.application.failures import NotFoundError
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.domain.search_parameters import JobSearchParameters, Location, WorkEligibility
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PostingObservation
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.scenarios import NOW, evaluation_commit
 

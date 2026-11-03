@@ -676,7 +676,7 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
           {item.current_robots_basis === "single_posting_read" ? (
             <p
               className="field-note"
-              title="robots.txt disallows crawling this page; TailorCV opened this one posting once, as a person would."
+              title="robots.txt disallows crawling this page; ClearScout opened this one posting once, as a person would."
             >
               Single page read
             </p>

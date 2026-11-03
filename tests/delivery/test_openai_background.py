@@ -11,23 +11,23 @@ import httpx
 import pytest
 from pydantic import BaseModel
 
-from tailorcv.application.config import (
+from clearscout.application.config import (
     BACKGROUND_WEB_SEARCH_PROVIDERS,
     Effort,
     ModelChoice,
     ProviderName,
 )
-from tailorcv.infrastructure.providers.anthropic import AnthropicProvider
-from tailorcv.infrastructure.providers.base import (
+from clearscout.infrastructure.providers.anthropic import AnthropicProvider
+from clearscout.infrastructure.providers.base import (
     BackgroundDispatch,
     BackgroundWebSearchProvider,
     envelope_of,
 )
-from tailorcv.infrastructure.providers.capture import CapturingProvider
-from tailorcv.infrastructure.providers.openai import OpenAIProvider
-from tailorcv.infrastructure.providers.plan import SearchPolicy
-from tailorcv.shared.costs import ServiceTier
-from tailorcv.shared.errors import CapacityError, ProviderError, TailorcvError
+from clearscout.infrastructure.providers.capture import CapturingProvider
+from clearscout.infrastructure.providers.openai import OpenAIProvider
+from clearscout.infrastructure.providers.plan import SearchPolicy
+from clearscout.shared.costs import ServiceTier
+from clearscout.shared.errors import CapacityError, ClearscoutError, ProviderError
 from tests.delivery.test_adapters import OPENAI_BODY, FakeOpenAI
 from tests.support.plans import plan_for
 from tests.support.provider_clients import provider_for_http
@@ -271,7 +271,7 @@ def test_a_4xx_dispatch_failure_is_certainly_not_created(status: int, code: str 
     client = FakeBackgroundOpenAI(create_error=_status_error(status, code))
     provider = OpenAIProvider(api_key="x", client=cast(Any, client))
 
-    with pytest.raises(TailorcvError) as raised:
+    with pytest.raises(ClearscoutError) as raised:
         provider.dispatch_background(plan_for(), Answer, CHOICE, metadata={})
 
     assert raised.value.certainly_not_created is True
@@ -333,9 +333,9 @@ def _dispatch_on_flex_after_capacity_error(
     refusals: int = 1,
     slept: list[float] | None = None,
 ) -> BackgroundDispatch:
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger, ServiceTier
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger, ServiceTier
 
     client_sdk = FakeBackgroundOpenAI()
     original_create = client_sdk._create
@@ -470,9 +470,9 @@ def test_a_terminal_poll_is_captured_with_the_provider_body_only_once(tmp_path: 
 
 def test_a_terminal_poll_puts_both_envelopes_on_its_ledger_entry(settings: Any) -> None:
     """A campaign attempt reads both envelopes from this entry rather than storing its own copy."""
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger
 
     sent = {"model": "model", "input": "a synthetic prompt", "background": True}
     ledger = Ledger()
@@ -508,9 +508,9 @@ def _terminal_response(response_id: str) -> SimpleNamespace:
 def test_client_collect_background_records_exactly_one_ledger_entry_on_a_terminal_poll(
     settings: Any,
 ) -> None:
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger
 
     sdk = FakeBackgroundOpenAI()
     provider = OpenAIProvider(api_key="x", client=cast(Any, sdk))
@@ -554,9 +554,9 @@ def test_a_second_terminal_poll_of_the_same_response_records_no_second_ledger_en
     settings: Any,
 ) -> None:
     """A resume after a crash, or a runner that polls again, must not bill twice."""
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger
 
     sdk = FakeBackgroundOpenAI()
     provider = OpenAIProvider(api_key="x", client=cast(Any, sdk))
@@ -594,9 +594,9 @@ def test_collect_background_describes_the_call_with_the_passed_choice_not_curren
     settings: Any,
 ) -> None:
     """A resume must record the dispatch-time choice, since settings can move on."""
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger
 
     sdk = FakeBackgroundOpenAI()
     provider = OpenAIProvider(api_key="x", client=cast(Any, sdk))
@@ -627,9 +627,9 @@ def test_collect_background_describes_the_call_with_the_passed_choice_not_curren
 def test_a_background_flex_call_records_whether_standard_answered_it(
     settings: Any, refused_tier: str | None, resent: bool
 ) -> None:
-    from tailorcv.infrastructure.providers.cache import ResponseCache
-    from tailorcv.infrastructure.providers.client import Client
-    from tailorcv.shared.costs import Ledger
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.shared.costs import Ledger
 
     sdk = FakeBackgroundOpenAI(refused_tier=refused_tier)
     provider = OpenAIProvider(api_key="x", client=cast(Any, sdk))

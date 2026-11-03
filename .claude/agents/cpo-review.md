@@ -1,11 +1,11 @@
 ---
 name: cpo-review
-description: Use proactively when a TailorCV change alters workflow, labels, scoring, prioritization, or another product decision. It is the product review for those changes, so dispatch it rather than assembling a review of your own. Do not dispatch it for an ordinary technical diff. Judges product impact and severity, not implementation. Read-only; returns a recommendation, never edits.
+description: Use proactively when a ClearScout change alters workflow, labels, scoring, prioritization, or another product decision. It is the product review for those changes, so dispatch it rather than assembling a review of your own. Do not dispatch it for an ordinary technical diff. Judges product impact and severity, not implementation. Read-only; returns a recommendation, never edits.
 model: opus
 effort: high
 memory: local
 skills:
-  - tailorcv-command-card
+  - clearscout-command-card
 disallowedTools: Agent, Write, Edit, NotebookEdit, mcp__serena__replace_symbol_body, mcp__serena__insert_after_symbol, mcp__serena__insert_before_symbol, mcp__serena__rename_symbol, mcp__serena__replace_in_files, mcp__serena__safe_delete_symbol, mcp__serena__write_memory, mcp__serena__edit_memory, mcp__serena__rename_memory, mcp__serena__delete_memory
 ---
 

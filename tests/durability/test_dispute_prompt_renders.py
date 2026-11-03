@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tailorcv.application.prompts import render
+from clearscout.application.prompts import render
 
 
 def test_draft_prompt_carries_active_disputes_block() -> None:

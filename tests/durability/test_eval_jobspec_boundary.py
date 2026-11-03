@@ -13,8 +13,8 @@ from evals.inspect.scorers.jobspec_boundary import boundary_match
 from evals.inspect.solvers.jobspec_live import boundary_result, load_boundaries, posting
 from evals.inspect.tasks import jobspec_boundary_live_task as task
 
-from tailorcv.application.config import Stage
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.config import Stage
+from clearscout.application.tailoring.stages.jobspec import (
     Importance,
     JobSpecExtraction,
     RawBoundaryMatch,

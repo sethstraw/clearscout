@@ -10,12 +10,12 @@ from typing import Any
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.platforms.smartrecruiters import (
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.platforms.smartrecruiters import (
     publisher_collection_markup,
 )
-from tailorcv.infrastructure.web_fetch.policy import PoliteHttpClient, RobotsDeniedError
-from tailorcv.infrastructure.web_fetch.publisher_sources import (
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient, RobotsDeniedError
+from clearscout.infrastructure.web_fetch.publisher_sources import (
     REGISTERED_POSTING_LINK,
     PublisherReadLimits,
     PublisherSourceFetcher,
@@ -83,7 +83,7 @@ def _fetcher(
         return httpx.Response(200, text=page, request=httpx.Request("GET", url))
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         resolver=public_resolver,
         sleeper=lambda _seconds: None,
@@ -219,7 +219,7 @@ def _paged_fetcher(
         return httpx.Response(200, text=pages[url], request=request)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         resolver=public_resolver,
         sleeper=lambda _seconds: None,
@@ -330,7 +330,7 @@ def test_workday_api_refusal_preserves_independently_readable_publisher_page(
         return httpx.Response(status, request=httpx.Request("POST", url))
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         poster=post,
         resolver=public_resolver,
@@ -402,7 +402,7 @@ def _icims_fetcher(
         return httpx.Response(status, text=page, request=httpx.Request("GET", url))
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         resolver=public_resolver,
         sleeper=lambda _seconds: None,
@@ -520,7 +520,7 @@ def _grouped_fetcher(pages: dict[str, str]) -> tuple[BoardApiFetcher, list[str]]
         return httpx.Response(200, text=pages.get(url, ""), request=request)
 
     client = PoliteHttpClient(
-        user_agent="tailorcv/test",
+        user_agent="clearscout/test",
         getter=get,
         resolver=public_resolver,
         sleeper=lambda _seconds: None,

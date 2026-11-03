@@ -155,7 +155,7 @@ export function JobDocumentMarkdownEditor({
                   options={{
                     title: `Restore version ${version.version_number}?`,
                     description:
-                      "TailorCV will preserve the current content and append the selected content as a new version.",
+                      "ClearScout will preserve the current content and append the selected content as a new version.",
                     confirmLabel: "Restore as new version",
                   }}
                 >

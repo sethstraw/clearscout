@@ -6,12 +6,12 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 
-from tailorcv.application.master_cv.proposal_aggregation import refresh_master_cv_proposals
-from tailorcv.application.master_cv.versioning import current_version_id
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.domain import SearchProposalState, new_id
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.master_cv.proposal_aggregation import refresh_master_cv_proposals
+from clearscout.application.master_cv.versioning import current_version_id
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.domain import SearchProposalState, new_id
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     CandidateProfile,
     Employer,
     JobEvaluation,

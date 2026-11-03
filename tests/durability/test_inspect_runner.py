@@ -18,31 +18,31 @@ from evals.inspect.scorers.match_classification import (
     classification_match,
     per_requirement_scripted_contract,
 )
-from evals.inspect.solvers import tailorcv_live
-from evals.inspect.solvers.tailorcv_live import live_run_metadata
+from evals.inspect.solvers import clearscout_live
+from evals.inspect.solvers.clearscout_live import live_run_metadata
 from evals.support import client as eval_client
 from evals.support.inventory import synthetic_inventory
 
-from tailorcv.application.config import Stage
-from tailorcv.application.prompts import load as load_prompt
-from tailorcv.application.prompts import overriding, packaged, suite_fingerprint
-from tailorcv.application.tailoring.stages.match import (
+from clearscout.application.config import Stage
+from clearscout.application.prompts import load as load_prompt
+from clearscout.application.prompts import overriding, packaged, suite_fingerprint
+from clearscout.application.tailoring.stages.match import (
     Classification,
     EvidenceMap,
     Match,
     Strength,
 )
-from tailorcv.infrastructure.artifacts.runtime import RuntimeStorage
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.providers.base import (
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.providers.base import (
     CallRecord,
     Finish,
     UnusableResponseError,
     refuse_unusable,
 )
-from tailorcv.infrastructure.providers.credentials import Credential, Source
-from tailorcv.shared.costs import CallManifest, ServiceTier, Usage
-from tailorcv.shared.errors import ProviderError
+from clearscout.infrastructure.providers.credentials import Credential, Source
+from clearscout.shared.costs import CallManifest, ServiceTier, Usage
+from clearscout.shared.errors import ProviderError
 from tests.support.doubles import FakeProvider, FakeTaskModule
 from tests.support.suite import REPO_ROOT, SUITE_PROVIDER
 
@@ -546,10 +546,10 @@ from pathlib import Path
 
 from evals.inspect.product_questions import ProductQuestion
 from evals.inspect.outcomes import FailedCall
-from tailorcv.infrastructure.providers.base import (
+from clearscout.infrastructure.providers.base import (
     CallRecord, Finish, UnusableResponseError, refuse_unusable,
 )
-from tailorcv.shared.costs import Usage
+from clearscout.shared.costs import Usage
 
 TASK_NAME = "truncating-batch"
 DATASET_PATH = Path(__file__).with_name("batch.jsonl")
@@ -1091,7 +1091,7 @@ def test_a_run_reports_critic_outcome_agreement_beside_the_pass_mark(
 
 def _match_provenance(**changes: Any) -> dict[str, Any]:
     return {
-        "protocol_version": "tailorcv-match-development-v1",
+        "protocol_version": "clearscout-match-development-v1",
         "family": "match",
         "rubric_version": "match-rubric-v1",
         "reviewer_a": "reviewer-a",
@@ -1129,7 +1129,7 @@ def test_match_scorer_reports_the_review_record_the_row_carries() -> None:
         (_match_provenance(disagreements=["recommendation"]), "does not decide"),
         (
             _match_provenance(
-                protocol_version="tailorcv-relevance-review-development-v1",
+                protocol_version="clearscout-relevance-review-development-v1",
                 family="relevance-review",
             ),
             "another review family",
@@ -1184,11 +1184,11 @@ def test_runner_refuses_split_selection_when_a_sample_has_no_split(
 def test_live_run_metadata_requires_an_explicit_provider(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.delenv("TAILORCV_EVAL_LIVE_PROVIDER", raising=False)
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "development")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "1")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.delenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", raising=False)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "1")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
 
     with pytest.raises(RuntimeError, match="explicit provider"):
         live_run_metadata()
@@ -1197,12 +1197,12 @@ def test_live_run_metadata_requires_an_explicit_provider(
 def test_live_run_metadata_records_derived_identity(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "regression")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "1")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
-    monkeypatch.setattr(tailorcv_live, "_selection_manifest_identity", _selection_identity)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "regression")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "1")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setattr(clearscout_live, "_selection_manifest_identity", _selection_identity)
 
     metadata = live_run_metadata()
 
@@ -1220,11 +1220,11 @@ def test_live_run_metadata_records_derived_identity(
 def test_live_run_metadata_refuses_a_public_repository_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", "100")
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "holdout")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "1")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(Path.cwd() / "reports" / "eval"))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "holdout")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "1")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(Path.cwd() / "reports" / "eval"))
 
     with pytest.raises(RuntimeError, match="outside the public repository"):
         live_run_metadata()
@@ -1232,7 +1232,7 @@ def test_live_run_metadata_refuses_a_public_repository_output(
 
 def _billable(monkeypatch: pytest.MonkeyPatch, database_url: str) -> None:
     """Give a live run the single workspace it bills its calls to."""
-    from tailorcv.infrastructure.persistence.models.workspaces import Workspace
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
 
     database = Database(database_url)
     try:
@@ -1240,16 +1240,16 @@ def _billable(monkeypatch: pytest.MonkeyPatch, database_url: str) -> None:
             session.add(Workspace(slug="ws", name="Workspace"))
     finally:
         database.dispose()
-    monkeypatch.setenv("TAILORCV_EVAL_DATABASE_URL", database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", database_url)
 
 
 def _live_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, cents: str = "100") -> None:
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_APPROVED_CENTS", cents)
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_PROVIDER", "openai")
-    monkeypatch.setenv("TAILORCV_EVAL_DATASET_SPLIT", "development")
-    monkeypatch.setenv("TAILORCV_EVAL_SAMPLE_LIMIT", "1")
-    monkeypatch.setenv("TAILORCV_EVAL_OUTPUT_DIR", str(tmp_path))
-    monkeypatch.setattr(tailorcv_live, "_selection_manifest_identity", _selection_identity)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", cents)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "1")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setattr(clearscout_live, "_selection_manifest_identity", _selection_identity)
 
 
 def test_live_run_metadata_keeps_large_advisory_estimates(
@@ -1257,7 +1257,7 @@ def test_live_run_metadata_keeps_large_advisory_estimates(
 ) -> None:
     """The estimate is metadata, without an application spending ceiling."""
     _live_env(monkeypatch, tmp_path, cents="100000")
-    monkeypatch.delenv("TAILORCV_EVAL_ESTIMATED_CENTS", raising=False)
+    monkeypatch.delenv("CLEARSCOUT_EVAL_ESTIMATED_CENTS", raising=False)
 
     assert live_run_metadata()["approved_cents"] == 100000
 
@@ -1267,7 +1267,7 @@ def test_live_run_metadata_keeps_differing_estimates(
 ) -> None:
     """An estimate mismatch does not revoke explicit run consent."""
     _live_env(monkeypatch, tmp_path, cents="100")
-    monkeypatch.setenv("TAILORCV_EVAL_ESTIMATED_CENTS", "250")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_ESTIMATED_CENTS", "250")
 
     metadata = live_run_metadata()
     assert metadata["approved_cents"] == 100
@@ -1279,7 +1279,7 @@ def test_live_run_metadata_accepts_estimate_within_one_cent(
 ) -> None:
     """The estimate match is inclusive to one cent of drift."""
     _live_env(monkeypatch, tmp_path, cents="100")
-    monkeypatch.setenv("TAILORCV_EVAL_ESTIMATED_CENTS", "101")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_ESTIMATED_CENTS", "101")
 
     metadata = live_run_metadata()
 
@@ -1294,9 +1294,9 @@ def test_a_live_match_run_sends_the_model_the_run_names(
     """The named model reaches the client that makes the paid call and the run log."""
     _live_env(monkeypatch, tmp_path)
     _billable(monkeypatch, durable_database_url)
-    monkeypatch.setenv("TAILORCV_EVAL_LIVE_MODEL", "gpt-6-sol")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_MODEL", "gpt-6-sol")
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1309,9 +1309,9 @@ def test_a_live_match_run_sends_the_model_the_run_names(
         sent.append(client.settings.choice_for_stage(Stage.MATCH).model)
         return EvidenceMap(matches=())
 
-    monkeypatch.setattr(tailorcv_live, "match", observed_match)
+    monkeypatch.setattr(clearscout_live, "match", observed_match)
     inventory = synthetic_inventory()
-    solver = tailorcv_live.tailorcv_live_solver()
+    solver = clearscout_live.clearscout_live_solver()
 
     try:
         solver(
@@ -1335,7 +1335,7 @@ def test_a_live_openai_run_asks_for_the_flex_tier_and_records_it(
     _live_env(monkeypatch, tmp_path)
     _billable(monkeypatch, durable_database_url)
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1348,9 +1348,9 @@ def test_a_live_openai_run_asks_for_the_flex_tier_and_records_it(
         sent.append(client.service_tier)
         return EvidenceMap(matches=())
 
-    monkeypatch.setattr(tailorcv_live, "match", observed_match)
+    monkeypatch.setattr(clearscout_live, "match", observed_match)
     inventory = synthetic_inventory()
-    solver = tailorcv_live.tailorcv_live_solver()
+    solver = clearscout_live.clearscout_live_solver()
 
     try:
         solver(
@@ -1374,7 +1374,7 @@ def test_a_live_requirement_the_run_left_unanswered_reports_no_strength(
     _live_env(monkeypatch, tmp_path)
     _billable(monkeypatch, durable_database_url)
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1382,10 +1382,12 @@ def test_a_live_requirement_the_run_left_unanswered_reports_no_strength(
     )
     monkeypatch.setattr(eval_client, "provider_for", lambda provider, key: FakeProvider())
     monkeypatch.setattr(
-        tailorcv_live, "match", lambda client, inventory, spec, guardrails: EvidenceMap(matches=())
+        clearscout_live,
+        "match",
+        lambda client, inventory, spec, guardrails: EvidenceMap(matches=()),
     )
     inventory = synthetic_inventory()
-    solver = tailorcv_live.tailorcv_live_solver()
+    solver = clearscout_live.clearscout_live_solver()
 
     try:
         output = solver(
@@ -1410,7 +1412,7 @@ def test_live_solver_records_actual_provider_measurement(
     _live_env(monkeypatch, tmp_path)
     _billable(monkeypatch, durable_database_url)
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1447,7 +1449,7 @@ def test_live_solver_records_actual_provider_measurement(
             ),
         )
 
-    monkeypatch.setattr(tailorcv_live, "match", measured_match)
+    monkeypatch.setattr(clearscout_live, "match", measured_match)
 
     inventory = synthetic_inventory()
     sample = {
@@ -1455,7 +1457,7 @@ def test_live_solver_records_actual_provider_measurement(
         "dimension": "hard",
         "cv_hash": inventory.content_hash,
     }
-    solver = tailorcv_live.tailorcv_live_solver()
+    solver = clearscout_live.clearscout_live_solver()
     output = solver(sample)
     second = solver(sample)
 
@@ -1488,7 +1490,7 @@ def test_live_solver_records_the_tools_a_single_requirement_answer_names(
     _live_env(monkeypatch, tmp_path)
     _billable(monkeypatch, durable_database_url)
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1509,9 +1511,9 @@ def test_live_solver_records_the_tools_a_single_requirement_answer_names(
             ),
         )
 
-    monkeypatch.setattr(tailorcv_live, "match", tool_naming_match)
+    monkeypatch.setattr(clearscout_live, "match", tool_naming_match)
     inventory = synthetic_inventory()
-    solver = tailorcv_live.tailorcv_live_solver()
+    solver = clearscout_live.clearscout_live_solver()
 
     try:
         output = solver(
@@ -1535,7 +1537,7 @@ def test_live_solver_returns_one_outcome_per_requirement_for_a_whole_posting(
     _live_env(monkeypatch, tmp_path)
     _billable(monkeypatch, durable_database_url)
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1572,7 +1574,7 @@ def test_live_solver_returns_one_outcome_per_requirement_for_a_whole_posting(
             )
         )
 
-    monkeypatch.setattr(tailorcv_live, "match", measured_match)
+    monkeypatch.setattr(clearscout_live, "match", measured_match)
     inventory = synthetic_inventory()
     sample = {
         "cv_hash": inventory.content_hash,
@@ -1596,7 +1598,7 @@ def test_live_solver_returns_one_outcome_per_requirement_for_a_whole_posting(
         },
     }
 
-    output = tailorcv_live.tailorcv_live_solver()(sample)
+    output = clearscout_live.clearscout_live_solver()(sample)
 
     # The stage saw the positional vocabulary; outcomes return under the sample ids.
     assert observed_ids == [["r01", "r02"]]
@@ -1623,7 +1625,7 @@ def test_live_solver_continues_above_the_advisory_estimate(
     _live_env(monkeypatch, tmp_path, cents="1")
     _billable(monkeypatch, durable_database_url)
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1648,14 +1650,14 @@ def test_live_solver_continues_above_the_advisory_estimate(
         )
         return EvidenceMap()
 
-    monkeypatch.setattr(tailorcv_live, "match", measured_match)
+    monkeypatch.setattr(clearscout_live, "match", measured_match)
     inventory = synthetic_inventory()
     sample = {
         "requirement_text": "Synthetic requirement",
         "dimension": "hard",
         "cv_hash": inventory.content_hash,
     }
-    solver = tailorcv_live.tailorcv_live_solver()
+    solver = clearscout_live.clearscout_live_solver()
 
     for _ in range(4):
         solver(sample)
@@ -1671,7 +1673,7 @@ def test_live_solver_continues_after_an_unpriced_call(
     _live_env(monkeypatch, tmp_path)
     _billable(monkeypatch, durable_database_url)
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1691,14 +1693,14 @@ def test_live_solver_continues_after_an_unpriced_call(
         )
         return EvidenceMap()
 
-    monkeypatch.setattr(tailorcv_live, "match", unpriced_match)
+    monkeypatch.setattr(clearscout_live, "match", unpriced_match)
     inventory = synthetic_inventory()
     sample = {
         "requirement_text": "Synthetic requirement",
         "dimension": "hard",
         "cv_hash": inventory.content_hash,
     }
-    solver = tailorcv_live.tailorcv_live_solver()
+    solver = clearscout_live.clearscout_live_solver()
 
     first = solver(sample)
     assert first["metadata"]["actual_dollars"] is None
@@ -1721,9 +1723,9 @@ def test_live_solver_uses_one_immutable_prompt_snapshot(
         "match_user": packaged("match_user") + "\nSnapshot B.\n",
     }
     current = dict(prompt_a)
-    monkeypatch.setattr(tailorcv_live, "load", lambda name: current[name])
+    monkeypatch.setattr(clearscout_live, "load", lambda name: current[name])
     monkeypatch.setattr(
-        tailorcv_live,
+        clearscout_live,
         "find_credential",
         lambda provider: Credential(
             key="test-key", provider=SUITE_PROVIDER, source=Source.ENVIRONMENT
@@ -1736,8 +1738,8 @@ def test_live_solver_uses_one_immutable_prompt_snapshot(
         observed.append(load_prompt("match_system"))
         return EvidenceMap()
 
-    monkeypatch.setattr(tailorcv_live, "match", observe_prompt)
-    solver_a = tailorcv_live.tailorcv_live_solver()
+    monkeypatch.setattr(clearscout_live, "match", observe_prompt)
+    solver_a = clearscout_live.clearscout_live_solver()
     inventory = synthetic_inventory()
     sample = {
         "requirement_text": "Synthetic requirement",
@@ -1750,7 +1752,7 @@ def test_live_solver_uses_one_immutable_prompt_snapshot(
     current.update(prompt_b)
     with pytest.raises(RuntimeError, match="prompt bytes changed"):
         solver_a(sample)
-    solver_b = tailorcv_live.tailorcv_live_solver()
+    solver_b = clearscout_live.clearscout_live_solver()
 
     with overriding(prompt_a):
         fingerprint_a = suite_fingerprint(("match_system", "match_user"))

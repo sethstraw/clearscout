@@ -11,7 +11,7 @@ from pathlib import Path
 
 from evals.inspect.product_questions import ProductQuestion
 from evals.inspect.scorers.match_classification import classification_match
-from evals.inspect.solvers.tailorcv_live import tailorcv_live_solver
+from evals.inspect.solvers.clearscout_live import clearscout_live_solver
 
 TASK_NAME = "match-live"
 # scripts/eval.sh reads this declaration to estimate the stage this run records.
@@ -22,7 +22,7 @@ PRODUCT_QUESTION = ProductQuestion.REQUIREMENT_CLASSIFICATION
 
 def solver():  # type: ignore[no-untyped-def]
     """Return the live solver callable the runner will invoke per sample."""
-    return tailorcv_live_solver()
+    return clearscout_live_solver()
 
 
 def scorer():  # type: ignore[no-untyped-def]

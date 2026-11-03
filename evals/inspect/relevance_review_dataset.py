@@ -13,17 +13,17 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from evals.inspect.labeling import ReviewFamily
-from evals.inspect.review_resolution import LabelProvenance, RelevanceDecision
-from evals.support.inventory import synthetic_inventory
-from tailorcv.application.discovery.relevance_review_spans import posting_spans
-from tailorcv.application.job_search.models import (
+from clearscout.application.discovery.relevance_review_spans import posting_spans
+from clearscout.application.job_search.models import (
     RelevanceReviewCoreWorkAlignment,
     RelevanceReviewDecisiveBasis,
     RelevanceReviewHardCondition,
     RelevanceReviewQualificationAlignment,
     RelevanceReviewVerdict,
 )
+from evals.inspect.labeling import ReviewFamily
+from evals.inspect.review_resolution import LabelProvenance, RelevanceDecision
+from evals.support.inventory import synthetic_inventory
 
 CORPUS_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "relevance_review_corpus.jsonl"
 

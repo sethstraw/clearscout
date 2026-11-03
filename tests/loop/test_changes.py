@@ -7,21 +7,26 @@ from dataclasses import replace
 
 import pytest
 
-from tailorcv.application.master_cv.cv import CvInventory
-from tailorcv.application.tailoring import changes
-from tailorcv.application.tailoring.changes import Kind
-from tailorcv.application.tailoring.guardrails import Guardrails
-from tailorcv.application.tailoring.runs import RunIdentity
-from tailorcv.application.tailoring.stages.draft import (
+from clearscout.application.master_cv.cv import CvInventory
+from clearscout.application.tailoring import changes
+from clearscout.application.tailoring.changes import Kind
+from clearscout.application.tailoring.guardrails import Guardrails
+from clearscout.application.tailoring.runs import RunIdentity
+from clearscout.application.tailoring.stages.draft import (
     DraftedLine,
     DraftedRole,
     DraftedSkill,
     ResumeDraft,
 )
-from tailorcv.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.stages.select import build_plan
-from tailorcv.shared.results import Finding, Outcome
+from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.stages.select import build_plan
+from clearscout.shared.results import Finding, Outcome
 
 IDENTITY = RunIdentity(
     posting_id="req-4821",
@@ -397,7 +402,7 @@ def test_a_skills_replacement_drops_only_the_lines_own_heading(
 def test_an_emptied_summary_removes_the_section_rather_than_leaving_a_heading(
     inventory, settings, guardrails
 ) -> None:
-    from tailorcv.application.tailoring.stages.draft import Document
+    from clearscout.application.tailoring.stages.draft import Document
 
     draft = one_line_draft(inventory, "Builds platforms.")
     kafka = entry_id(inventory, "Rebuilt the ingestion tier")

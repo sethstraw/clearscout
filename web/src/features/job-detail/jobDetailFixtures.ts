@@ -113,7 +113,7 @@ function baseDetail(): JobDetail {
         evidence_ids: [],
       },
     ],
-    score_policy: { id: "weights-1", name: "TailorCV default", version: 1 },
+    score_policy: { id: "weights-1", name: "ClearScout default", version: 1 },
     score_arithmetic: [
       {
         component: "fit",

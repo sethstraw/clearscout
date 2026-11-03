@@ -9,16 +9,16 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanHandler
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.board_scan import SourceScanHandler
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.source_reading import SourceListing, SourceRead
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import (
+from clearscout.application.discovery.source_reading import SourceListing, SourceRead
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -27,8 +27,8 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.identity import normalize_text
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.identity import normalize_text
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     CountryNames,
@@ -37,14 +37,14 @@ from tailorcv.domain.search_parameters import (
     Seniority,
     WorkingTimeZone,
 )
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Employer,
     PendingDiscovery,
     PendingDiscoveryDispositionEvent,
     Source,
 )
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.scenarios import titles

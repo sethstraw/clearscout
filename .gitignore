@@ -39,15 +39,15 @@ web/coverage/
 # Everything a clone-based run writes: database, artifacts, workspaces,
 # backups, exports, uploads, and logs.
 /local-data/
-.tailorcv-runtime/
+.clearscout-runtime/
 # A CLI run writes its review packages under settings.output_dir, which resolves
 # against the settings file's directory rather than through RuntimeStorage.
 /applications/
-/tailorcv-development.sqlite3
+/clearscout-development.sqlite3
 
 # The user's own settings and career record are never eligible for tracking.
 # The two settings names match at any depth; the rest only at the root.
-tailorcv.toml
+clearscout.toml
 guardrails.toml
 /CV_Master.md
 /Import_Report.md

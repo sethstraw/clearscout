@@ -6,14 +6,14 @@ import struct
 
 import pytest
 
-from tailorcv.application.config import ImageDetail, ProviderName
-from tailorcv.infrastructure.providers.images import (
+from clearscout.application.config import ImageDetail, ProviderName
+from clearscout.infrastructure.providers.images import (
     dimensions,
     most_image_tokens,
     refuse_unanswerable,
 )
-from tailorcv.infrastructure.providers.plan import Image
-from tailorcv.shared.errors import ProviderError
+from clearscout.infrastructure.providers.plan import Image
+from clearscout.shared.errors import ProviderError
 
 CLAUDE = "claude-sonnet-5"
 

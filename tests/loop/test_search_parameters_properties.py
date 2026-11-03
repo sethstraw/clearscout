@@ -12,7 +12,7 @@ from __future__ import annotations
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     JobSearchParameters,

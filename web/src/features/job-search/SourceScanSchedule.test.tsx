@@ -93,7 +93,7 @@ describe("SourceScanSchedule", () => {
     const disclosure = summary.closest("details")!;
     expect(disclosure.open).toBe(false);
     expect(screen.getByText("No scan schedule is enabled.")).toBeTruthy();
-    expect(screen.getByText(/It runs only while TailorCV is running/)).toBeTruthy();
+    expect(screen.getByText(/It runs only while ClearScout is running/)).toBeTruthy();
     fireEvent.click(summary);
     expect(disclosure.open).toBe(true);
     fireEvent.change(screen.getByLabelText("Local time"), { target: { value: "11:30" } });
@@ -198,7 +198,7 @@ describe("SourceScanSchedule", () => {
       Intl.DateTimeFormat().resolvedOptions().timeZone,
     );
     expect(screen.getByLabelText<HTMLInputElement>("Local time").value).toBe("09:00");
-    expect(screen.getByText(/It runs only while TailorCV is running/)).toBeTruthy();
+    expect(screen.getByText(/It runs only while ClearScout is running/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "How scheduled scans run" }));
     const how = screen.getByRole("dialog", { name: "How scheduled scans run" });
     expect(within(how).getByText(/one catch-up scan, not every missed run/)).toBeTruthy();

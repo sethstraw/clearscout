@@ -12,7 +12,7 @@ from evals.retrieval_metrics import (
     measure_retrieval,
 )
 
-from tailorcv.application.discovery.ranking import DiscoverySignal
+from clearscout.application.discovery.ranking import DiscoverySignal
 
 
 def _judgements() -> tuple[CandidateJudgement, ...]:

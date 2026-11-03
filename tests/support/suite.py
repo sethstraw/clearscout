@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tailorcv.application.config import ProviderName, Settings
-from tailorcv.infrastructure.providers.credentials import ENVIRONMENT_VARIABLES
+from clearscout.application.config import ProviderName, Settings
+from clearscout.infrastructure.providers.credentials import ENVIRONMENT_VARIABLES
 
 # Anchored once, because a test that counts its own parent directories breaks
 # when it moves.

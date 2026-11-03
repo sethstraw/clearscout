@@ -29,8 +29,8 @@ If you changed the API, run `scripts/generate.sh`. It exports the schema to
 regenerates both into temporary storage and compares them, so a stale client
 fails without rewriting tracked files.
 
-To use it locally, migrate a private database explicitly, run `tailorcv serve`,
-and run `tailorcv worker` in a second process if you want background work to
+To use it locally, migrate a private database explicitly, run `clearscout serve`,
+and run `clearscout worker` in a second process if you want background work to
 happen. FastAPI serves the production build in `web/dist`. That directory is
 ignored: contributors build it with Node, while release CI puts it into both the
 wheel and source distribution. Vite's dev server is for contributors and

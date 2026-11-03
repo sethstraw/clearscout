@@ -1,0 +1,256 @@
+#!/usr/bin/env bash
+# Start or stop the local ClearScout web app as one owned process group.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+
+# Everything a clone-based run writes goes under one gitignored directory, so a
+# working checkout cannot leave a database or a resume where git can see it.
+DATA_ROOT="${CLEARSCOUT_DATA_ROOT:-$REPO_ROOT/local-data}"
+
+RUNTIME_PARENT="${TMPDIR:-/tmp}"
+REPO_KEY="$(printf '%s' "$REPO_ROOT" | cksum | awk '{print $1}')"
+RUNTIME_DIR="${RUNTIME_PARENT%/}/clearscout-${UID:-$(id -u)}-$REPO_KEY"
+STATE_FILE="$RUNTIME_DIR/local-app-v1.pids"
+HOST="127.0.0.1"
+PORT="${CLEARSCOUT_PORT:-8765}"
+SERVER_PID=""
+WORKER_PID=""
+STATE_PORT=""
+
+usage() {
+  printf '%s\n' \
+    "Usage: scripts/clearscout-local-app start|stop|status" \
+    "" \
+    "Optional environment variables:" \
+    "  CLEARSCOUT_PORT             Loopback port (default: 8765)" \
+    "  CLEARSCOUT_DATA_ROOT        Database/workspace/artifact root (default: local-data/)" \
+    "  CLEARSCOUT_ARTIFACT_ROOT    Explicit writable artifact-root override" \
+    "  CLEARSCOUT_WORKSPACES_ROOT  Folder new workspaces are created under" \
+    "  CLEARSCOUT_DATABASE_URL     Explicit database URL" \
+    "  CLEARSCOUT_NO_BROWSER=1     Do not open the local URL automatically" \
+    "" \
+    "Launched from Finder there is no shell profile to read, so a clone always" \
+    "uses local-data/ unless CLEARSCOUT_DATA_ROOT is exported in the environment."
+}
+
+fail() {
+  printf 'ClearScout launcher: %s\n' "$1" >&2
+  exit 1
+}
+
+process_command() {
+  ps -p "$1" -o command= 2>/dev/null || true
+}
+
+is_clearscout_process() {
+  local pid="$1"
+  local role="$2"
+  local command
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  command="$(process_command "$pid")"
+  [[ "$command" == *"$REPO_ROOT"* && "$command" == *"clearscout $role"* ]]
+}
+
+read_state() {
+  SERVER_PID=""
+  WORKER_PID=""
+  STATE_PORT=""
+  [[ -f "$STATE_FILE" ]] || return 1
+  read -r SERVER_PID WORKER_PID STATE_PORT < "$STATE_FILE" || return 1
+  [[ "$SERVER_PID" =~ ^[0-9]+$ && "$WORKER_PID" =~ ^[0-9]+$ && "$STATE_PORT" =~ ^[0-9]+$ ]]
+}
+
+write_state() {
+  local temporary="$STATE_FILE.$$"
+  umask 077
+  printf '%s %s %s\n' "$SERVER_PID" "$WORKER_PID" "$PORT" > "$temporary"
+  mv "$temporary" "$STATE_FILE"
+}
+
+remove_own_state() {
+  local recorded_server=""
+  local recorded_worker=""
+  local recorded_port=""
+  if [[ -f "$STATE_FILE" ]]; then
+    read -r recorded_server recorded_worker recorded_port < "$STATE_FILE" || true
+  fi
+  if [[ "$recorded_server" == "$SERVER_PID" && "$recorded_worker" == "$WORKER_PID" ]]; then
+    rm -f "$STATE_FILE"
+  fi
+}
+
+clearscout_command() {
+  if [[ -x "$REPO_ROOT/.venv/bin/clearscout" ]]; then
+    CLEARSCOUT_COMMAND=("$REPO_ROOT/.venv/bin/clearscout")
+    return
+  fi
+  command -v uv >/dev/null 2>&1 || fail \
+    "No .venv is ready and uv is unavailable. Install uv, then run 'uv sync --locked'."
+  CLEARSCOUT_COMMAND=(uv run --locked clearscout)
+}
+
+service_arguments() {
+  mkdir -p "$DATA_ROOT"
+  DATABASE_ARGUMENTS=(--data-root "$DATA_ROOT")
+  SERVICE_ARGUMENTS=(--data-root "$DATA_ROOT")
+  if [[ -n "${CLEARSCOUT_ARTIFACT_ROOT:-}" ]]; then
+    SERVICE_ARGUMENTS+=(--artifact-root "$CLEARSCOUT_ARTIFACT_ROOT")
+  fi
+  if [[ -n "${CLEARSCOUT_WORKSPACES_ROOT:-}" ]]; then
+    SERVICE_ARGUMENTS+=(--workspaces-root "$CLEARSCOUT_WORKSPACES_ROOT")
+  fi
+}
+
+cleanup() {
+  trap - EXIT INT TERM HUP
+  if is_clearscout_process "$WORKER_PID" worker; then
+    kill "$WORKER_PID" 2>/dev/null || true
+  fi
+  if is_clearscout_process "$SERVER_PID" serve; then
+    kill "$SERVER_PID" 2>/dev/null || true
+  fi
+  [[ -n "$WORKER_PID" ]] && wait "$WORKER_PID" 2>/dev/null || true
+  [[ -n "$SERVER_PID" ]] && wait "$SERVER_PID" 2>/dev/null || true
+  remove_own_state
+}
+
+open_browser() {
+  local url="http://$HOST:$PORT"
+  if [[ "${CLEARSCOUT_NO_BROWSER:-}" == "1" ]]; then
+    :
+  elif command -v open >/dev/null 2>&1; then
+    open "$url" >/dev/null 2>&1 || true
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$url" >/dev/null 2>&1 || true
+  fi
+  printf 'ClearScout is ready at %s\n' "$url"
+}
+
+start_app() {
+  [[ "$PORT" =~ ^[0-9]+$ ]] || fail "CLEARSCOUT_PORT must be an integer."
+  (( PORT >= 1 && PORT <= 65535 )) || fail "CLEARSCOUT_PORT must be between 1 and 65535."
+  mkdir -p "$RUNTIME_DIR"
+  chmod 700 "$RUNTIME_DIR"
+  if read_state && is_clearscout_process "$SERVER_PID" serve && is_clearscout_process "$WORKER_PID" worker; then
+    PORT="$STATE_PORT"
+    printf 'ClearScout is already running.\n'
+    open_browser
+    return
+  fi
+  rm -f "$STATE_FILE"
+  SERVER_PID=""
+  WORKER_PID=""
+
+  clearscout_command
+  service_arguments
+  cd "$REPO_ROOT"
+
+  local database_status
+  database_status="$("${CLEARSCOUT_COMMAND[@]}" db status "${DATABASE_ARGUMENTS[@]}" 2>&1)" || {
+    printf '%s\n' "$database_status" >&2
+    fail "Could not inspect the local database."
+  }
+  if [[ "$database_status" != *"Schema current: yes"* ]]; then
+    printf '%s\n\n' "$database_status" >&2
+    printf '%s\n' \
+      "ClearScout has not been initialized under $DATA_ROOT." \
+      "Run the setup command shown in docs/user-guide.md, then double-click Start again." >&2
+    exit 1
+  fi
+  # A first uv invocation creates the locked environment. Prefer its direct
+  # executable for the two long-lived child processes and precise PID checks.
+  clearscout_command
+
+  trap cleanup EXIT INT TERM HUP
+  "${CLEARSCOUT_COMMAND[@]}" serve --host "$HOST" --port "$PORT" "${SERVICE_ARGUMENTS[@]}" &
+  SERVER_PID=$!
+  "${CLEARSCOUT_COMMAND[@]}" worker --worker-id desktop-launcher "${SERVICE_ARGUMENTS[@]}" &
+  WORKER_PID=$!
+  write_state
+
+  local attempt
+  local ready=0
+  for ((attempt = 0; attempt < 80; attempt += 1)); do
+    if ! is_clearscout_process "$SERVER_PID" serve || ! is_clearscout_process "$WORKER_PID" worker; then
+      fail "The server or worker stopped during startup; review the output above."
+    fi
+    if curl --fail --silent --show-error --max-time 1 \
+      "http://$HOST:$PORT/api/v1/health" >/dev/null 2>&1; then
+      ready=1
+      break
+    fi
+    sleep 0.25
+  done
+  (( ready == 1 )) || fail "The local server did not become ready within 20 seconds."
+
+  open_browser
+  printf '%s\n' \
+    "Leave this window open while using ClearScout." \
+    "Double-click 'Stop ClearScout.command' or press Control-C here to stop both services."
+
+  while is_clearscout_process "$SERVER_PID" serve && is_clearscout_process "$WORKER_PID" worker; do
+    sleep 1
+  done
+  printf 'ClearScout stopped.\n'
+}
+
+stop_process() {
+  local pid="$1"
+  local role="$2"
+  if is_clearscout_process "$pid" "$role"; then
+    kill "$pid"
+    return 0
+  fi
+  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+    printf 'Refusing to stop PID %s because it is not the recorded ClearScout %s process.\n' \
+      "$pid" "$role" >&2
+    return 1
+  fi
+  return 0
+}
+
+stop_app() {
+  if ! read_state; then
+    printf 'ClearScout is not running through the repository launcher.\n'
+    return
+  fi
+  local result=0
+  stop_process "$WORKER_PID" worker || result=1
+  stop_process "$SERVER_PID" serve || result=1
+  if (( result == 0 )); then
+    local attempt
+    for ((attempt = 0; attempt < 50; attempt += 1)); do
+      if ! kill -0 "$SERVER_PID" 2>/dev/null && ! kill -0 "$WORKER_PID" 2>/dev/null; then
+        rm -f "$STATE_FILE"
+        printf 'ClearScout stopped.\n'
+        return
+      fi
+      sleep 0.1
+    done
+    printf 'ClearScout received a stop request but is still shutting down.\n'
+    return 1
+  fi
+  return "$result"
+}
+
+status_app() {
+  if read_state && is_clearscout_process "$SERVER_PID" serve && is_clearscout_process "$WORKER_PID" worker; then
+    PORT="$STATE_PORT"
+    printf 'ClearScout is running at http://%s:%s\n' "$HOST" "$PORT"
+    return
+  fi
+  printf 'ClearScout is not running through the repository launcher.\n'
+  return 1
+}
+
+case "${1:-}" in
+  start) start_app ;;
+  stop) stop_app ;;
+  status) status_app ;;
+  -h|--help|help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac

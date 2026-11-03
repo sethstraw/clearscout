@@ -8,14 +8,14 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.application.config import Settings
-from tailorcv.application.tasks import UNPAID, TaskQueueService, task_types
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.delivery.api.routers import tasks as tasks_router
-from tailorcv.domain import TaskStatus, utc_now
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import PendingDiscovery
+from clearscout.application.config import Settings
+from clearscout.application.tasks import UNPAID, TaskQueueService, task_types
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.api import create_app
+from clearscout.delivery.api.routers import tasks as tasks_router
+from clearscout.domain import TaskStatus, utc_now
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PendingDiscovery
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import MemoryStore
 from tests.support.scenarios import board_source, scan_workspace, state_target_titles
@@ -130,7 +130,7 @@ def test_queueing_is_refused_while_no_worker_is_running(
 
     assert refused.status_code == 503
     assert refused.json()["detail"] == (
-        "The worker is not running. Start it with 'tailorcv worker' and queue the work again."
+        "The worker is not running. Start it with 'clearscout worker' and queue the work again."
     )
     assert listed == []
 
@@ -165,7 +165,7 @@ def test_a_paid_task_without_a_provider_key_is_refused_as_free_mode(
 
     assert response.status_code == 409
     body = response.json()
-    assert body["type"] == "urn:tailorcv:problem:free-mode"
+    assert body["type"] == "urn:clearscout:problem:free-mode"
     assert "\n" not in body["detail"]
     assert body["hint"] == "Add an API key in Settings > Provider."
     assert listed == []
@@ -176,7 +176,7 @@ def test_a_paid_task_without_a_provider_key_is_refused_as_free_mode(
 def test_an_archived_job_is_explained_without_queueing_work(
     durable_database_url: str, tmp_path: Path, task_type: str
 ) -> None:
-    from tailorcv.infrastructure.persistence.models import JobPosting
+    from clearscout.infrastructure.persistence.models import JobPosting
     from tests.support.scenarios import tracked_board_posting
 
     database = Database(durable_database_url)
@@ -450,5 +450,5 @@ def test_paid_task_route_refuses_a_payload_carrying_a_spend_ceiling(
             headers={"Idempotency-Key": "invalid-cap"},
         )
         assert response.status_code == 422
-        assert response.json()["type"] == "urn:tailorcv:problem:request-validation"
+        assert response.json()["type"] == "urn:clearscout:problem:request-validation"
         assert client.get("/api/v1/tasks", params={"workspace_id": workspace_id}).json() == []

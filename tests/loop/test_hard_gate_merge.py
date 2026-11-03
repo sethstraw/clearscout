@@ -6,9 +6,9 @@ from typing import Any
 
 import pytest
 
-from tailorcv.application.contracts import ReportRequirementInput
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.job_search.evaluation_requirements import (
+from clearscout.application.contracts import ReportRequirementInput
+from clearscout.application.failures import ValidationError
+from clearscout.application.job_search.evaluation_requirements import (
     merge_hard_gates_into_requirements,
 )
 

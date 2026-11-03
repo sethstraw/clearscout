@@ -1,6 +1,6 @@
 # Security and privacy
 
-TailorCV holds API credentials and your career history, so please read this
+ClearScout holds API credentials and your career history, so please read this
 before you point it at a real CV.
 
 ## Reporting a vulnerability
@@ -20,19 +20,19 @@ of formal support.
 
 ## What leaves your computer
 
-TailorCV honors robots.txt and identifies itself with its own user agent. Each
+ClearScout honors robots.txt and identifies itself with its own user agent. Each
 user is responsible for following the terms of the sites they read with it.
 
-During a live request, TailorCV sends the material needed for each model stage
+During a live request, ClearScout sends the material needed for each model stage
 to the Anthropic or OpenAI API you selected. This can include the text extracted
 from an imported CV, job-description text, CV evidence, personal rules, and
 previous stage output. Importing a screenshot also sends the image to the
-provider for transcription. When the source is a URL, TailorCV attempts the read
+provider for transcription. When the source is a URL, ClearScout attempts the read
 only through its shared address, robots.txt, redirect, and rate-limit policy.
 robots.txt decides every read except a posting URL you enter. That is a URL
 argument at the CLI, or a link you add with the add-a-posting action. Its check
 while adding and its first content read proceed past a disallow aimed at all
-crawlers. A robots group that names TailorCV still refuses them. Board and
+crawlers. A robots group that names ClearScout still refuses them. Board and
 listing reads, later refreshes, and every other read of a stored URL honor a
 robots disallow.
 The URL may still be stored as the posting's identifier when that policy refuses
@@ -42,7 +42,7 @@ rather than being recorded with a fabricated fetch time or HTTP status.
 Other workflows reach further than that. Guided search is queued as a durable
 task and sends the bounded candidate record and your saved search parameters to
 the configured provider, which may run its own server-side web searches before
-answering. TailorCV then reads only the URLs those searches surfaced, under the
+answering. ClearScout then reads only the URLs those searches surfaced, under the
 shared policy; a URL the model wrote with no search behind it is not read.
 
 Cover-letter drafting reads the employer's saved careers page and one same-host
@@ -54,7 +54,7 @@ requests leave after the queuing request returns. For each enabled source it
 calls the published listing API named by that source. A URL with no
 recognized adapter is fetched once under the shared policy. If the page names a
 board, openings come from that platform's API. If that API refuses automated
-access, the page already read is used instead. Otherwise TailorCV reads openings
+access, the page already read is used instead. Otherwise ClearScout reads openings
 from the site itself, in order:
 
 1. JobPosting markup the page declares about itself.
@@ -72,13 +72,13 @@ board observations.
 
 The Cornerstone reader sends one credential: the anonymous bearer token the
 public career-site page issues every visitor in its csod.context bootstrap.
-TailorCV sends it only to the Cornerstone job-search API that the bootstrap
+ClearScout sends it only to the Cornerstone job-search API that the bootstrap
 names, takes a fresh token from the page on each read or resume, and does not
 store it or send it with any other request.
 
 Some operators publish a condition on reading their listings. A source records
 that condition and the address it was published at, and switching the source on
-states the condition back to you first. TailorCV records and shows it; it does
+states the condition back to you first. ClearScout records and shows it; it does
 not check that you have met it.
 
 Refreshing model prices, when you ask for it, downloads the published
@@ -90,7 +90,7 @@ cost for the window you chose from OpenAI's organization costs API. It needs an
 organization admin key, described below, and sends only that key and the
 window.
 
-TailorCV never submits an application or sends anything to an employer. What it
+ClearScout never submits an application or sends anything to an employer. What it
 cannot do is control your provider's logging, retention, training, data
 residency, or account policies. If you are dealing with confidential, regulated,
 or third-party information, read their current terms and work out your own
@@ -115,21 +115,21 @@ been exposed, revoke it with the provider and make a new one.
 Personal settings, import reports, cached responses, and output packages can
 contain names, contact details, work authorization, employment history,
 unpublished material, source-line provenance, and text derived from the full
-CV. TailorCV attempts to create private settings and cache files on systems that
+CV. ClearScout attempts to create private settings and cache files on systems that
 support Unix permissions, but users remain responsible for the destination
 chosen for imported CVs and reports, device security, backups, cloud
 synchronization, and repository status.
 
-The default `tailorcv.toml`, `CV_Master.md`, `Import_Report.md`, and common run
+The default `clearscout.toml`, `CV_Master.md`, `Import_Report.md`, and common run
 directories are ignored by this repository. Custom names and destinations are
 not. Check `git status` before publishing changes. Do not assume an ignored file
 is encrypted or excluded from other backup and sync tools.
 
-The durable database and workspace artifacts default to `TailorCV` inside the
+The durable database and workspace artifacts default to `ClearScout` inside the
 operating system's documents directory, resolved through `platformdirs`. File
 pipeline inputs and `--out` packages live wherever you point them. Raw
 provider-response caches default to the operating system cache directory under
-`tailorcv/responses`, outside the Documents data root. Delete and back up those
+`clearscout/responses`, outside the Documents data root. Delete and back up those
 locations separately unless you have configured them onto the same private
 storage boundary.
 
@@ -165,14 +165,14 @@ untrusted HTML and unknown media are attachments rather than inline content.
 
 This is not authentication and does not defend against malware or another local
 user already able to read the account's files, connect to loopback, control the
-browser, or execute code as the user. Do not run TailorCV on a shared or hostile
+browser, or execute code as the user. Do not run ClearScout on a shared or hostile
 account, expose it through a proxy, change the bind address, or weaken these
 checks as a substitute for a designed authenticated deployment.
 
 ## Job descriptions are untrusted input
 
 A posting can contain instructions intended to manipulate a language model.
-TailorCV separates extraction from drafting, bounds the text that crosses later
+ClearScout separates extraction from drafting, bounds the text that crosses later
 stages, restricts evidence identifiers, and runs deterministic checks. These
 measures reduce risk but do not establish complete prompt-injection resistance.
 
@@ -218,7 +218,7 @@ resolve different versions within those ranges, so the repository audit is a
 review of the release resolution rather than a promise about every future
 resolver outcome.
 
-TailorCV is not published to a package index. Releases are published on GitHub.
+ClearScout is not published to a package index. Releases are published on GitHub.
 The release workflow attaches a wheel, a source distribution, and `SHA256SUMS`
 to the GitHub Release. It records build-provenance attestations for the wheel
 and source distribution in GitHub's attestation store, not as release assets. Direct Git installation is not

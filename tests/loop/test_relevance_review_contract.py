@@ -12,35 +12,35 @@ import pytest
 from pydantic import BaseModel, ValidationError
 from sqlalchemy import CheckConstraint, Table, select
 
-from tailorcv.application.discovery.pending import set_pending_markers
-from tailorcv.application.discovery.relevance_review import (
+from clearscout.application.discovery.pending import set_pending_markers
+from clearscout.application.discovery.relevance_review import (
     ALLOWED_VERDICTS,
     RelevanceReviewItemFailure,
     RelevanceReviewOutcome,
     RelevanceReviewService,
     response_schema,
 )
-from tailorcv.application.discovery.relevance_review_queries import RelevanceReviewQueries
-from tailorcv.application.discovery.relevance_review_records import (
+from clearscout.application.discovery.relevance_review_queries import RelevanceReviewQueries
+from clearscout.application.discovery.relevance_review_records import (
     RelevanceReviewPostingInput,
     ValidatedRelevanceReview,
 )
-from tailorcv.application.discovery.relevance_review_rejections import (
+from clearscout.application.discovery.relevance_review_rejections import (
     RelevanceReviewRejectionService,
 )
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.job_search.models import (
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.job_search.models import (
     RelevanceReviewBatchResponse,
     RelevanceReviewRecommendation,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.bootstrap.worker import _LeaseKeeper, _WorkerTaskContext
-from tailorcv.domain.search_parameters import Arrangement, JobSearchParameters
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models.discovery import RelevanceReview
-from tailorcv.infrastructure.providers.plan import schema_digest
-from tailorcv.shared.costs import ServiceTier
-from tailorcv.shared.errors import QuotaError
+from clearscout.application.tasks import TaskQueueService
+from clearscout.bootstrap.worker import _LeaseKeeper, _WorkerTaskContext
+from clearscout.domain.search_parameters import Arrangement, JobSearchParameters
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models.discovery import RelevanceReview
+from clearscout.infrastructure.providers.plan import schema_digest
+from clearscout.shared.costs import ServiceTier
+from clearscout.shared.errors import QuotaError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import ScriptedProvider, UnexpectedPostingFetcher
 from tests.support.scenarios import workspace_with_retained_postings

@@ -7,11 +7,11 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
-from tailorcv.application.config import Effort, Settings, Stage
-from tailorcv.application.discovery.relevance_review import REVIEW_BATCH_ITEMS
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import BackgroundTask, PendingDiscovery
+from clearscout.application.config import Effort, Settings, Stage
+from clearscout.application.discovery.relevance_review import REVIEW_BATCH_ITEMS
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import BackgroundTask, PendingDiscovery
 from tests.support.scenarios import (
     dismiss_pending_discovery,
     scan_workspace,
@@ -95,7 +95,7 @@ def test_pending_closing_date_edits_require_an_explicit_date_or_reset(
             json=body,
         )
     assert response.status_code == 422
-    assert response.json()["type"] == "urn:tailorcv:problem:request-validation"
+    assert response.json()["type"] == "urn:clearscout:problem:request-validation"
     assert response.json()["detail"]
     with durable_database.session() as session:
         row = session.get_one(PendingDiscovery, pending_id)
@@ -137,7 +137,7 @@ def test_pending_closing_date_edits_do_not_restore_or_cross_workspace_boundaries
             json={"closing_date_override": "2026-02-01"},
         )
     assert response.status_code == 404
-    assert response.json()["type"] == "urn:tailorcv:problem:not-found"
+    assert response.json()["type"] == "urn:clearscout:problem:not-found"
     assert response.json()["detail"]
     with durable_database.session() as session:
         row = session.get_one(PendingDiscovery, pending_id)

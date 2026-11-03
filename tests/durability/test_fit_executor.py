@@ -23,9 +23,9 @@ from evals.dataset import (
 from evals.fit_executor import FitExecutor
 from evals.semantic import DefectClass
 
-from tailorcv.application.config import ProviderName, Settings
-from tailorcv.domain.records import EvaluationDecision
-from tailorcv.shared.costs import ServiceTier
+from clearscout.application.config import ProviderName, Settings
+from clearscout.domain.records import EvaluationDecision
+from clearscout.shared.costs import ServiceTier
 from tests.support.fake_provider import FakeProviderAPI
 from tests.support.payloads import independent_script
 from tests.support.provider_clients import provider_for_http
@@ -72,7 +72,7 @@ def executor(
 ) -> FitExecutor:
     http = httpx.Client(transport=httpx.MockTransport(api))
     monkeypatch.setattr(
-        "tailorcv.application.tailoring.pipeline.service.provider_for",
+        "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider_for_http(ProviderName.OPENAI, http, max_retries=0),
     )
     monkeypatch.setenv("OPENAI_API_KEY", "not-a-real-key")

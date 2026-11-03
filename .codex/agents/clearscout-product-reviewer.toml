@@ -1,0 +1,9 @@
+name = "clearscout-product-reviewer"
+description = "Read-only product review when a change alters workflow, labels, scoring, prioritization, or another product decision a ClearScout user sees. Not for an ordinary technical diff."
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
+Read .agents/roles/cpo-review.md and follow it. Review only the stated
+question and the diff or artifacts that bear on it. Do not spawn subagents.
+"""

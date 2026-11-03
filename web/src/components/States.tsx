@@ -16,7 +16,7 @@ export function ErrorState({ error }: { error: unknown }) {
   const correlationId = error instanceof ApiError ? error.correlationId : undefined;
   return (
     <div className="error-state" role="alert">
-      <strong>TailorCV could not load this view.</strong>
+      <strong>ClearScout could not load this view.</strong>
       <span>{detail}</span>
       {correlationId && <small>Correlation ID: {correlationId}</small>}
     </div>

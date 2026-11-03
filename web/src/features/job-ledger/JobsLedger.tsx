@@ -523,7 +523,7 @@ export function JobsPage() {
       {jobs.data && (
         <>
           <p className="jobs-ledger__score-guide" id="recorded-score-guide">
-            Your review takes precedence when you enter a score; otherwise the TailorCV evaluation
+            Your review takes precedence when you enter a score; otherwise the ClearScout evaluation
             appears. Open a job to edit your review or inspect its evaluation. <b>Min.</b> is a
             conservative evaluation score when a weighted category is unscored.
           </p>
@@ -601,7 +601,7 @@ export function JobsPage() {
                     activeKey={sortKey}
                     column="fit_score"
                     direction={sortDirection}
-                    description="Your fit score when entered, otherwise the TailorCV evaluation score."
+                    description="Your fit score when entered, otherwise the ClearScout evaluation score."
                     label="Fit"
                     onSort={sortBy}
                   />
@@ -609,14 +609,14 @@ export function JobsPage() {
                     activeKey={sortKey}
                     column="compensation_score"
                     direction={sortDirection}
-                    description="Your compensation score when entered, otherwise the TailorCV evaluation score."
+                    description="Your compensation score when entered, otherwise the ClearScout evaluation score."
                     label="Comp"
                     onSort={sortBy}
                   />
                   <SortableHeader
                     activeKey={sortKey}
                     column="recorded_score"
-                    description="Your overall score when entered, otherwise the TailorCV evaluation score. Min. is a conservative evaluation score, not a final total."
+                    description="Your overall score when entered, otherwise the ClearScout evaluation score. Min. is a conservative evaluation score, not a final total."
                     direction={sortDirection}
                     label="Recorded score"
                     onSort={sortBy}
@@ -726,7 +726,7 @@ export function JobsPage() {
                                 ) : review.status === "unknown" ? (
                                   <span
                                     className="status status--tone-neutral"
-                                    title="TailorCV cannot determine whether this evaluation remains current"
+                                    title="ClearScout cannot determine whether this evaluation remains current"
                                   >
                                     Unknown
                                   </span>

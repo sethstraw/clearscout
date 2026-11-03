@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
 
-from tailorcv.application.discovery.ranking import DiscoverySignal
+from clearscout.application.discovery.ranking import DiscoverySignal
 
 
 @dataclass(frozen=True)

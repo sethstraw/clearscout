@@ -6,38 +6,38 @@ from pathlib import Path
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
-from tailorcv.application import job_search
-from tailorcv.application.contracts import ReportRequirementInput
-from tailorcv.application.discovery.posting_rematch import (
+from clearscout.application import job_search
+from clearscout.application.contracts import ReportRequirementInput
+from clearscout.application.discovery.posting_rematch import (
     PostingRefreshWithRematchHandler,
     PostingRematchService,
 )
-from tailorcv.application.job_search.postings import RequirementRulingService
-from tailorcv.application.master_cv.commands import register_master_cv
-from tailorcv.application.master_cv.cv import CvInventory, parse_cv
-from tailorcv.application.tailoring import fit
-from tailorcv.application.tailoring.stages.context import citable_entries
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.job_search.postings import RequirementRulingService
+from clearscout.application.master_cv.commands import register_master_cv
+from clearscout.application.master_cv.cv import CvInventory, parse_cv
+from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.stages.context import citable_entries
+from clearscout.application.tailoring.stages.jobspec import (
     Dimension,
     Importance,
     JobSpec,
     Requirement,
 )
-from tailorcv.application.tailoring.stages.match import EvidenceMap
-from tailorcv.application.tailoring.workflows.evaluation_report import project_fit_report
-from tailorcv.application.tailoring.workflows.models import EvaluationOutput
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import (
+from clearscout.application.tailoring.stages.match import EvidenceMap
+from clearscout.application.tailoring.workflows.evaluation_report import project_fit_report
+from clearscout.application.tailoring.workflows.models import EvaluationOutput
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import (
     LearningLoopPolicyService,
     WorkspaceService,
     WorkspaceSettingsService,
 )
-from tailorcv.application.workspaces.records.access import audit_columns
-from tailorcv.bootstrap.worker import Worker
-from tailorcv.domain.policy import LearningLoopPolicy
-from tailorcv.domain.rulings import Ruling
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.workspaces.records.access import audit_columns
+from clearscout.bootstrap.worker import Worker
+from clearscout.domain.policy import LearningLoopPolicy
+from clearscout.domain.rulings import Ruling
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     CostRecord,
     ModelCall,
@@ -45,10 +45,10 @@ from tailorcv.infrastructure.persistence.models import (
     RequirementRuling,
     Workspace,
 )
-from tailorcv.infrastructure.providers.cache import ResponseCache
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.infrastructure.web_fetch.ingest import JDText
-from tailorcv.shared.costs import Ledger
+from clearscout.infrastructure.providers.cache import ResponseCache
+from clearscout.infrastructure.providers.client import Client
+from clearscout.infrastructure.web_fetch.ingest import JDText
+from clearscout.shared.costs import Ledger
 from tests.support.artifacts import artifact_service, runtime_storage
 from tests.support.doubles import ScriptedProvider
 from tests.support.scenarios import evaluation_commit

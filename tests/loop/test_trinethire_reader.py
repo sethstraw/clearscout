@@ -5,13 +5,13 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from tailorcv.infrastructure.web_fetch.board_adapters import (
+from clearscout.infrastructure.web_fetch.board_adapters import (
     BOARD_ADAPTER_REGISTRY,
     BoardApiFetcher,
     identify_board,
     identify_board_url,
 )
-from tailorcv.infrastructure.web_fetch.boards import board_identity, canonicalise_source_url
+from clearscout.infrastructure.web_fetch.boards import board_identity, canonicalise_source_url
 from tests.support.http import policy_client
 
 _ORIGIN = "https://app.trinethire.com"

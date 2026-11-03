@@ -29,7 +29,7 @@ const userNotes = [
 
 describe("WorkspacePage", () => {
   it("marks user notes as non-evidence while preserving their editable record", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-records");
+    window.localStorage.setItem("clearscout.workspace", "workspace-records");
     server.use(http.get("*/api/v1/notes", () => HttpResponse.json(userNotes)));
 
     render(

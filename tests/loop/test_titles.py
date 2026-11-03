@@ -2,8 +2,8 @@
 
 import pytest
 
-from tailorcv.application.discovery import titles as titles_module
-from tailorcv.application.discovery.screening import (
+from clearscout.application.discovery import titles as titles_module
+from clearscout.application.discovery.screening import (
     ScreeningCode,
     ScreeningFinding,
     ScreeningStanding,
@@ -12,7 +12,7 @@ from tailorcv.application.discovery.screening import (
     supports_bulk_staging,
     supports_title_expansion,
 )
-from tailorcv.application.discovery.titles import (
+from clearscout.application.discovery.titles import (
     ladder_words,
     names_a_bare_function,
     names_a_leadership_rung,
@@ -20,14 +20,14 @@ from tailorcv.application.discovery.titles import (
     role_family_conflict,
     shares_occupation_noun,
 )
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.search_parameters import (
     CountryNames,
     JobSearchParameters,
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import PublishedFact
-from tailorcv.domain.taxonomy.data import Family
+from clearscout.domain.staged_facts import PublishedFact
+from clearscout.domain.taxonomy.data import Family
 from tests.support.scenarios import (
     DATA_PRODUCT_TARGET_TITLES,
     data_product_search,

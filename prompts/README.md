@@ -1,10 +1,10 @@
 # Prompts
 
-These are the model-assisted parts of tailorcv. They live out here rather than
+These are the model-assisted parts of clearscout. They live out here rather than
 inside request code so you can read them, diff them, and evaluate them like the
 product behavior they are.
 
-You do not need to install TailorCV to read them. For a job search, start with
+You do not need to install ClearScout to read them. For a job search, start with
 `jobspec_*`, `match_*`, `draft_*`, and `critic_*`: what the posting asks, what
 the career record answers, how to word it, and what needs another look.
 

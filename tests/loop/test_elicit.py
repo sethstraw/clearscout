@@ -13,11 +13,11 @@ from pathlib import Path
 
 import pytest
 
-from tailorcv.application.master_cv.cv import CvInventory, EntryKind, parse_cv, spans
-from tailorcv.application.tailoring import elicit
-from tailorcv.application.tailoring.elicit import Line, Ownership, Placement, Point, Reply, Source
-from tailorcv.application.tailoring.elicit.vocabulary import LADDER, MAX_PROBES, RANK, REQUIRED
-from tailorcv.shared.errors import DiscoveryError
+from clearscout.application.master_cv.cv import CvInventory, EntryKind, parse_cv, spans
+from clearscout.application.tailoring import elicit
+from clearscout.application.tailoring.elicit import Line, Ownership, Placement, Point, Reply, Source
+from clearscout.application.tailoring.elicit.vocabulary import LADDER, MAX_PROBES, RANK, REQUIRED
+from clearscout.shared.errors import DiscoveryError
 from tests.support.doubles import ScriptedPrompter
 
 NOW = datetime(2026, 6, 1, 9, 30, tzinfo=UTC)

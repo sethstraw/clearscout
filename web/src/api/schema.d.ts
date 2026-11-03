@@ -5897,7 +5897,7 @@ export interface components {
         };
         /**
          * OpenAiActualSpendResponse
-         * @description OpenAI's actual billed cost beside TailorCV's recorded cost for a window.
+         * @description OpenAI's actual billed cost beside ClearScout's recorded cost for a window.
          */
         OpenAiActualSpendResponse: {
             /** Available */
@@ -5922,7 +5922,7 @@ export interface components {
             recorded_usd?: number | null;
             /**
              * Scope Note
-             * @default OpenAI reports cost for the whole organization the admin key belongs to, which can include usage from other tools or projects that share the key. The recorded figure counts only the OpenAI model calls TailorCV priced in this database. This is an organization-level cross-check, not a per-task or per-workspace reconciliation.
+             * @default OpenAI reports cost for the whole organization the admin key belongs to, which can include usage from other tools or projects that share the key. The recorded figure counts only the OpenAI model calls ClearScout priced in this database. This is an organization-level cross-check, not a per-task or per-workspace reconciliation.
              */
             scope_note: string;
             /** Start Time */
@@ -10731,7 +10731,7 @@ export interface operations {
                     "application/json": components["schemas"]["TaskResponse"];
                 };
             };
-            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            /** @description Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11733,7 +11733,7 @@ export interface operations {
                     "application/json": components["schemas"]["TaskResponse"];
                 };
             };
-            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            /** @description Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -11962,7 +11962,7 @@ export interface operations {
                     "application/json": components["schemas"]["TaskResponse"];
                 };
             };
-            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            /** @description Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12422,7 +12422,7 @@ export interface operations {
                     "application/json": components["schemas"]["MasterCvEditResponse"];
                 };
             };
-            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            /** @description Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -12665,7 +12665,7 @@ export interface operations {
                     "application/json": components["schemas"]["MasterCvImportResponse"];
                 };
             };
-            /** @description Problem type urn:tailorcv:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:tailorcv:problem:conflict. */
+            /** @description Problem type urn:clearscout:problem:free-mode when paid work is requested and the configured provider has no API key. Other conflicts use urn:clearscout:problem:conflict. */
             409: {
                 headers: {
                     [name: string]: unknown;

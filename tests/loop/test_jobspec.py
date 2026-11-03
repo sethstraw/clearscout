@@ -8,8 +8,8 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from tailorcv.application.config import Tier
-from tailorcv.application.tailoring.stages.jobspec import (
+from clearscout.application.config import Tier
+from clearscout.application.tailoring.stages.jobspec import (
     MAX_KEYWORD_LENGTH,
     Importance,
     JobSpec,
@@ -23,10 +23,10 @@ from tailorcv.application.tailoring.stages.jobspec import (
     sanitize_keywords,
     spec_from_extraction,
 )
-from tailorcv.domain import SpanStatus
-from tailorcv.domain.requirements import GATE_KINDS
-from tailorcv.infrastructure.web_fetch.ingest import JDText
-from tailorcv.shared.errors import IngestError
+from clearscout.domain import SpanStatus
+from clearscout.domain.requirements import GATE_KINDS
+from clearscout.infrastructure.web_fetch.ingest import JDText
+from clearscout.shared.errors import IngestError
 from tests.support.schema import literals
 
 
@@ -307,8 +307,8 @@ def _bounded(
 
 def _verdict_reasons(spec: JobSpec) -> tuple[str, tuple[str, ...]]:
     """Return the recommendation for a spec whose one requirement is answered strongly."""
-    from tailorcv.application.tailoring.batch.analysis import recommend
-    from tailorcv.application.tailoring.stages.match import (
+    from clearscout.application.tailoring.batch.analysis import recommend
+    from clearscout.application.tailoring.stages.match import (
         Classification,
         EvidenceMap,
         Match,

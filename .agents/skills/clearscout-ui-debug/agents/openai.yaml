@@ -1,0 +1,4 @@
+interface:
+  display_name: "ClearScout UI Debug"
+  short_description: "Debug ClearScout UI flows with browser evidence"
+  default_prompt: "Use $clearscout-ui-debug to reproduce and diagnose this ClearScout interface issue."

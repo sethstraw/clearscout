@@ -7,18 +7,18 @@ import pytest
 from sqlalchemy import event, select, update
 from sqlalchemy.exc import IntegrityError
 
-from tailorcv.application import job_search
-from tailorcv.application.documents import DocumentService
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.workspaces.records import (
+from clearscout.application import job_search
+from clearscout.application.documents import DocumentService
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.workspaces.records import (
     ApplicationRecordsService,
     NoteRecordsService,
     SavedViewRecordsService,
     TagRecordsService,
     WorkspaceRecords,
 )
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import Artifact, AuditEvent
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import Artifact, AuditEvent
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import studio_workspace
 
@@ -28,7 +28,7 @@ def test_an_audit_event_records_the_origin_it_was_written_under(
 ) -> None:
     """The provenance columns carry the origin, not a default beside a details blob.
 
-    An audit event that took the `tailorcv` default for an explicit user action
+    An audit event that took the `clearscout` default for an explicit user action
     would leave the trail unable to tell a person's edit from the program's own.
     """
     workspace_id, job_id, _, _ = studio_workspace(

@@ -107,7 +107,7 @@ check_openapi() {
 check_gazetteer() {
   local dir="$1"
   uv_locked python scripts/build_gazetteer.py "$dir/gazetteer.json" &&
-    diff -u src/tailorcv/domain/gazetteer.json "$dir/gazetteer.json"
+    diff -u src/clearscout/domain/gazetteer.json "$dir/gazetteer.json"
 }
 
 check_typescript_contract() {
@@ -127,12 +127,12 @@ check_installed_wheel() {
   local root="$PWD"
   uv venv --quiet "$dir/venv" &&
     uv pip install --quiet --python "$dir/venv/bin/python" dist/*.whl &&
-    "$dir/venv/bin/tailorcv" --version &&
-    "$dir/venv/bin/tailorcv" --help >/dev/null &&
+    "$dir/venv/bin/clearscout" --version &&
+    "$dir/venv/bin/clearscout" --help >/dev/null &&
     mkdir "$dir/smoke" &&
     (
       cd "$dir/smoke" &&
-        "$dir/venv/bin/tailorcv" template CV_Master.md &&
+        "$dir/venv/bin/clearscout" template CV_Master.md &&
         test -s CV_Master.md &&
         "$dir/venv/bin/python" -I "$root/scripts/smoke_installed_frontend.py"
     )
@@ -159,7 +159,7 @@ run_python() {
   # The empty marker expression overrides the addopts filter, so the recorded
   # and transport tests are selected here.
   step "pytest" env HYPOTHESIS_PROFILE=ci \
-    uv run --locked pytest -m "" --cov=tailorcv --cov-report=term-missing
+    uv run --locked pytest -m "" --cov=clearscout --cov-report=term-missing
   step "evals" uv_locked python -m evals
 }
 
@@ -225,7 +225,7 @@ related_python_tests() {
       tests/*.py)
         [[ -e "$path" ]] && as_test_target "$path"
         ;;
-      src/tailorcv/*.py)
+      src/clearscout/*.py)
         module="${path#src/}"
         module="${module%.py}"
         module="${module%/__init__}"

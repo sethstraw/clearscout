@@ -4,8 +4,8 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from tailorcv.application.discovery.posting_text import publisher_posted_date
-from tailorcv.domain.staged_facts import (
+from clearscout.application.discovery.posting_text import publisher_posted_date
+from clearscout.domain.staged_facts import (
     ClosingDateStatement,
     ListingIdentityTrust,
     PostedDateGrade,

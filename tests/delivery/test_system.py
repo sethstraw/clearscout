@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tailorcv.application.config import ProviderName, Settings
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.bootstrap.api import create_app
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.errors import ConfigError
+from clearscout.application.config import ProviderName, Settings
+from clearscout.application.tasks import TaskQueueService
+from clearscout.bootstrap.api import create_app
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.errors import ConfigError
 from tests.support.doubles import MemoryStore
 from tests.support.suite import SUITE_PROVIDER
 
@@ -73,9 +73,9 @@ def test_health_reports_free_mode_while_settings_are_unreadable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def unreadable() -> Settings:
-        raise ConfigError("tailorcv.toml is not valid TOML")
+        raise ConfigError("clearscout.toml is not valid TOML")
 
-    monkeypatch.setattr("tailorcv.delivery.api.dependencies.load_settings", unreadable)
+    monkeypatch.setattr("clearscout.delivery.api.dependencies.load_settings", unreadable)
     with TestClient(
         create_app(
             f"sqlite+pysqlite:///{tmp_path / 'unused.sqlite3'}",
@@ -91,7 +91,7 @@ def test_health_reports_free_mode_while_settings_are_unreadable(
 
 def test_an_upgrade_while_the_server_runs_does_not_need_a_restart(tmp_path: Path) -> None:
     """The first-run order is serve, then discover the schema needs upgrading."""
-    from tailorcv.infrastructure.persistence.migration import upgrade
+    from clearscout.infrastructure.persistence.migration import upgrade
 
     database_url = f"sqlite+pysqlite:///{tmp_path / 'later.sqlite3'}"
     with TestClient(create_app(database_url), base_url="http://localhost") as client:

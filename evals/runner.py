@@ -29,73 +29,69 @@ from typing import Any, NoReturn, TypeVar
 from pydantic import BaseModel
 from tests.support.schema import declares, literals
 
-from evals import baseline
-from evals.case import Case, CaseError, Mode, load_all, resolve_evidence
-from evals.scorers import CaseRun, Score, cross_case, score
-from evals.support.relevance import relevance_batch
-from tailorcv.application import prompts
-from tailorcv.application.config import DEFAULT_PROVIDER, ModelChoice, Settings, Stage
-from tailorcv.application.discovery.assisted_content_resolution import (
+from clearscout.application import prompts
+from clearscout.application.config import DEFAULT_PROVIDER, ModelChoice, Settings, Stage
+from clearscout.application.discovery.assisted_content_resolution import (
     PostingRecoveryOutcome,
     PostingRecoveryResponse,
     recovery_decision,
     validated_recovery_candidates,
 )
-from tailorcv.application.discovery.assisted_content_resolution import (
+from clearscout.application.discovery.assisted_content_resolution import (
     request_plan as posting_recovery_plan,
 )
-from tailorcv.application.discovery.assisted_content_resolution import (
+from clearscout.application.discovery.assisted_content_resolution import (
     response_schema as posting_recovery_schema,
 )
-from tailorcv.application.discovery.content_resolution import PostingResolutionTarget
-from tailorcv.application.discovery.derived_vocabulary_rules import searchable_titles
-from tailorcv.application.discovery.guided_campaign import (
+from clearscout.application.discovery.content_resolution import PostingResolutionTarget
+from clearscout.application.discovery.derived_vocabulary_rules import searchable_titles
+from clearscout.application.discovery.guided_campaign import (
     CampaignAttemptPlan,
     CampaignBounds,
     CampaignIdentities,
     CampaignManifest,
     compile_campaign,
 )
-from tailorcv.application.discovery.guided_campaign_request import (
+from clearscout.application.discovery.guided_campaign_request import (
     attempt_request_plan,
     campaign_response_schema,
 )
-from tailorcv.application.discovery.guided_campaign_runner import (
+from clearscout.application.discovery.guided_campaign_runner import (
     captured_url_rows,
     matched_queries,
 )
-from tailorcv.application.discovery.proposals import CarriedRejections
-from tailorcv.application.discovery.relevance_review import (
+from clearscout.application.discovery.proposals import CarriedRejections
+from clearscout.application.discovery.relevance_review import (
     response_schema as relevance_review_schema,
 )
-from tailorcv.application.discovery.relevance_review import review_plan
-from tailorcv.application.discovery.search_vocabulary import SearchVocabularyService
-from tailorcv.application.discovery.search_vocabulary import (
+from clearscout.application.discovery.relevance_review import review_plan
+from clearscout.application.discovery.search_vocabulary import SearchVocabularyService
+from clearscout.application.discovery.search_vocabulary import (
     response_schema as search_vocabulary_schema,
 )
-from tailorcv.application.failures import ValidationError as AppValidationError
-from tailorcv.application.job_search.models import RelevanceReviewBatchResponse
-from tailorcv.application.master_cv import sources as cv_sources
-from tailorcv.application.master_cv.cv import CvInventory, parse_cv
-from tailorcv.application.tailoring import approval, changes, elicit, fit
-from tailorcv.application.tailoring.pipeline import importer, rewrite
-from tailorcv.application.tailoring.pipeline.models import VisionTranscript
-from tailorcv.application.tailoring.pipeline.service import vision_reader
-from tailorcv.application.tailoring.runs import RunIdentity
-from tailorcv.application.tailoring.stages import draft as draft_stage
-from tailorcv.application.tailoring.stages import jobspec as jobspec_stage
-from tailorcv.application.tailoring.stages import match as match_stage
-from tailorcv.application.tailoring.stages import select as select_stage
-from tailorcv.application.tailoring.stages import structure as structure_stage
-from tailorcv.application.tailoring.stages import verify as verify_stage
-from tailorcv.application.tailoring.stages.context import citable_entries, record_block
-from tailorcv.application.tailoring.stages.draft import CoverLetter, ResumeDraft
-from tailorcv.application.tailoring.stages.jobspec import JobSpecExtraction
-from tailorcv.application.tailoring.stages.match import response_schema as match_schema
-from tailorcv.application.tailoring.stages.structure import response_schema as structure_schema
-from tailorcv.application.tailoring.stages.verify import CriticVerdict
-from tailorcv.domain import PostingContentAccessStatus
-from tailorcv.domain.search_parameters import (
+from clearscout.application.failures import ValidationError as AppValidationError
+from clearscout.application.job_search.models import RelevanceReviewBatchResponse
+from clearscout.application.master_cv import sources as cv_sources
+from clearscout.application.master_cv.cv import CvInventory, parse_cv
+from clearscout.application.tailoring import approval, changes, elicit, fit
+from clearscout.application.tailoring.pipeline import importer, rewrite
+from clearscout.application.tailoring.pipeline.models import VisionTranscript
+from clearscout.application.tailoring.pipeline.service import vision_reader
+from clearscout.application.tailoring.runs import RunIdentity
+from clearscout.application.tailoring.stages import draft as draft_stage
+from clearscout.application.tailoring.stages import jobspec as jobspec_stage
+from clearscout.application.tailoring.stages import match as match_stage
+from clearscout.application.tailoring.stages import select as select_stage
+from clearscout.application.tailoring.stages import structure as structure_stage
+from clearscout.application.tailoring.stages import verify as verify_stage
+from clearscout.application.tailoring.stages.context import citable_entries, record_block
+from clearscout.application.tailoring.stages.draft import CoverLetter, ResumeDraft
+from clearscout.application.tailoring.stages.jobspec import JobSpecExtraction
+from clearscout.application.tailoring.stages.match import response_schema as match_schema
+from clearscout.application.tailoring.stages.structure import response_schema as structure_schema
+from clearscout.application.tailoring.stages.verify import CriticVerdict
+from clearscout.domain import PostingContentAccessStatus
+from clearscout.domain.search_parameters import (
     MAX_ARCHETYPES,
     MAX_CLUSTERS,
     MAX_TITLES,
@@ -104,7 +100,7 @@ from tailorcv.domain.search_parameters import (
     Seniority,
     TargetTitle,
 )
-from tailorcv.infrastructure.providers.base import (
+from clearscout.infrastructure.providers.base import (
     BackgroundDispatch,
     BackgroundPoll,
     CallRecord,
@@ -113,13 +109,17 @@ from tailorcv.infrastructure.providers.base import (
     json_schema,
     parse_or_raise,
 )
-from tailorcv.infrastructure.providers.cache import ResponseCache, cache_key
-from tailorcv.infrastructure.providers.client import Client
-from tailorcv.infrastructure.providers.plan import RequestPlan
-from tailorcv.infrastructure.web_fetch.ingest import JDText, require_enough_text
-from tailorcv.infrastructure.web_fetch.ingest.image import from_image
-from tailorcv.shared.costs import Ledger, Usage
-from tailorcv.shared.errors import ApprovalError, DiscoveryError, ProviderError, TailorcvError
+from clearscout.infrastructure.providers.cache import ResponseCache, cache_key
+from clearscout.infrastructure.providers.client import Client
+from clearscout.infrastructure.providers.plan import RequestPlan
+from clearscout.infrastructure.web_fetch.ingest import JDText, require_enough_text
+from clearscout.infrastructure.web_fetch.ingest.image import from_image
+from clearscout.shared.costs import Ledger, Usage
+from clearscout.shared.errors import ApprovalError, ClearscoutError, DiscoveryError, ProviderError
+from evals import baseline
+from evals.case import Case, CaseError, Mode, load_all, resolve_evidence
+from evals.scorers import CaseRun, Score, cross_case, score
+from evals.support.relevance import relevance_batch
 
 # The identity a scripted posting-recovery answer must echo, and the only
 # posting identifier the harness ever asks recovery about.
@@ -647,7 +647,7 @@ def execute(case: Case) -> CaseRun:
             # as a result rather than as a crash.
             run.rejected_stage = provider.calls[-1] if provider.calls else "ingest"
             run.failure = str(error).splitlines()[0]
-        except TailorcvError as error:
+        except ClearscoutError as error:
             # Any other refusal: an unusable posting, an unparseable CV, a budget it
             # could not meet. Recorded, not attributed to the schema.
             run.failure = str(error).splitlines()[0]
@@ -1284,7 +1284,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the evaluations, or record their baselines. Never both."""
     parser = argparse.ArgumentParser(
         prog="python -m evals",
-        description="Run tailorcv's evaluation cases against the deterministic pipeline.",
+        description="Run clearscout's evaluation cases against the deterministic pipeline.",
     )
     parser.add_argument("--case", action="append", default=[], help="run only these cases")
     parser.add_argument(
@@ -1326,11 +1326,11 @@ def seal() -> None:
     """Refuse to run against settings this machine happens to be carrying.
 
     Every field of ``Settings`` is settable from the environment, so an exported
-    ``TAILORCV_PAGES`` would move a baseline for a reason that is not in the
+    ``CLEARSCOUT_PAGES`` would move a baseline for a reason that is not in the
     repository. Provider keys are not checked: nothing here resolves a credential
     and sockets are already closed.
     """
-    stray = sorted(name for name in os.environ if name.startswith("TAILORCV_"))
+    stray = sorted(name for name in os.environ if name.startswith("CLEARSCOUT_"))
     if stray:
         raise EvalError(
             "These environment variables would change what the evaluation measures:\n"

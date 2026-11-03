@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from tailorcv.application.config import ProviderName
-from tailorcv.infrastructure.providers.credentials import (
+from clearscout.application.config import ProviderName
+from clearscout.infrastructure.providers.credentials import (
     CONSOLE_URLS,
     ENVIRONMENT_VARIABLES,
     Source,
@@ -14,7 +14,7 @@ from tailorcv.infrastructure.providers.credentials import (
     onboard,
     resolve,
 )
-from tailorcv.shared.errors import AuthError
+from clearscout.shared.errors import AuthError
 from tests.support.doubles import MemoryStore, ScriptedPrompter
 
 ANTHROPIC = ProviderName.ANTHROPIC
@@ -66,7 +66,7 @@ def test_a_credential_never_describes_itself_with_the_key() -> None:
 
 def test_a_non_interactive_run_fails_instead_of_blocking() -> None:
     prompter = ScriptedPrompter(interactive=False)
-    with pytest.raises(AuthError, match="tailorcv auth set"):
+    with pytest.raises(AuthError, match="clearscout auth set"):
         resolve(ANTHROPIC, prompter=prompter, store=MemoryStore())
     assert prompter.messages == []
 
@@ -78,7 +78,7 @@ def test_no_prompter_at_all_fails_the_same_way() -> None:
 
 def test_the_missing_key_message_names_every_route() -> None:
     message = missing_key_message(ANTHROPIC)
-    assert "tailorcv auth set" in message
+    assert "clearscout auth set" in message
     assert ENVIRONMENT_VARIABLES[ANTHROPIC] in message
     assert "--api-key" in message
     assert CONSOLE_URLS[ANTHROPIC] in message

@@ -19,9 +19,9 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from clearscout.domain import ClaimBoundary, EvidenceStatus, GapClass
+from clearscout.shared.costs import CallManifest, Usage
 from evals.dataset import SemanticAnnotation, Split, Suite
-from tailorcv.domain import ClaimBoundary, EvidenceStatus, GapClass
-from tailorcv.shared.costs import CallManifest, Usage
 
 
 class DefectClass(StrEnum):

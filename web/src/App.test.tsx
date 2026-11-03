@@ -127,7 +127,7 @@ describe("App onboarding route", () => {
   });
 
   it("warns when queued work has no background worker", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    window.localStorage.setItem("clearscout.workspace", "workspace-ready");
     stubMatchMedia();
     server.use(
       ...shellHandlers({
@@ -142,11 +142,11 @@ describe("App onboarding route", () => {
     const status = await screen.findByRole("status", {
       name: "Background worker is not running",
     });
-    expect(status.textContent).toContain("tailorcv worker");
+    expect(status.textContent).toContain("clearscout worker");
   });
 
   it("keeps worker availability out of the way when no task is open", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    window.localStorage.setItem("clearscout.workspace", "workspace-ready");
     stubMatchMedia();
     server.use(...shellHandlers({ workerAvailable: false, workspaces: [READY_WORKSPACE] }));
 
@@ -157,7 +157,7 @@ describe("App onboarding route", () => {
   });
 
   it("opens Find while an active scan and its page queries are still pending", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    window.localStorage.setItem("clearscout.workspace", "workspace-ready");
     stubMatchMedia();
     const scan = {
       ...queuedRefresh,
@@ -186,7 +186,7 @@ describe("App onboarding route", () => {
   it.each(["/workspace", "/job-search"])(
     "does not preserve the prerelease route %s",
     async (route) => {
-      window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+      window.localStorage.setItem("clearscout.workspace", "workspace-ready");
       stubMatchMedia();
       server.use(...shellHandlers({ workspaces: [READY_WORKSPACE] }));
 
@@ -197,7 +197,7 @@ describe("App onboarding route", () => {
   );
 
   it("carries a short label beside the full label on every primary nav link", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    window.localStorage.setItem("clearscout.workspace", "workspace-ready");
     stubMatchMedia();
     server.use(...shellHandlers({ workspaces: [READY_WORKSPACE] }));
 
@@ -226,7 +226,7 @@ describe("App onboarding route", () => {
   });
 
   it("carries the open-task count on the Activity footer link", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    window.localStorage.setItem("clearscout.workspace", "workspace-ready");
     stubMatchMedia();
     server.use(...shellHandlers({ workspaces: [READY_WORKSPACE], tasks: [queuedRefresh] }));
 
@@ -258,7 +258,7 @@ describe("App onboarding route", () => {
     ["/settings?tab=workspace", "/settings?tab=provider"],
     ["/settings?tab=signals", "/settings?tab=advanced&section=diagnostics"],
   ])("sends the moved address %s to %s", async (from, to) => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    window.localStorage.setItem("clearscout.workspace", "workspace-ready");
     stubMatchMedia();
     // Only the address matters here, so every page read stays open.
     server.use(
@@ -279,7 +279,7 @@ describe("App onboarding route", () => {
   });
 
   it("opens Apply on the Applications tab with the board inside it", async () => {
-    window.localStorage.setItem("tailorcv.workspace", "workspace-ready");
+    window.localStorage.setItem("clearscout.workspace", "workspace-ready");
     stubMatchMedia();
     server.use(
       ...shellHandlers({ workspaces: [READY_WORKSPACE] }),

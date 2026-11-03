@@ -10,16 +10,16 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     SourceContinuationTarget,
     SourceDetailCheckpoint,
     SourceRead,
     SourceReadOptions,
 )
-from tailorcv.domain.records import SourceReadOutcome
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.board_reads import search_page_number
-from tailorcv.infrastructure.web_fetch.policy import RobotsDeniedError
+from clearscout.domain.records import SourceReadOutcome
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_reads import search_page_number
+from clearscout.infrastructure.web_fetch.policy import RobotsDeniedError
 from tests.support.doubles import declaring_page
 from tests.support.http import policy_client
 

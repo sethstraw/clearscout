@@ -9,25 +9,25 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
     pending_discovery_readiness,
 )
-from tailorcv.application.discovery.posting_text import publisher_posted_date
-from tailorcv.application.discovery.scan_queries import SourceScanQueries
-from tailorcv.application.discovery.scan_staging import checks as staging_checks
-from tailorcv.application.discovery.screening import ScreeningCode, ScreeningStanding
-from tailorcv.application.discovery.source_reading import PostingCheck, SourceListing
-from tailorcv.application.failures import (
+from clearscout.application.discovery.posting_text import publisher_posted_date
+from clearscout.application.discovery.scan_queries import SourceScanQueries
+from clearscout.application.discovery.scan_staging import checks as staging_checks
+from clearscout.application.discovery.screening import ScreeningCode, ScreeningStanding
+from clearscout.application.discovery.source_reading import PostingCheck, SourceListing
+from clearscout.application.failures import (
     ConflictError,
     PublisherUnverifiedRefreshError,
     ValidationError,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.domain import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.domain import (
     PendingDiscoveryReadiness,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
@@ -35,22 +35,22 @@ from tailorcv.domain import (
     PostingStatus,
     utc_now,
 )
-from tailorcv.domain.search_parameters import JobSearchParameters, Seniority
-from tailorcv.domain.staged_facts import (
+from clearscout.domain.search_parameters import JobSearchParameters, Seniority
+from clearscout.domain.staged_facts import (
     ListingIdentityTrust,
     PostedDateGrade,
     PublishedFact,
     StagedListingFacts,
 )
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     Employer,
     PendingDiscovery,
     PendingPostingContent,
     Source,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedContentResolver, UnexpectedPostingFetcher
 from tests.support.scenarios import (
@@ -816,7 +816,7 @@ def test_publisher_refreshes_keep_the_earliest_posted_date_and_record_a_repost(
 def test_refreshing_a_pending_with_an_active_evaluation_task_raises_conflict(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.tasks import EvaluationWorkflowPayload
+    from clearscout.application.tasks import EvaluationWorkflowPayload
 
     workspace_id = scan_workspace(durable_database)
     checked = PostingCheck(

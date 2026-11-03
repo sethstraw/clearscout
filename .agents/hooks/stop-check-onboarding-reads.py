@@ -100,7 +100,7 @@ def nudge_marker(session_id: str) -> Path | None:
     if not safe.strip("-."):
         return None
     # Outside the checkout, so the marker never shows up as a working-tree change.
-    return Path(tempfile.gettempdir()) / "tailorcv-hooks" / f"onboarding-nudged-{safe}"
+    return Path(tempfile.gettempdir()) / "clearscout-hooks" / f"onboarding-nudged-{safe}"
 
 
 def main() -> int:

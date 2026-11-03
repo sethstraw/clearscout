@@ -19,16 +19,16 @@ from typing import Any
 VERSIONS_DIRECTORY = "persistence/migrations/versions"
 PERMITTED = {"v0001_schema.py", "__init__.py"}
 FILE_TOOLS = {"Write", "Edit", "NotebookEdit"}
-# Each client names the Serena server itself (Claude `serena`, Codex `serena_tailorcv`).
+# Each client names the Serena server itself (Claude `serena`, Codex `serena_clearscout`).
 SERENA_EDIT = re.compile(r"^mcp__serena\w*?__(?:replace|insert|rename|safe_delete)")
 
 MESSAGE = """The repository has not been tagged, so `v0001_schema.py` is the only
 migration and a schema change edits it in place. Adding a second revision here
 would record a history for a release that does not exist.
 
-Edit src/tailorcv/infrastructure/persistence/migrations/versions/v0001_schema.py
+Edit src/clearscout/infrastructure/persistence/migrations/versions/v0001_schema.py
 instead, and the mirrored constraints in
-src/tailorcv/infrastructure/persistence/models/ beside it.
+src/clearscout/infrastructure/persistence/models/ beside it.
 """
 
 

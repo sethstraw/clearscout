@@ -17,25 +17,25 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from tailorcv.application.discovery import scan_sweep
-from tailorcv.application.discovery.board_scan import SourceScanHandler, SourceScanService
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery import scan_sweep
+from clearscout.application.discovery.board_scan import SourceScanHandler, SourceScanService
+from clearscout.application.discovery.content_resolution import (
     CurrentPostingContentReader,
     PostingContentResolutionService,
     ResolvedPostingContent,
     usable_current_evidence,
 )
-from tailorcv.application.discovery.pending import reset_protected_ids
-from tailorcv.application.discovery.posting_fetch import FetchedPosting
-from tailorcv.application.discovery.posting_text import publisher_closing_date
-from tailorcv.application.discovery.scan_queries.history import QUERY_LABEL
-from tailorcv.application.discovery.scan_sweep import (
+from clearscout.application.discovery.pending import reset_protected_ids
+from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.scan_queries.history import QUERY_LABEL
+from clearscout.application.discovery.scan_sweep import (
     SCAN_LANES,
     SOURCE_STAGE_LIMIT,
 )
-from tailorcv.application.discovery.scan_sweep import sweep as sweep_module
-from tailorcv.application.discovery.scan_sweep.models import ScanInputs
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.scan_sweep import sweep as sweep_module
+from clearscout.application.discovery.scan_sweep.models import ScanInputs
+from clearscout.application.discovery.source_reading import (
     PostingCheck,
     SourceContinuationTarget,
     SourceDetailCheckpoint,
@@ -43,15 +43,15 @@ from tailorcv.application.discovery.source_reading import (
     SourceRead,
     SourceReadOptions,
 )
-from tailorcv.application.failures import (
+from clearscout.application.failures import (
     ConflictError,
     NotFoundError,
     UnavailableError,
 )
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.workspaces import SearchParametersService
-from tailorcv.bootstrap.worker import TaskCancelledError, Worker, default_handlers
-from tailorcv.domain import (
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.workspaces import SearchParametersService
+from clearscout.bootstrap.worker import TaskCancelledError, Worker, default_handlers
+from clearscout.domain import (
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -62,10 +62,10 @@ from tailorcv.domain import (
     new_id,
     utc_now,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.identity import normalize_text, normalize_url
-from tailorcv.domain.records import PostingReadIntent
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.identity import normalize_text, normalize_url
+from clearscout.domain.records import PostingReadIntent
+from clearscout.domain.search_parameters import (
     Acceptance,
     Arrangement,
     CountryNames,
@@ -75,10 +75,10 @@ from tailorcv.domain.search_parameters import (
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import ListingIdentityTrust, StagedListingFacts
-from tailorcv.infrastructure.artifacts.store import file_uri_path
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import ListingIdentityTrust, StagedListingFacts
+from clearscout.infrastructure.artifacts.store import file_uri_path
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     Artifact,
     AuditEvent,
     CandidateProfile,
@@ -98,27 +98,27 @@ from tailorcv.infrastructure.persistence.models import (
     SourceScanFrontierItem,
     SourceScanOutcome,
 )
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher
-from tailorcv.infrastructure.web_fetch.board_mappings.dayforce import DAYFORCE_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.greenhouse import GREENHOUSE_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import source_listings
-from tailorcv.infrastructure.web_fetch.ingest.url import workday_posting_detail
-from tailorcv.infrastructure.web_fetch.listing_facts import (
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_mappings.dayforce import DAYFORCE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.greenhouse import GREENHOUSE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import source_listings
+from clearscout.infrastructure.web_fetch.ingest.url import workday_posting_detail
+from clearscout.infrastructure.web_fetch.listing_facts import (
     published_listing_facts,
 )
-from tailorcv.infrastructure.web_fetch.policy import (
+from clearscout.infrastructure.web_fetch.policy import (
     DestinationUnresolvableError,
     InvalidFetchUrlError,
     PoliteHttpClient,
     RobotsDeniedError,
     RobotsUnavailableError,
 )
-from tailorcv.infrastructure.web_fetch.posting_resolution import (
+from clearscout.infrastructure.web_fetch.posting_resolution import (
     DeterministicPostingContentResolver,
 )
-from tailorcv.infrastructure.web_fetch.publisher_sources import PublisherSourceFetcher
-from tailorcv.infrastructure.web_fetch.rendered import RenderRuntimeUnavailableError
-from tailorcv.shared.errors import IngestError
+from clearscout.infrastructure.web_fetch.publisher_sources import PublisherSourceFetcher
+from clearscout.infrastructure.web_fetch.rendered import RenderRuntimeUnavailableError
+from clearscout.shared.errors import IngestError
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import (
     ScriptedBoards,
@@ -2926,7 +2926,7 @@ class _SweepLanes:
                 return super().submit(lanes.run_lane, fn, *args, **kwargs)
 
         monkeypatch.setattr(
-            "tailorcv.application.discovery.scan_sweep.sweep.ThreadPoolExecutor", SizedPool
+            "clearscout.application.discovery.scan_sweep.sweep.ThreadPoolExecutor", SizedPool
         )
 
     def run_lane(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
@@ -4112,7 +4112,7 @@ def test_a_failure_recording_one_board_stops_the_detail_reads_of_another(
             super().shutdown(wait, cancel_futures=cancel_futures)
 
     monkeypatch.setattr(
-        "tailorcv.application.discovery.scan_sweep.sweep.ThreadPoolExecutor", ObservedPool
+        "clearscout.application.discovery.scan_sweep.sweep.ThreadPoolExecutor", ObservedPool
     )
     detail_reads: list[str] = []
     detail_started = threading.Event()
@@ -4733,10 +4733,10 @@ def test_a_reclaimed_scan_keeps_released_results_and_reads_only_unfinished_sourc
     listing_count: int,
     unfinished: bool,
 ) -> None:
-    from tailorcv.infrastructure.persistence.models import BackgroundTask, SourceScanMember
+    from clearscout.infrastructure.persistence.models import BackgroundTask, SourceScanMember
 
     monkeypatch.setattr(
-        "tailorcv.bootstrap.local_runtime.local_process_started_at", lambda _pid: "reader-start"
+        "clearscout.bootstrap.local_runtime.local_process_started_at", lambda _pid: "reader-start"
     )
     workspace_id, acme_id, globex_id = _two_board_workspace(durable_database)
     if completed_kind == "omitted":
@@ -5419,7 +5419,7 @@ def test_a_consumed_reset_marker_does_not_requeue_a_later_evaluation_archive(
 def test_a_paid_task_cannot_be_enqueued_for_a_reset_archived_pending_row(
     durable_database: Database,
 ) -> None:
-    from tailorcv.application.tasks.payloads import DiscoveryEvaluateBatchPayload
+    from clearscout.application.tasks.payloads import DiscoveryEvaluateBatchPayload
 
     workspace_id = _workspace(durable_database)
     source_id = _source(

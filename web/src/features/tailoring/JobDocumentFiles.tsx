@@ -177,7 +177,7 @@ export function JobDocumentFiles({
           </div>
           {current.mime_type === "text/markdown" && (
             <p className="field-note">
-              Saving writes the file to this machine. TailorCV does not typeset a resume; the
+              Saving writes the file to this machine. ClearScout does not typeset a resume; the
               sibling Pressume application does that.
             </p>
           )}

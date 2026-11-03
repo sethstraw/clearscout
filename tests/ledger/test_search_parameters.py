@@ -13,23 +13,23 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError as PydanticValidationError
 
-from tailorcv.application.config import load_settings
-from tailorcv.application.failures import ConflictError, NotFoundError, ValidationError
-from tailorcv.application.master_cv.cv import parse_cv
-from tailorcv.application.tailoring.fit import Standing, gates, read
-from tailorcv.application.tailoring.fit.lexicon import LEVELS
-from tailorcv.application.tailoring.workflows.evaluation_policy import (
+from clearscout.application.config import load_settings
+from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
+from clearscout.application.master_cv.cv import parse_cv
+from clearscout.application.tailoring.fit import Standing, gates, read
+from clearscout.application.tailoring.fit.lexicon import LEVELS
+from clearscout.application.tailoring.workflows.evaluation_policy import (
     OUTSIDE_DECLARED_SCORE,
     compensation_score,
     eligibility_score,
 )
-from tailorcv.application.workspaces import (
+from clearscout.application.workspaces import (
     SearchParametersService,
     WorkspaceService,
     parameter_summary,
 )
-from tailorcv.application.workspaces.parameters import digest
-from tailorcv.domain.search_parameters import (
+from clearscout.application.workspaces.parameters import digest
+from clearscout.domain.search_parameters import (
     ARRANGEMENTS,
     EMPLOYMENT_TYPES,
     OUTSIDE_DECLARED,
@@ -47,9 +47,9 @@ from tailorcv.domain.search_parameters import (
     WorkingTimeZone,
     basis_for,
 )
-from tailorcv.domain.search_parameters import LEVELS as LADDER
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.shared.errors import ConfigError
+from clearscout.domain.search_parameters import LEVELS as LADDER
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.shared.errors import ConfigError
 from tests.support.artifacts import runtime_storage
 from tests.support.scenarios import store_parameters_without
 from tests.support.suite import FIXTURES
@@ -708,7 +708,7 @@ def test_ineligible_places_are_excluded_from_the_actionable_set() -> None:
 
 
 def test_settings_read_a_job_search_table(tmp_path: Path) -> None:
-    (tmp_path / "tailorcv.toml").write_text(
+    (tmp_path / "clearscout.toml").write_text(
         "\n".join(
             (
                 "[job_search]",
@@ -737,7 +737,7 @@ def test_settings_read_a_job_search_table(tmp_path: Path) -> None:
 
 
 def test_a_typo_in_the_table_names_the_file_and_the_field(tmp_path: Path) -> None:
-    (tmp_path / "tailorcv.toml").write_text(
+    (tmp_path / "clearscout.toml").write_text(
         "[job_search]\nlocatoins = []\n",
         encoding="utf-8",
     )
@@ -745,7 +745,7 @@ def test_a_typo_in_the_table_names_the_file_and_the_field(tmp_path: Path) -> Non
     with pytest.raises(ConfigError) as failure:
         load_settings(start=tmp_path)
 
-    assert "tailorcv.toml" in str(failure.value)
+    assert "clearscout.toml" in str(failure.value)
     assert "locatoins: unknown setting" in str(failure.value)
 
 
@@ -897,8 +897,8 @@ def _us_and_canada() -> JobSearchParameters:
 
 
 def test_parameter_summary_renders_locations_and_arrangement() -> None:
-    assert parameter_summary(_us_and_canada(), source=Path("/synthetic/tailorcv.toml")) == (
-        "Read from: /synthetic/tailorcv.toml",
+    assert parameter_summary(_us_and_canada(), source=Path("/synthetic/clearscout.toml")) == (
+        "Read from: /synthetic/clearscout.toml",
         "  us_remote: United States | authorized (Citizen)",
         "    also written as: USA, US-based, Remote (US)",
         "  canada_remote: Toronto, Canada | authorized (Permanent resident)",
@@ -1261,9 +1261,9 @@ def test_the_ledger_filters_on_the_place_an_evaluation_recorded(
     durable_database: Database, tmp_path: Path
 ) -> None:
     """Filtering reads the committed residence rule, not a fresh reading."""
-    from tailorcv.application import job_search
-    from tailorcv.application.contracts import EligibilityInput
-    from tailorcv.application.job_search.models import JobListQuery
+    from clearscout.application import job_search
+    from clearscout.application.contracts import EligibilityInput
+    from clearscout.application.job_search.models import JobListQuery
     from tests.support.artifacts import artifact_service
     from tests.support.scenarios import evaluation_commit
 

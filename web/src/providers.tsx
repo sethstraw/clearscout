@@ -31,10 +31,10 @@ export function AppProviders({ children }: PropsWithChildren) {
       }),
   );
   const [workspaceId, setWorkspaceId] = useState(
-    () => window.localStorage.getItem("tailorcv.workspace") ?? "",
+    () => window.localStorage.getItem("clearscout.workspace") ?? "",
   );
   useEffect(() => {
-    if (workspaceId) window.localStorage.setItem("tailorcv.workspace", workspaceId);
+    if (workspaceId) window.localStorage.setItem("clearscout.workspace", workspaceId);
   }, [workspaceId]);
   const value = useMemo(() => ({ workspaceId, setWorkspaceId }), [workspaceId]);
   return (

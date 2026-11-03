@@ -16,20 +16,20 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
-from tailorcv.application.discovery.board_scan import SourceScanHandler, SourceScanService
-from tailorcv.application.discovery.content_resolution import (
+from clearscout.application.discovery.board_scan import SourceScanHandler, SourceScanService
+from clearscout.application.discovery.content_resolution import (
     PostingContentResolutionService,
     ResolvedPostingContent,
 )
-from tailorcv.application.discovery.funnel_audit import FunnelReason
-from tailorcv.application.discovery.posting_refresh import PostingRefreshService
-from tailorcv.application.discovery.scan_queries import ScanOutcomeFilters, SourceScanQueries
-from tailorcv.application.discovery.scan_queries.history import QUERY_LABEL
-from tailorcv.application.discovery.scan_staging import DiscoveryStaging, StagingBusyError
-from tailorcv.application.discovery.scan_sweep import listing_audit
-from tailorcv.application.discovery.scan_sweep import sweep as sweep_module
-from tailorcv.application.discovery.scan_sweep.recording import ScanReadContext, ScanRecorder
-from tailorcv.application.discovery.source_continuation import (
+from clearscout.application.discovery.funnel_audit import FunnelReason
+from clearscout.application.discovery.posting_refresh import PostingRefreshService
+from clearscout.application.discovery.scan_queries import ScanOutcomeFilters, SourceScanQueries
+from clearscout.application.discovery.scan_queries.history import QUERY_LABEL
+from clearscout.application.discovery.scan_staging import DiscoveryStaging, StagingBusyError
+from clearscout.application.discovery.scan_sweep import listing_audit
+from clearscout.application.discovery.scan_sweep import sweep as sweep_module
+from clearscout.application.discovery.scan_sweep.recording import ScanReadContext, ScanRecorder
+from clearscout.application.discovery.source_continuation import (
     CONTINUATION_CHUNK_SIZE,
     DISCOVERED_DURING_FOLLOW_UP,
     LATEST_SCAN_FIRST,
@@ -44,18 +44,18 @@ from tailorcv.application.discovery.source_continuation import (
     continuation_task_ids,
     recent_root_posting_reads,
 )
-from tailorcv.application.discovery.source_continuation import handler as continuation_handler
-from tailorcv.application.discovery.source_continuation.frontier_carry import (
+from clearscout.application.discovery.source_continuation import handler as continuation_handler
+from clearscout.application.discovery.source_continuation.frontier_carry import (
     carried_frontier_item,
 )
-from tailorcv.application.discovery.source_continuation.publisher_targets import (
+from clearscout.application.discovery.source_continuation.publisher_targets import (
     publisher_search_row_target,
 )
-from tailorcv.application.discovery.source_continuation.targets import (
+from clearscout.application.discovery.source_continuation.targets import (
     frontier_item,
     frontier_target,
 )
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.source_reading import (
     PostingCheck,
     SourceContinuationTarget,
     SourceDetailCheckpoint,
@@ -66,29 +66,29 @@ from tailorcv.application.discovery.source_reading import (
     SourceReader,
     SourceReadOptions,
 )
-from tailorcv.application.failures import ValidationError
-from tailorcv.application.tasks import TaskQueueService
-from tailorcv.application.tasks.commands import TaskCommands
-from tailorcv.application.workspaces import SearchParametersService, WorkspaceService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import (
+from clearscout.application.failures import ValidationError
+from clearscout.application.tasks import TaskQueueService
+from clearscout.application.tasks.commands import TaskCommands
+from clearscout.application.workspaces import SearchParametersService, WorkspaceService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import (
     PostingContentAccessStatus,
     PostingStatus,
     SourceReadOutcome,
     new_id,
     utc_now,
 )
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.domain.identity import normalize_fetch_url
-from tailorcv.domain.search_parameters import (
+from clearscout.domain.artifacts import PostingSource
+from clearscout.domain.identity import normalize_fetch_url
+from clearscout.domain.search_parameters import (
     CountryNames,
     JobSearchParameters,
     Location,
     Seniority,
 )
-from tailorcv.domain.staged_facts import PublishedFact, StagedListingFacts
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.domain.staged_facts import PublishedFact, StagedListingFacts
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
     JobSearchParameterSet,
@@ -102,16 +102,16 @@ from tailorcv.infrastructure.persistence.models import (
     SourceScanMember,
     SourceScanOutcome,
 )
-from tailorcv.infrastructure.web_fetch import board_reads
-from tailorcv.infrastructure.web_fetch.board_adapters import BoardApiFetcher, deadline_cut_note
-from tailorcv.infrastructure.web_fetch.board_mappings.bamboohr import BAMBOOHR_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.dayforce import DAYFORCE_MAPPING
-from tailorcv.infrastructure.web_fetch.board_mappings.mapper import source_listings
-from tailorcv.infrastructure.web_fetch.boards import board_identity, board_read_scope
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.infrastructure.web_fetch.platforms import oracle, phenom, workday
-from tailorcv.infrastructure.web_fetch.policy import HostHeldError, PoliteHttpClient
-from tailorcv.infrastructure.web_fetch.publisher_sources import (
+from clearscout.infrastructure.web_fetch import board_reads
+from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher, deadline_cut_note
+from clearscout.infrastructure.web_fetch.board_mappings.bamboohr import BAMBOOHR_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.dayforce import DAYFORCE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import source_listings
+from clearscout.infrastructure.web_fetch.boards import board_identity, board_read_scope
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.platforms import oracle, phenom, workday
+from clearscout.infrastructure.web_fetch.policy import HostHeldError, PoliteHttpClient
+from clearscout.infrastructure.web_fetch.publisher_sources import (
     PublisherReadLimits,
     PublisherSourceFetcher,
 )
@@ -2609,7 +2609,7 @@ def test_detail_checkpoint_survives_durable_frontier_and_carry_forward() -> None
         pending_ids=("retry-role", "new-role"),
     )
     target = replace(
-        _continuation("https://publisher.example/careers?tailorcv_detail_cursor=remaining"),
+        _continuation("https://publisher.example/careers?clearscout_detail_cursor=remaining"),
         detail_checkpoint=checkpoint,
     )
     row = frontier_item("continuation", target.url, target, origin="scan", correlation_id=None)
@@ -2622,7 +2622,7 @@ def test_detail_checkpoint_survives_durable_frontier_and_carry_forward() -> None
 
 
 def test_proven_current_details_settle_a_prior_deadline_cut() -> None:
-    from tailorcv.application.discovery.scan_outcome import settle_drained_scan
+    from clearscout.application.discovery.scan_outcome import settle_drained_scan
 
     coverage = SourceDetailCoverage(
         platform="jazzhr",
@@ -2650,7 +2650,7 @@ def test_proven_current_details_settle_a_prior_deadline_cut() -> None:
 
 
 def test_a_deadline_cut_without_current_detail_coverage_cannot_settle() -> None:
-    from tailorcv.application.discovery.scan_outcome import settle_drained_scan
+    from clearscout.application.discovery.scan_outcome import settle_drained_scan
 
     scan = SourceScan(
         status="incomplete",
@@ -3799,7 +3799,7 @@ def test_a_recent_posting_read_under_the_current_parameters_is_not_read_again(
 def test_a_queued_fresh_scan_rereads_recent_details_and_passes_its_mode(
     durable_database: Database, fresh: bool
 ) -> None:
-    from tailorcv.application.discovery.source_reading import SourceReadOptions
+    from clearscout.application.discovery.source_reading import SourceReadOptions
 
     workspace_id = _workspace(durable_database)
     state_target_titles(durable_database, workspace_id, "Data Platform Lead")
@@ -3973,8 +3973,8 @@ def test_a_fresh_follow_up_rereads_old_family_details_without_repeating_its_own_
 def test_a_fresh_continuation_keeps_protected_postings_and_their_content_read_time(
     durable_database: Database, protection: str
 ) -> None:
-    from tailorcv.application.discovery.source_reading import SourceReadOptions
-    from tailorcv.infrastructure.persistence.models import JobPosting, PendingPostingContent
+    from clearscout.application.discovery.source_reading import SourceReadOptions
+    from clearscout.infrastructure.persistence.models import JobPosting, PendingPostingContent
     from tests.support.scenarios import (
         dismiss_pending_discovery,
         pending_posting_content,
@@ -4110,12 +4110,16 @@ def test_only_a_successful_fresh_detail_read_replaces_the_retained_body_and_read
 ) -> None:
     import json
 
-    from tailorcv.application.discovery.content_resolution import CurrentPostingContentReader
-    from tailorcv.application.discovery.source_reading import SourceReadOptions
-    from tailorcv.application.workspaces import service as workspace_service
-    from tailorcv.application.workspaces import versioned
-    from tailorcv.domain import PostingContentExtractionMethod, PostingIdentityStatus, PostingStatus
-    from tailorcv.infrastructure.persistence.models import PendingPostingContent
+    from clearscout.application.discovery.content_resolution import CurrentPostingContentReader
+    from clearscout.application.discovery.source_reading import SourceReadOptions
+    from clearscout.application.workspaces import service as workspace_service
+    from clearscout.application.workspaces import versioned
+    from clearscout.domain import (
+        PostingContentExtractionMethod,
+        PostingIdentityStatus,
+        PostingStatus,
+    )
+    from clearscout.infrastructure.persistence.models import PendingPostingContent
     from tests.support.doubles import UnexpectedContentResolver
 
     read_at = utc_now() - timedelta(days=1)
@@ -6417,7 +6421,7 @@ def test_a_new_fresh_root_retries_its_exact_prior_failed_publisher_detail(
     carried: bool,
     mode: str,
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
 
     workspace_id = _workspace(durable_database)
     site = _TaleoSite()
@@ -6536,7 +6540,7 @@ def test_a_new_fresh_root_retries_its_exact_prior_failed_publisher_detail(
 def test_a_pacing_deadline_keeps_a_fresh_detail_pending_without_spending_history(
     durable_database: Database, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
     from tests.loop.test_fxrecruiter_reader import _FeedSite
 
     workspace_id = _workspace(durable_database)
@@ -6562,7 +6566,7 @@ def test_a_pacing_deadline_keeps_a_fresh_detail_pending_without_spending_history
 
     site.fetcher.client.getter = answer
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
+        "clearscout.infrastructure.web_fetch.board_adapters.transport.time.monotonic",
         lambda: site.now,
     )
     prior_id = _seed_continuation(
@@ -6606,7 +6610,7 @@ def test_a_pacing_deadline_keeps_a_fresh_detail_pending_without_spending_history
     assert site.detail_reads == 0
     site.stopped = False
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 1.0
+        "clearscout.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 1.0
     )
 
     assert worker.run_once()
@@ -6620,7 +6624,7 @@ def test_a_pacing_deadline_keeps_a_fresh_detail_pending_without_spending_history
         ("1", 2),
     )
     monkeypatch.setattr(
-        "tailorcv.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 30.0
+        "clearscout.infrastructure.web_fetch.board_adapters.read_scope.MAX_PAGE_READ_SECONDS", 30.0
     )
 
     assert worker.run_once()
@@ -6634,7 +6638,7 @@ def test_a_pacing_deadline_keeps_a_fresh_detail_pending_without_spending_history
 def test_a_fresh_detail_host_hold_keeps_history_and_stops_the_automatic_chain(
     durable_database: Database, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
     from tests.loop.test_fxrecruiter_reader import _FeedSite
 
     workspace_id = _workspace(durable_database)
@@ -6747,7 +6751,7 @@ def test_a_fresh_detail_host_hold_keeps_history_and_stops_the_automatic_chain(
 def test_a_taleo_context_host_hold_does_not_spend_a_fresh_detail_attempt(
     durable_database: Database, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
 
     workspace_id = _workspace(durable_database)
     site = _TaleoSite()
@@ -7071,7 +7075,7 @@ def test_fresh_carried_search_details_keep_their_owner_and_only_count_current_bo
     failed_reopen: bool,
     missing_own_body: bool,
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
     from tests.loop.test_fxrecruiter_reader import _FeedSite
 
     workspace_id = _workspace(durable_database)
@@ -7238,7 +7242,7 @@ def test_fresh_listing_windows_exclude_carried_recovery_membership(
     failed_reopen: bool,
     missing_own_body: bool,
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
     from tests.loop.test_fxrecruiter_reader import _FeedSite
 
     workspace_id = _workspace(durable_database)
@@ -7455,7 +7459,7 @@ def test_terminal_search_page_keeps_protected_enumeration_without_claiming_bodie
 def test_empty_search_page_history_cannot_promote_an_old_failed_detail_map(
     durable_database: Database,
 ) -> None:
-    from tailorcv.infrastructure.web_fetch.board_reads import page_fingerprint
+    from clearscout.infrastructure.web_fetch.board_reads import page_fingerprint
 
     workspace_id = _workspace(durable_database)
     site = _TaleoSite()
@@ -7546,7 +7550,7 @@ def test_exhausted_feed_enumeration_keeps_protected_ids_beside_positive_historic
     failed_current: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
     from tests.loop.test_fxrecruiter_reader import _FeedSite
     from tests.support.doubles import UnexpectedContentResolver
 
@@ -8010,7 +8014,7 @@ def test_fresh_search_declaration_refreshes_a_legacy_page_hold_without_erasing_h
 def test_search_body_count_does_not_pick_an_unobserved_conflicting_branch_by_row_order(
     durable_database: Database, completed_first: bool
 ) -> None:
-    from tailorcv.domain.identity import normalize_fetch_url
+    from clearscout.domain.identity import normalize_fetch_url
 
     workspace_id = _workspace(durable_database)
     site = _TaleoSite()
@@ -9285,7 +9289,7 @@ def test_final_detail_membership_withdraws_a_row_removed_between_slices(
     earlier = f"{root}/Earlier123"
     current = f"{root}/Current123"
     removed = f"{root}/Removed123"
-    cursor = f"{root}?tailorcv_detail_cursor=remaining"
+    cursor = f"{root}?clearscout_detail_cursor=remaining"
     workspace_id = _workspace(durable_database)
     source_id = _source(durable_database, workspace_id, "Globex", root)
     state_target_titles(durable_database, workspace_id, "Data Platform Lead")
@@ -10532,7 +10536,7 @@ def test_a_continuation_that_truncates_discovery_names_its_reason_on_the_scan(
 
 
 def test_a_carried_truncation_reason_does_not_hold_a_drained_scan() -> None:
-    from tailorcv.application.discovery.scan_outcome import settle_drained_scan
+    from clearscout.application.discovery.scan_outcome import settle_drained_scan
 
     scan = SourceScan(
         status="incomplete",
@@ -10629,7 +10633,7 @@ class _WorkdayPages:
     def client(self) -> PoliteHttpClient:
         """Wire these pages behind the outbound policy the production fetcher uses."""
         return PoliteHttpClient(
-            user_agent="tailorcv/test",
+            user_agent="clearscout/test",
             sleeper=lambda _seconds: None,
             jitter=lambda _low, _high: 0.0,
             getter=self.get,
@@ -11850,7 +11854,7 @@ def test_zero_attempt_continuation_retries_then_routes_to_manual_recovery(
         _continuation("https://jobs.example/globex/second"),
     )
     monkeypatch.setattr(
-        "tailorcv.application.discovery.source_continuation.handler.CONTINUATION_CHUNK_SIZE", 1
+        "clearscout.application.discovery.source_continuation.handler.CONTINUATION_CHUNK_SIZE", 1
     )
 
     class StalledBoard:
@@ -12828,7 +12832,7 @@ def test_continuation_task_cannot_process_another_workspaces_frontier(
         )
     assert correct_task_id is not None
     queue.request_cancellation(correct_task_id)
-    from tailorcv.application.failures import NotFoundError
+    from clearscout.application.failures import NotFoundError
 
     with pytest.raises(NotFoundError, match="does not belong"):
         queue.enqueue(

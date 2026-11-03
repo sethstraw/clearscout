@@ -12,24 +12,24 @@ import pytest
 from sqlalchemy import event, select
 from sqlalchemy.exc import OperationalError
 
-from tailorcv.application.discovery.board_scan import SourceScanService
-from tailorcv.application.discovery.content_resolution import PostingContentResolutionService
-from tailorcv.application.discovery.funnel_audit import FunnelReason
-from tailorcv.application.discovery.source_continuation import SourceContinuationHandler
-from tailorcv.application.discovery.source_reading import (
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.content_resolution import PostingContentResolutionService
+from clearscout.application.discovery.funnel_audit import FunnelReason
+from clearscout.application.discovery.source_continuation import SourceContinuationHandler
+from clearscout.application.discovery.source_reading import (
     PostingCheck,
     SourceContinuationTarget,
     SourceListing,
     SourceRead,
 )
-from tailorcv.application.tasks import TaskContext, TaskQueueService
-from tailorcv.application.tasks.leases import CONTINUATION_YIELD_LIMIT, DEFAULT_TASK_LEASE_SECONDS
-from tailorcv.application.workspaces import WorkspaceService
-from tailorcv.bootstrap.worker import Worker, default_handlers
-from tailorcv.domain import SourceReadOutcome, TaskStatus, new_id, utc_now
-from tailorcv.domain.artifacts import PostingSource
-from tailorcv.infrastructure.persistence.database import Database
-from tailorcv.infrastructure.persistence.models import (
+from clearscout.application.tasks import TaskContext, TaskQueueService
+from clearscout.application.tasks.leases import CONTINUATION_YIELD_LIMIT, DEFAULT_TASK_LEASE_SECONDS
+from clearscout.application.workspaces import WorkspaceService
+from clearscout.bootstrap.worker import Worker, default_handlers
+from clearscout.domain import SourceReadOutcome, TaskStatus, new_id, utc_now
+from clearscout.domain.artifacts import PostingSource
+from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
     PendingDiscovery,
     PendingPostingContent,
@@ -37,8 +37,10 @@ from tailorcv.infrastructure.persistence.models import (
     SourceScanFrontierItem,
     SourceScanOutcome,
 )
-from tailorcv.infrastructure.web_fetch.listing_facts import published_listing_facts
-from tailorcv.infrastructure.web_fetch.posting_resolution import DeterministicPostingContentResolver
+from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
+from clearscout.infrastructure.web_fetch.posting_resolution import (
+    DeterministicPostingContentResolver,
+)
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import UnexpectedPostingFetcher
 from tests.support.scenarios import board_source, completed_earlier_scan, state_target_titles
@@ -199,7 +201,7 @@ def test_a_stale_abandoned_attempt_preserves_recovered_work_and_the_restart_rule
     original_join = threading.Thread.join
 
     def join_after_deadline(thread: threading.Thread, timeout: float | None = None) -> None:
-        if thread.name.startswith("tailorcv-task-"):
+        if thread.name.startswith("clearscout-task-"):
             deadline_crossed.wait()
             original_join(thread, timeout=0)
         else:
@@ -539,7 +541,7 @@ def test_a_slot_failure_stops_every_slot_claiming_and_surfaces_through_dispatch(
             second_started.set()
             # The first slot fails on its next claim; this one finishes only after that.
             for thread in threading.enumerate():
-                if thread.name == f"tailorcv-slot-{first}":
+                if thread.name == f"clearscout-slot-{first}":
                     thread.join(timeout=10)
         return {}
 
@@ -585,7 +587,7 @@ def test_a_slot_failure_is_logged_even_when_the_drain_suppresses_it(
     )
     _claims_failing_once(worker, monkeypatch, RuntimeError("claim broke"))
     assert worker.dispatch()
-    caplog.set_level("ERROR", logger="tailorcv.bootstrap.worker")
+    caplog.set_level("ERROR", logger="clearscout.bootstrap.worker")
     with pytest.raises(RuntimeError, match="claim broke"):
         worker.wait_idle()
 
@@ -815,7 +817,7 @@ def test_an_interrupt_during_an_inline_task_stops_its_handler_at_the_next_progre
         worker.run_once()
     resumed.set()
     for thread in threading.enumerate():
-        if thread.name == f"tailorcv-task-{task_id}":
+        if thread.name == f"clearscout-task-{task_id}":
             thread.join(timeout=10)
 
     assert reached == ["LeaseRenewalError"]

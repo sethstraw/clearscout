@@ -11,7 +11,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tailorcv.shared.quantities import (
+from clearscout.shared.quantities import (
     FIGURE,
     NUMBER_WORDS,
     UNITS,
@@ -20,7 +20,7 @@ from tailorcv.shared.quantities import (
     read_figure,
     unit,
 )
-from tailorcv.shared.text import sanitize
+from clearscout.shared.text import sanitize
 
 _WORDS = {value: word for word, value in NUMBER_WORDS.items()}
 

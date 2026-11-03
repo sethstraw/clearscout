@@ -4,11 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tailorcv.application.master_cv.cv import CvInventory, Entry, EntryKind
-from tailorcv.application.tailoring import fit
-from tailorcv.application.tailoring.stages.jobspec import Importance, Requirement
-from tailorcv.application.tailoring.stages.match import Classification, EvidenceMap, Match, Strength
-from tailorcv.application.tailoring.workflows.evaluation_evidence import (
+from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind
+from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.stages.jobspec import Importance, Requirement
+from clearscout.application.tailoring.stages.match import (
+    Classification,
+    EvidenceMap,
+    Match,
+    Strength,
+)
+from clearscout.application.tailoring.workflows.evaluation_evidence import (
     FALLBACK_CHARACTERS,
     LEADING_COMPONENTS,
     EvidenceAnchors,
@@ -16,7 +21,7 @@ from tailorcv.application.tailoring.workflows.evaluation_evidence import (
     reading_evidence,
     requirement_evidence,
 )
-from tailorcv.domain.records import EvidenceClassification, EvidenceDirection, EvidenceStrength
+from clearscout.domain.records import EvidenceClassification, EvidenceDirection, EvidenceStrength
 
 POSTING = "We need someone who has run migrations. Kubernetes is nice to have."
 CANDIDATE = "Ran three database migrations without downtime."
