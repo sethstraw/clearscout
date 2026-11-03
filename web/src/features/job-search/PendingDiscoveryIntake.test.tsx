@@ -1,11 +1,12 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
 import { describe, expect, it, vi } from "vitest";
 
 import type { FoundPostingAddResponse, FoundPostingCreate } from "../../api/client/types";
 import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { PendingDiscoveryIntake } from "./PendingDiscoveryIntake";
+import { READ_BATCH_SIZE, readBatches } from "./pendingDiscoveryIntakeModel";
 import { foundPostingCheck, pendingDiscoveryRow, taskRecord } from "./pendingDiscoveryFixtures";
 
 const INTAKE_ROUTE = "*/api/v1/workspaces/workspace-1/pending-discoveries";
@@ -229,7 +230,15 @@ describe("PendingDiscoveryIntake", () => {
     expect(screen.getByLabelText<HTMLInputElement>("Title, if you know it").value).toBe("");
   });
 
-  it("queues every link in contract-sized batches without truncating the list", async () => {
+  it("splits reads into contract-sized batches without dropping or reordering an id", () => {
+    const ids = Array.from({ length: 2 * READ_BATCH_SIZE + 1 }, (_, index) => `p${index}`);
+    const batches = readBatches(ids);
+
+    expect(batches.map((batch) => batch.length)).toEqual([READ_BATCH_SIZE, READ_BATCH_SIZE, 1]);
+    expect(batches.flat()).toEqual(ids);
+  });
+
+  it("queues every added link through the batched read", async () => {
     const queued: string[][] = [];
     let finish: () => void = () => undefined;
     const finished = new Promise<void>((resolve) => {
@@ -249,7 +258,7 @@ describe("PendingDiscoveryIntake", () => {
       http.post("*/api/v1/tasks", async ({ request }) => {
         const body = (await request.json()) as { payload: { pending_discovery_ids: string[] } };
         queued.push(body.payload.pending_discovery_ids);
-        if (queued.length === 2) finish();
+        finish();
         return HttpResponse.json(taskRecord({ id: `read-${queued.length}`, status: "queued" }));
       }),
       http.get("*/api/v1/tasks/:taskId", ({ params }) =>
@@ -259,17 +268,16 @@ describe("PendingDiscoveryIntake", () => {
     const onAdded = renderIntake();
     await act(async () => {
       submitLinks(
-        Array.from({ length: 251 }, (_, index) => `https://jobs.example.test/p${index}`).join("\n"),
+        Array.from({ length: 3 }, (_, index) => `https://jobs.example.test/p${index}`).join("\n"),
       );
       await finished;
     });
 
-    expect(queued.map((batch) => batch.length)).toEqual([250, 1]);
-    expect(new Set(queued.flat()).size).toBe(251);
-    expect(onAdded).toHaveBeenCalledTimes(251);
+    expect(queued).toEqual([["p0", "p1", "p2"]]);
+    expect(onAdded).toHaveBeenCalledTimes(3);
     expect(
       await screen.findByText(
-        "Processed 251 links: 251 added, 0 duplicates, 0 invalid or unsupported, 0 failed.",
+        "Processed 3 links: 3 added, 0 duplicates, 0 invalid or unsupported, 0 failed.",
       ),
     ).toBeTruthy();
   });

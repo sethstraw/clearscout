@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { HttpResponse, delay, http } from "msw";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { HttpResponse, http } from "msw/http";
+import { delay } from "msw/utils/delay";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -152,8 +153,10 @@ describe("SettingsPage", () => {
     expect(document.body.textContent).not.toContain("sk-");
 
     fireEvent.click(screen.getByRole("tab", { name: "Costs" }));
-    expect(await screen.findByText("What runs have cost")).toBeTruthy();
-    expect(await screen.findByText("$0.1250")).toBeTruthy();
+    const runCosts = (await screen.findByRole("heading", { name: "What runs have cost" })).closest(
+      "article",
+    )!;
+    expect(await within(runCosts).findByText("$0.1250")).toBeTruthy();
     expect(await screen.findByText("Spend by model")).toBeTruthy();
     expect(screen.getAllByRole("main")).toHaveLength(1);
   });

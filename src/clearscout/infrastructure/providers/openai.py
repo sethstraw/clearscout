@@ -120,7 +120,7 @@ class OpenAIProvider:
         choice: ModelChoice,
     ) -> tuple[ModelT, CallRecord]:
         """Send one structured Responses request, optionally with web search."""
-        import httpx
+        import httpx2
         from openai import APIError, APITimeoutError
 
         sent: dict[str, Any] = {
@@ -146,7 +146,7 @@ class OpenAIProvider:
                 if callable(close):
                     close()
         # The SDK wraps a failure before the headers; one during the stream read arrives raw.
-        except (APITimeoutError, httpx.TransportError) as error:
+        except (APITimeoutError, httpx2.TransportError) as error:
             raise _timed_out(choice.service_tier) from error
         except (APIError, _StreamError) as error:
             flex = choice.service_tier is ServiceTier.FLEX

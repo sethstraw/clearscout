@@ -15,6 +15,7 @@ import { CountryToken } from "../../components/CountryToken";
 import { ClosingDates } from "../../components/ClosingDates";
 import { evaluationReview } from "../../components/evaluationReview";
 import { MultiSelectFilter } from "../../components/MultiSelectFilter";
+import { ErrorNotice } from "../../components/ErrorNotice";
 import { PaidAction } from "../../components/PaidAction";
 import { Page } from "../../components/Page";
 import { Toggletip } from "../../components/Toggletip";
@@ -463,8 +464,16 @@ export function JobsPage() {
         </div>
       </section>
       {refresh.isError && <p className="field-error">{refresh.error.message}</p>}
-      {compare.isError && <p className="field-error">{compare.error.message}</p>}
-      {reevaluate.isError && <p className="field-error">{reevaluate.error.message}</p>}
+      {compare.isError && (
+        <p className="field-error">
+          <ErrorNotice error={compare.error} />
+        </p>
+      )}
+      {reevaluate.isError && (
+        <p className="field-error">
+          <ErrorNotice error={reevaluate.error} />
+        </p>
+      )}
       {refreshTask.data?.status === "completed" && (
         <p className="refresh-result" role="status">
           {refreshSentence(refreshTask.data.progress, refreshFailures.length)}

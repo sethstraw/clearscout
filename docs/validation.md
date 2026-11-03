@@ -44,7 +44,8 @@ boundary through official-SDK contract tests and synthetic replay seams.
 
 The Anthropic adapter uses the official SDK and has offline contract and
 synthetic replay coverage. It has not been run against Anthropic's live API
-here. No public claim should compress those two evidence levels into a single
+here, so the `anthropic-version` header and bearer authentication the current
+SDK sends are untested against the live service. No public claim should compress those two evidence levels into a single
 word such as "supported." The public gate does not stand in for live evidence.
 
 The critic puts the same question `critic_trials` times on one draft, once by
@@ -151,8 +152,14 @@ line yourself before you send it.
   coverage. The [reader limits above](#board-readers-are-policy-and-parser-claims)
   describe the unresolved platform and enumeration boundaries.
 - Tailoring keeps the evidence its role scoring rates relevant. The critic sees
-  only what was selected. So a strong item from the master CV, such as a
-  publication, can be left out without a warning.
+  only what was selected. So a strong item from the master CV can be left out.
+  For publications, the tailoring report lists each paper as available, not
+  offered, and `must_consider_publications` in `clearscout.toml` names paper ids
+  that are always offered within `max_publications`. An offered paper can still be
+  trimmed for length, most readily when no requirement cited any paper; the report
+  then says it was trimmed. A paper's id changes when its
+  citation or section heading is edited, and the report names any listed id the
+  master CV no longer has. Bullets have no such list.
 - A match batch can write more prompt caches than it needs, which adds cost to
   that batch. Chained publisher reads report their own read counts. The final
   total remains unknown while the board read is incomplete.

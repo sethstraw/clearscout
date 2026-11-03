@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, delay, http, type HttpHandler } from "msw";
+import { HttpResponse, http, type HttpHandler } from "msw/http";
+import { delay } from "msw/utils/delay";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { components } from "../../api/schema";
 import type {
   GuidedCampaignConfiguration,
   SearchVocabularyConfiguration,
@@ -12,6 +15,8 @@ import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { TASK_TYPE_CATALOG } from "../../test/taskTypes";
 import { TasksPage } from "./TaskList";
+
+type Problem = components["schemas"]["Problem"];
 
 const API = "*/api/v1";
 const WORKSPACE = `${API}/workspaces/:workspaceId`;
@@ -144,9 +149,11 @@ function useTaskPage(reads: TaskPageReads): string[] {
 
 function renderTasks() {
   render(
-    <AppProviders>
-      <TasksPage />
-    </AppProviders>,
+    <MemoryRouter>
+      <AppProviders>
+        <TasksPage />
+      </AppProviders>
+    </MemoryRouter>,
   );
 }
 
@@ -1181,6 +1188,55 @@ describe("TasksPage", () => {
     await waitFor(() => expect(retried).toEqual(["paid-failed-1"]));
     await screen.findByText("Task queued again.");
     expect(billed).toEqual(["paid-failed-1"]);
+  });
+
+  it("shows the shared free-mode copy with a settings link when the server refuses a paid retry", async () => {
+    window.localStorage.setItem("clearscout.workspace", "workspace-tasks");
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useTaskPage({
+      tasks: [failedPaid],
+      billingFor: () => ({
+        task_id: "paid-failed-1",
+        status: "priced",
+        call_count: 1,
+        unpriced_call_count: 0,
+        resent_on_standard_count: 0,
+        actual_cost_usd: "0.10",
+      }),
+    });
+    server.use(
+      http.post(`${API}/tasks/:taskId/retry`, () =>
+        HttpResponse.json(
+          {
+            type: "urn:clearscout:problem:free-mode",
+            title: "Free mode",
+            status: 409,
+            detail: "No provider API key is set, so paid actions are off.",
+            correlation_id: "correlation-retry",
+            hint: "Add an API key in Settings > Provider.",
+          } satisfies Problem,
+          { status: 409 },
+        ),
+      ),
+    );
+    renderTasks();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^Review retry for Search for new jobs created / }),
+    );
+    const retry = await screen.findByRole("button", {
+      name: /^Retry task: Search for new jobs created /,
+    });
+    await waitFor(() => expect((retry as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(retry);
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirm retry" }));
+
+    const failure = await screen.findByText(/^Retry failed:/);
+    expect(failure.textContent).toBe(
+      "Retry failed: Add a provider key to use paid actions. Open provider settings",
+    );
+    expect(within(failure).getByRole("link", { name: "Open provider settings" })).toBeTruthy();
   });
 
   it("explains why a reviewed paid retry is disabled while provider choices load", async () => {

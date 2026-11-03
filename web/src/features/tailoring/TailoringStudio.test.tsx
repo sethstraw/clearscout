@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { RunCostHistory, TailoringPreflight, Task, TaskBilling } from "../../api/client";
+import type { components } from "../../api/schema";
 import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { evaluationPreflightHandler, TASK_TYPE_CATALOG } from "../../test/taskTypes";
@@ -190,9 +192,11 @@ function spendOn(name: string): string {
 
 function studio() {
   render(
-    <AppProviders>
-      <TailoringStudio jobId="job-1" workspaceId="workspace-1" />
-    </AppProviders>,
+    <MemoryRouter>
+      <AppProviders>
+        <TailoringStudio jobId="job-1" workspaceId="workspace-1" />
+      </AppProviders>
+    </MemoryRouter>,
   );
 }
 
@@ -351,6 +355,41 @@ describe("TailoringStudio", () => {
       expect(writes).toHaveLength(1);
       expect(writes[0]?.confirmed_points).toEqual([...CONFIRMATIONS]);
     });
+  });
+
+  it("names the provider-key fix when the server refuses paid tailoring in free mode", async () => {
+    useDiscovery({});
+    server.use(
+      http.post(`${API}/tasks`, () =>
+        HttpResponse.json(
+          {
+            type: "urn:clearscout:problem:free-mode",
+            title: "Free mode",
+            status: 409,
+            detail: "No provider API key is set, so paid actions are off.",
+            correlation_id: "correlation-tailor",
+            hint: "Add an API key in Settings > Provider.",
+          } satisfies components["schemas"]["Problem"],
+          { status: 409 },
+        ),
+      ),
+    );
+    studio();
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: GENERATE })).toHaveProperty("disabled", false),
+    );
+    fireEvent.click(screen.getByRole("button", { name: GENERATE }));
+    fireEvent.click(await screen.findByRole("button", { name: "Generate package" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".studio-actions .field-error")).not.toBeNull(),
+    );
+    const refusal = document.querySelector(".studio-actions .field-error") as HTMLElement;
+    expect(refusal.textContent).toBe(
+      "Add a provider key to use paid actions. Open provider settings",
+    );
+    expect(within(refusal).getByRole("link", { name: "Open provider settings" })).toBeTruthy();
   });
 
   it("shows a refused enqueue beside the buttons that asked for it", async () => {

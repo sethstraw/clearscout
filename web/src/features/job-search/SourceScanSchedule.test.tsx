@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ScanSchedule, ScanScheduleConfiguration, ScanScheduleInput } from "../../api/client";
@@ -68,13 +69,23 @@ function schedulePanel(selectedSourceIds: readonly string[] = [], initial?: Scan
   });
   if (initial) client.setQueryData(queryKeys.scanSchedule("workspace-1"), initial);
   const view = (selected: readonly string[]) => (
-    <QueryClientProvider client={client}>
-      <SourceScanSchedule
-        workspaceId="workspace-1"
-        sources={SOURCES}
-        selectedSourceIds={selected}
-      />
-    </QueryClientProvider>
+    <MemoryRouter initialEntries={["/job-search"]}>
+      <QueryClientProvider client={client}>
+        <Routes>
+          <Route
+            path="/job-search"
+            element={
+              <SourceScanSchedule
+                workspaceId="workspace-1"
+                sources={SOURCES}
+                selectedSourceIds={selected}
+              />
+            }
+          />
+          <Route path="/tasks" element={<h1>Activity route</h1>} />
+        </Routes>
+      </QueryClientProvider>
+    </MemoryRouter>
   );
   const rendered = render(view(selectedSourceIds));
   return { client, rerender: (selected: readonly string[]) => rendered.rerender(view(selected)) };
@@ -357,6 +368,17 @@ describe("SourceScanSchedule", () => {
       source_ids: ["source-2", "retired-source"],
       paused: true,
     });
+  });
+
+  it("opens Activity in the app from the last scheduled scan link", async () => {
+    scheduleServer(savedSchedule({ last_task_id: "task-1" }));
+    schedulePanel();
+    await openScheduleEditor();
+
+    fireEvent.click(
+      await screen.findByRole("link", { name: "View last scheduled scan in Activity" }),
+    );
+    expect(await screen.findByRole("heading", { name: "Activity route" })).toBeTruthy();
   });
 
   it("retains the draft when saving fails", async () => {

@@ -209,8 +209,7 @@ def _workspace(
     """A workspace with a stored master CV and a settings file of its own.
 
     The file is written before the workspace exists because it seeds the
-    workspace once; editing it afterwards changes nothing. Spend limits are not
-    part of that seed, and are saved through their own service.
+    workspace once; editing it afterwards changes nothing.
     """
     root = tmp_path / "workspace"
     root.mkdir(parents=True, exist_ok=True)

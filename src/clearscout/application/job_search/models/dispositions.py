@@ -5,6 +5,7 @@ from typing import Literal, Self
 
 from pydantic import Field, RootModel, model_validator
 
+from clearscout.application.contracts import AggregatorCreditResponse
 from clearscout.domain import (
     EXPLICIT_DISMISSAL_REASONS,
     ExplicitDismissalCategory,
@@ -247,3 +248,4 @@ class DismissedDiscoveryResponse(PendingDispositionResponse):
     location: str
     discovery_url: str
     canonical_url: str
+    aggregator: AggregatorCreditResponse | None = None

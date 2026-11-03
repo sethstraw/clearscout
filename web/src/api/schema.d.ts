@@ -2811,6 +2811,21 @@ export interface components {
             promote_transferable: number;
         };
         /**
+         * AggregatorCreditResponse
+         * @description The visible credit an aggregator's terms ask for beside a posting it listed.
+         */
+        AggregatorCreditResponse: {
+            /** Credit Url */
+            credit_url: string;
+            /** Name */
+            name: string;
+            /**
+             * Opens Discovery Url
+             * @default false
+             */
+            opens_discovery_url: boolean;
+        };
+        /**
          * ApplicationEventInput
          * @description Append-only application status, correction, or reversal.
          */
@@ -3385,6 +3400,7 @@ export interface components {
              * @enum {string}
              */
             action: "dismiss" | "restore";
+            aggregator?: components["schemas"]["AggregatorCreditResponse"] | null;
             /** Canonical Url */
             canonical_url: string;
             /** Category */
@@ -6130,6 +6146,7 @@ export interface components {
          * @description One discovery that is not yet evaluable.
          */
         PendingDiscoveryResponse: {
+            aggregator?: components["schemas"]["AggregatorCreditResponse"] | null;
             /** Also In */
             also_in?: string[];
             /** Arrangement Categories */
@@ -6245,6 +6262,7 @@ export interface components {
             staging_provenance: "guided_campaign" | "board_scan" | "person_added" | "unrecorded";
             /** Title */
             title: string;
+            withdrawal_cause?: components["schemas"]["PendingWithdrawalCause"] | null;
             /** Withdrawn At */
             withdrawn_at?: string | null;
         };
@@ -6468,6 +6486,12 @@ export interface components {
             value: "out_of_date" | "out_of_date_master_cv" | "out_of_date_search_parameters" | "out_of_date_review_instructions" | "out_of_date_keep_note" | "current";
         };
         /**
+         * PendingWithdrawalCause
+         * @description Why a withdrawn discovery left the queue, read from its latest withdrawal event.
+         * @enum {string}
+         */
+        PendingWithdrawalCause: "absent" | "listing_ended" | "publisher_closed" | "content_read_closed" | "unrecorded";
+        /**
          * PhraseMatch
          * @description Where one configured phrase was found in the master CV, if at all.
          */
@@ -6621,6 +6645,7 @@ export interface components {
          * @description Verified full body and source facts for one posting observation.
          */
         PostingObservationBodyResponse: {
+            aggregator?: components["schemas"]["AggregatorCreditResponse"] | null;
             /** Body */
             body: string;
             /** Body Artifact Id */
@@ -6850,8 +6875,11 @@ export interface components {
             status: number;
             /** Title */
             title: string;
-            /** Type */
-            type: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "urn:clearscout:problem:career-page-unreadable" | "urn:clearscout:problem:conflict" | "urn:clearscout:problem:database-fault" | "urn:clearscout:problem:free-mode" | "urn:clearscout:problem:http-error" | "urn:clearscout:problem:integrity-conflict" | "urn:clearscout:problem:local-boundary" | "urn:clearscout:problem:method-not-allowed" | "urn:clearscout:problem:missing-idempotency-key" | "urn:clearscout:problem:not-found" | "urn:clearscout:problem:request-validation" | "urn:clearscout:problem:unavailable" | "urn:clearscout:problem:validation";
         };
         /**
          * PromptDetailResponse

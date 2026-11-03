@@ -11,7 +11,8 @@ export function useArtifacts(
 ) {
   return useQuery({
     queryKey: queryKeys.artifacts(workspaceId, entityType, entityId, includeRelated),
-    queryFn: () => api.artifacts(workspaceId, entityType, entityId, includeRelated),
+    queryFn: ({ signal }) =>
+      api.artifacts(workspaceId, entityType, entityId, includeRelated, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -19,7 +20,7 @@ export function useArtifacts(
 export function useArtifactText(workspaceId: string, artifactId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.artifactText(workspaceId, artifactId),
-    queryFn: () => api.artifactText(artifactId, workspaceId),
+    queryFn: ({ signal }) => api.artifactText(artifactId, workspaceId, signal),
     enabled: Boolean(enabled && workspaceId && artifactId),
   });
 }
@@ -27,7 +28,7 @@ export function useArtifactText(workspaceId: string, artifactId: string, enabled
 export function useArtifactVersions(workspaceId: string, artifactId: string) {
   return useQuery({
     queryKey: queryKeys.artifactVersions(workspaceId, artifactId),
-    queryFn: () => api.artifactVersions(artifactId, workspaceId),
+    queryFn: ({ signal }) => api.artifactVersions(artifactId, workspaceId, signal),
     enabled: Boolean(workspaceId && artifactId),
   });
 }
@@ -35,7 +36,7 @@ export function useArtifactVersions(workspaceId: string, artifactId: string) {
 export function useTailoringReview(workspaceId: string, runId: string) {
   return useQuery({
     queryKey: queryKeys.tailoringReview(workspaceId, runId),
-    queryFn: () => api.tailoringReview(runId, workspaceId),
+    queryFn: ({ signal }) => api.tailoringReview(runId, workspaceId, signal),
     enabled: Boolean(workspaceId && runId),
   });
 }

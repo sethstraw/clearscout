@@ -10,6 +10,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from clearscout.application.contracts import AggregatorCreditResponse
+from clearscout.domain.identity import url_host
+
 
 @dataclass(frozen=True)
 class StarterAggregator:
@@ -19,6 +22,14 @@ class StarterAggregator:
     url: str
     terms_url: str
     condition: str
+    # None credits the posting's own address on the aggregator.
+    credit_url: str | None = None
+    opens_discovery_url: bool = False
+
+    @property
+    def host(self) -> str:
+        """The aggregator's hostname without a leading www."""
+        return url_host(self.url).removeprefix("www.")
 
 
 STARTER_AGGREGATORS: tuple[StarterAggregator, ...] = (
@@ -30,6 +41,7 @@ STARTER_AGGREGATORS: tuple[StarterAggregator, ...] = (
             "Provide a link back to arbeitnow.com on the platform that uses its API. "
             "Permission to use the API can be revoked at any time."
         ),
+        credit_url="https://www.arbeitnow.com/",
     ),
     StarterAggregator(
         name="Himalayas",
@@ -42,12 +54,14 @@ STARTER_AGGREGATORS: tuple[StarterAggregator, ...] = (
             "other job boards, aggregators or job search engines. Cache where possible, "
             "stay within request limits, and remove expired jobs."
         ),
+        opens_discovery_url=True,
     ),
     StarterAggregator(
         name="Remote OK",
         url="https://remoteok.com/remote-jobs",
         terms_url="https://remoteok.com/legal",
         condition="Link back to Remote OK on any page or screen that shows its data.",
+        credit_url="https://remoteok.com/",
     ),
     StarterAggregator(
         name="USAJOBS",
@@ -60,3 +74,22 @@ STARTER_AGGREGATORS: tuple[StarterAggregator, ...] = (
         ),
     ),
 )
+
+
+def aggregator_credit(*urls: str | None) -> AggregatorCreditResponse | None:
+    """The credit owed for the first address a shipped aggregator lists, or None.
+
+    The first address is the one a row's links open, so only a match on it can fix them there.
+    """
+    for position, url in enumerate(urls):
+        if not url:
+            continue
+        hostname = url_host(url)
+        for site in STARTER_AGGREGATORS:
+            if hostname == site.host or hostname.endswith(f".{site.host}"):
+                return AggregatorCreditResponse(
+                    name=site.name,
+                    credit_url=site.credit_url or url,
+                    opens_discovery_url=site.opens_discovery_url and position == 0,
+                )
+    return None

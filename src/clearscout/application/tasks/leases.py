@@ -325,7 +325,7 @@ class TaskLeases:
         for busy in busy_hosts:
             prefiltered = prefiltered.where(~TaskLeases._names_host(address, busy))
         for _ in range(len(busy_hosts) + 1):
-            found = session.execute(prefiltered.limit(1)).tuples().first()
+            found = session.execute(prefiltered.limit(1)).first()
             if found is None:
                 break
             task_id, resolved_url, url = found
@@ -335,7 +335,7 @@ class TaskLeases:
             prefiltered = prefiltered.where(BackgroundTask.id != task_id)
         # The SQL match only narrows: a busy host named in a query string, or an
         # authority it cannot read, would hide a free task, so every candidate is read here.
-        for task_id, resolved_url, url in session.execute(statement).tuples():
+        for task_id, resolved_url, url in session.execute(statement):
             host = _board_host(resolved_url or url)
             if host not in busy_hosts:
                 return TaskLeases._loaded(session, task_id), host

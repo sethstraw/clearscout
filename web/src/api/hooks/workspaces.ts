@@ -15,14 +15,17 @@ import type {
 } from "../client";
 
 export function useWorkspaces() {
-  return useQuery({ queryKey: queryKeys.workspaces, queryFn: api.workspaces });
+  return useQuery({
+    queryKey: queryKeys.workspaces,
+    queryFn: ({ signal }) => api.workspaces(signal),
+  });
 }
 
 /** Saved views for one table, so a page can offer the views that fit it. */
 export function useSavedViews(workspaceId: string, resource = "") {
   return useQuery({
     queryKey: queryKeys.savedViews(workspaceId, resource),
-    queryFn: () => api.savedViews(workspaceId, resource),
+    queryFn: ({ signal }) => api.savedViews(workspaceId, resource, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -30,7 +33,7 @@ export function useSavedViews(workspaceId: string, resource = "") {
 export function useWorkspaceSummary(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.workspaceSummary(workspaceId),
-    queryFn: () => api.workspaceSummary(workspaceId),
+    queryFn: ({ signal }) => api.workspaceSummary(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -38,7 +41,7 @@ export function useWorkspaceSummary(workspaceId: string) {
 export function useWorkspaceSpend(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.workspaceSpend(workspaceId),
-    queryFn: () => api.workspaceSpend(workspaceId),
+    queryFn: ({ signal }) => api.workspaceSpend(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -46,7 +49,7 @@ export function useWorkspaceSpend(workspaceId: string) {
 export function useScanSchedule(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.scanSchedule(workspaceId),
-    queryFn: () => api.scanSchedule(workspaceId),
+    queryFn: ({ signal }) => api.scanSchedule(workspaceId, signal),
     enabled: Boolean(workspaceId),
     refetchInterval: 30_000,
   });
@@ -64,7 +67,7 @@ export function useSaveScanSchedule(workspaceId: string) {
 export function useGuardrails(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.guardrails(workspaceId),
-    queryFn: () => api.guardrails(workspaceId),
+    queryFn: ({ signal }) => api.guardrails(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -72,7 +75,7 @@ export function useGuardrails(workspaceId: string) {
 export function useGuardrailHistory(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.guardrailHistory(workspaceId),
-    queryFn: () => api.guardrailHistory(workspaceId),
+    queryFn: ({ signal }) => api.guardrailHistory(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -80,7 +83,7 @@ export function useGuardrailHistory(workspaceId: string) {
 export function usePostingRefusals(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.postingRefusals(workspaceId),
-    queryFn: () => api.postingRefusals(workspaceId),
+    queryFn: ({ signal }) => api.postingRefusals(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -88,7 +91,7 @@ export function usePostingRefusals(workspaceId: string) {
 export function useSourceScans(workspaceId: string, options: SourceScanHistoryOptions) {
   return useQuery({
     queryKey: queryKeys.sourceScans(workspaceId, options),
-    queryFn: () => api.sourceScans(workspaceId, options),
+    queryFn: ({ signal }) => api.sourceScans(workspaceId, options, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -106,7 +109,7 @@ export function useContinueSourceScan(workspaceId: string) {
 export function useSourceScanOutcomes(workspaceId: string, options: SourceScanOutcomeOptions) {
   return useQuery({
     queryKey: queryKeys.sourceScanOutcomes(workspaceId, options.taskId, options),
-    queryFn: () => api.sourceScanOutcomes(workspaceId, options),
+    queryFn: ({ signal }) => api.sourceScanOutcomes(workspaceId, options, signal),
     enabled: Boolean(workspaceId && options.taskId),
     // Keep the prior page mounted while a new search/filter/sort loads, so the
     // toolbar and its focused search input are not torn down mid-keystroke.
@@ -117,7 +120,7 @@ export function useSourceScanOutcomes(workspaceId: string, options: SourceScanOu
 export function useScreenedOutTitles(workspaceId: string, options: ScreenedOutTitleOptions) {
   return useQuery({
     queryKey: queryKeys.screenedOutTitles(workspaceId, options),
-    queryFn: () => api.screenedOutTitles(workspaceId, options),
+    queryFn: ({ signal }) => api.screenedOutTitles(workspaceId, options, signal),
     enabled: Boolean(workspaceId),
     placeholderData: (previous) => previous,
   });
@@ -135,7 +138,7 @@ export function useReviewScreenedOutTitles(workspaceId: string) {
 export function useSources(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.sources(workspaceId),
-    queryFn: () => api.sources(workspaceId),
+    queryFn: ({ signal }) => api.sources(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -201,7 +204,7 @@ export function usePreviewGuardrails(workspaceId: string) {
 export function useLearningLoopMetrics(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.learningLoopMetrics(workspaceId),
-    queryFn: () => api.learningLoopMetrics(workspaceId),
+    queryFn: ({ signal }) => api.learningLoopMetrics(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -209,7 +212,7 @@ export function useLearningLoopMetrics(workspaceId: string) {
 export function useLearningLoopPolicy(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.learningLoopPolicy(workspaceId),
-    queryFn: () => api.learningLoopPolicy(workspaceId),
+    queryFn: ({ signal }) => api.learningLoopPolicy(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -226,7 +229,7 @@ export function useSaveLearningLoopPolicy(workspaceId: string) {
 export function useRunCostHistory(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.runCostHistory(workspaceId),
-    queryFn: () => api.runCostHistory(workspaceId),
+    queryFn: ({ signal }) => api.runCostHistory(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }

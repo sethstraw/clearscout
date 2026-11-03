@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
@@ -32,9 +32,11 @@ function renderReader(
   initialEntry = "/jobs/job-1",
   robotsBasis: "allowed" | "single_posting_read" | null = "allowed",
   discoveryUrl: string | null = null,
+  aggregator: PostingObservationBody["aggregator"] = null,
 ) {
   const log = requestLog();
   const body = {
+    aggregator,
     body: "Synthetic posting body",
     body_artifact_id: "artifact-older",
     discovery_url: discoveryUrl,
@@ -97,40 +99,24 @@ describe("PostingReader", () => {
     );
   });
 
-  it("credits Himalayas when the observed source is a Himalayas address", async () => {
-    const applicationLink = "https://himalayas.app/companies/initech/jobs/data-analyst";
-    renderReader(applicationLink);
-
-    const credit = await screen.findByRole("link", { name: "Job data from Himalayas" });
-    expect(credit.getAttribute("href")).toBe(applicationLink);
-    expect(screen.getByRole("link", { name: "Source" }).getAttribute("href")).toBe(applicationLink);
-  });
-
-  it("credits Arbeitnow when an employer address is the source", async () => {
+  it("credits the aggregator the observation names", async () => {
     const employerLink = "https://careers.example.test/openings/42";
-    const discovery = "https://www.arbeitnow.com/jobs/companies/initech/data-analyst-42";
-    renderReader(employerLink, "/jobs/job-1", "allowed", discovery);
+    renderReader(employerLink, "/jobs/job-1", "allowed", null, {
+      credit_url: "https://listings.example.test/",
+      name: "Example Listings",
+      opens_discovery_url: false,
+    });
 
-    const credit = await screen.findByRole("link", { name: "Job data from Arbeitnow" });
-    expect(credit.getAttribute("href")).toBe("https://www.arbeitnow.com/");
+    const credit = await screen.findByRole("link", { name: "Job data from Example Listings" });
+    expect(credit.getAttribute("href")).toBe("https://listings.example.test/");
     expect(screen.getByRole("link", { name: "Source" }).getAttribute("href")).toBe(employerLink);
   });
 
-  it("credits the aggregator source when discovery came from an employer address", async () => {
-    const himalayas = "https://himalayas.app/companies/initech/jobs/data-analyst";
-    renderReader(himalayas, "/jobs/job-1", "allowed", "https://careers.example.test/openings/42");
+  it("shows no credit when the observation names no aggregator", async () => {
+    renderReader("https://jobs.example.test/openings/1");
 
-    const credit = await screen.findByRole("link", { name: "Job data from Himalayas" });
-    expect(credit.getAttribute("href")).toBe(himalayas);
-  });
-
-  it("credits the aggregator the body came from over an earlier one", async () => {
-    const himalayas = "https://himalayas.app/companies/initech/jobs/data-analyst";
-    const arbeitnow = "https://www.arbeitnow.com/jobs/companies/initech/data-analyst-42";
-    renderReader(himalayas, "/jobs/job-1", "allowed", arbeitnow);
-
-    expect(await screen.findByRole("link", { name: "Job data from Himalayas" })).toBeTruthy();
-    expect(screen.queryByRole("link", { name: "Job data from Arbeitnow" })).toBeNull();
+    expect(await screen.findByRole("link", { name: "Source" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /^Job data from/ })).toBeNull();
   });
 
   it("does not make an active-scheme source clickable", async () => {

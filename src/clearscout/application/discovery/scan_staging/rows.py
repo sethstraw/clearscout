@@ -26,12 +26,14 @@ from clearscout.application.discovery.scan_staging.reasons import staged_by_pers
 from clearscout.application.discovery.source_reading import SourceListing
 from clearscout.domain import new_id
 from clearscout.domain.identity import url_sha256
+from clearscout.domain.records import SourceKind
 from clearscout.domain.staged_facts import (
     ListingIdentityTrust,
+    PublisherClosingDate,
     StagedListingFacts,
     merged_posted_date,
 )
-from clearscout.infrastructure.persistence.models import PendingDiscovery
+from clearscout.infrastructure.persistence.models import PendingDiscovery, Source
 from clearscout.infrastructure.web_fetch.listing_facts import stated_place
 from clearscout.shared.text import sanitize
 
@@ -60,12 +62,57 @@ def _refresh_content_projection(pending: PendingDiscovery, listing: SourceListin
         pending.content_note = listing.content_note
 
 
+def _carried_closing_date(
+    listing: SourceListing, prior: StagedListingFacts
+) -> PublisherClosingDate | None:
+    """Keep a prior closing date a listing is silent on, unless it was a board's listing end."""
+    if listing.facts.closing_date is not None:
+        return listing.facts.closing_date
+    # A listing end speaks only for the board that stated it, so another read never inherits it.
+    if prior.closing_date is not None and prior.closing_date.states_listing_end:
+        return None
+    return prior.closing_date
+
+
+def _kind_of(session: Session, source_id: str | None) -> str | None:
+    source = session.get(Source, source_id) if source_id is not None else None
+    return source.source_type if source is not None else None
+
+
+def _employer_board_keeps(
+    session: Session, pending: PendingDiscovery, source_id: str | None
+) -> bool:
+    return (
+        pending.source_id != source_id
+        and _kind_of(session, source_id) == SourceKind.AGGREGATOR.value
+        and _kind_of(session, pending.source_id) == SourceKind.EMPLOYER_BOARD.value
+    )
+
+
 class ListingRows:
     """Insert unseen listings as rows and refresh the known rows a listing names."""
 
     def __init__(self, capture: ListingCapture) -> None:
         """Bind row writes to the capture that retains each listing's bytes."""
         self.capture = capture
+
+    @staticmethod
+    def _follow_listing(
+        pending: PendingDiscovery,
+        listing: SourceListing,
+        source_id: str | None,
+        *,
+        by_address: bool,
+    ) -> None:
+        pending.requisition_id = listing.requisition_id[:300] or pending.requisition_id
+        pending.absent_since = None
+        if not by_address:
+            # A row a content read pointed elsewhere keeps that address; one on its listing
+            # follows it.
+            if pending.canonical_url in ("", pending.discovery_url):
+                pending.canonical_url = listing.url
+            pending.discovery_url = listing.url
+        pending.source_id = source_id
 
     def refresh_known_pending(
         self,
@@ -88,18 +135,26 @@ class ListingRows:
         """Refresh a known row and report whether a reset marker requeued it.
 
         A row matched only by the address a content read gave it takes the listing's
-        facts and source, and keeps the listing address it was staged from.
+        facts and source, and keeps the listing address it was staged from. An aggregator
+        listing refreshes an employer board's facts but leaves its source, address, close,
+        requisition, and listed state.
         """
-        record_relisted(
-            session,
-            pending,
-            action="pending_discovery.relisted",
-            workspace_id=workspace_id,
-            actor="worker",
-            origin="source.scan",
-            correlation_id=correlation_id,
-            dismissed=dismissed,
-        )
+        board_keeps = _employer_board_keeps(session, pending, source_id)
+        if board_keeps:
+            # A listing end speaks only for the board that stated it, so its capture drops it too.
+            listing = replace(listing, facts=replace(listing.facts, closing_date=None))
+        else:
+            # The owning employer board's own reads decide whether its row is listed.
+            record_relisted(
+                session,
+                pending,
+                action="pending_discovery.relisted",
+                workspace_id=workspace_id,
+                actor="worker",
+                origin="source.scan",
+                correlation_id=correlation_id,
+                dismissed=dismissed,
+            )
         prior_identity = (pending.employer, pending.title)
         retained_unverified_identity = not StagedListingFacts.from_json(
             pending.staged_facts
@@ -113,9 +168,9 @@ class ListingRows:
         pending.staged_facts = replace(
             with_silent_fields_kept(listing.facts, prior_facts),
             closing_date=(
-                listing.facts.closing_date
-                if listing.facts.closing_date is not None
-                else prior_facts.closing_date
+                prior_facts.closing_date
+                if board_keeps
+                else _carried_closing_date(listing, prior_facts)
             ),
             identity_trust=(
                 ListingIdentityTrust.UNVERIFIED_HINT
@@ -126,15 +181,8 @@ class ListingRows:
                 prior_facts.posted_date, listing.facts.posted_date, today
             ),
         ).as_json()
-        pending.requisition_id = listing.requisition_id[:300] or pending.requisition_id
-        pending.absent_since = None
-        if not by_address:
-            # A row a content read pointed elsewhere keeps that address; one on its listing
-            # follows it.
-            if pending.canonical_url in ("", pending.discovery_url):
-                pending.canonical_url = listing.url
-            pending.discovery_url = listing.url
-        pending.source_id = source_id
+        if not board_keeps:
+            self._follow_listing(pending, listing, source_id, by_address=by_address)
         _refresh_content_projection(pending, listing)
         # The found sentence is what staging reads to tell that a person added the row.
         if not staged_by_person(pending.reason):
@@ -162,7 +210,7 @@ class ListingRows:
             head = regional_head_of(
                 listing,
                 staged_before(pending, known.values(), dismissed),
-                source_id,
+                pending.source_id,
                 dismissed,
                 person_owned=owned_by_person(pending, restored),
             )

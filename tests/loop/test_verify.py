@@ -1420,6 +1420,25 @@ def _critic_request(
     return provider.calls[0][1]
 
 
+def test_the_critic_sees_an_unoffered_paper_only_in_the_record_not_in_its_task(
+    inventory: CvInventory, settings, guardrails: Guardrails, tmp_path: Path
+) -> None:
+    """The whole record rides along, yet alignment is judged only against the offered ids."""
+    paper = next(
+        entry
+        for entry in inventory.of_kind(EntryKind.PUBLICATION)
+        if "Schema governance at scale" in entry.text
+    )
+    offered = tuple(entry.id for entry in inventory.of_kind(EntryKind.BULLET))
+
+    request = _critic_request(inventory, settings, guardrails, tmp_path, "", offered=offered)
+
+    assert request.evidence is not None
+    assert request.task is not None
+    assert paper.id in request.evidence.text
+    assert paper.id not in request.task.text
+
+
 def test_the_critic_reads_every_drafted_line_beside_the_text_of_the_entries_it_cites(
     inventory: CvInventory, settings, guardrails: Guardrails, tmp_path: Path
 ) -> None:

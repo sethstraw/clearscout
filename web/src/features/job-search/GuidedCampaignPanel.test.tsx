@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
-import { MemoryRouter } from "react-router-dom";
+import { HttpResponse, http } from "msw/http";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -270,9 +270,15 @@ function installCampaign(reads: CampaignReads = {}) {
 
 function panel(workspaceId = "workspace-1") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/job-search"]}>
       <AppProviders>
-        <GuidedCampaignPanel key={workspaceId} workspaceId={workspaceId} />
+        <Routes>
+          <Route
+            path="/job-search"
+            element={<GuidedCampaignPanel key={workspaceId} workspaceId={workspaceId} />}
+          />
+          <Route path="/tasks" element={<h1>Activity route</h1>} />
+        </Routes>
       </AppProviders>
     </MemoryRouter>,
   );
@@ -1299,6 +1305,19 @@ describe("GuidedCampaignPanel", () => {
         .getByRole("link", { name: "Edit specialist IC review settings" })
         .getAttribute("href"),
     ).toBe("/settings?tab=search");
+  });
+
+  it("opens Activity in the app from the task history link", async () => {
+    installCampaign({
+      task: taskRecord({ status: "completed" }),
+      tasks: [taskRecord({ task_type: "search.guided_campaign", status: "completed" })],
+    });
+    panel();
+
+    const link = await screen.findByRole("link", { name: "Task history" });
+    expect(link.getAttribute("href")).toBe("/tasks");
+    fireEvent.click(link);
+    expect(await screen.findByRole("heading", { name: "Activity route" })).toBeTruthy();
   });
 
   it("points spending totals at Settings > Costs instead of repeating them", async () => {

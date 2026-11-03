@@ -50,7 +50,7 @@ def completed_posting_reads(
         )
         .group_by(SourceScanFrontierItem.normalized_url)
     )
-    return dict(session.execute(statement).tuples().all())
+    return dict(session.execute(statement).all())
 
 
 def read_after(reads: dict[str, datetime | None], cutoff: datetime) -> dict[str, datetime]:
@@ -89,7 +89,7 @@ def recent_posting_reads(
         )
         .group_by(SourceScanFrontierItem.normalized_url)
     )
-    for url, failed_at in failed.tuples():
+    for url, failed_at in failed:
         if failed_at > recent[url]:
             del recent[url]
     return recent

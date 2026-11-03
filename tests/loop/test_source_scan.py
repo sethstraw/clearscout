@@ -25,6 +25,7 @@ from clearscout.application.discovery.content_resolution import (
     ResolvedPostingContent,
     usable_current_evidence,
 )
+from clearscout.application.discovery.funnel_audit import MAX_CONTINUATION_AUDIT_OUTCOMES
 from clearscout.application.discovery.pending import reset_protected_ids
 from clearscout.application.discovery.posting_fetch import FetchedPosting
 from clearscout.application.discovery.posting_text import publisher_closing_date
@@ -75,12 +76,19 @@ from clearscout.domain.search_parameters import (
     Location,
     Seniority,
 )
-from clearscout.domain.staged_facts import ListingIdentityTrust, StagedListingFacts
+from clearscout.domain.staged_facts import (
+    LISTED_UNTIL,
+    ClosingDateStatement,
+    ListingIdentityTrust,
+    PublisherClosingDate,
+    StagedListingFacts,
+)
 from clearscout.infrastructure.artifacts.store import file_uri_path
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
     Artifact,
     AuditEvent,
+    BackgroundTask,
     CandidateProfile,
     DerivedSearchTitle,
     Employer,
@@ -618,6 +626,50 @@ def test_a_board_whose_matches_are_already_staged_reports_no_new_openings(
     result = service.scan(workspace_id)
 
     assert _board_outcomes(result) == ["no_new_openings"]
+
+
+def test_a_continuation_hop_keeps_a_small_outcome_sample_and_whole_counts(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    source_id = _source(durable_database, workspace_id, "Acme", "https://boards.greenhouse.io/acme")
+    _state_titles(durable_database, workspace_id, "data")
+    listed = MAX_CONTINUATION_AUDIT_OUTCOMES + 7
+    read = SourceRead(
+        listings=[
+            _listing("Sales Director", f"https://boards.greenhouse.io/acme/jobs/{index}")
+            for index in range(listed)
+        ],
+        complete=False,
+        raw_count=listed,
+        outcome=SourceReadOutcome.CRAWL_CONTINUATION,
+    )
+    service = SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    )
+    with durable_database.session() as session:
+        source = session.get(Source, source_id)
+    assert source is not None
+    recorded: list[Any] = []
+
+    result = service.sweep.stage_continuation(
+        workspace_id,
+        source,
+        "Acme",
+        read,
+        _CancellableContext(TaskQueueService(durable_database)),
+        outcome_sink=recorded.extend,
+    )
+
+    funnel = result["funnel"]
+    assert len(funnel["outcomes"]) == MAX_CONTINUATION_AUDIT_OUTCOMES
+    assert funnel["total_outcomes"] == listed == len(recorded)
+    assert funnel["omitted_outcomes"] == listed - MAX_CONTINUATION_AUDIT_OUTCOMES
+    assert funnel["counts"]["proposed"] == listed
+    assert sum(funnel["reason_counts"].values()) == listed
 
 
 def _two_board_workspace(database: Database) -> tuple[str, str, str]:
@@ -1286,9 +1338,7 @@ def test_scan_dismisses_structured_hybrid_and_same_country_residence_bodies(
                     PendingDiscoveryDispositionEvent.pending_discovery_id == PendingDiscovery.id,
                 )
                 .where(PendingDiscovery.workspace_id == workspace_id)
-            )
-            .tuples()
-            .all()
+            ).all()
         )
     assert dismissals == {
         "https://boards.greenhouse.io/acme/jobs/indianapolis": "arrangement_refused"
@@ -1560,9 +1610,7 @@ def test_a_body_location_line_never_resolves_a_staged_multi_location_summary(
                     PendingDiscoveryDispositionEvent.pending_discovery_id == PendingDiscovery.id,
                 )
                 .where(PendingDiscovery.workspace_id == workspace_id)
-            )
-            .tuples()
-            .all()
+            ).all()
         )
     assert dismissals == {}
 
@@ -4533,6 +4581,111 @@ def test_a_partial_board_read_withdraws_nothing(durable_database: Database) -> N
     assert [item.withdrawn_at for item in queued] == [None, None]
 
 
+def test_a_partial_board_read_withdraws_a_row_past_its_stated_end_of_listing(
+    durable_database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bounded read never proves absence, but the board's own stated expiry does."""
+    workspace_id = _workspace(durable_database)
+    _source(durable_database, workspace_id, "Acme", "https://boards.greenhouse.io/acme")
+    _state_titles(durable_database, workspace_id, "data")
+    expiry = utc_now() + timedelta(days=3)
+    stated = ClosingDateStatement(
+        wording=str(int(expiry.timestamp())),
+        basis=LISTED_UNTIL,
+        normalized_value=expiry.isoformat(),
+        precision="timestamp",
+        timezone="+00:00",
+    )
+    expiring = _listing("Data Platform Lead", "https://boards.greenhouse.io/acme/jobs/1", "Acme")
+    expiring = replace(
+        expiring,
+        facts=replace(expiring.facts, closing_date=PublisherClosingDate(statements=(stated,))),
+    )
+    staying = _listing("Data Platform Lead", "https://boards.greenhouse.io/acme/jobs/2", "Acme")
+    SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": [expiring, staying]}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    ).scan(workspace_id)
+    monkeypatch.setattr(sweep_module, "utc_now", lambda: expiry + timedelta(seconds=1))
+
+    partial = SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": [staying]}, complete=False),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    ).scan(workspace_id)
+
+    assert partial["withdrawn"] == [
+        {"source": "Acme", "employer": "Acme", "title": "Data Platform Lead"}
+    ]
+    with durable_database.session() as session:
+        withdrawn = session.scalars(
+            select(PendingDiscovery.canonical_url).where(PendingDiscovery.withdrawn_at.is_not(None))
+        ).all()
+    assert withdrawn == [expiring.url]
+
+    complete = SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": [staying]}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    ).scan(workspace_id)
+
+    assert complete["withdrawn"] == []
+
+
+def test_a_complete_read_withdraws_an_expired_row_as_expired_rather_than_absent(
+    durable_database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace_id = _workspace(durable_database)
+    _source(durable_database, workspace_id, "Acme", "https://boards.greenhouse.io/acme")
+    _state_titles(durable_database, workspace_id, "data")
+    expiry = utc_now() + timedelta(days=3)
+    stated = ClosingDateStatement(
+        wording=f"Listed until {expiry:%Y-%m-%d %H:%M} UTC",
+        basis=LISTED_UNTIL,
+        normalized_value=expiry.isoformat(),
+        precision="timestamp",
+        timezone="+00:00",
+    )
+    expiring = _listing("Data Platform Lead", "https://boards.greenhouse.io/acme/jobs/1", "Acme")
+    expiring = replace(
+        expiring,
+        facts=replace(expiring.facts, closing_date=PublisherClosingDate(statements=(stated,))),
+    )
+    staying = _listing("Data Platform Lead", "https://boards.greenhouse.io/acme/jobs/2", "Acme")
+    SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": [expiring, staying]}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    ).scan(workspace_id)
+    monkeypatch.setattr(sweep_module, "utc_now", lambda: expiry + timedelta(seconds=1))
+
+    SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": [staying]}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    ).scan(workspace_id)
+
+    with durable_database.session() as session:
+        actions = session.scalars(
+            select(AuditEvent.action).where(
+                AuditEvent.action.in_(
+                    ["pending_discovery.withdrawn_absent", "pending_discovery.withdrawn_expired"]
+                )
+            )
+        ).all()
+        checks = session.scalars(
+            select(BackgroundTask.id).where(BackgroundTask.task_type == "discovery.refresh_batch")
+        ).all()
+    assert actions == ["pending_discovery.withdrawn_expired"]
+    assert checks == []
+
+
 def test_a_posting_page_the_board_read_found_closed_is_recorded_closed(
     durable_database: Database,
 ) -> None:
@@ -4959,6 +5112,7 @@ def test_scan_runs_through_the_worker_with_progress(durable_database: Database) 
     assert finished.status == "completed", (finished.error_category, finished.error_message)
     assert finished.progress["new_discoveries"] == 1
     assert finished.progress["discoveries"][0]["employer"] == "Example"
+    assert finished.progress["discoveries"][0]["aggregator"] is None
     with durable_database.session() as session:
         scan = session.scalars(select(SourceScan)).one()
         assert scan.correlation_id == str(task.id)
@@ -4971,6 +5125,34 @@ def test_scan_runs_through_the_worker_with_progress(durable_database: Database) 
         assert outcome.title == "Data Platform Lead"
         assert outcome.reason == "staged"
         assert outcome.terminal_stage == "staged"
+
+
+def test_a_scan_progress_row_listed_by_an_aggregator_carries_its_credit(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    _source(durable_database, workspace_id, "Himalayas", "https://himalayas.app/jobs")
+    _state_titles(durable_database, workspace_id, "data")
+    listed = "https://himalayas.app/companies/northwind/jobs/data-platform-lead"
+    boards = ScriptedBoards({"Himalayas": [_listing("Data Platform Lead", listed)]})
+    queue = TaskQueueService(durable_database)
+    task = queue.enqueue(
+        workspace_id=workspace_id,
+        task_type="source.scan",
+        payload={},
+        idempotency_key="scan-aggregator",
+    )
+    worker = Worker(
+        durable_database,
+        worker_id="scan-worker",
+        handlers=default_handlers(durable_database, fetcher=boards),
+    )
+    assert worker.run_once()
+    finished = queue.get(str(task.id))
+    assert finished.status == "completed", (finished.error_category, finished.error_message)
+    assert [row["aggregator"] for row in finished.progress["discoveries"]] == [
+        {"name": "Himalayas", "credit_url": listed, "opens_discovery_url": True}
+    ]
 
 
 def test_an_unsupported_page_remains_an_observable_incomplete_scan(
@@ -5303,6 +5485,7 @@ def test_a_board_scan_refreshes_a_tracked_requisition_instead_of_staging_a_dupli
             )
         }
         assert urls["https://jobs.example.test/new-platform-lead"].is_primary is True
+        assert urls["https://jobs.example.test/new-platform-lead"].url_type == "discovery"
         assert urls["https://jobs.example.test/old-platform-lead"].is_primary is False
         assert (
             session.scalar(

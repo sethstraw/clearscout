@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { errorNotice } from "../../components/freeMode";
 import { useToast } from "../../providers/useToast";
 import { api } from "../client";
 import type { components } from "../schema";
@@ -11,7 +12,7 @@ type NoteEntityType = components["schemas"]["NoteBody"]["entity_type"];
 export function useNotes(workspaceId: string, entityType = "", entityId = "", search = "") {
   return useQuery({
     queryKey: queryKeys.notes(workspaceId, entityType, entityId, search),
-    queryFn: () => api.notes(workspaceId, entityType, entityId, search),
+    queryFn: ({ signal }) => api.notes(workspaceId, entityType, entityId, search, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -49,7 +50,7 @@ export function useCreateNote(
 export function useTags(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.tags(workspaceId),
-    queryFn: () => api.tags(workspaceId),
+    queryFn: ({ signal }) => api.tags(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -82,7 +83,8 @@ export function useWorkspaceMutation<TVariables, TResult>(
       if (message) showToast(message, "success");
     },
     onError: (error: Error) => {
-      showToast(error.message, "error");
+      const { message, action } = errorNotice(error);
+      showToast(message, "error", action);
     },
   });
 }

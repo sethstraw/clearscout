@@ -371,6 +371,7 @@ def _notes(
     if reason := short_page(settings, plan, fitted):
         notes.append(reason)
     notes += cap_notes(settings, plan, inventory, fitted)
+    notes += publication_notes(settings, plan, inventory, fitted)
     if unprinted := unprinted_earlier_career(fitted):
         notes.append(unprinted)
     if fitted.requested:
@@ -440,6 +441,42 @@ def cap_notes(
             f"{'; '.join(bare)} {'prints' if one else 'print'} without bullets. If "
             f"{'it holds' if one else 'they hold'} relevant work the master CV does not yet "
             "describe, adding it gives selection more to choose from."
+        )
+    return notes
+
+
+UNOFFERED_NOTE_LIMIT = 5
+
+
+def publication_notes(
+    settings: Settings,
+    plan: select_stage.Plan,
+    inventory: CvInventory,
+    fitted: draft_stage.Fitted,
+) -> list[str]:
+    """Return the papers left off the offer or trimmed, and must-consider ids the CV lacks."""
+    unoffered = sorted(plan.unoffered_publications, key=lambda key: -plan.scores.get(key, 0.0))
+    notes = []
+    if len(unoffered) > UNOFFERED_NOTE_LIMIT:
+        notes.append(
+            f"{len(unoffered)} publications available, not offered; the strongest "
+            f"{UNOFFERED_NOTE_LIMIT} follow, and the run manifest lists them all."
+        )
+    notes += [
+        f"Publication available, not offered (id {entry_id}"
+        f"{', cited but over max_publications' if plan.scores.get(entry_id, 0.0) > 0 else ''})"
+        f": {inventory.by_id(entry_id).text}"
+        for entry_id in unoffered[:UNOFFERED_NOTE_LIMIT]
+    ]
+    notes += [
+        f"Publication trimmed for length: {inventory.by_id(entry_id).text}"
+        for entry_id in fitted.trimmed
+        if entry_id in settings.must_consider_publications
+    ]
+    if plan.stale_must_consider:
+        notes.append(
+            "must_consider_publications names id(s) with no publication in the master CV: "
+            f"{', '.join(plan.stale_must_consider)}"
         )
     return notes
 

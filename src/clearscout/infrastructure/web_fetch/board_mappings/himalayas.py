@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
+from clearscout.domain.staged_facts import (
+    LISTED_UNTIL,
+    ClosingDateStatement,
+    PublisherClosingDate,
+)
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
@@ -42,6 +48,25 @@ def _employer(posting: Posting) -> str:
     return _stated_employer(posting) or posting.employer
 
 
+def _listed_until(posting: Posting) -> PublisherClosingDate | None:
+    """Read ``expiryDate``, the Unix second Himalayas states it stops listing the job."""
+    stated_at = stated(posting.record, ("expiryDate",))
+    if isinstance(stated_at, bool) or not isinstance(stated_at, (int, float)):
+        return None
+    try:
+        expiry = datetime.fromtimestamp(stated_at, tz=UTC)
+    except (OverflowError, OSError, ValueError):
+        return None
+    statement = ClosingDateStatement(
+        wording=f"Listed until {expiry:%Y-%m-%d %H:%M} UTC",
+        basis=LISTED_UNTIL,
+        normalized_value=expiry.isoformat(),
+        precision="timestamp",
+        timezone="+00:00",
+    )
+    return PublisherClosingDate(statements=(statement,))
+
+
 HIMALAYAS_MAPPING = BoardDeclaration(
     platform="himalayas",
     title=("title",),
@@ -50,4 +75,5 @@ HIMALAYAS_MAPPING = BoardDeclaration(
     employer=_employer,
     places=("locationRestrictions",),
     location=_location,
+    closing=_listed_until,
 )

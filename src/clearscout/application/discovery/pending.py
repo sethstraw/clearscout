@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, aliased
 from clearscout.application.failures import ConflictError, NotFoundError
 from clearscout.application.tasks.records import task_pending_discovery_ids
 from clearscout.domain import (
+    PendingWithdrawalCause,
     PostingContentAccessStatus,
     PostingStatus,
     TaskStatus,
@@ -523,7 +524,7 @@ def family_markers(
                 PendingDiscovery.workspace_id == workspace_id,
                 PendingDiscovery.id.in_(candidates),
             )
-        ).tuples()
+        )
     }
     family = _family_rows(session, workspace_id, set(heads.values()), marked_only=True)
     return {
@@ -552,7 +553,7 @@ def marked_family_ids(session: Session, workspace_id: str) -> set[str]:
             PendingDiscovery.archived_at.is_(None),
             PendingDiscovery.favorite | PendingDiscovery.kept,
         )
-    ).tuples()
+    )
     return {pending_id for row in rows for pending_id in row if pending_id is not None}
 
 
@@ -644,15 +645,13 @@ def source_employer_names(session: Session, source_ids: Iterable[str | None]) ->
             select(Source.id, Employer.name)
             .join(Employer, Employer.id == Source.employer_id)
             .where(Source.id.in_(candidates))
-        )
-        .tuples()
-        .all()
+        ).all()
     )
 
 
 def latest_disposition_statement(
     workspace_id: str, ids: list[str] | None = None
-) -> Select[tuple[PendingDiscoveryDispositionEvent]]:
+) -> Select[PendingDiscoveryDispositionEvent]:
     """Select unsuperseded pending-discovery disposition events."""
     event = PendingDiscoveryDispositionEvent
     successor = aliased(PendingDiscoveryDispositionEvent)
@@ -663,20 +662,20 @@ def latest_disposition_statement(
     return statement.where(event.pending_discovery_id.in_(ids)) if ids is not None else statement
 
 
-def dismissed_pending_discovery_ids(workspace_id: str) -> Select[tuple[str]]:
+def dismissed_pending_discovery_ids(workspace_id: str) -> Select[str]:
     """Select discoveries whose latest disposition is a dismissal."""
     return cast(
-        "Select[tuple[str]]",
+        "Select[str]",
         latest_disposition_statement(workspace_id)
         .where(PendingDiscoveryDispositionEvent.action == "dismiss")
         .with_only_columns(PendingDiscoveryDispositionEvent.pending_discovery_id),
     )
 
 
-def person_restored_pending_discovery_ids(workspace_id: str) -> Select[tuple[str]]:
+def person_restored_pending_discovery_ids(workspace_id: str) -> Select[str]:
     """Select discoveries whose latest disposition is the person's own restore."""
     return cast(
-        "Select[tuple[str]]",
+        "Select[str]",
         latest_disposition_statement(workspace_id)
         .where(
             PendingDiscoveryDispositionEvent.action == "restore",
@@ -696,7 +695,7 @@ def root_discovery_filters(workspace_id: str) -> tuple[ColumnElement[bool], ...]
 
 
 def undismissed_root_filters(
-    workspace_id: str, dismissed: Select[tuple[str]]
+    workspace_id: str, dismissed: Select[str]
 ) -> tuple[ColumnElement[bool], ...]:
     """Return filters for undismissed, unarchived regional-family heads."""
     return (
@@ -706,7 +705,7 @@ def undismissed_root_filters(
 
 
 def visible_pending_discovery_filters(
-    workspace_id: str, dismissed: Select[tuple[str]]
+    workspace_id: str, dismissed: Select[str]
 ) -> tuple[ColumnElement[bool], ...]:
     """Return the filters for open, undismissed family heads the queue acts on."""
     return (
@@ -716,7 +715,7 @@ def visible_pending_discovery_filters(
 
 
 def listed_pending_discovery_filters(
-    workspace_id: str, dismissed: Select[tuple[str]]
+    workspace_id: str, dismissed: Select[str]
 ) -> tuple[ColumnElement[bool], ...]:
     """Return the Pending queue's listing filters: open heads, and closed heads a marker holds."""
     member = aliased(PendingDiscovery)
@@ -775,6 +774,39 @@ def reset_archive_markers(
         if event.entity_id is not None and event.id not in consumed:
             markers[event.entity_id] = event.id
     return markers
+
+
+_WITHDRAWAL_CAUSES = {
+    "pending_discovery.withdrawn_absent": PendingWithdrawalCause.ABSENT,
+    "pending_discovery.withdrawn_expired": PendingWithdrawalCause.LISTING_ENDED,
+    "pending_discovery.withdrawn_on_refresh": PendingWithdrawalCause.PUBLISHER_CLOSED,
+    "pending_discovery.saved_closure_applied": PendingWithdrawalCause.PUBLISHER_CLOSED,
+    "pending_discovery.withdrawn_on_content_read": PendingWithdrawalCause.CONTENT_READ_CLOSED,
+}
+
+
+def withdrawal_causes(
+    session: Session, workspace_id: str, rows: Iterable[PendingDiscovery]
+) -> dict[str, PendingWithdrawalCause]:
+    """Map each withdrawn row to the cause its latest withdrawal event names."""
+    candidates = [row.id for row in rows if row.withdrawn_at is not None]
+    if not candidates:
+        return {}
+    events = session.execute(
+        select(AuditEvent.entity_id, AuditEvent.action)
+        .where(
+            AuditEvent.workspace_id == workspace_id,
+            AuditEvent.entity_type == "pending_discovery",
+            AuditEvent.action.in_(_WITHDRAWAL_CAUSES),
+            AuditEvent.entity_id.in_(candidates),
+        )
+        .order_by(AuditEvent.created_at, AuditEvent.id)
+    )
+    causes = dict.fromkeys(candidates, PendingWithdrawalCause.UNRECORDED)
+    for entity_id, action in events:
+        if entity_id is not None:
+            causes[entity_id] = _WITHDRAWAL_CAUSES[action]
+    return causes
 
 
 def _is_human_disposition(event: PendingDiscoveryDispositionEvent | None) -> bool:

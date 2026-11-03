@@ -387,7 +387,7 @@ def _last_searched_at(session: Session, workspace_id: str) -> dict[str, datetime
             GuidedCampaignBranchOutcome.outcome == BranchOutcome.SEARCHED.value,
         )
         .group_by(GuidedCampaignBranch.branch_key)
-    ).tuples()
+    )
     return dict(rows.all())
 
 

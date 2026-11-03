@@ -25,7 +25,7 @@ and `web/src/pages/JobPage.test.tsx` already cover several components, so new
 cases belong with the component they exercise.
 
 HTTP goes through MSW. `web/src/test/setup.ts` starts one server with
-`onUnhandledRequest: "error"`; a test registers the routes it uses with
+`onUnhandledFrame: "error"`; a test registers the routes it uses with
 `server.use(http.get(...))` from `web/src/test/msw/server.ts`. Do not stub
 `globalThis.fetch` or write a per-file fetch router, except where the exact
 request is the contract under test. When you touch a file that still stubs

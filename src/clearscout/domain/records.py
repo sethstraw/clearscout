@@ -121,6 +121,16 @@ class PageClassification(StrEnum):
     AMBIGUOUS = "ambiguous"
 
 
+class PendingWithdrawalCause(StrEnum):
+    """Why a withdrawn discovery left the queue, read from its latest withdrawal event."""
+
+    ABSENT = "absent"
+    LISTING_ENDED = "listing_ended"
+    PUBLISHER_CLOSED = "publisher_closed"
+    CONTENT_READ_CLOSED = "content_read_closed"
+    UNRECORDED = "unrecorded"
+
+
 class PendingDiscoveryReadiness(StrEnum):
     """Why a pending discovery is ready or needs a specific user action."""
 

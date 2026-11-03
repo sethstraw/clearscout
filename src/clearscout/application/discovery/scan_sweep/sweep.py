@@ -17,6 +17,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from clearscout.application.discovery.aggregator_catalog import aggregator_credit
 from clearscout.application.discovery.content_resolution import (
     CurrentPostingContentReader,
     PostingContentResolutionService,
@@ -26,6 +27,7 @@ from clearscout.application.discovery.dispositions import (
     DiscoveryDispositionService,
 )
 from clearscout.application.discovery.funnel_audit import (
+    MAX_CONTINUATION_AUDIT_OUTCOMES,
     DiscoveryFunnelAudit,
     FunnelAuditBuilder,
     FunnelOutcome,
@@ -56,6 +58,8 @@ from clearscout.application.discovery.scan_sweep.models import (
     DueBoards,
     LaneRead,
     ProcessedRead,
+    ScanCreditRow,
+    ScanDiscoveryRow,
     ScanInputs,
     SweepBoard,
 )
@@ -127,6 +131,18 @@ logger = logging.getLogger(__name__)
 # Boards read at once. Small on purpose: this is one person's job search, and
 # the politeness client still serializes whatever shares a host.
 SCAN_LANES = 4
+
+
+def _scan_credit(url: str) -> ScanCreditRow | None:
+    """The aggregator credit a staged listing's progress row carries."""
+    credit = aggregator_credit(url)
+    if credit is None:
+        return None
+    return ScanCreditRow(
+        name=credit.name,
+        credit_url=credit.credit_url,
+        opens_discovery_url=credit.opens_discovery_url,
+    )
 
 
 def _ordered_scan_rows(rows: list[Any], considered: dict[str, int]) -> list[Any]:
@@ -455,7 +471,7 @@ class BoardSweep:
         today = utc_now().date()
         scanned: list[dict[str, Any]] = []
         failed: list[dict[str, str]] = []
-        discoveries: list[dict[str, str]] = []
+        discoveries: list[ScanDiscoveryRow] = []
         withdrawn: list[dict[str, str]] = []
         board_outcomes = _BoardOutcomes(board_outcome_sink)
         audit = FunnelAuditBuilder(on_record=board_outcomes.record)
@@ -616,7 +632,7 @@ class BoardSweep:
                 )
         listings = read.listings
         outcomes = _BoardOutcomes(outcome_sink)
-        audit = FunnelAuditBuilder(on_record=outcomes.record)
+        audit = FunnelAuditBuilder(MAX_CONTINUATION_AUDIT_OUTCOMES, on_record=outcomes.record)
         wanted, refused, unsupported = screen_listings(
             listings, parameters, targets, source_employer=employer
         )
@@ -861,7 +877,15 @@ class BoardSweep:
             staged=bool(new_listings),
             detail=read_note,
         )
-        gone = (
+        # Expired rows go first, so an absence read never marks one and queues its check.
+        expired = self.staging.withdraw_expired(
+            workspace_id,
+            source.id,
+            now=utc_now(),
+            correlation_id=context.task_id if context is not None else correlation_id,
+            require_source_read=require_source_read,
+        )
+        gone = expired + (
             self.staging.withdraw_absent(
                 workspace_id,
                 source.id,
@@ -984,13 +1008,14 @@ class BoardSweep:
             },
         )
         discovery_rows = [
-            {
-                "source": source.name,
-                "employer": listing.employer,
-                "title": listing.title,
-                "location": listing.location,
-                "url": listing.url,
-            }
+            ScanDiscoveryRow(
+                source=source.name,
+                employer=listing.employer,
+                title=listing.title,
+                location=listing.location,
+                url=listing.url,
+                aggregator=_scan_credit(listing.url),
+            )
             for listing in new_listings
         ]
         return ProcessedRead(

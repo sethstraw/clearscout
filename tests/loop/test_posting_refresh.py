@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from clearscout.application import job_search
 from clearscout.application.config import Settings
-from clearscout.application.contracts import ApplicationEventInput
+from clearscout.application.contracts import AggregatorCreditResponse, ApplicationEventInput
 from clearscout.application.discovery.board_scan import SourceScanService
 from clearscout.application.discovery.posting_fetch import FetchedPosting
 from clearscout.application.discovery.posting_refresh import (
@@ -49,7 +49,11 @@ from clearscout.domain.identity import normalize_url
 from clearscout.domain.policy import LearningLoopPolicy
 from clearscout.domain.records import PostingReadIntent, RobotsReadBasis
 from clearscout.domain.rulings import Ruling
-from clearscout.domain.staged_facts import PublisherClosingDate
+from clearscout.domain.staged_facts import (
+    LISTED_UNTIL,
+    ClosingDateStatement,
+    PublisherClosingDate,
+)
 from clearscout.infrastructure.artifacts.store import file_uri_path
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
@@ -1083,6 +1087,42 @@ def test_refresh_binds_body_and_publisher_date_statements_to_their_own_artifacts
     assert date.artifact_id != observation.body_artifact_id
 
 
+def test_an_unchanged_refresh_keeps_the_record_behind_a_board_stated_listing_end(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    root = tmp_path / "artifacts"
+    workspace_id, job_id = _job(
+        durable_database, root, observed_at=datetime(2026, 8, 1, tzinfo=UTC)
+    )
+    body = "Lead product and data platform governance. Canada remote role."
+    statement = ClosingDateStatement(
+        wording="2030-12-01T00:00:00+00:00",
+        basis=LISTED_UNTIL,
+        normalized_value="2030-12-01T00:00:00+00:00",
+        precision="timestamp",
+        timezone="+00:00",
+    )
+    for index in range(2):
+        fetched = FetchedPosting(
+            body,
+            "active",
+            "scripted",
+            datetime(2026, 9, 2 + index, 12, tzinfo=UTC),
+            200,
+            source=PostingSource(publisher="himalayas", record='{"expiryDate":1922313600}'),
+            publisher_closing_date=PublisherClosingDate(statements=(statement,)),
+        )
+        _run_refresh(
+            durable_database, root, ScriptedFetcher([fetched]), workspace_id, job_id, f"end-{index}"
+        )
+
+    latest = PublisherClosingDate.from_json(
+        _observations(durable_database, job_id)[-1].publisher_closing_date
+    )
+    assert latest.artifact_id is not None
+    assert latest.statements[0].artifact_id == latest.artifact_id
+
+
 def test_refresh_recovers_missing_facts_from_an_exact_same_body_observation(
     durable_database: Database, tmp_path: Path
 ) -> None:
@@ -1348,6 +1388,9 @@ def test_a_posting_body_names_the_aggregator_it_was_discovered_on(
 
     assert read.discovery_url == discovery
     assert read.source_url != discovery
+    assert read.aggregator == AggregatorCreditResponse(
+        name="Himalayas", credit_url=discovery, opens_discovery_url=False
+    )
 
 
 def test_a_refresh_whose_words_change_reports_the_changed_body(

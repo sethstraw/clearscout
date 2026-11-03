@@ -11,6 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from clearscout.application.discovery.screening import BulkStagingRefusal, DiscoveryScreening
 
 MAX_AUDIT_OUTCOMES = 500
+# A continuation hop's rows already reach the outcome ledger, and no reader shows
+# a hop's sample, so each of a scan's many hops keeps only a short one.
+MAX_CONTINUATION_AUDIT_OUTCOMES = 20
 
 
 class FunnelListing(Protocol):

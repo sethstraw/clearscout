@@ -10,6 +10,7 @@ import {
 } from "../../api/hooks";
 import { text } from "../../api/json";
 import { taskKindOf } from "../../api/taskNames";
+import { ErrorNotice } from "../../components/ErrorNotice";
 import { PaidAction } from "../../components/PaidAction";
 import { EmptyState } from "../../components/States";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -53,7 +54,7 @@ function TailoringActions({
   jobId: string;
   workspaceId: string;
   discoveryBusy: boolean;
-  enqueueError: string;
+  enqueueError: Error | null;
   enqueuePending: boolean;
   run: RunTask;
   startDiscovery: () => void;
@@ -143,7 +144,11 @@ function TailoringActions({
         </button>
       </div>
       {preflightError && <p className="field-error">{preflightError}</p>}
-      {enqueueError && <p className="field-error">{enqueueError}</p>}
+      {enqueueError && (
+        <p className="field-error">
+          <ErrorNotice error={enqueueError} />
+        </p>
+      )}
     </article>
   );
 }
@@ -226,7 +231,7 @@ export function TailoringStudio({
         billingSummary={tailorBillingSummary}
         evaluateActionId={evaluateActionId}
         discoveryBusy={discoveryBusy}
-        enqueueError={enqueue.isError ? enqueue.error.message : ""}
+        enqueueError={enqueue.isError ? enqueue.error : null}
         enqueuePending={enqueue.isPending}
         jobId={jobId}
         run={run}

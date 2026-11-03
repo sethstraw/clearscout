@@ -94,9 +94,9 @@ def _latest_observation_ids(session: Session, items: list[dict[str, Any]]) -> di
         .subquery()
     )
     return dict(
-        session.execute(select(ranked.c.job_posting_id, ranked.c.id).where(ranked.c.position == 1))
-        .tuples()
-        .all()
+        session.execute(
+            select(ranked.c.job_posting_id, ranked.c.id).where(ranked.c.position == 1)
+        ).all()
     )
 
 

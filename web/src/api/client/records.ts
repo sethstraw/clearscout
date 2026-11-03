@@ -3,14 +3,20 @@ import type { components } from "../schema";
 import type { Note, Tag, TagAssignment, SavedView, SavedViewInput } from "./types";
 
 export const recordsApi = {
-  notes: (workspaceId: string, entityType?: string, entityId?: string, search = "") => {
+  notes: (
+    workspaceId: string,
+    entityType?: string,
+    entityId?: string,
+    search = "",
+    signal?: AbortSignal,
+  ) => {
     const query = new URLSearchParams({ workspace_id: workspaceId });
     if (entityType && entityId) {
       query.set("entity_type", entityType);
       query.set("entity_id", entityId);
     }
     if (search) query.set("search", search);
-    return request<Note[]>(`/notes?${query}`);
+    return request<Note[]>(`/notes?${query}`, { signal });
   },
   createNote: (body: components["schemas"]["NoteBody"]) =>
     request<Note>("/notes", { method: "POST", body: JSON.stringify(body) }),
@@ -27,8 +33,8 @@ export const recordsApi = {
       `/notes/${encodeURIComponent(noteId)}?workspace_id=${encodeURIComponent(workspaceId)}`,
       { method: "DELETE" },
     ),
-  tags: (workspaceId: string) =>
-    request<Tag[]>(`/tags?workspace_id=${encodeURIComponent(workspaceId)}`),
+  tags: (workspaceId: string, signal?: AbortSignal) =>
+    request<Tag[]>(`/tags?workspace_id=${encodeURIComponent(workspaceId)}`, { signal }),
   createTag: (body: { workspace_id: string; name: string; color: string }) =>
     request<Tag>("/tags", { method: "POST", body: JSON.stringify(body) }),
   updateTag: (tagId: string, body: { workspace_id: string; name: string; color: string }) =>
@@ -61,9 +67,10 @@ export const recordsApi = {
       method: "DELETE",
     });
   },
-  savedViews: (workspaceId: string, resource = "") =>
+  savedViews: (workspaceId: string, resource = "", signal?: AbortSignal) =>
     request<SavedView[]>(
       `/saved-views?workspace_id=${encodeURIComponent(workspaceId)}${resource ? `&resource=${encodeURIComponent(resource)}` : ""}`,
+      { signal },
     ),
   saveView: (viewId: string | null, body: SavedViewInput) =>
     request<SavedView>(viewId ? `/saved-views/${encodeURIComponent(viewId)}` : "/saved-views", {

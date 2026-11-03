@@ -12,7 +12,7 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-import httpx
+import httpx2
 
 Payload = Callable[[dict[str, Any]], dict[str, Any]]
 
@@ -86,7 +86,7 @@ class FakeProviderAPI:
         self.payloads = payloads
         self.requests: list[dict[str, Any]] = []
 
-    def __call__(self, request: httpx.Request) -> httpx.Response:
+    def __call__(self, request: httpx2.Request) -> httpx2.Response:
         """Serve one request, or fail loudly about which schema was unhandled."""
         body = json.loads(request.content or b"{}")
         self.requests.append(body)
@@ -98,12 +98,12 @@ class FakeProviderAPI:
         content = json.dumps(self.payloads[key](schema))
         envelope = self._envelope(content, body.get("service_tier"))
         if body.get("stream"):
-            return httpx.Response(
+            return httpx2.Response(
                 200,
                 headers={"content-type": "text/event-stream"},
                 content=self._events(envelope),
             )
-        return httpx.Response(200, json=envelope)
+        return httpx2.Response(200, json=envelope)
 
     def _events(self, response: dict[str, Any]) -> str:
         """Render the finished response as the event stream the SDK reads."""

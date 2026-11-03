@@ -6,7 +6,7 @@ import { queryKeys } from "./keys";
 export function usePrompts(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.prompts(workspaceId),
-    queryFn: () => api.prompts(workspaceId),
+    queryFn: ({ signal }) => api.prompts(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -14,7 +14,7 @@ export function usePrompts(workspaceId: string) {
 export function usePrompt(workspaceId: string, key: string) {
   return useQuery({
     queryKey: queryKeys.prompt(workspaceId, key),
-    queryFn: () => api.prompt(key, workspaceId),
+    queryFn: ({ signal }) => api.prompt(key, workspaceId, signal),
     enabled: Boolean(workspaceId && key),
   });
 }
@@ -22,7 +22,7 @@ export function usePrompt(workspaceId: string, key: string) {
 export function usePromptVersions(workspaceId: string, key: string) {
   return useQuery({
     queryKey: queryKeys.promptVersions(workspaceId, key),
-    queryFn: () => api.promptVersions(key, workspaceId),
+    queryFn: ({ signal }) => api.promptVersions(key, workspaceId, signal),
     enabled: Boolean(workspaceId && key),
   });
 }

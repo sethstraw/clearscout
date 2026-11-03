@@ -238,7 +238,7 @@ def unmatched_api_route(request: Request, unmatched: str) -> JSONResponse:
         404,
         "No such endpoint",
         f"/api/{unmatched} is not an endpoint of this API.",
-        "not-found",
+        "urn:clearscout:problem:not-found",
     )
 
 

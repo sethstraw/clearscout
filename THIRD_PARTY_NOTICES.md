@@ -74,12 +74,10 @@ rather than as a notice obligation.
 | npm | @jridgewell/trace-mapping | 0.3.31 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@jridgewell/trace-mapping/v/0.3.31) |
 | npm | @keyv/bigmap | 1.3.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@keyv/bigmap/v/1.3.1) |
 | npm | @keyv/serialize | 1.1.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@keyv/serialize/v/1.1.1) |
-| npm | @mswjs/interceptors | 0.41.9 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@mswjs/interceptors/v/0.41.9) |
+| npm | @msw/url | 0.1.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@msw/url/v/0.1.2) |
+| npm | @mswjs/interceptors | 0.45.11 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@mswjs/interceptors/v/0.45.11) |
 | npm | @napi-rs/wasm-runtime | 1.2.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@napi-rs/wasm-runtime/v/1.2.3) |
-| npm | @open-draft/deferred-promise | 2.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@open-draft/deferred-promise/v/2.2.0) |
-| npm | @open-draft/deferred-promise | 3.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@open-draft/deferred-promise/v/3.0.0) |
-| npm | @open-draft/logger | 0.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@open-draft/logger/v/0.3.0) |
-| npm | @open-draft/until | 2.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@open-draft/until/v/2.1.0) |
+| npm | @open-draft/until | 3.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@open-draft/until/v/3.0.1) |
 | npm | @oxc-parser/binding-android-arm-eabi | 0.155.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@oxc-parser/binding-android-arm-eabi/v/0.155.0) |
 | npm | @oxc-parser/binding-android-arm64 | 0.155.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@oxc-parser/binding-android-arm64/v/0.155.0) |
 | npm | @oxc-parser/binding-darwin-arm64 | 0.155.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@oxc-parser/binding-darwin-arm64/v/0.155.0) |
@@ -173,7 +171,6 @@ rather than as a notice obligation.
 | npm | @types/react | 19.3.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@types/react/v/19.3.0) |
 | npm | @types/react-dom | 19.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@types/react-dom/v/19.3.0) |
 | npm | @types/set-cookie-parser | 2.4.10 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@types/set-cookie-parser/v/2.4.10) |
-| npm | @types/statuses | 2.0.6 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@types/statuses/v/2.0.6) |
 | npm | @types/unist | 2.0.11 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@types/unist/v/2.0.11) |
 | npm | @types/unist | 3.0.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@types/unist/v/3.0.3) |
 | npm | @types/use-sync-external-store | 0.0.6 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@types/use-sync-external-store/v/0.0.6) |
@@ -200,8 +197,9 @@ rather than as a notice obligation.
 | npm | ajv | 6.15.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/ajv/v/6.15.0) |
 | npm | ansi-colors | 4.1.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/ansi-colors/v/4.1.3) |
 | npm | ansi-regex | 5.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/ansi-regex/v/5.0.1) |
-| npm | ansi-styles | 4.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/ansi-styles/v/4.3.0) |
+| npm | ansi-regex | 6.5.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/ansi-regex/v/6.5.0) |
 | npm | ansi-styles | 5.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/ansi-styles/v/5.2.0) |
+| npm | ansi-styles | 6.2.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/ansi-styles/v/6.2.3) |
 | npm | argparse | 2.0.1 | web build/test tooling | Python-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/argparse/v/2.0.1) |
 | npm | aria-query | 5.3.0 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/aria-query/v/5.3.0) |
 | npm | aria-query | 5.3.2 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/aria-query/v/5.3.2) |
@@ -239,15 +237,14 @@ rather than as a notice obligation.
 | npm | character-entities-legacy | 3.0.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/character-entities-legacy/v/3.0.0) |
 | npm | character-reference-invalid | 2.0.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/character-reference-invalid/v/2.0.1) |
 | npm | cli-width | 4.1.0 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/cli-width/v/4.1.0) |
-| npm | cliui | 8.0.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/cliui/v/8.0.1) |
+| npm | cliui | 9.0.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/cliui/v/9.0.1) |
 | npm | clsx | 2.1.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/clsx/v/2.1.1) |
-| npm | color-convert | 2.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/color-convert/v/2.0.1) |
-| npm | color-name | 1.1.4 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/color-name/v/1.1.4) |
 | npm | colorette | 1.4.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/colorette/v/1.4.0) |
 | npm | comma-separated-tokens | 2.0.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/comma-separated-tokens/v/2.0.3) |
 | npm | concat-map | 0.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/concat-map/v/0.0.1) |
 | npm | convert-source-map | 2.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/convert-source-map/v/2.0.0) |
 | npm | cookie | 1.1.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/cookie/v/1.1.1) |
+| npm | cookie | 2.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/cookie/v/2.0.1) |
 | npm | cross-spawn | 7.0.6 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/cross-spawn/v/7.0.6) |
 | npm | css-selector-parser | 3.3.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/css-selector-parser/v/3.3.0) |
 | npm | css-tree | 3.2.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/css-tree/v/3.2.1) |
@@ -283,7 +280,7 @@ rather than as a notice obligation.
 | npm | driver.js | 1.10.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/driver.js/v/1.10.2) |
 | npm | dunder-proto | 1.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/dunder-proto/v/1.0.1) |
 | npm | electron-to-chromium | 1.5.402 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/electron-to-chromium/v/1.5.402) |
-| npm | emoji-regex | 8.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/emoji-regex/v/8.0.0) |
+| npm | emoji-regex | 10.6.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/emoji-regex/v/10.6.0) |
 | npm | emoji-regex | 9.2.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/emoji-regex/v/9.2.2) |
 | npm | entities | 6.0.1 | bundled web runtime | BSD-2-Clause | permissive | [upstream](https://www.npmjs.com/package/entities/v/6.0.1) |
 | npm | entities | 8.0.0 | web build/test tooling | BSD-2-Clause | development only, not distributed | [upstream](https://www.npmjs.com/package/entities/v/8.0.0) |
@@ -338,6 +335,7 @@ rather than as a notice obligation.
 | npm | generator-function | 2.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/generator-function/v/2.0.1) |
 | npm | gensync | 1.0.0-beta.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/gensync/v/1.0.0-beta.2) |
 | npm | get-caller-file | 2.0.5 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/get-caller-file/v/2.0.5) |
+| npm | get-east-asian-width | 1.7.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/get-east-asian-width/v/1.7.0) |
 | npm | get-intrinsic | 1.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/get-intrinsic/v/1.3.0) |
 | npm | get-proto | 1.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/get-proto/v/1.0.1) |
 | npm | get-symbol-description | 1.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/get-symbol-description/v/1.1.0) |
@@ -346,7 +344,6 @@ rather than as a notice obligation.
 | npm | glob-parent | 6.0.2 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/glob-parent/v/6.0.2) |
 | npm | globalthis | 1.0.4 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/globalthis/v/1.0.4) |
 | npm | gopd | 1.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/gopd/v/1.2.0) |
-| npm | graphql | 16.14.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/graphql/v/16.14.2) |
 | npm | has-bigints | 1.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/has-bigints/v/1.1.0) |
 | npm | has-property-descriptors | 1.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/has-property-descriptors/v/1.0.2) |
 | npm | has-proto | 1.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/has-proto/v/1.2.0) |
@@ -398,7 +395,6 @@ rather than as a notice obligation.
 | npm | is-document.all | 1.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/is-document.all/v/1.0.0) |
 | npm | is-extglob | 2.1.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/is-extglob/v/2.1.1) |
 | npm | is-finalizationregistry | 1.1.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/is-finalizationregistry/v/1.1.1) |
-| npm | is-fullwidth-code-point | 3.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/is-fullwidth-code-point/v/3.0.0) |
 | npm | is-generator-function | 1.1.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/is-generator-function/v/1.1.2) |
 | npm | is-glob | 4.0.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/is-glob/v/4.0.3) |
 | npm | is-hexadecimal | 2.0.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/is-hexadecimal/v/2.0.1) |
@@ -502,7 +498,7 @@ rather than as a notice obligation.
 | npm | minimatch | 11.0.3 | web build/test tooling | BlueOak-1.0.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/minimatch/v/11.0.3) |
 | npm | minimatch | 3.1.5 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/minimatch/v/3.1.5) |
 | npm | ms | 2.1.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/ms/v/2.1.3) |
-| npm | msw | 2.15.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/msw/v/2.15.0) |
+| npm | msw | 3.0.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/msw/v/3.0.3) |
 | npm | mute-stream | 3.0.0 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/mute-stream/v/3.0.0) |
 | npm | nanoid | 3.3.20 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/nanoid/v/3.3.20) |
 | npm | natural-compare | 1.4.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/natural-compare/v/1.4.0) |
@@ -530,7 +526,6 @@ rather than as a notice obligation.
 | npm | parse5 | 8.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/parse5/v/8.0.1) |
 | npm | path-exists | 4.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/path-exists/v/4.0.0) |
 | npm | path-key | 3.1.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/path-key/v/3.1.1) |
-| npm | path-to-regexp | 6.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/path-to-regexp/v/6.3.0) |
 | npm | picocolors | 1.1.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/picocolors/v/1.1.1) |
 | npm | picomatch | 4.0.7 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/picomatch/v/4.0.7) |
 | npm | pluralize | 8.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/pluralize/v/8.0.0) |
@@ -572,7 +567,6 @@ rather than as a notice obligation.
 | npm | remark-parse | 11.0.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/remark-parse/v/11.0.0) |
 | npm | remark-rehype | 11.1.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/remark-rehype/v/11.1.2) |
 | npm | remark-stringify | 11.0.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/remark-stringify/v/11.0.0) |
-| npm | require-directory | 2.1.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/require-directory/v/2.1.1) |
 | npm | require-from-string | 2.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/require-from-string/v/2.0.2) |
 | npm | reselect | 5.2.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/reselect/v/5.2.0) |
 | npm | resolve-pkg-maps | 1.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/resolve-pkg-maps/v/1.0.0) |
@@ -600,17 +594,16 @@ rather than as a notice obligation.
 | npm | smol-toml | 1.9.1 | web build/test tooling | BSD-3-Clause | development only, not distributed | [upstream](https://www.npmjs.com/package/smol-toml/v/1.9.1) |
 | npm | source-map-js | 1.2.2 | web build/test tooling | BSD-3-Clause | development only, not distributed | [upstream](https://www.npmjs.com/package/source-map-js/v/1.2.2) |
 | npm | space-separated-tokens | 2.0.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/space-separated-tokens/v/2.0.2) |
-| npm | statuses | 2.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/statuses/v/2.0.2) |
 | npm | std-env | 4.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/std-env/v/4.3.0) |
 | npm | stop-iteration-iterator | 1.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/stop-iteration-iterator/v/1.1.0) |
-| npm | strict-event-emitter | 0.5.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/strict-event-emitter/v/0.5.1) |
-| npm | string-width | 4.2.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/string-width/v/4.2.3) |
+| npm | string-width | 7.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/string-width/v/7.2.0) |
+| npm | string-width | 8.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/string-width/v/8.3.0) |
 | npm | string.prototype.includes | 2.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/string.prototype.includes/v/2.0.1) |
 | npm | string.prototype.trim | 1.2.11 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/string.prototype.trim/v/1.2.11) |
 | npm | string.prototype.trimend | 1.0.10 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/string.prototype.trimend/v/1.0.10) |
 | npm | string.prototype.trimstart | 1.0.8 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/string.prototype.trimstart/v/1.0.8) |
 | npm | stringify-entities | 4.0.4 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/stringify-entities/v/4.0.4) |
-| npm | strip-ansi | 6.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/strip-ansi/v/6.0.1) |
+| npm | strip-ansi | 7.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/strip-ansi/v/7.2.0) |
 | npm | strip-json-comments | 5.0.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/strip-json-comments/v/5.0.3) |
 | npm | style-to-js | 1.1.21 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/style-to-js/v/1.1.21) |
 | npm | style-to-object | 1.0.14 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/style-to-object/v/1.0.14) |
@@ -674,15 +667,16 @@ rather than as a notice obligation.
 | npm | which-typed-array | 1.1.22 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/which-typed-array/v/1.1.22) |
 | npm | why-is-node-running | 3.2.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/why-is-node-running/v/3.2.1) |
 | npm | word-wrap | 1.2.5 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/word-wrap/v/1.2.5) |
-| npm | wrap-ansi | 7.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/wrap-ansi/v/7.0.0) |
+| npm | wrap-ansi | 9.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/wrap-ansi/v/9.0.2) |
 | npm | xml-name-validator | 5.0.0 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/xml-name-validator/v/5.0.0) |
 | npm | xmlchars | 2.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/xmlchars/v/2.2.0) |
 | npm | y18n | 5.0.8 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/y18n/v/5.0.8) |
 | npm | yallist | 3.1.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/yallist/v/3.1.1) |
 | npm | yaml | 2.9.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/yaml/v/2.9.1) |
 | npm | yaml-ast-parser | 0.0.43 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/yaml-ast-parser/v/0.0.43) |
-| npm | yargs | 17.7.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/yargs/v/17.7.3) |
+| npm | yargs | 18.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/yargs/v/18.2.0) |
 | npm | yargs-parser | 21.1.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/yargs-parser/v/21.1.1) |
+| npm | yargs-parser | 22.0.0 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/yargs-parser/v/22.0.0) |
 | npm | yocto-queue | 0.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/yocto-queue/v/0.1.0) |
 | npm | zod | 4.6.7 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/zod/v/4.6.7) |
 | npm | zod-validation-error | 4.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/zod-validation-error/v/4.0.2) |
@@ -690,7 +684,7 @@ rather than as a notice obligation.
 | python | alembic | 1.20.1 | distributed Python runtime | MIT | permissive | [upstream](https://alembic.sqlalchemy.org) |
 | python | annotated-doc | 0.0.5 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/fastapi/annotated-doc) |
 | python | annotated-types | 0.8.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/annotated-types/annotated-types) |
-| python | anthropic | 0.125.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/anthropics/anthropic-sdk-python) |
+| python | anthropic | 2.4.0 | distributed Python runtime | Apache Software License | permissive | [upstream](https://github.com/anthropics/anthropic-sdk-python) |
 | python | anyio | 4.16.0 | distributed Python runtime | MIT | permissive | [upstream](https://anyio.readthedocs.io/en/stable/versionhistory.html) |
 | python | ast_serialize | 0.12.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/mypyc/ast_serialize) |
 | python | babel | 2.18.0 | distributed Python runtime | BSD License | permissive | [upstream](https://babel.pocoo.org/) |
@@ -710,7 +704,6 @@ rather than as a notice obligation.
 | python | dateparser | 1.4.3 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/scrapinghub/dateparser) |
 | python | defusedxml | 0.7.1 | distributed Python runtime | Python Software Foundation License | permissive | [upstream](https://github.com/tiran/defusedxml) |
 | python | deptry | 0.25.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://deptry.com) |
-| python | distro | 1.9.0 | distributed Python runtime | Apache Software License | permissive | [upstream](https://github.com/python-distro/distro) |
 | python | docstring_parser | 0.18.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/rr-/docstring_parser) |
 | python | execnet | 2.1.2 | Python development tooling | MIT | development only, not distributed | [upstream](https://execnet.readthedocs.io/en/latest/) |
 | python | fastapi | 0.162.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/fastapi/fastapi) |
@@ -751,7 +744,7 @@ rather than as a notice obligation.
 | python | msgpack | 1.2.4 | Python development tooling | Apache-2.0 | development only, not distributed | [upstream](https://msgpack.org/) |
 | python | mypy | 2.4.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://www.mypy-lang.org/) |
 | python | mypy_extensions | 1.1.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/python/mypy_extensions) |
-| python | openai | 2.54.0 | distributed Python runtime | Apache Software License | permissive | [upstream](https://github.com/openai/openai-python) |
+| python | openai | 3.43.0 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/openai/openai-python) |
 | python | opentelemetry-api | 1.45.1 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api) |
 | python | packageurl-python | 0.17.6 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/package-url/packageurl-python) |
 | python | packaging | 26.3 | Python development tooling | Apache-2.0 OR BSD-2-Clause | development only, not distributed | [upstream](https://github.com/pypa/packaging) |
@@ -791,13 +784,12 @@ rather than as a notice obligation.
 | python | six | 1.17.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/benjaminp/six) |
 | python | sniffio | 1.3.1 | distributed Python runtime | Apache Software License; MIT License | permissive | [upstream](https://github.com/python-trio/sniffio) |
 | python | sortedcontainers | 2.4.0 | Python development tooling | Apache Software License | development only, not distributed | [upstream](http://www.grantjenks.com/docs/sortedcontainers/) |
-| python | SQLAlchemy | 2.0.55 | distributed Python runtime | MIT | permissive | [upstream](https://www.sqlalchemy.org) |
+| python | SQLAlchemy | 2.1.6 | distributed Python runtime | MIT | permissive | [upstream](https://www.sqlalchemy.org) |
 | python | starlette | 1.10.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/Kludex/starlette) |
 | python | starlette-admin | 1.0.3 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/jowilf/starlette-admin) |
 | python | tld | 0.13.2 | distributed Python runtime | MPL-1.1 OR GPL-2.0-only OR LGPL-2.1-or-later | reviewed exception | [upstream](https://tld.readthedocs.io/en/latest/changelog.html) |
 | python | tomli | 2.4.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/hukkin/tomli) |
 | python | tomli_w | 1.2.0 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/hukkin/tomli-w) |
-| python | tqdm | 4.70.0 | distributed Python runtime | MPL-2.0 AND MIT | reviewed exception | [upstream](https://tqdm.github.io) |
 | python | trafilatura | 2.3.1 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://trafilatura.readthedocs.io) |
 | python | truststore | 0.10.4 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/sethmlarson/truststore) |
 | python | typer | 0.27.3 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/fastapi/typer) |

@@ -116,20 +116,16 @@ def requirement_gaps(
     importance_filter = frozenset(importance) if importance else None
     rulings = RequirementRulingService(database).by_key(workspace_id)
     with database.session() as session:
-        rows = (
-            session.execute(
-                select(JobPosting.id, JobPosting.title, Employer.name, JobEvaluation)
-                .join(Employer, Employer.id == JobPosting.employer_id)
-                .join(JobEvaluation, JobEvaluation.job_posting_id == JobPosting.id)
-                .where(
-                    JobPosting.workspace_id == workspace_id,
-                    JobPosting.archived_at.is_(None),
-                    JobEvaluation.id == _current_evaluation_id_expression(),
-                )
+        rows = session.execute(
+            select(JobPosting.id, JobPosting.title, Employer.name, JobEvaluation)
+            .join(Employer, Employer.id == JobPosting.employer_id)
+            .join(JobEvaluation, JobEvaluation.job_posting_id == JobPosting.id)
+            .where(
+                JobPosting.workspace_id == workspace_id,
+                JobPosting.archived_at.is_(None),
+                JobEvaluation.id == _current_evaluation_id_expression(),
             )
-            .tuples()
-            .all()
-        )
+        ).all()
 
         grouped = _group_gaps(rows, importance_filter, rulings)
 

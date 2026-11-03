@@ -40,7 +40,7 @@ export function ApplicationFilesPage() {
   >("related");
   const options = useQuery({
     queryKey: ["application-options", workspaceId],
-    queryFn: () => api.applicationOptions(workspaceId),
+    queryFn: ({ signal }) => api.applicationOptions(workspaceId, signal),
   });
   // A document names the run that produced it, not the application, so this asks
   // for the whole job rather than the few files uploaded here by hand.

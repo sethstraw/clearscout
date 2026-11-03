@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-import httpx
+import httpx2
 
 from clearscout.application.config import ProviderName
 
 
 def provider_for_http(
-    provider: ProviderName, http: httpx.Client, *, max_retries: int | None = None
+    provider: ProviderName, http: httpx2.Client, *, max_retries: int | None = None
 ) -> Any:
     """Return the real provider adapter with network traffic confined to ``http``."""
     client_options: dict[str, Any] = {"api_key": "not-a-real-key", "http_client": http}

@@ -8,6 +8,7 @@ import {
   useTask,
   useTaskCosts,
 } from "../../api/hooks";
+import { ErrorNotice } from "../../components/ErrorNotice";
 import { PaidAction } from "../../components/PaidAction";
 import { queryKeys } from "../../api/hooks/keys";
 
@@ -129,8 +130,11 @@ export function AssistedRecoveryAction({
         <span className="field-error" role="alert">
           Could not run assisted recovery:{" "}
           {assistedPreflight.error?.message ??
-            assistedEnqueue.error?.message ??
-            assistedTask.error?.message}
+            (assistedEnqueue.error ? (
+              <ErrorNotice error={assistedEnqueue.error} />
+            ) : (
+              assistedTask.error?.message
+            ))}
         </span>
       )}
     </div>

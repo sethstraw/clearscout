@@ -113,6 +113,9 @@ class PageSelection(BaseModel):
     skill_ids: tuple[str, ...] = ()
     education_ids: tuple[str, ...] = ()
     publication_ids: tuple[str, ...] = ()
+    must_consider_publications: tuple[str, ...] = ()
+    unoffered_publications: tuple[str, ...] = ()
+    stale_must_consider: tuple[str, ...] = ()
     entries: tuple[CitedEntry, ...] = ()
     drop_order: tuple[str, ...] = ()
     # The dropped entries the page no longer shows, in drop order.
@@ -172,6 +175,9 @@ class PageSelection(BaseModel):
             skill_ids=plan.skill_ids,
             education_ids=plan.education_ids,
             publication_ids=plan.publication_ids,
+            must_consider_publications=settings.must_consider_publications,
+            unoffered_publications=plan.unoffered_publications,
+            stale_must_consider=plan.stale_must_consider,
             entries=tuple(
                 CitedEntry(
                     id=entry_id,

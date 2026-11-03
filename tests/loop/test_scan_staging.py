@@ -43,6 +43,7 @@ from clearscout.application.discovery.scan_staging import (
     queue_absence_checks,
     staged_from_single_posting,
 )
+from clearscout.application.discovery.scan_staging import service as staging_service
 from clearscout.application.discovery.source_reading import PostingCheck, SourceListing
 from clearscout.application.failures import (
     ConflictError,
@@ -58,6 +59,7 @@ from clearscout.application.workspaces import WorkspaceService
 from clearscout.application.workspaces.records.access import audit_columns
 from clearscout.domain import (
     PendingDiscoveryReadiness,
+    PendingWithdrawalCause,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -73,6 +75,7 @@ from clearscout.domain.staged_facts import (
     ListingIdentityTrust,
     PostedDateGrade,
     PublishedFact,
+    PublisherClosingDate,
     StagedListingFacts,
 )
 from clearscout.infrastructure.artifacts.store import file_uri_path
@@ -90,6 +93,8 @@ from clearscout.infrastructure.persistence.models import (
     RelevanceReviewDispute,
     SourceScan,
 )
+from clearscout.infrastructure.web_fetch.board_mappings.himalayas import HIMALAYAS_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import Posting, source_listing
 from clearscout.infrastructure.web_fetch.listing_facts import published_listing_facts
 from tests.support.artifacts import runtime_storage
 from tests.support.doubles import (
@@ -3517,6 +3522,9 @@ def test_a_closed_check_withdraws_a_row_a_multi_page_read_missed(
     _checking_service(durable_database, closed).refresh_pending_discovery(workspace_id, pending_id)
 
     assert _withdrawn_at(durable_database, pending_id) is not None
+    assert _closed_causes(durable_database, tmp_path, workspace_id) == {
+        pending_id: PendingWithdrawalCause.PUBLISHER_CLOSED
+    }
 
 
 def test_a_failed_check_keeps_a_missed_row_until_the_next_complete_read_also_misses_it(
@@ -3605,6 +3613,34 @@ def test_a_completed_check_whose_read_of_the_row_failed_marks_the_row_again(
     assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
     assert _withdrawn_at(durable_database, pending_id) is None
     assert _queued_checks(durable_database) == [[pending_id], [pending_id]]
+
+
+def test_a_second_miss_with_no_check_on_record_marks_the_row_again_and_queues_one(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = employer_board(durable_database, workspace_id, "Acme")
+    pending_id = _pending(
+        durable_database,
+        workspace_id,
+        url=_PAGED_ROLE_URL,
+        first_seen_on=date(2026, 8, 24),
+        source_id=source_id,
+    )
+    earlier = utc_now() - timedelta(hours=1)
+    with durable_database.session() as session:
+        row = session.get(PendingDiscovery, pending_id)
+        assert row is not None
+        row.absent_since = earlier
+
+    assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
+    assert _withdrawn_at(durable_database, pending_id) is None
+    assert _queued_checks(durable_database) == [[pending_id]]
+    with durable_database.session() as session:
+        row = session.get(PendingDiscovery, pending_id)
+        assert row is not None
+        assert row.absent_since is not None
+        assert row.absent_since > earlier
 
 
 @pytest.mark.parametrize("unsettled", ["needs_review", "committing"])
@@ -3779,6 +3815,457 @@ def test_an_incomplete_read_listing_a_marked_row_resets_its_absence(
 
     assert _withdraw_missing(durable_database, tmp_path, workspace_id, source_id) == []
     assert _withdrawn_at(durable_database, pending_id) is None
+
+
+_HIMALAYAS_EXPIRY = datetime(2026, 11, 20, 12, 0, tzinfo=UTC)
+
+
+def _himalayas_listing(url: str, expiry: datetime | None) -> SourceListing:
+    job: dict[str, Any] = {
+        "title": "Clinical Systems Analyst",
+        "applicationLink": url,
+        "guid": url.rsplit("/", 1)[-1],
+        "companyName": "Globex",
+        "locationRestrictions": ["Northtown"],
+    }
+    if expiry is not None:
+        job["expiryDate"] = int(expiry.timestamp())
+    listing = source_listing(HIMALAYAS_MAPPING, Posting(job, employer=""))
+    assert listing is not None
+    return listing
+
+
+def _himalayas_source(database: Database, workspace_id: str, name: str = "Himalayas") -> str:
+    return board_source(
+        database, workspace_id, name, "https://himalayas.app/jobs", source_type="aggregator"
+    )
+
+
+def _staging_clock(monkeypatch: pytest.MonkeyPatch, at: datetime) -> None:
+    monkeypatch.setattr(staging_service, "utc_now", lambda: at)
+
+
+def _actions(database: Database, pending_id: str) -> list[str]:
+    with database.session() as session:
+        return list(
+            session.scalars(
+                select(AuditEvent.action)
+                .where(
+                    AuditEvent.entity_id == pending_id,
+                    AuditEvent.action.in_(
+                        ["pending_discovery.relisted", "pending_discovery.withdrawn_expired"]
+                    ),
+                )
+                .order_by(AuditEvent.created_at)
+            )
+        )
+
+
+def _state_listing_end(database: Database, pending_id: str, expiry: datetime) -> None:
+    facts = _himalayas_listing("https://boards.example.test/jobs/any", expiry).facts
+    with database.session() as session:
+        session.get_one(PendingDiscovery, pending_id).staged_facts = facts.as_json()
+
+
+def test_a_staged_row_leaves_the_queue_once_its_stated_expiry_passes(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    url = "https://boards.example.test/jobs/expiring-1"
+    _stage(
+        durable_database,
+        tmp_path,
+        workspace_id,
+        [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+        source_id,
+    )
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, source_id, [url])
+
+    before = staging.withdraw_expired(
+        workspace_id, source_id, now=_HIMALAYAS_EXPIRY - timedelta(seconds=1)
+    )
+    assert before == []
+    assert _source_row(durable_database, pending_id)[2] is False
+
+    after = staging.withdraw_expired(workspace_id, source_id, now=_HIMALAYAS_EXPIRY)
+
+    assert after == ["Clinical Systems Analyst"]
+    assert _source_row(durable_database, pending_id)[2] is True
+    with durable_database.session() as session:
+        details = session.scalars(
+            select(AuditEvent.details).where(
+                AuditEvent.entity_id == pending_id,
+                AuditEvent.action == "pending_discovery.withdrawn_expired",
+            )
+        ).one()
+    assert details["reason"] == (
+        "The board stated this job stays listed until 2026-11-20T12:00:00+00:00."
+    )
+
+    again = staging.withdraw_expired(
+        workspace_id, source_id, now=_HIMALAYAS_EXPIRY + timedelta(days=1)
+    )
+
+    assert again == []
+    assert _actions(durable_database, pending_id) == ["pending_discovery.withdrawn_expired"]
+
+
+def _closed_causes(
+    database: Database, tmp_path: Path, workspace_id: str
+) -> dict[str, PendingWithdrawalCause | None]:
+    service = SourceScanService(
+        database,
+        storage=runtime_storage(database, tmp_path),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    )
+    return {
+        item.id: item.withdrawal_cause
+        for item in service.list_pending_discoveries(workspace_id, closed_only=True)
+    }
+
+
+def test_a_row_withdrawn_past_its_stated_end_reports_the_listing_ended(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    url = "https://boards.example.test/jobs/ended-1"
+    _stage(
+        durable_database,
+        tmp_path,
+        workspace_id,
+        [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+        source_id,
+    )
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, source_id, [url])
+    staging.withdraw_expired(workspace_id, source_id, now=_HIMALAYAS_EXPIRY)
+
+    assert _closed_causes(durable_database, tmp_path, workspace_id) == {
+        pending_id: PendingWithdrawalCause.LISTING_ENDED
+    }
+
+
+def test_a_row_withdrawn_as_absent_keeps_that_cause_after_a_later_stated_end(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    one_page = WithdrawingRead(raw_count=12, read_count=12, complete=True, listing_pages=1)
+    workspace_id, _source_id, pending_id = _paged_absence(durable_database, tmp_path, one_page)
+    _state_listing_end(durable_database, pending_id, _HIMALAYAS_EXPIRY)
+
+    assert _closed_causes(durable_database, tmp_path, workspace_id) == {
+        pending_id: PendingWithdrawalCause.ABSENT
+    }
+
+
+def test_a_relisted_then_rewithdrawn_row_reports_its_latest_cause(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    url = "https://boards.example.test/jobs/relisted-1"
+    _stage(
+        durable_database,
+        tmp_path,
+        workspace_id,
+        [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+        source_id,
+    )
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, source_id, [url])
+    past = _HIMALAYAS_EXPIRY + timedelta(days=1)
+    _staging_clock(monkeypatch, past)
+    staging.withdraw_expired(workspace_id, source_id, now=past)
+    extended = _himalayas_listing(url, _HIMALAYAS_EXPIRY + timedelta(days=30))
+    _stage(durable_database, tmp_path, workspace_id, [extended], source_id)
+    assert _source_row(durable_database, pending_id)[2] is False
+
+    one_page = WithdrawingRead(raw_count=12, read_count=12, complete=True, listing_pages=1)
+    _withdraw_missing(durable_database, tmp_path, workspace_id, source_id, one_page)
+
+    assert _closed_causes(durable_database, tmp_path, workspace_id) == {
+        pending_id: PendingWithdrawalCause.ABSENT
+    }
+
+
+def test_a_withdrawn_row_with_no_withdrawal_event_reports_an_unrecorded_cause(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    pending_id = _pending(
+        durable_database, workspace_id, url=_PAGED_ROLE_URL, first_seen_on=date(2026, 8, 24)
+    )
+    with durable_database.session() as session:
+        session.get_one(PendingDiscovery, pending_id).withdrawn_at = utc_now()
+
+    assert _closed_causes(durable_database, tmp_path, workspace_id) == {
+        pending_id: PendingWithdrawalCause.UNRECORDED
+    }
+
+
+def test_another_source_relisting_the_job_drops_the_listing_end_it_never_stated(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    himalayas = _himalayas_source(durable_database, workspace_id)
+    greenhouse = board_source(
+        durable_database, workspace_id, "Globex board", "https://boards.greenhouse.io/globex"
+    )
+    url = "https://boards.greenhouse.io/globex/jobs/77"
+    _stage(
+        durable_database,
+        tmp_path,
+        workspace_id,
+        [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+        himalayas,
+    )
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, himalayas, [url])
+    _stage(durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse)
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY + timedelta(days=1))
+
+    for _sweep in range(2):
+        assert (
+            staging.withdraw_expired(
+                workspace_id, greenhouse, now=_HIMALAYAS_EXPIRY + timedelta(days=1)
+            )
+            == []
+        )
+        _stage(
+            durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse
+        )
+
+    assert _source_row(durable_database, pending_id) == (url, greenhouse, False)
+    assert _actions(durable_database, pending_id) == []
+
+
+def test_a_board_serving_a_job_past_its_stated_end_does_not_relist_it(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    url = "https://boards.example.test/jobs/served-late-1"
+    listing = _himalayas_listing(url, _HIMALAYAS_EXPIRY)
+    _stage(durable_database, tmp_path, workspace_id, [listing], source_id)
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, source_id, [url])
+    past = _HIMALAYAS_EXPIRY + timedelta(days=1)
+    _staging_clock(monkeypatch, past)
+
+    for _sweep in range(2):
+        staging.withdraw_expired(workspace_id, source_id, now=past)
+        _stage(durable_database, tmp_path, workspace_id, [listing], source_id)
+
+    assert _source_row(durable_database, pending_id)[2] is True
+    assert _actions(durable_database, pending_id) == ["pending_discovery.withdrawn_expired"]
+
+    extended = _himalayas_listing(url, _HIMALAYAS_EXPIRY + timedelta(days=30))
+    _stage(durable_database, tmp_path, workspace_id, [extended], source_id)
+
+    assert _source_row(durable_database, pending_id)[2] is False
+    assert staging.withdraw_expired(workspace_id, source_id, now=past) == []
+
+
+def test_an_expired_listing_elsewhere_leaves_an_employer_board_row_alone(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    past = _HIMALAYAS_EXPIRY + timedelta(days=1)
+    _staging_clock(monkeypatch, past)
+    workspace_id = _workspace(durable_database, tmp_path)
+    himalayas = _himalayas_source(durable_database, workspace_id)
+    greenhouse = board_source(
+        durable_database, workspace_id, "Globex board", "https://boards.greenhouse.io/globex"
+    )
+    url = "https://boards.greenhouse.io/globex/jobs/88"
+    _stage(durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse)
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, greenhouse, [url])
+
+    for _sweep in range(3):
+        _stage(
+            durable_database,
+            tmp_path,
+            workspace_id,
+            [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+            himalayas,
+        )
+        staging.withdraw_expired(workspace_id, himalayas, now=past)
+        _stage(
+            durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse
+        )
+        staging.withdraw_expired(workspace_id, greenhouse, now=past)
+
+    assert _actions(durable_database, pending_id) == []
+    assert _source_row(durable_database, pending_id) == (url, greenhouse, False)
+
+
+def test_a_row_himalayas_expired_settles_under_the_employer_board_that_relists_it(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    himalayas = _himalayas_source(durable_database, workspace_id)
+    greenhouse = board_source(
+        durable_database, workspace_id, "Globex board", "https://boards.greenhouse.io/globex"
+    )
+    url = "https://boards.greenhouse.io/globex/jobs/99"
+    served = _himalayas_listing(url, _HIMALAYAS_EXPIRY)
+    _stage(durable_database, tmp_path, workspace_id, [served], himalayas)
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, himalayas, [url])
+    past = _HIMALAYAS_EXPIRY + timedelta(days=1)
+    _staging_clock(monkeypatch, past)
+    staging.withdraw_expired(workspace_id, himalayas, now=past)
+
+    for _sweep in range(3):
+        _stage(
+            durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse
+        )
+        staging.withdraw_expired(workspace_id, greenhouse, now=past)
+        _stage(durable_database, tmp_path, workspace_id, [served], himalayas)
+        staging.withdraw_expired(workspace_id, himalayas, now=past)
+
+    assert _actions(durable_database, pending_id) == [
+        "pending_discovery.withdrawn_expired",
+        "pending_discovery.relisted",
+    ]
+    assert _source_row(durable_database, pending_id) == (url, greenhouse, False)
+
+
+@pytest.mark.parametrize("held_by", ["keep", "dismissed"])
+def test_a_kept_or_dismissed_row_is_withdrawn_once_its_stated_end_passes(
+    durable_database: Database, tmp_path: Path, held_by: str
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    pending_id = _pending(
+        durable_database,
+        workspace_id,
+        url="https://boards.example.test/jobs/held-1",
+        first_seen_on=date(2026, 11, 1),
+        source_id=source_id,
+    )
+    _state_listing_end(durable_database, pending_id, _HIMALAYAS_EXPIRY)
+    if held_by == "dismissed":
+        dismiss_pending_discovery(durable_database, workspace_id, pending_id)
+    else:
+        with durable_database.session() as session:
+            set_pending_markers(
+                session, workspace_id, pending_id, favorite=False, kept=True, keep_note=None
+            )
+
+    withdrawn = _staging(durable_database, tmp_path).withdraw_expired(
+        workspace_id, source_id, now=_HIMALAYAS_EXPIRY
+    )
+
+    assert withdrawn == ["Operations Lead"]
+    assert _source_row(durable_database, pending_id)[2] is True
+    with durable_database.session() as session:
+        dismissed = set(session.scalars(dismissed_pending_discovery_ids(workspace_id)))
+    assert (pending_id in dismissed) is (held_by == "dismissed")
+
+
+def test_an_expired_head_releases_its_live_copies(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    head_id = _pending(
+        durable_database,
+        workspace_id,
+        url=_LOGIN_URL,
+        employer="Globex",
+        first_seen_on=date(2026, 11, 1),
+        source_id=source_id,
+        requisition_id="4102",
+    )
+    _pending(
+        durable_database,
+        workspace_id,
+        url=_FRAMED_URL,
+        employer="Globex",
+        first_seen_on=date(2026, 11, 2),
+        source_id=source_id,
+        requisition_id="4102",
+        variant_of=head_id,
+    )
+    _state_listing_end(durable_database, head_id, _HIMALAYAS_EXPIRY)
+
+    _staging(durable_database, tmp_path).withdraw_expired(
+        workspace_id, source_id, now=_HIMALAYAS_EXPIRY
+    )
+
+    assert _variant_of_by_url(durable_database, workspace_id)[_FRAMED_URL] is None
+
+
+def test_a_listing_already_past_its_stated_expiry_is_never_staged(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    expired = "https://boards.example.test/jobs/expired-1"
+    current = "https://boards.example.test/jobs/current-1"
+
+    staged = _staging(durable_database, tmp_path).stage_listings(
+        workspace_id,
+        [
+            _himalayas_listing(expired, utc_now() - timedelta(hours=1)),
+            _himalayas_listing(current, utc_now() + timedelta(days=30)),
+        ],
+        utc_now().date(),
+        reason="Board scan matched the title filter.",
+        source_id=source_id,
+    )
+
+    assert [item.url for item in staged.inserted] == [current]
+    assert [row[1] for row in _rows_as_read(durable_database, workspace_id)] == [current]
+
+
+def test_a_row_with_no_stated_expiry_or_only_a_closing_date_stays_queued(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    source_id = _himalayas_source(durable_database, workspace_id)
+    unstated = "https://boards.example.test/jobs/unstated-1"
+    closing = _board_listing("Globex", "https://boards.example.test/jobs/closing-1")
+    closing = replace(
+        closing,
+        facts=replace(
+            closing.facts,
+            closing_date=publisher_closing_date("", valid_through="2026-11-01"),
+        ),
+    )
+    _stage(
+        durable_database,
+        tmp_path,
+        workspace_id,
+        [_himalayas_listing(unstated, None), closing],
+        source_id,
+    )
+
+    withdrawn = _staging(durable_database, tmp_path).withdraw_expired(
+        workspace_id, source_id, now=_HIMALAYAS_EXPIRY + timedelta(days=365)
+    )
+
+    assert withdrawn == []
+    assert {row[1] for row in _rows_as_read(durable_database, workspace_id)} == {
+        unstated,
+        closing.url,
+    }
+    with durable_database.session() as session:
+        assert (
+            session.scalars(
+                select(PendingDiscovery.id).where(PendingDiscovery.withdrawn_at.is_not(None))
+            ).all()
+            == []
+        )
 
 
 def test_a_one_page_read_withdraws_a_missed_row_without_a_check(
@@ -4778,6 +5265,57 @@ def test_an_ats_listing_of_a_closed_tracked_job_uuid_stays_out_of_the_queue_unre
     )
 
 
+def test_a_relisting_of_an_open_tracked_job_keeps_its_primary_url(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    tracked_url = _careers_wrapper(_TWIN_UUID)
+    relisting_url = f"https://jobs.lever.co/globex/{_TWIN_UUID}"
+    _track_wrapper(durable_database, workspace_id, tracked_url, "Globex Systems")
+    listing = _board_listing("Globex (Lever)", relisting_url, _TWIN_UUID)
+
+    with durable_database.session() as session:
+        _staging(durable_database, tmp_path).stage_listings_in_session(
+            workspace_id,
+            [listing],
+            date(2026, 8, 26),
+            reason="Board scan matched the title filter.",
+            session=session,
+            refreshes=[],
+        )
+
+    with durable_database.session() as session:
+        rows = {
+            row.url: (row.is_primary, row.url_type) for row in session.scalars(select(PostingUrl))
+        }
+    assert rows == {tracked_url: (True, "discovery"), relisting_url: (False, "discovery")}
+
+
+def test_a_relisting_of_an_open_tracked_job_with_no_primary_url_becomes_it(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    tracked_url = _careers_wrapper(_TWIN_UUID)
+    relisting_url = f"https://jobs.lever.co/globex/{_TWIN_UUID}"
+    _track_wrapper(durable_database, workspace_id, tracked_url, "Globex Systems")
+    with durable_database.session() as session:
+        session.scalars(select(PostingUrl)).one().is_primary = False
+
+    with durable_database.session() as session:
+        _staging(durable_database, tmp_path).stage_listings_in_session(
+            workspace_id,
+            [_board_listing("Globex (Lever)", relisting_url, _TWIN_UUID)],
+            date(2026, 8, 26),
+            reason="Board scan matched the title filter.",
+            session=session,
+            refreshes=[],
+        )
+
+    with durable_database.session() as session:
+        rows = {row.url: row.is_primary for row in session.scalars(select(PostingUrl))}
+    assert rows == {tracked_url: False, relisting_url: True}
+
+
 _UKG_BOARD = (
     "https://recruiting2.example-ukg.com/GLO1001/JobBoard/11111111-2222-4333-8444-555555555555"
 )
@@ -4998,3 +5536,145 @@ def test_a_locale_variant_matches_the_english_row_among_rows_sharing_its_requisi
             select(PendingDiscovery.title).where(PendingDiscovery.workspace_id == workspace_id)
         ).all()
     assert sorted(titles) == ["Principal Data Engineer", "Principal Data Engineer (Japan)"]
+
+
+def _closing_date(database: Database, pending_id: str) -> PublisherClosingDate | None:
+    with database.session() as session:
+        staged = session.get_one(PendingDiscovery, pending_id).staged_facts
+    return StagedListingFacts.from_json(staged).closing_date
+
+
+def test_a_live_aggregator_listing_leaves_an_employer_board_row_with_its_board(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    aggregator = _himalayas_source(durable_database, workspace_id)
+    greenhouse = board_source(
+        durable_database, workspace_id, "Globex board", "https://boards.greenhouse.io/globex"
+    )
+    url = "https://boards.greenhouse.io/globex/jobs/101"
+    _stage(durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse)
+    (pending_id,) = _staging(durable_database, tmp_path).open_rows_at(
+        workspace_id, greenhouse, [url]
+    )
+
+    _stage(
+        durable_database,
+        tmp_path,
+        workspace_id,
+        [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+        aggregator,
+    )
+
+    assert _source_row(durable_database, pending_id) == (url, greenhouse, False)
+    assert _closing_date(durable_database, pending_id) is None
+
+
+def test_an_aggregator_redating_an_employer_board_row_never_withdraws_it(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace_id = _workspace(durable_database, tmp_path)
+    aggregator = _himalayas_source(durable_database, workspace_id)
+    greenhouse = board_source(
+        durable_database, workspace_id, "Globex board", "https://boards.greenhouse.io/globex"
+    )
+    url = "https://boards.greenhouse.io/globex/jobs/102"
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    _stage(durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse)
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, greenhouse, [url])
+
+    for redating in range(2):
+        expiry = _HIMALAYAS_EXPIRY + timedelta(days=30 * redating)
+        _staging_clock(monkeypatch, expiry - timedelta(days=7))
+        _stage(
+            durable_database,
+            tmp_path,
+            workspace_id,
+            [_himalayas_listing(url, expiry)],
+            aggregator,
+        )
+        past = expiry + timedelta(days=1)
+        _staging_clock(monkeypatch, past)
+        staging.withdraw_expired(workspace_id, aggregator, now=past)
+        _stage(
+            durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse
+        )
+        staging.withdraw_expired(workspace_id, greenhouse, now=past)
+
+    assert _actions(durable_database, pending_id) == []
+    assert _source_row(durable_database, pending_id) == (url, greenhouse, False)
+
+
+def test_an_employer_board_withdrawal_stands_while_an_aggregator_still_lists_the_row(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    aggregator = _himalayas_source(durable_database, workspace_id)
+    greenhouse = board_source(
+        durable_database, workspace_id, "Globex board", "https://boards.greenhouse.io/globex"
+    )
+    url = "https://boards.greenhouse.io/globex/jobs/103"
+    _stage(durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], greenhouse)
+    staging = _staging(durable_database, tmp_path)
+    (pending_id,) = staging.open_rows_at(workspace_id, greenhouse, [url])
+
+    _complete_read_yesterday(durable_database, greenhouse)
+    for _cycle in range(2):
+        staging.withdraw_absent(workspace_id, greenhouse, [], utc_now().date())
+        _stage(
+            durable_database,
+            tmp_path,
+            workspace_id,
+            [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+            aggregator,
+        )
+
+    assert _source_row(durable_database, pending_id) == (url, greenhouse, True)
+    assert "pending_discovery.relisted" not in _actions(durable_database, pending_id)
+
+
+def test_a_row_with_no_source_follows_an_aggregator_listing_and_its_end(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    aggregator = _himalayas_source(durable_database, workspace_id)
+    url = "https://boards.greenhouse.io/globex/jobs/104"
+    _stage(durable_database, tmp_path, workspace_id, [_board_listing("Globex", url)], None)
+    with durable_database.session() as session:
+        pending_id = session.scalars(
+            select(PendingDiscovery.id).where(PendingDiscovery.discovery_url == url)
+        ).one()
+    listing = _himalayas_listing(url, _HIMALAYAS_EXPIRY)
+
+    _stage(durable_database, tmp_path, workspace_id, [listing], aggregator)
+
+    assert _source_row(durable_database, pending_id) == (url, aggregator, False)
+    assert _closing_date(durable_database, pending_id) == listing.facts.closing_date
+
+
+def test_an_aggregator_row_takes_a_later_aggregator_listing_and_its_end(
+    durable_database: Database, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _staging_clock(monkeypatch, _HIMALAYAS_EXPIRY - timedelta(days=7))
+    workspace_id = _workspace(durable_database, tmp_path)
+    first = _himalayas_source(durable_database, workspace_id)
+    second = _himalayas_source(durable_database, workspace_id, "Remote roles")
+    url = "https://boards.example.test/jobs/aggregated-1"
+    _stage(
+        durable_database,
+        tmp_path,
+        workspace_id,
+        [_himalayas_listing(url, _HIMALAYAS_EXPIRY)],
+        first,
+    )
+    (pending_id,) = _staging(durable_database, tmp_path).open_rows_at(workspace_id, first, [url])
+    extended = _himalayas_listing(url, _HIMALAYAS_EXPIRY + timedelta(days=30))
+
+    _stage(durable_database, tmp_path, workspace_id, [extended], second)
+
+    assert _source_row(durable_database, pending_id) == (url, second, False)
+    assert _closing_date(durable_database, pending_id) == extended.facts.closing_date

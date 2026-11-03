@@ -24,7 +24,7 @@ export function useAllJobs(workspaceId: string, query: Omit<JobQuery, "offset" |
   };
   return useQuery({
     queryKey: [...queryKeys.allJobs(workspaceId), options] as const,
-    queryFn: () => api.allJobs(workspaceId, options),
+    queryFn: ({ signal }) => api.allJobs(workspaceId, options, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -38,7 +38,7 @@ export function useJobLedger(workspaceId: string, query: Omit<JobQuery, "offset"
   };
   return useQuery({
     queryKey: [...queryKeys.allJobs(workspaceId), "ledger", options] as const,
-    queryFn: () => api.jobLedger(workspaceId, options),
+    queryFn: ({ signal }) => api.jobLedger(workspaceId, options, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -47,7 +47,8 @@ export function useApplicationPipeline(workspaceId: string, statuses: readonly s
   return useQuery({
     queryKey: queryKeys.applicationPipeline(workspaceId, statuses),
     // Filtered by the server, so four columns do not cost the whole ledger.
-    queryFn: () => api.jobs(workspaceId, { status: [...statuses], limit: MAX_PAGE_SIZE }),
+    queryFn: ({ signal }) =>
+      api.jobs(workspaceId, { status: [...statuses], limit: MAX_PAGE_SIZE }, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -55,7 +56,7 @@ export function useApplicationPipeline(workspaceId: string, statuses: readonly s
 export function usePostingObservation(workspaceId: string, observationId: string) {
   return useQuery({
     queryKey: queryKeys.posting(workspaceId, observationId),
-    queryFn: () => api.postingObservation(observationId, workspaceId),
+    queryFn: ({ signal }) => api.postingObservation(observationId, workspaceId, signal),
     enabled: Boolean(workspaceId && observationId),
   });
 }
@@ -68,7 +69,8 @@ export function usePostingDiff(
 ) {
   return useQuery({
     queryKey: queryKeys.postingDiff(workspaceId, jobId, fromObservationId, toObservationId),
-    queryFn: () => api.postingDiff(jobId, workspaceId, fromObservationId, toObservationId),
+    queryFn: ({ signal }) =>
+      api.postingDiff(jobId, workspaceId, fromObservationId, toObservationId, signal),
     enabled: Boolean(
       jobId &&
       workspaceId &&
@@ -91,7 +93,7 @@ export function useJob(workspaceId: string, jobId: string, history: JobHistoryQu
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return useQuery({
     queryKey: queryKeys.job(workspaceId, jobId, offsets),
-    queryFn: () => api.job(jobId, workspaceId, history),
+    queryFn: ({ signal }) => api.job(jobId, workspaceId, history, signal),
     enabled: Boolean(workspaceId && jobId),
   });
 }
@@ -99,7 +101,7 @@ export function useJob(workspaceId: string, jobId: string, history: JobHistoryQu
 export function useEvidenceSource(workspaceId: string, evidenceId: string) {
   return useQuery({
     queryKey: queryKeys.evidenceSource(workspaceId, evidenceId),
-    queryFn: () => api.evidenceSource(evidenceId, workspaceId),
+    queryFn: ({ signal }) => api.evidenceSource(evidenceId, workspaceId, signal),
     enabled: Boolean(workspaceId && evidenceId),
   });
 }
@@ -107,7 +109,7 @@ export function useEvidenceSource(workspaceId: string, evidenceId: string) {
 export function useFitReport(workspaceId: string, jobId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.fitReport(workspaceId, jobId),
-    queryFn: () => api.fitReport(jobId, workspaceId),
+    queryFn: ({ signal }) => api.fitReport(jobId, workspaceId, signal),
     enabled: Boolean(enabled && workspaceId && jobId),
     // A 404 means the evaluation has no fit report, which retrying cannot change.
     retry: (failureCount, error) =>

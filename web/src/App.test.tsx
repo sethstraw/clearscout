@@ -1,7 +1,8 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, delay, http, type HttpHandler } from "msw";
+import { HttpResponse, http, type HttpHandler } from "msw/http";
+import { delay } from "msw/utils/delay";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { Health, Provider, Task, Workspace } from "./api/client/types";
 import { App, RouteFallback } from "./App";
@@ -116,6 +117,12 @@ afterEach(() => {
 });
 
 describe("App onboarding route", () => {
+  // A redirect commits its address only once the lazy target page has loaded, so a cold
+  // module transform under a full run would otherwise outlast the wait.
+  beforeAll(async () => {
+    await Promise.all([import("./pages/ApplyPage"), import("./pages/SettingsPage")]);
+  });
+
   it("sends an empty installation to workspace-first free setup", async () => {
     stubMatchMedia();
     server.use(...shellHandlers());

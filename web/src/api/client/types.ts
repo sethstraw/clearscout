@@ -53,6 +53,7 @@ export type RequirementRulingBody = components["schemas"]["RequirementRulingBody
 export type RequirementRuling = components["schemas"]["RequirementRulingResponse"];
 export type RequirementRulings = components["schemas"]["RequirementRulingsResponse"];
 export type PendingDiscovery = components["schemas"]["PendingDiscoveryResponse"];
+export type AggregatorCredit = components["schemas"]["AggregatorCreditResponse"];
 export type PendingDiscoveryReadiness = components["schemas"]["PendingDiscoveryReadiness"];
 export type PendingDiscoveryPage = components["schemas"]["PendingDiscoveryPageResponse"];
 export type PendingDiscoveryFacets = components["schemas"]["PendingDiscoveryFacetsResponse"];

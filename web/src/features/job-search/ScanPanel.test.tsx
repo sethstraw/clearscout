@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Source, Task } from "../../api/client/types";
@@ -85,9 +86,14 @@ function scanTask(overrides: Partial<Task> = {}): Task {
 
 function panel() {
   render(
-    <AppProviders>
-      <ScanPanel workspaceId="workspace-1" />
-    </AppProviders>,
+    <MemoryRouter initialEntries={["/job-search"]}>
+      <AppProviders>
+        <Routes>
+          <Route path="/job-search" element={<ScanPanel workspaceId="workspace-1" />} />
+          <Route path="/tasks" element={<h1>Activity route</h1>} />
+        </Routes>
+      </AppProviders>
+    </MemoryRouter>,
   );
 }
 
@@ -158,9 +164,11 @@ describe("ScanPanel", () => {
     savedTitles([]);
     installOneBoard(scanTask());
     const view = render(
-      <AppProviders>
-        <ScanPanel workspaceId="workspace-1" />
-      </AppProviders>,
+      <MemoryRouter>
+        <AppProviders>
+          <ScanPanel workspaceId="workspace-1" />
+        </AppProviders>
+      </MemoryRouter>,
     );
 
     const link = await screen.findByRole("link", {
@@ -197,6 +205,8 @@ describe("ScanPanel", () => {
       false,
     );
     expect(screen.getByText("Advanced").closest("details")!.open).toBe(false);
+    fireEvent.click(screen.getByRole("link", { name: "View scans in Activity" }));
+    expect(await screen.findByRole("heading", { name: "Activity route" })).toBeTruthy();
   });
 
   it.each(["all", "selected", "one"])(

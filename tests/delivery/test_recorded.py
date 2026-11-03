@@ -102,7 +102,7 @@ def test_the_anthropic_replay_seam_builds_a_working_provider(tmp_path: Path) -> 
     nothing about model quality. The request is the one the Anthropic SDK builds
     for itself, which is what a cassette has to match on to replay at all.
     """
-    import httpx
+    import httpx2
     from anthropic import Anthropic
     from pydantic import BaseModel
 
@@ -132,11 +132,11 @@ def test_the_anthropic_replay_seam_builds_a_working_provider(tmp_path: Path) -> 
     choice = ModelChoice(model="claude-sonnet-5", effort=Effort.LOW)
 
     cassette = Cassette(path=tmp_path / "run_anthropic.json")
-    recording = httpx.Client(
+    recording = httpx2.Client(
         transport=RecordingTransport(
             cassette,
-            inner=httpx.MockTransport(
-                lambda request: httpx.Response(
+            inner=httpx2.MockTransport(
+                lambda request: httpx2.Response(
                     200, content=body, headers={"content-type": "text/event-stream"}
                 )
             ),
@@ -212,20 +212,20 @@ def test_committed_cassettes_carry_no_credential() -> None:
     "header", ["openai-project", "x-request-id", "request-id", "cf-ray", "date"]
 )
 def test_recording_omits_provider_account_and_request_metadata(tmp_path: Path, header: str) -> None:
-    import httpx
+    import httpx2
 
     from tests.support.cassette import RecordingTransport
 
-    def upstream(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def upstream(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
             200,
             headers={header: "identifying-metadata", "content-type": "application/json"},
             json={"answer": "retained"},
         )
 
     cassette = Cassette(path=tmp_path / "metadata.json")
-    with httpx.Client(
-        transport=RecordingTransport(cassette, inner=httpx.MockTransport(upstream))
+    with httpx2.Client(
+        transport=RecordingTransport(cassette, inner=httpx2.MockTransport(upstream))
     ) as client:
         client.get("https://api.openai.com/v1/models")
     cassette.save()
@@ -240,20 +240,20 @@ def test_recording_omits_provider_account_and_request_metadata(tmp_path: Path, h
 
 def test_redaction_survives_a_key_in_a_response_body(tmp_path: Path) -> None:
     """Headers are dropped wholesale; a key echoed in a body has to be caught too."""
-    import httpx
+    import httpx2
 
     from tests.support.cassette import RecordingTransport
 
-    def upstream(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def upstream(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
             200,
             headers={"x-api-key": "sk-ant-api03-should-never-persist"},
             json={"error": "invalid key sk-ant-api03-should-never-persist supplied"},
         )
 
     cassette = Cassette(path=tmp_path / "leaky.json")
-    client = httpx.Client(
-        transport=RecordingTransport(cassette, inner=httpx.MockTransport(upstream))
+    client = httpx2.Client(
+        transport=RecordingTransport(cassette, inner=httpx2.MockTransport(upstream))
     )
     client.get("https://api.anthropic.com/v1/models")
     cassette.save()
@@ -266,47 +266,82 @@ def test_redaction_survives_a_key_in_a_response_body(tmp_path: Path) -> None:
 
 def test_matching_is_by_content_not_call_order(tmp_path: Path) -> None:
     """Skipping a cached stage must not shift every later reply by one."""
-    import httpx
+    import httpx2
 
     from tests.support.cassette import ReplayTransport
 
     cassette = Cassette(path=tmp_path / "two.json")
     for body in (b"first", b"second"):
         cassette.add(
-            httpx.Request("POST", "https://api.anthropic.com/v1/messages", content=body),
-            httpx.Response(200, json={"which": body.decode()}),
+            httpx2.Request("POST", "https://api.anthropic.com/v1/messages", content=body),
+            httpx2.Response(200, json={"which": body.decode()}),
         )
 
     transport = ReplayTransport(cassette)
     # Ask for the second interaction first. Order-based matching would hand back
     # the first, which is exactly what happens when a run skips a cached stage.
     second = transport.handle_request(
-        httpx.Request("POST", "https://api.anthropic.com/v1/messages", content=b"second")
+        httpx2.Request("POST", "https://api.anthropic.com/v1/messages", content=b"second")
     )
     assert second.json() == {"which": "second"}
     first = transport.handle_request(
-        httpx.Request("POST", "https://api.anthropic.com/v1/messages", content=b"first")
+        httpx2.Request("POST", "https://api.anthropic.com/v1/messages", content=b"first")
     )
     assert first.json() == {"which": "first"}
 
 
+def _replays(recorded: bytes, sent: bytes, tmp_path: Path) -> bool:
+    """Return whether a request sent with ``sent`` finds the one recorded with ``recorded``."""
+    import httpx2
+
+    url = "https://api.openai.com/v1/responses"
+    cassette = Cassette(path=tmp_path / "one.json")
+    cassette.add(httpx2.Request("POST", url, content=recorded), httpx2.Response(200, json={}))
+    cassette.save()
+    return Cassette.load(cassette.path).find(httpx2.Request("POST", url, content=sent)) is not None
+
+
+def test_a_json_body_matches_whatever_order_the_sdk_writes_its_top_level_keys(
+    tmp_path: Path,
+) -> None:
+    recorded = b'{"input":[{"role":"user","content":"hi"}],"model":"m","stream":true}'
+    sent = b'{"model": "m", "stream": true, "input": [{"role": "user", "content": "hi"}]}'
+    assert _replays(recorded, sent, tmp_path)
+
+
+def test_a_json_body_with_reordered_schema_properties_does_not_match(tmp_path: Path) -> None:
+    recorded = b'{"model":"m","schema":{"properties":{"title":{},"score":{}}}}'
+    sent = b'{"model":"m","schema":{"properties":{"score":{},"title":{}}}}'
+    assert not _replays(recorded, sent, tmp_path)
+
+
+def test_a_json_body_with_a_changed_value_does_not_match(tmp_path: Path) -> None:
+    recorded = b'{"model":"m","stream":true}'
+    assert not _replays(recorded, b'{"stream":true,"model":"other"}', tmp_path)
+
+
+def test_a_body_that_is_not_json_matches_by_its_bytes(tmp_path: Path) -> None:
+    assert _replays(b"plain body", b"plain body", tmp_path)
+    assert not _replays(b"plain body", b"plain  body", tmp_path)
+
+
 def test_identical_requests_replay_their_answers_in_recorded_order(tmp_path: Path) -> None:
     """Repeated critic trials send one body; each must get its own recorded draw."""
-    import httpx
+    import httpx2
 
     from tests.support.cassette import ReplayTransport
 
     cassette = Cassette(path=tmp_path / "trials.json")
     for draw in ("first draw", "second draw"):
         cassette.add(
-            httpx.Request("POST", "https://api.openai.com/v1/responses", content=b"same"),
-            httpx.Response(200, json={"draw": draw}),
+            httpx2.Request("POST", "https://api.openai.com/v1/responses", content=b"same"),
+            httpx2.Response(200, json={"draw": draw}),
         )
 
     transport = ReplayTransport(cassette)
     answers = [
         transport.handle_request(
-            httpx.Request("POST", "https://api.openai.com/v1/responses", content=b"same")
+            httpx2.Request("POST", "https://api.openai.com/v1/responses", content=b"same")
         ).json()
         for _ in range(2)
     ]
@@ -321,13 +356,13 @@ def test_redaction_removes_key_shaped_values() -> None:
 
 def test_an_unrecorded_request_fails_instead_of_going_live(tmp_path: Path) -> None:
     """An offline suite must stay offline even when a cassette is incomplete."""
-    import httpx
+    import httpx2
 
     from tests.support.cassette import ReplayTransport
 
     transport = ReplayTransport(Cassette(path=tmp_path / "empty.json"))
     with pytest.raises(LookupError, match="Re-record"):
-        transport.handle_request(httpx.Request("POST", "https://api.anthropic.com/v1/messages"))
+        transport.handle_request(httpx2.Request("POST", "https://api.anthropic.com/v1/messages"))
 
 
 @pytest.mark.recorded
@@ -335,10 +370,10 @@ def test_record_then_replay_survives_a_round_trip_through_the_real_sdk(tmp_path:
     """The mechanism itself: record real bytes, replay them, let the SDK parse.
 
     A model listing is used because its wire format is small and its parsing is
-    the SDK's own. If a cassette can carry that through httpx and out of the
+    the SDK's own. If a cassette can carry that through httpx2 and out of the
     vendor's client as typed objects, it can carry a completion too.
     """
-    import httpx
+    import httpx2
     from anthropic import Anthropic
 
     from clearscout.infrastructure.providers.anthropic import AnthropicProvider
@@ -354,13 +389,13 @@ def test_record_then_replay_survives_a_round_trip_through_the_real_sdk(tmp_path:
         "last_id": "claude-haiku-4-5-20251001",
     }
 
-    def upstream(request: httpx.Request) -> httpx.Response:
-        assert request.headers["x-api-key"] == "sk-ant-secret-value"
-        return httpx.Response(200, json=listing)
+    def upstream(request: httpx2.Request) -> httpx2.Response:
+        assert request.headers["authorization"] == "Bearer sk-ant-secret-value"
+        return httpx2.Response(200, json=listing)
 
     cassette = Cassette(path=tmp_path / "models.json")
-    recorder = httpx.Client(
-        transport=RecordingTransport(cassette, inner=httpx.MockTransport(upstream))
+    recorder = httpx2.Client(
+        transport=RecordingTransport(cassette, inner=httpx2.MockTransport(upstream))
     )
     recorded = AnthropicProvider(
         api_key="sk-ant-secret-value",
@@ -386,22 +421,22 @@ def test_record_then_replay_survives_a_round_trip_through_the_real_sdk(tmp_path:
 @pytest.mark.recorded
 def test_a_recorded_rejection_replays_as_a_real_auth_error(tmp_path: Path) -> None:
     """Recording a 401 lets the credential path be tested against a real refusal."""
-    import httpx
+    import httpx2
     from anthropic import Anthropic
 
     from clearscout.infrastructure.providers.anthropic import AnthropicProvider
     from clearscout.shared.errors import AuthError
     from tests.support.cassette import RecordingTransport
 
-    def upstream(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def upstream(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
             401,
             json={"type": "error", "error": {"type": "authentication_error", "message": "invalid"}},
         )
 
     cassette = Cassette(path=tmp_path / "rejected.json")
-    client = httpx.Client(
-        transport=RecordingTransport(cassette, inner=httpx.MockTransport(upstream))
+    client = httpx2.Client(
+        transport=RecordingTransport(cassette, inner=httpx2.MockTransport(upstream))
     )
     provider = AnthropicProvider(
         api_key="bad", client=Anthropic(api_key="bad", http_client=client, max_retries=0)
@@ -450,28 +485,28 @@ def test_the_recorder_substitutes_provider_for_compatibly() -> None:
 def test_a_gzipped_response_replays_as_the_text_that_was_stored(tmp_path: Path) -> None:
     """A stored body is plain text, so replay must not claim it is gzipped.
 
-    Recording reads the response, so httpx has already decompressed it. Keeping
-    `content-encoding: gzip` beside it makes httpx fail to gunzip on replay,
+    Recording reads the response, so httpx2 has already decompressed it. Keeping
+    `content-encoding: gzip` beside it makes httpx2 fail to gunzip on replay,
     which the vendor SDK surfaces as a connection error.
     """
     import gzip
 
-    import httpx
+    import httpx2
 
     from tests.support.cassette import RecordingTransport
 
     payload = b'{"id": "resp_1", "object": "response"}'
 
-    def upstream(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def upstream(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
             200,
             headers={"content-encoding": "gzip", "content-type": "application/json"},
             content=gzip.compress(payload),
         )
 
     cassette = Cassette(path=tmp_path / "gzipped.json")
-    client = httpx.Client(
-        transport=RecordingTransport(cassette, inner=httpx.MockTransport(upstream))
+    client = httpx2.Client(
+        transport=RecordingTransport(cassette, inner=httpx2.MockTransport(upstream))
     )
     client.post("https://api.openai.com/v1/responses", content=b"{}")
     cassette.save()

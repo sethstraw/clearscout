@@ -7,7 +7,7 @@ import time
 from types import SimpleNamespace
 from typing import Any, cast
 
-import httpx
+import httpx2
 import pytest
 from pydantic import BaseModel
 
@@ -254,13 +254,13 @@ def test_cancel_sends_the_response_id_to_the_provider() -> None:
 
 
 def _status_error(status: int, code: str | None = None) -> Exception:
-    import httpx
+    import httpx2
     from openai import APIStatusError
 
     body = {"error": {"code": code}} if code else None
     return APIStatusError(
         "rejected",
-        response=httpx.Response(status, request=httpx.Request("POST", "https://api.openai.com")),
+        response=httpx2.Response(status, request=httpx2.Request("POST", "https://api.openai.com")),
         body=body,
     )
 
@@ -291,10 +291,10 @@ def test_a_5xx_dispatch_failure_is_not_certainly_rejected(status: int) -> None:
 
 def test_a_connection_failure_dispatching_is_not_certainly_rejected() -> None:
     """No status at all means the request may or may not have reached the server."""
-    import httpx
+    import httpx2
     from openai import APIConnectionError
 
-    error = APIConnectionError(request=httpx.Request("POST", "https://api.openai.com"))
+    error = APIConnectionError(request=httpx2.Request("POST", "https://api.openai.com"))
     client = FakeBackgroundOpenAI(create_error=error)
     provider = OpenAIProvider(api_key="x", client=cast(Any, client))
 
@@ -452,8 +452,8 @@ def test_capturing_provider_writes_nothing_for_a_pending_poll_but_writes_a_termi
 
 def _retrieving_provider() -> Any:
     """Return the real adapter whose background retrieve answers one canned response body."""
-    transport = httpx.MockTransport(lambda request: httpx.Response(200, json=OPENAI_BODY))
-    return provider_for_http(ProviderName.OPENAI, httpx.Client(transport=transport))
+    transport = httpx2.MockTransport(lambda request: httpx2.Response(200, json=OPENAI_BODY))
+    return provider_for_http(ProviderName.OPENAI, httpx2.Client(transport=transport))
 
 
 def test_a_terminal_poll_is_captured_with_the_provider_body_only_once(tmp_path: Any) -> None:

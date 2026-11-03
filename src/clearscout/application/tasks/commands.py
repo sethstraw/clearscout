@@ -476,7 +476,7 @@ class TaskCommands:
         if old is not None and old.released_at is None:
             old.released_at = utc_now()
             old.state = "failed"
-            session.flush([old])
+            session.flush()
         holder = session.scalar(
             select(SourceScanMember).where(
                 SourceScanMember.source_id == source.id, SourceScanMember.released_at.is_(None)
@@ -507,7 +507,7 @@ class TaskCommands:
             correlation_id=task.id,
         )
         session.add(member)
-        session.flush([member])
+        session.flush()
         return member
 
     def _resume_member_frontier(
@@ -659,7 +659,7 @@ class TaskCommands:
             correlation_id=task.id,
         )
         session.add(member)
-        session.flush([member])
+        session.flush()
         continuation.batch_member_id = member.id
         continuation.correlation_id = task.id
 

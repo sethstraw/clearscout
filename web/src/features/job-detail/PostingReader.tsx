@@ -5,7 +5,6 @@ import { api, type JobDetail } from "../../api/client";
 import { usePostingDiff, usePostingObservation } from "../../api/hooks";
 import { safeHttpUrl } from "../../api/safeUrl";
 import { AggregatorCreditLink } from "../../components/AggregatorCredit";
-import { aggregatorCredit } from "../../components/aggregatorHosts";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { statusEntry } from "../../components/statuses";
 import { UnifiedDiff } from "../../components/UnifiedDiff";
@@ -77,10 +76,6 @@ export function PostingReader({
   const text = mode === "raw" ? posting.data.body : posting.data.rendered_text;
   const evidenceSpan = mode === "raw" ? span : null;
   const sourceUrl = safeHttpUrl(posting.data.source_url);
-  const creditUrl =
-    [posting.data.source_url, posting.data.discovery_url]
-      .map((url) => (url ? safeHttpUrl(url) : null))
-      .find((url) => url && aggregatorCredit(url)) ?? null;
 
   return (
     <section className="posting-layout">
@@ -96,9 +91,9 @@ export function PostingReader({
                   <a href={sourceUrl} rel="noreferrer" target="_blank">
                     Source
                   </a>
-                  {creditUrl ? (
+                  {posting.data.aggregator ? (
                     <>
-                      , <AggregatorCreditLink url={creditUrl} />
+                      , <AggregatorCreditLink credit={posting.data.aggregator} />
                     </>
                   ) : null}
                 </>

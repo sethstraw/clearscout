@@ -39,8 +39,9 @@ def sentence(chars: int, offset: int) -> str:
     return " ".join(words)[:chars].rsplit(" ", 1)[0].capitalize() + "."
 
 
-def long_record(tmp_path: Path) -> CvInventory:
+def long_record(tmp_path: Path, papers: tuple[str, ...] = ()) -> CvInventory:
     """Return a record of three roles with 30 bullets each, far more than two pages hold."""
+    publications = "".join(f"- {paper}\n" for paper in papers)
     roles = [
         f"### Example Org {role + 1}\n\n**Senior Data Engineer**  \n"
         f"March {2022 - 4 * role} to {'Present' if role == 0 else f'May {2025 - 4 * role}'}"
@@ -57,7 +58,8 @@ def long_record(tmp_path: Path) -> CvInventory:
         f"## Core Skills\n\n**Platforms:** {sentence(180, 5)}\n\n"
         f"**Governance:** {sentence(150, 9)}\n\n"
         "## Professional Experience\n\n" + "\n\n".join(roles) + "\n\n"
-        "## Education\n\n**Bachelor of Science, Statistics**, Example State University, 2010\n",
+        "## Education\n\n**Bachelor of Science, Statistics**, Example State University, 2010\n"
+        + (f"\n## Publications\n\n{publications}" if papers else ""),
         encoding="utf-8",
     )
     return parse_cv(source)

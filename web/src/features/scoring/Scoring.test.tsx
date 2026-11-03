@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
 import { afterEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -323,7 +323,8 @@ describe("scoring policy in force for the search", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use this policy" }));
     fireEvent.click(await screen.findByRole("button", { name: "Keep the saved policy" }));
 
-    expect(await screen.findByText("In force now: Pay first v1.")).toBeTruthy();
+    const policyPanel = select.closest("article")!;
+    expect(await within(policyPanel).findByText("In force now: Pay first v1.")).toBeTruthy();
     expect(select).toHaveProperty("value", "Pay first");
     expect(screen.queryByText(/changed elsewhere/)).toBeNull();
     const stored_ = screen.getByRole("heading", { name: "Stored policies" }).nextElementSibling;

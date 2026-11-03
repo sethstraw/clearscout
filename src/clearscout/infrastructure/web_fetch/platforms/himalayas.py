@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING
+from urllib.parse import urlencode
 
 from clearscout.infrastructure.web_fetch.board_mappings import HIMALAYAS_MAPPING
 from clearscout.infrastructure.web_fetch.board_platform import HOST_START, BoardPlatform
@@ -34,15 +35,17 @@ def _read(fetcher: BoardTransport, employer: str, _groups: dict[str, str], _url:
     """
     listings: list[SourceListing] = []
     raw_count = 0
-    for page in range(HIMALAYAS_MAX_PAGES):
-        payload = fetcher.get_json(
-            f"https://himalayas.app/jobs/api?offset={page * HIMALAYAS_PAGE}&limit={HIMALAYAS_PAGE}"
-        )
+    cursor = ""
+    for _page in range(HIMALAYAS_MAX_PAGES):
+        query = {"limit": HIMALAYAS_PAGE, **({"cursor": cursor} if cursor else {})}
+        payload = fetcher.get_json(f"https://himalayas.app/jobs/api?{urlencode(query)}")
         jobs = payload.get("jobs") or []
         raw_count += len(jobs)
         listings.extend(board_listings(HIMALAYAS_MAPPING, jobs, employer))
         total = int(payload.get("totalCount") or 0)
-        if len(jobs) < HIMALAYAS_PAGE:
+        # The API deprecates offset paging; each page names the cursor of the next.
+        cursor = str(payload.get("nextCursor") or "")
+        if not cursor or len(jobs) < HIMALAYAS_PAGE:
             break
         if total and raw_count >= total:
             break

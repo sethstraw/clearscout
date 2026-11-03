@@ -15,8 +15,8 @@ import {
 } from "../../api/hooks";
 import { safeHttpUrl } from "../../api/safeUrl";
 import { AggregatorCreditLink } from "../../components/AggregatorCredit";
+import { postingAddress } from "./postingAddress";
 import { PaidAction } from "../../components/PaidAction";
-import { aggregatorCredit, postingAddress } from "../../components/aggregatorHosts";
 import { CountryToken } from "../../components/CountryToken";
 import { ClosingDates } from "../../components/ClosingDates";
 import { ErrorState, LoadingState } from "../../components/States";
@@ -554,6 +554,8 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
   const closed = item.current_posting_status === "closed";
   // A marked row stays listed after its board drops it; paid work waits like a closed one.
   const gone = closed || Boolean(item.withdrawn_at);
+  const goneLabel =
+    item.withdrawal_cause === "listing_ended" ? "Board listing ended" : "No longer listed";
   const { completedDuplicate, jobPostingId: evaluatedJobId } = evaluationState(
     item.evaluated_job_id,
     evaluationTask,
@@ -617,7 +619,7 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
   const readinessChip: Chip | null = closed
     ? { label: "Closed at publisher", tone: "muted" }
     : gone
-      ? { label: "No longer listed", tone: "muted" }
+      ? { label: goneLabel, tone: "muted" }
       : readiness !== "ready"
         ? {
             label: `${READINESS_SHORT_LABEL[readiness]}: ${READINESS_SHORT_REASON[readiness]}`,
@@ -685,8 +687,8 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
             <span>{STAGING_PROVENANCE_LABELS[item.staging_provenance]}</span>
             <span>First seen {item.first_seen_on}</span>
             <span>Rank {item.rank ?? "not stated"}</span>
-            {aggregatorCredit(item.discovery_url) ? (
-              <AggregatorCreditLink url={item.discovery_url} />
+            {item.aggregator ? (
+              <AggregatorCreditLink credit={item.aggregator} />
             ) : sourceHost ? (
               <span className="pending-origin__host" title={`Listed on ${sourceHost}`}>
                 <HostName host={sourceHost} />
@@ -812,7 +814,7 @@ export const PendingDiscoveryRow = memo(function PendingDiscoveryRow({
               </>
             ) : gone ? (
               <span className="field-note">
-                {closed ? "Closure recorded" : "No longer listed"}; evaluation disabled
+                {closed ? "Closure recorded" : goneLabel}; evaluation disabled
               </span>
             ) : evaluationAllowed ? (
               <PaidAction

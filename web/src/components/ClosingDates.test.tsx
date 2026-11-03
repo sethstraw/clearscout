@@ -37,6 +37,36 @@ describe("ClosingDates", () => {
     expect(screen.getByText("Closing date passed; verify availability.")).toBeTruthy();
   });
 
+  it("reads a board's stated listing end as the end of its listing, not a closing date", () => {
+    const listingEnd = {
+      statements: [
+        {
+          wording: "Listed until 2026-11-20 12:00 UTC",
+          basis: "listed_until",
+          clarification: "",
+        },
+      ],
+      needs_clarification: false,
+      normalized_value: "2026-11-20T12:00:00+00:00",
+      precision: "timestamp",
+      timezone: "+00:00",
+      source_url: "",
+    } satisfies components["schemas"]["PublisherClosingDateResponse"];
+    const view = render(
+      <ClosingDates compact publisher={listingEnd} now={new Date("2026-11-21T12:00:00Z")} />,
+    );
+    expect(
+      screen.getByText("Listed on the board until: 2026-11-20T12:00:00+00:00", { exact: false }),
+    ).toBeTruthy();
+    expect(screen.getByText("The board listing ended.")).toBeTruthy();
+    expect(screen.queryByText("Closing date passed; verify availability.")).toBeNull();
+    view.rerender(<ClosingDates publisher={listingEnd} now={new Date("2026-11-21T12:00:00Z")} />);
+    expect(screen.getByText("Listed on the board until")).toBeTruthy();
+    expect(screen.queryByText("Publisher closing date")).toBeNull();
+    fireEvent.click(screen.getByText("Publisher date evidence"));
+    expect(screen.getByText("Listed until 2026-11-20 12:00 UTC")).toBeTruthy();
+  });
+
   it("does not invent a compact date for rolling or conflicting publisher statements", () => {
     const view = render(
       <ClosingDates

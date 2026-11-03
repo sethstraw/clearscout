@@ -1,3 +1,4 @@
+import type { AggregatorCredit } from "../../api/client/types";
 import { safeHttpUrl } from "../../api/safeUrl";
 import { AggregatorCreditNote } from "../../components/AggregatorCredit";
 import { constraintConfidenceRoute, type ConstraintConfidence } from "./constraintConfidence";
@@ -8,8 +9,7 @@ export type Discovery = {
   note?: string;
   title: string;
   url: string;
-  /** The address the row was discovered at, which names any aggregator owed credit. */
-  creditUrl?: string;
+  aggregator?: AggregatorCredit | null;
   constraint_confidence?: ConstraintConfidence;
 };
 
@@ -44,7 +44,7 @@ export function DiscoveryTable({ discoveries }: { discoveries: readonly Discover
                     <a href={url} rel="noreferrer" target="_blank">
                       {item.title}
                     </a>
-                    <AggregatorCreditNote url={item.creditUrl ?? url} />
+                    <AggregatorCreditNote credit={item.aggregator} />
                   </>
                 ) : (
                   item.title

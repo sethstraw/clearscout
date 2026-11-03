@@ -12,6 +12,7 @@ import {
   useSaveMasterCv,
 } from "../../api/hooks";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
+import { ErrorNotice } from "../../components/ErrorNotice";
 import { PaidAction } from "../../components/PaidAction";
 import { unifiedDiff } from "../../components/diff";
 import { MarkdownView } from "../../components/MarkdownView";
@@ -351,7 +352,11 @@ export function MasterCvViewer({
                     </button>
                   )}
                 </div>
-                {save.isError && <p className="field-error">{save.error.message}</p>}
+                {save.isError && (
+                  <p className="field-error">
+                    <ErrorNotice error={save.error} />
+                  </p>
+                )}
               </>
             )}
           </>

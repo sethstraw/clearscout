@@ -324,7 +324,8 @@ cases did the critic get wrong", never as a quality score. Measuring how stable
 a stage is needs repeated trials of one fixed input, which is a different run
 from this one. `scripts/eval.sh --live ... --trials N` is that run, and
 `evals/inspect/diff.py` compares two logs by each case's passes out of its
-trials, never trial against trial, beside each run's tokens and dollars.
+trials, never trial against trial, beside each run's tokens and dollars. It
+refuses two logs that record different selection manifest or dataset digests.
 
 ### What the document datasets do not pin
 

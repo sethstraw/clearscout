@@ -263,6 +263,21 @@ def test_a_draft_that_runs_out_of_cited_evidence_says_so_rather_than_filling(
     assert "Every cited bullet from the recent roles" in length
 
 
+def test_an_unoffered_paper_is_named_in_the_notes_the_report_and_run_json(
+    master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
+) -> None:
+    result = go(master_cv, tmp_path)
+    written = written_run(result)
+    stored = json.loads((written.directory / "run.json").read_text(encoding="utf-8"))
+    unoffered = PageSelection.model_validate(stored["selection"]).unoffered_publications
+    report = written.report.read_text(encoding="utf-8")
+    length = report[report.index("## Length") :]
+
+    assert unoffered
+    assert any(f"(id {unoffered[0]}" in note for note in result.notes)
+    assert f"(id {unoffered[0]}" in length
+
+
 def test_the_stored_selection_explains_the_page_on_its_own(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:

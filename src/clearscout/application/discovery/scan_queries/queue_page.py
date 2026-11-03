@@ -186,7 +186,9 @@ class PendingQueueQueries:
             item[1].id: screened_projection(item, parameters, searched, source_employers)
             for item in ranked
         }
-        content_by_pending = {row.id: content for row, content in candidates}
+        content_by_pending: dict[str, PendingPostingContent | None] = {
+            row.id: content for row, content in candidates
+        }
         return ScreenedRead(
             candidates=[(row, content) for row, content in candidates],
             parameters=parameters,

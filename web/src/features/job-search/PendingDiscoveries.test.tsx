@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, delay, http } from "msw";
+import { HttpResponse, http } from "msw/http";
+import { delay } from "msw/utils/delay";
 import { createElement } from "react";
 import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -926,14 +927,18 @@ describe("PendingDiscoveries", () => {
     expect(screen.queryByText("Closed favorite role")).toBeNull();
   });
 
-  it("credits Arbeitnow on a closed posting it discovered at an employer address", async () => {
+  it("credits the aggregator a closed posting names", async () => {
     installRows([], {
       closedHistory: [
         pendingDiscoveryRow({
-          id: "closed-arbeitnow",
+          id: "closed-listed",
           title: "Closed listed role",
-          discovery_url:
-            "https://www.arbeitnow.com/jobs/companies/globex-example/data-analyst-4412",
+          aggregator: {
+            credit_url: "https://listings.example.test/",
+            name: "Example Listings",
+            opens_discovery_url: false,
+          },
+          discovery_url: "https://listings.example.test/jobs/globex-example/data-analyst-4412",
           canonical_url: "https://careers.globex.example.test/jobs/4412",
           withdrawn_at: "2026-09-20T00:00:00Z",
         }),
@@ -949,8 +954,8 @@ describe("PendingDiscoveries", () => {
 
     fireEvent.click(await screen.findByText("Closed posting history"));
 
-    const credit = await screen.findByRole("link", { name: "Job data from Arbeitnow" });
-    expect(credit.getAttribute("href")).toBe("https://www.arbeitnow.com/");
+    const credit = await screen.findByRole("link", { name: "Job data from Example Listings" });
+    expect(credit.getAttribute("href")).toBe("https://listings.example.test/");
   });
 
   it("keeps reversible dismissals reachable when the active queue is empty", async () => {
@@ -1774,6 +1779,40 @@ describe("PendingDiscoveries", () => {
 
     expect(await screen.findByText("Refreshed role")).toBeTruthy();
     expect(unpinnedFiftyReads).toBe(2);
+  });
+
+  it("abandons its in-flight queue read when the queue unmounts", async () => {
+    let entered = () => {};
+    const handlerEntered = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let captured: AbortSignal | undefined;
+    installQueue();
+    server.use(
+      http.get(`${WORKSPACE_ROUTE}/pending-discoveries/page`, async ({ request }) => {
+        captured = request.signal;
+        entered();
+        await held;
+        return HttpResponse.json(pendingDiscoveryPage({}));
+      }),
+    );
+    const view = render(
+      <MemoryRouter>
+        <AppProviders>
+          <PendingDiscoveries workspaceId="workspace-1" />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    await handlerEntered;
+
+    view.unmount();
+    release();
+
+    expect(captured?.aborted).toBe(true);
   });
 
   it("starts at the page size the person last chose", async () => {

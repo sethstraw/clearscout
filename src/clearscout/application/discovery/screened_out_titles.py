@@ -73,9 +73,7 @@ def record_screened_out_titles(
                 SourceScanOutcome.reason.in_(SCREENED_OUT_REASONS),
             )
             .group_by(SourceScanOutcome.normalized_url)
-        )
-        .tuples()
-        .all()
+        ).all()
     )
     for normalized_url, (outcome, source_name) in latest.items():
         code, subject = _title_finding(outcome)

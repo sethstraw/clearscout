@@ -271,7 +271,7 @@ function VersionHistory({
 }) {
   const diff = useQuery({
     queryKey: ["prompt-diff", workspaceId, promptKey, compare] as const,
-    queryFn: () => api.promptDiff(promptKey, workspaceId, compare ?? 0, 0),
+    queryFn: ({ signal }) => api.promptDiff(promptKey, workspaceId, compare ?? 0, 0, signal),
     enabled: compare !== null,
   });
   if (!versions.length) {

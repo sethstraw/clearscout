@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Link } from "react-router-dom";
 
 import type { ScanScheduleConfiguration, Source } from "../../api/client";
 import { useSaveScanSchedule, useScanSchedule } from "../../api/hooks";
@@ -237,7 +238,7 @@ export function SourceScanSchedule({
           )}
           {state.last_task_id && (
             <p>
-              <a href="/tasks">View last scheduled scan in Activity</a>
+              <Link to="/tasks">View last scheduled scan in Activity</Link>
             </p>
           )}
           <button

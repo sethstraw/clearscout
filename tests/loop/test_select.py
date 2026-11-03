@@ -9,6 +9,8 @@ import pytest
 
 from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind
 from clearscout.application.tailoring.layout import Budget, wrapped_lines
+from clearscout.application.tailoring.pipeline.rewrite import publication_notes
+from clearscout.application.tailoring.stages.draft import fit
 from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
 from clearscout.application.tailoring.stages.match import (
     Classification,
@@ -24,6 +26,7 @@ from clearscout.application.tailoring.stages.select import (
     build_plan,
 )
 from clearscout.domain import EvidenceStatus
+from tests.support.resumes import drafted_to_length
 
 TODAY = date(2026, 8, 4)
 
@@ -302,6 +305,128 @@ def test_publications_stay_capped_and_in_document_order(inventory, settings) -> 
     assert len(plan.publication_ids) == min(len(available), 3)
     positions = [inventory.by_id(entry_id).order for entry_id in plan.publication_ids]
     assert positions == sorted(positions)
+
+
+def _schema_governance_posting(inventory: CvInventory) -> tuple[JobSpec, EvidenceMap, Entry]:
+    """A schema-governance posting whose match cites a bullet and not the on-topic paper."""
+    paper = next(
+        entry
+        for entry in inventory.of_kind(EntryKind.PUBLICATION)
+        if "Schema governance at scale" in entry.text
+    )
+    registry = bullet_id(inventory, "Designed the schema registry")
+    spec = make_spec(("r01", "Schema governance at scale", Importance.MUST_HAVE))
+    evidence = EvidenceMap(
+        matches=(
+            Match(
+                requirement_id="r01",
+                entry_ids=(registry,),
+                classification=Classification.DIRECT,
+                strength=Strength.STRONG,
+            ),
+        )
+    )
+    return spec, evidence, paper
+
+
+def test_an_on_topic_paper_the_match_did_not_cite_scores_zero_and_is_dropped(
+    inventory, settings
+) -> None:
+    """Scores come only from match citations; topic overlap with the posting adds nothing."""
+    spec, evidence, paper = _schema_governance_posting(inventory)
+
+    plan = build_plan(inventory, spec, evidence, settings, TODAY)
+
+    assert settings.min_publications == 0
+    assert paper.id not in plan.scores
+    assert plan.publication_ids == ()
+
+
+def test_a_must_consider_paper_the_match_did_not_cite_is_offered(inventory, settings) -> None:
+    spec, evidence, paper = _schema_governance_posting(inventory)
+    marked = settings.model_copy(update={"must_consider_publications": (paper.id,)})
+
+    plan = build_plan(inventory, spec, evidence, marked, TODAY)
+
+    assert paper.id in plan.publication_ids
+    assert paper.id not in plan.unoffered_publications
+    assert plan.stale_must_consider == ()
+
+
+def test_an_unmarked_uncited_paper_is_reported_as_available_not_offered(
+    inventory, settings, guardrails
+) -> None:
+    spec, evidence, paper = _schema_governance_posting(inventory)
+
+    plan = build_plan(inventory, spec, evidence, settings, TODAY)
+    fitted = fit(drafted_to_length(inventory, plan, 1.0), inventory, plan, settings, guardrails)
+
+    assert paper.id not in plan.publication_ids
+    assert paper.id in plan.unoffered_publications
+    assert f"Publication available, not offered (id {paper.id}): {paper.text}" in publication_notes(
+        settings, plan, inventory, fitted
+    )
+
+
+def test_a_long_unoffered_list_is_counted_and_names_the_strongest_five(
+    tmp_path, settings, guardrails
+) -> None:
+    from tests.support.resumes import long_record
+
+    titles = tuple(
+        f"Example study {index} on schema lineage. *Example Journal*." for index in range(8)
+    )
+    record = long_record(tmp_path, papers=titles)
+    papers = record.of_kind(EntryKind.PUBLICATION)
+    spec = make_spec(("r01", "Schema lineage", Importance.MUST_HAVE))
+    evidence = EvidenceMap(
+        matches=(
+            Match(
+                requirement_id="r01",
+                entry_ids=(papers[-1].id,),
+                classification=Classification.DIRECT,
+                strength=Strength.STRONG,
+            ),
+        )
+    )
+    capped = settings.model_copy(update={"max_publications": 0})
+
+    plan = build_plan(record, spec, evidence, capped, TODAY)
+    fitted = fit(drafted_to_length(record, plan, 1.0), record, plan, capped, guardrails)
+    notes = publication_notes(capped, plan, record, fitted)
+
+    listed = [note for note in notes if note.startswith("Publication available")]
+    assert notes[0].startswith("8 publications available, not offered")
+    assert len(listed) == 5
+    assert f"(id {papers[-1].id}, cited but over max_publications)" in listed[0]
+    assert "cited but" not in " ".join(listed[1:])
+
+
+def test_a_must_consider_id_missing_from_the_master_cv_is_reported(
+    inventory, settings, guardrails
+) -> None:
+    spec, evidence, _ = _schema_governance_posting(inventory)
+    marked = settings.model_copy(update={"must_consider_publications": ("pub-00000000",)})
+
+    plan = build_plan(inventory, spec, evidence, marked, TODAY)
+    fitted = fit(drafted_to_length(inventory, plan, 1.0), inventory, plan, marked, guardrails)
+
+    assert plan.stale_must_consider == ("pub-00000000",)
+    assert "pub-00000000" not in plan.publication_ids
+    assert "pub-00000000" in " ".join(publication_notes(marked, plan, inventory, fitted))
+
+
+def test_must_consider_papers_still_obey_max_publications(inventory, settings) -> None:
+    papers = tuple(entry.id for entry in inventory.of_kind(EntryKind.PUBLICATION))
+    spec, evidence, _ = _schema_governance_posting(inventory)
+    marked = settings.model_copy(
+        update={"must_consider_publications": papers, "max_publications": 1}
+    )
+
+    plan = build_plan(inventory, spec, evidence, marked, TODAY)
+
+    assert len(plan.publication_ids) == 1
+    assert set(plan.unoffered_publications) == set(papers) - set(plan.publication_ids)
 
 
 def test_the_publication_floor_keeps_the_strongest_papers_not_the_earliest(

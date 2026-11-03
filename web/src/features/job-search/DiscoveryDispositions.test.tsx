@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
 import { describe, expect, it } from "vitest";
 
 import type { DispositionSelection, PendingDiscovery, PendingMarkers } from "../../api/client";
@@ -501,13 +501,18 @@ describe("DiscoveryDispositionManager", () => {
     ).toBeTruthy();
   });
 
-  it("opens a dismissed Himalayas row at its applicationLink and credits Himalayas", async () => {
-    const applicationLink = "https://himalayas.app/companies/initech/jobs/platform-steward";
+  it("opens a dismissed row at the address its aggregator requires and credits it", async () => {
+    const applicationLink = "https://listings.example.test/companies/initech/jobs/platform-steward";
     installDispositions({
       dismissed: [
         dismissedDiscovery({
           title: "Platform Steward",
           employer: "Initech",
+          aggregator: {
+            credit_url: applicationLink,
+            name: "Example Listings",
+            opens_discovery_url: true,
+          },
           discovery_url: applicationLink,
           canonical_url: "https://jobs.example.test/initech/88",
         }),
@@ -530,17 +535,24 @@ describe("DiscoveryDispositionManager", () => {
       dismissedTable.getByRole("link", { name: /^Platform Steward/ }).getAttribute("href"),
     ).toBe(applicationLink);
     expect(
-      dismissedTable.getByRole("link", { name: "Job data from Himalayas" }).getAttribute("href"),
+      dismissedTable
+        .getByRole("link", { name: "Job data from Example Listings" })
+        .getAttribute("href"),
     ).toBe(applicationLink);
   });
 
-  it("credits Arbeitnow on a dismissed row that opens an employer address", async () => {
+  it("credits the aggregator on a dismissed row that opens an employer address", async () => {
     installDispositions({
       dismissed: [
         dismissedDiscovery({
           title: "Platform Steward",
           employer: "Initech",
-          discovery_url: "https://www.arbeitnow.com/jobs/companies/initech/steward-2",
+          aggregator: {
+            credit_url: "https://listings.example.test/",
+            name: "Example Listings",
+            opens_discovery_url: false,
+          },
+          discovery_url: "https://listings.example.test/jobs/initech/steward-2",
           canonical_url: "https://jobs.example.test/initech/88",
         }),
       ],
@@ -562,8 +574,10 @@ describe("DiscoveryDispositionManager", () => {
       dismissedTable.getByRole("link", { name: /^Platform Steward/ }).getAttribute("href"),
     ).toBe("https://jobs.example.test/initech/88");
     expect(
-      dismissedTable.getByRole("link", { name: "Job data from Arbeitnow" }).getAttribute("href"),
-    ).toBe("https://www.arbeitnow.com/");
+      dismissedTable
+        .getByRole("link", { name: "Job data from Example Listings" })
+        .getAttribute("href"),
+    ).toBe("https://listings.example.test/");
   });
 
   it("says a dismissal can come from an evaluation refusal and names that origin", async () => {

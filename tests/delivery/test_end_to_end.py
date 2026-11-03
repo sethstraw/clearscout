@@ -15,7 +15,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 
 from clearscout.application.config import Effort, ModelChoice, ProviderName, Settings
@@ -89,7 +89,7 @@ def test_the_whole_pipeline_runs_through_the_real_sdk(
     from clearscout.application.tailoring.pipeline import RunCommand, run
 
     api = FakeProviderAPI(vendor.value, independent_script())
-    http = httpx.Client(transport=httpx.MockTransport(api))
+    http = httpx2.Client(transport=httpx2.MockTransport(api))
     monkeypatch.setattr(
         "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider_for_http(vendor, http, max_retries=0),
@@ -144,7 +144,7 @@ def test_the_official_sdk_parses_a_fixed_response_not_derived_from_its_schema(
     fixture = Path(__file__).parents[1] / "fixtures" / "provider_responses" / "answer.json"
     payload = json.loads(fixture.read_text(encoding="utf-8"))
     api = FakeProviderAPI(vendor.value, {"Answer": lambda schema: payload})
-    http = httpx.Client(transport=httpx.MockTransport(api))
+    http = httpx2.Client(transport=httpx2.MockTransport(api))
     provider = provider_for_http(vendor, http, max_retries=0)
     value, record = provider.complete(
         plan_for(max_tokens=64), Answer, ModelChoice(model="fixture", effort=Effort.LOW)
@@ -163,9 +163,9 @@ def test_the_official_sdk_lists_models_and_checks_credentials(
     """Model discovery and credential checks use the vendor's real HTTP path."""
     calls: list[str] = []
 
-    def serve(request: httpx.Request) -> httpx.Response:
+    def serve(request: httpx2.Request) -> httpx2.Response:
         calls.append(request.url.path)
-        return httpx.Response(
+        return httpx2.Response(
             200,
             request=request,
             json={
@@ -182,7 +182,7 @@ def test_the_official_sdk_lists_models_and_checks_credentials(
             },
         )
 
-    with httpx.Client(transport=httpx.MockTransport(serve)) as http:
+    with httpx2.Client(transport=httpx2.MockTransport(serve)) as http:
         provider = provider_for_http(vendor, http, max_retries=0)
         assert provider.available_models() == frozenset({"fixture-model"})
         provider.check_credentials()
@@ -197,14 +197,14 @@ def test_the_official_sdk_translates_a_rejected_key(
 ) -> None:
     """A real SDK error envelope becomes the user-facing authentication error."""
 
-    def reject(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
+    def reject(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
             401,
             request=request,
             json={"error": {"type": "authentication_error", "message": "invalid key"}},
         )
 
-    with httpx.Client(transport=httpx.MockTransport(reject)) as http:
+    with httpx2.Client(transport=httpx2.MockTransport(reject)) as http:
         provider = provider_for_http(vendor, http, max_retries=0)
         with pytest.raises(AuthError, match="key was refused"):
             provider.check_credentials()
@@ -227,7 +227,7 @@ def test_a_request_offers_only_identifiers_that_exist(
     from tests.support.schema import literals
 
     api = FakeProviderAPI(vendor.value, script({}))
-    http = httpx.Client(transport=httpx.MockTransport(api))
+    http = httpx2.Client(transport=httpx2.MockTransport(api))
     monkeypatch.setattr(
         "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider_for_http(vendor, http, max_retries=0),

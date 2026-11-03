@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import { useAddFoundPosting, useCheckFoundPosting } from "../../api/hooks";
 import { ApiError, type FoundPostingCheckResponse } from "../../api/client";
+import { readBatches } from "./pendingDiscoveryIntakeModel";
 import { usePostingRefresh } from "./usePostingRefresh";
 
 function verifiedPostingFields(result: FoundPostingCheckResponse): string[] {
@@ -201,8 +202,7 @@ export function PendingDiscoveryIntake({
     setFoundCheck(null);
     checkFound.reset();
 
-    for (let offset = 0; offset < reads.length; offset += 250) {
-      const batch = reads.slice(offset, offset + 250);
+    for (const batch of readBatches(reads)) {
       try {
         await refresh.refresh(batch.map((item) => item.pendingId));
         for (const item of batch)

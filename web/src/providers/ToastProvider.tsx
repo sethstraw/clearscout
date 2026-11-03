@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Toast, ToastContainer } from "./Toast";
-import type { ToastProps, ToastTone } from "./Toast";
+import type { ToastAction, ToastProps, ToastTone } from "./Toast";
 import { ToastContext } from "./toast-context";
 
 type ToastItem = Omit<ToastProps, "onDismiss">;
@@ -8,9 +8,9 @@ type ToastItem = Omit<ToastProps, "onDismiss">;
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const showToast = useCallback((message: string, tone: ToastTone) => {
+  const showToast = useCallback((message: string, tone: ToastTone, action?: ToastAction) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setToasts((current) => [...current, { id, message, type: tone }]);
+    setToasts((current) => [...current, { id, message, type: tone, action }]);
   }, []);
 
   const dismissToast = useCallback((id: string) => {

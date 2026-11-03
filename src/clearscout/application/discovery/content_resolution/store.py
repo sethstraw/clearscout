@@ -187,7 +187,7 @@ class ContentEvidenceStore:
             publisher_artifact_id is None
             and not changed
             and previous_fact is not None
-            and any(item.basis == "valid_through" for item in previous_fact.statements)
+            and previous_fact.from_publisher_record
         ):
             publisher_artifact_id = previous_fact.artifact_id
         return fact.with_artifacts(

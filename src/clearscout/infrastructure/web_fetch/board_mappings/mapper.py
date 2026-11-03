@@ -24,6 +24,7 @@ from clearscout.domain.staged_facts import (
     ListingIdentityTrust,
     PostedDateGrade,
     PublishedFact,
+    PublisherClosingDate,
     PublisherPostedDate,
     StagedListingFacts,
 )
@@ -86,6 +87,7 @@ class BoardDeclaration:
     compensation: Source[Any] | None = None
     role_aliases: Derivation[Sequence[str]] | None = None
     posted: Derivation[PublisherPostedDate | None] | None = None
+    closing: Derivation[PublisherClosingDate | None] | None = None
     # The lines a retained body states before the description. A board sweep and a
     # single-posting read digest the same body, so both must compose it identically.
     heading: tuple[Source[str], ...] = ()
@@ -269,6 +271,7 @@ def map_posting(declaration: BoardDeclaration, posting: Posting) -> MappedPostin
             ),
             employer=employer_fact,
             posted_date=declaration.posted(posting) if declaration.posted else None,
+            closing_date=declaration.closing(posting) if declaration.closing else None,
         ),
         description=description,
         place_entries=(

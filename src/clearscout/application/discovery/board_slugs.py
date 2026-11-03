@@ -59,7 +59,7 @@ _JOB_SITE_DOMAINS = (
     "wellfound.com",
     "builtin.com",
     "weworkremotely.com",
-    *((urlparse(site.url).hostname or "").removeprefix("www.") for site in STARTER_AGGREGATORS),
+    *(site.host for site in STARTER_AGGREGATORS),
 )
 
 

@@ -144,9 +144,9 @@ def _miss_step(
         return "withdraw"
     if check in _ACTIVE_STATUSES:
         return "keep"
-    # A mark with no check on record counts as an earlier miss; only a completed check that
-    # read this row backs a withdrawal otherwise, and any other outcome renews the mark.
-    return "withdraw" if check in (None, TaskStatus.COMPLETED.value) else "mark"
+    # Only a completed check that read this row backs a withdrawal; no check on record or
+    # any other outcome renews the mark, which queues a fresh check.
+    return "withdraw" if check == TaskStatus.COMPLETED.value else "mark"
 
 
 def _verified_active_since(
@@ -240,6 +240,64 @@ def _withdraw_absent_row(
             **audit_columns("worker", "source.scan", correlation_id),
         )
     )
+
+
+def withdraw_expired_in_session(
+    session: Session,
+    workspace_id: str,
+    source_id: str,
+    now: datetime,
+    *,
+    correlation_id: str | None = None,
+) -> list[str]:
+    """Withdraw this source's open rows whose board-stated end of listing has passed.
+
+    A bounded read never proves absence, so this runs on every read of the source.
+    """
+    staged = session.scalars(
+        select(PendingDiscovery).where(
+            PendingDiscovery.workspace_id == workspace_id,
+            PendingDiscovery.source_id == source_id,
+            PendingDiscovery.archived_at.is_(None),
+            PendingDiscovery.withdrawn_at.is_(None),
+        )
+    ).all()
+    gone: list[str] = []
+    withdrawn: list[str] = []
+    for row in staged:
+        closing = StagedListingFacts.from_json(row.staged_facts).closing_date
+        if closing is None or not closing.listing_expired(now):
+            continue
+        row.absent_since = None
+        row.withdrawn_at = now
+        session.add(
+            AuditEvent(
+                workspace_id=row.workspace_id,
+                action="pending_discovery.withdrawn_expired",
+                entity_type="pending_discovery",
+                entity_id=row.id,
+                details={
+                    "discovery_url": row.discovery_url,
+                    "source_id": source_id,
+                    "listed_until": closing.normalized_value,
+                    "reason": (
+                        f"The board stated this job stays listed until {closing.normalized_value}."
+                    ),
+                },
+                **audit_columns("worker", "source.scan", correlation_id),
+            )
+        )
+        gone.append(row.title)
+        withdrawn.append(row.id)
+    release_variants_of_withdrawn(
+        session,
+        workspace_id,
+        withdrawn,
+        actor="worker",
+        origin="source.scan",
+        correlation_id=correlation_id,
+    )
+    return gone
 
 
 def withdraw_absent_in_session(

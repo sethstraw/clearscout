@@ -16,6 +16,7 @@ import type { SearchProviderConfiguration } from "../../api/hooks/tasks";
 import { text } from "../../api/json";
 import { attemptCount, taskKindOf, taskSpendDisclosure } from "../../api/taskNames";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
+import { ErrorNotice } from "../../components/ErrorNotice";
 import { Page } from "../../components/Page";
 import { PaidAction } from "../../components/PaidAction";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -410,7 +411,7 @@ function TaskArticle({
         )}
         {retry.isError && retry.variables === task.id && (
           <p className="field-error" role="alert">
-            {freshScan ? "Scan again" : "Retry"} failed: {retry.error.message}
+            {freshScan ? "Scan again" : "Retry"} failed: <ErrorNotice error={retry.error} />
           </p>
         )}
         {cancel.isError && cancel.variables === task.id && (

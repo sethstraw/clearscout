@@ -8,6 +8,7 @@ export const artifactsApi = {
     entityType?: string,
     entityId?: string,
     includeRelated = false,
+    signal?: AbortSignal,
   ) => {
     const query = new URLSearchParams({ workspace_id: workspaceId });
     if (entityType && entityId) {
@@ -15,11 +16,12 @@ export const artifactsApi = {
       query.set("entity_id", entityId);
       if (includeRelated) query.set("include_related", "true");
     }
-    return request<Artifact[]>(`/artifacts?${query}`);
+    return request<Artifact[]>(`/artifacts?${query}`, { signal });
   },
-  artifactText: (artifactId: string, workspaceId: string) =>
+  artifactText: (artifactId: string, workspaceId: string, signal?: AbortSignal) =>
     requestText(
       `/artifacts/${encodeURIComponent(artifactId)}/content?workspace_id=${encodeURIComponent(workspaceId)}`,
+      signal,
     ),
   artifactUrl: (
     artifactId: string,
@@ -27,13 +29,15 @@ export const artifactsApi = {
     disposition: "inline" | "attachment" = "inline",
   ) =>
     `/api/v1/artifacts/${encodeURIComponent(artifactId)}/content?workspace_id=${encodeURIComponent(workspaceId)}&disposition=${disposition}`,
-  artifactVersions: (artifactId: string, workspaceId: string) =>
+  artifactVersions: (artifactId: string, workspaceId: string, signal?: AbortSignal) =>
     request<Artifact[]>(
       `/artifacts/${encodeURIComponent(artifactId)}/versions?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
-  artifactDiff: (artifactId: string, otherId: string, workspaceId: string) =>
+  artifactDiff: (artifactId: string, otherId: string, workspaceId: string, signal?: AbortSignal) =>
     request<ArtifactDiff>(
       `/artifacts/${encodeURIComponent(artifactId)}/diff/${encodeURIComponent(otherId)}?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
   citationCheck: (artifactId: string, body: { workspace_id: string; content: string }) =>
     request<CitationCheck>(`/artifacts/${encodeURIComponent(artifactId)}/citation-check`, {

@@ -9,6 +9,7 @@ from sqlalchemy import ColumnElement, select
 from sqlalchemy.orm import Session
 
 from clearscout.application.contracts import PublisherClosingDateResponse
+from clearscout.application.discovery.aggregator_catalog import aggregator_credit
 from clearscout.application.discovery.content_resolution import (
     pending_discovery_readiness,
     usable_current_evidence,
@@ -49,7 +50,7 @@ from clearscout.application.job_search.models import (
     ScreeningFindingResponse,
     StagedListingFactsResponse,
 )
-from clearscout.domain import PendingDiscoveryReadiness
+from clearscout.domain import PendingDiscoveryReadiness, PendingWithdrawalCause
 from clearscout.domain.identity import normalize_text
 from clearscout.domain.places import PlaceReader
 from clearscout.domain.records import RobotsReadBasis
@@ -153,18 +154,20 @@ def duplicate_suggestions_in_session(
         .where(RelevanceReview.pending_discovery_id == PendingDiscovery.id)
         .exists()
     )
-    rows = session.execute(
-        select(PendingDiscovery, PendingPostingContent, Source.source_type, reviewed)
-        .outerjoin(
-            PendingPostingContent,
-            PendingPostingContent.id == PendingDiscovery.current_content_id,
-        )
-        .outerjoin(Source, Source.id == PendingDiscovery.source_id)
-        .where(
-            *root_discovery_filters(workspace_id),
-            PendingDiscovery.withdrawn_at.is_(None),
-        )
-    ).all()
+    rows: Sequence[tuple[PendingDiscovery, PendingPostingContent | None, str | None, bool]] = (
+        session.execute(
+            select(PendingDiscovery, PendingPostingContent, Source.source_type, reviewed)
+            .outerjoin(
+                PendingPostingContent,
+                PendingPostingContent.id == PendingDiscovery.current_content_id,
+            )
+            .outerjoin(Source, Source.id == PendingDiscovery.source_id)
+            .where(
+                *root_discovery_filters(workspace_id),
+                PendingDiscovery.withdrawn_at.is_(None),
+            )
+        ).all()
+    )
     discoveries = {row.id: row for row, _content, _source_type, _review in rows}
     if not discoveries:
         return {}
@@ -376,6 +379,7 @@ def pending_response(
     relevance_review_rejection: RelevanceReviewRejectionResponse | None = None,
     place_reader: PlaceReader,
     cut_off: frozenset[str] = frozenset(),
+    withdrawal_cause: PendingWithdrawalCause | None = None,
 ) -> PendingDiscoveryResponse:
     """Build the wire response for one projected pending row."""
     standing, row, staged_facts, screening, recommendation, recommendation_because = projection
@@ -397,6 +401,7 @@ def pending_response(
         location=row.location,
         discovery_url=row.discovery_url,
         canonical_url=row.canonical_url,
+        aggregator=aggregator_credit(row.discovery_url, row.canonical_url),
         content_status=row.content_status,
         readiness=queue_readiness(projection, current_content, cut_off),
         retained_content_id=row.current_content_id if retained is not None else None,
@@ -455,6 +460,7 @@ def pending_response(
         arrangement_categories_source=arrangement_source,
         also_in=sorted(elsewhere),
         withdrawn_at=row.withdrawn_at,
+        withdrawal_cause=withdrawal_cause,
         evaluated_job_id=match.job_posting_id if match is not None else None,
         evaluated_evaluation_id=match.evaluation_id if match is not None else None,
         evaluated_at=match.evaluated_at if match is not None else None,

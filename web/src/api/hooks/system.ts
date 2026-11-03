@@ -5,11 +5,18 @@ import type { ReconciliationWindow } from "../client/types";
 import { queryKeys } from "./keys";
 
 export function useHealth() {
-  return useQuery({ queryKey: queryKeys.health, queryFn: api.health, refetchInterval: 10_000 });
+  return useQuery({
+    queryKey: queryKeys.health,
+    queryFn: ({ signal }) => api.health(signal),
+    refetchInterval: 10_000,
+  });
 }
 
 export function useProviders() {
-  return useQuery({ queryKey: queryKeys.providers, queryFn: api.providers });
+  return useQuery({
+    queryKey: queryKeys.providers,
+    queryFn: ({ signal }) => api.providers(signal),
+  });
 }
 
 /** True once health reports free mode; loading or a failed read is not free mode. */

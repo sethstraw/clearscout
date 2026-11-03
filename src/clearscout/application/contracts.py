@@ -151,6 +151,16 @@ class PublisherClosingDateResponse(StrictModel):
     needs_clarification: bool = False
 
 
+# Derived from the shipped aggregator catalog by aggregator_credit.
+class AggregatorCreditResponse(StrictModel):
+    """The visible credit an aggregator's terms ask for beside a posting it listed."""
+
+    name: str
+    credit_url: str
+    # Set where the terms require posting links to open the aggregator's own address.
+    opens_discovery_url: bool = False
+
+
 class PostingBodyInput(StrictModel):
     """Original posting bytes or text stored as durable evidence."""
 

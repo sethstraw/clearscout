@@ -10,7 +10,7 @@ import {
 } from "../../api/hooks";
 import { queryKeys } from "../../api/hooks/keys";
 import { ApiError } from "../../api/http";
-import { postingAddress } from "../../components/aggregatorHosts";
+import { postingAddress } from "./postingAddress";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { DiscoveryTable } from "./DiscoveryTable";
@@ -516,7 +516,7 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
                       note: discovery.content_note || "Closure recorded",
                       title: discovery.title,
                       url: postingAddress(discovery),
-                      creditUrl: discovery.discovery_url,
+                      aggregator: discovery.aggregator,
                     }))}
                   />
                 </div>

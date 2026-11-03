@@ -5,7 +5,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, TypeVar, cast
 
-import httpx
+import httpx2
 import pytest
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
@@ -342,7 +342,7 @@ def _responses_api(
 ) -> tuple[Provider, SearchingResponsesAPI]:
     """Return the shipped OpenAI adapter answering over HTTP with these tool calls."""
     api = SearchingResponsesAPI(answer, list(tool_calls))
-    http = httpx.Client(transport=httpx.MockTransport(api))
+    http = httpx2.Client(transport=httpx2.MockTransport(api))
     return provider_for_http(ProviderName.OPENAI, http, max_retries=0), api
 
 

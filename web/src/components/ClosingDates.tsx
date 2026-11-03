@@ -24,6 +24,11 @@ function publisherDatePassed(publisher: PublisherDate | null | undefined, now: D
   return Number.isFinite(instant) && instant < now.getTime();
 }
 
+// A board's own end of listing withdraws the row once it passes, unlike a closing date.
+function statesListingEnd(publisher: PublisherDate | null | undefined): boolean {
+  return Boolean(publisher?.statements?.some((item) => item.basis === "listed_until"));
+}
+
 function publisherLabel(publisher: PublisherDate | null | undefined): string {
   if (!publisher?.statements?.length) return "Not stated";
   if (publisher.needs_clarification) return "Needs clarification";
@@ -56,6 +61,11 @@ export function ClosingDates({
   const summary = useRef<HTMLElement>(null);
   const source = safeHttpUrl(publisher?.source_url || "");
   const currentDraft = dirty ? draft : override || "";
+  const listingEnd = statesListingEnd(publisher);
+  const publisherHeading = listingEnd ? "Listed on the board until" : "Publisher closing date";
+  const passedNote = listingEnd
+    ? "The board listing ended."
+    : "Closing date passed; verify availability.";
 
   const save = async (value: string | null) => {
     if (!onSave || busyRef.current) return;
@@ -94,14 +104,12 @@ export function ClosingDates({
     return (
       <section role="group" aria-label={label}>
         <p className="field-note">
-          {override ? "Your closing date" : "Publisher closing date"}: {value}
+          {override ? "Your closing date" : publisherHeading}: {value}
           {!override && publisher?.precision === "timestamp" && (
             <span> {publisher.timezone || "Timezone not stated"}</span>
           )}
         </p>
-        {publisherDatePassed(publisher, now) && (
-          <p className="field-note">Closing date passed; verify availability.</p>
-        )}
+        {publisherDatePassed(publisher, now) && <p className="field-note">{passedNote}</p>}
         {override && validDate(override) && override < calendarDate(now) && (
           <p className="field-note">Your closing date has passed. It is a tracking reminder.</p>
         )}
@@ -113,7 +121,7 @@ export function ClosingDates({
     <section role="group" aria-label={label}>
       <dl className="fact-list">
         <div>
-          <dt>Publisher closing date</dt>
+          <dt>{publisherHeading}</dt>
           <dd>
             {publisherLabel(publisher)}
             {publisher?.precision === "timestamp" && (
@@ -126,9 +134,7 @@ export function ClosingDates({
           <dd>{override || "Not set; using publisher information"}</dd>
         </div>
       </dl>
-      {publisherDatePassed(publisher, now) && (
-        <p className="field-note">Closing date passed; verify availability.</p>
-      )}
+      {publisherDatePassed(publisher, now) && <p className="field-note">{passedNote}</p>}
       {override && validDate(override) && override < calendarDate(now) && (
         <p className="field-note">Your closing date has passed. It is a tracking reminder.</p>
       )}

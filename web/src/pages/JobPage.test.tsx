@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -714,7 +714,7 @@ describe("JobPage", () => {
       "tab=posting&observation=observation-1&start=10&end=29",
     );
 
-    expect(screen.getByText("Evidence not tied to a requirement (1)")).toBeTruthy();
+    expect(await screen.findByText("Evidence not tied to a requirement (1)")).toBeTruthy();
     expect(screen.getByText("Filed without a requirement")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Show full text" }));
@@ -1317,8 +1317,8 @@ describe("JobPage", () => {
     installJob({
       onEnqueueRefused: () =>
         HttpResponse.json(
-          { detail: "The workspace spend limit is already reached." },
-          { status: 402 },
+          { detail: "A re-evaluation for this job is already queued." },
+          { status: 409 },
         ),
     });
     render(

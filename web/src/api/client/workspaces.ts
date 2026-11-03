@@ -61,41 +61,51 @@ import type {
 } from "./types";
 
 export const workspacesApi = {
-  workspaces: () => request<Workspace[]>("/workspaces"),
+  workspaces: (signal?: AbortSignal) => request<Workspace[]>("/workspaces", { signal }),
   createWorkspace: (body: WorkspaceCreate) =>
     request<Workspace>("/workspaces", { method: "POST", body: JSON.stringify(body) }),
-  scanSchedule: (workspaceId: string) =>
-    request<ScanSchedule>(`/workspaces/${encodeURIComponent(workspaceId)}/scan-schedule`),
+  scanSchedule: (workspaceId: string, signal?: AbortSignal) =>
+    request<ScanSchedule>(`/workspaces/${encodeURIComponent(workspaceId)}/scan-schedule`, {
+      signal,
+    }),
   saveScanSchedule: (workspaceId: string, body: ScanScheduleInput) =>
     request<ScanSchedule>(`/workspaces/${encodeURIComponent(workspaceId)}/scan-schedule`, {
       method: "PUT",
       body: JSON.stringify(body),
     }),
-  guidedCampaignConfiguration: (workspaceId: string) =>
+  guidedCampaignConfiguration: (workspaceId: string, signal?: AbortSignal) =>
     request<GuidedCampaignConfiguration>(
       `/workspaces/${encodeURIComponent(workspaceId)}/guided-campaign-configuration`,
+      { signal },
     ),
-  searchVocabularyConfiguration: (workspaceId: string) =>
+  searchVocabularyConfiguration: (workspaceId: string, signal?: AbortSignal) =>
     request<SearchVocabularyConfiguration>(
       `/workspaces/${encodeURIComponent(workspaceId)}/search-vocabulary-configuration`,
+      { signal },
     ),
-  relevanceReviewConfiguration: (workspaceId: string) =>
+  relevanceReviewConfiguration: (workspaceId: string, signal?: AbortSignal) =>
     request<RelevanceReviewConfiguration>(
       `/workspaces/${encodeURIComponent(workspaceId)}/relevance-review-configuration`,
+      { signal },
     ),
-  guardrails: (workspaceId: string) =>
-    request<GuardrailsState>(`/workspaces/${encodeURIComponent(workspaceId)}/guardrails`),
-  guardrailHistory: (workspaceId: string) =>
+  guardrails: (workspaceId: string, signal?: AbortSignal) =>
+    request<GuardrailsState>(`/workspaces/${encodeURIComponent(workspaceId)}/guardrails`, {
+      signal,
+    }),
+  guardrailHistory: (workspaceId: string, signal?: AbortSignal) =>
     request<GuardrailVersion[]>(
       `/workspaces/${encodeURIComponent(workspaceId)}/guardrails/history`,
+      { signal },
     ),
-  learningLoopMetrics: (workspaceId: string) =>
+  learningLoopMetrics: (workspaceId: string, signal?: AbortSignal) =>
     request<LearningLoopMetrics>(
       `/workspaces/${encodeURIComponent(workspaceId)}/learning-loop-metrics`,
+      { signal },
     ),
-  learningLoopPolicy: (workspaceId: string) =>
+  learningLoopPolicy: (workspaceId: string, signal?: AbortSignal) =>
     request<LearningLoopPolicyState>(
       `/workspaces/${encodeURIComponent(workspaceId)}/learning-loop-policy`,
+      { signal },
     ),
   saveLearningLoopPolicy: (
     workspaceId: string,
@@ -115,11 +125,15 @@ export const workspacesApi = {
       `/workspaces/${encodeURIComponent(workspaceId)}/guardrails/preview`,
       { method: "POST", body: JSON.stringify({ rules }) },
     ),
-  runCostHistory: (workspaceId: string) =>
-    request<RunCostHistory[]>(`/workspaces/${encodeURIComponent(workspaceId)}/spend-history`),
-  postingRefusals: (workspaceId: string) =>
-    request<PostingRefusal[]>(`/workspaces/${encodeURIComponent(workspaceId)}/posting-refusals`),
-  sourceScans: (workspaceId: string, options: SourceScanHistoryOptions) => {
+  runCostHistory: (workspaceId: string, signal?: AbortSignal) =>
+    request<RunCostHistory[]>(`/workspaces/${encodeURIComponent(workspaceId)}/spend-history`, {
+      signal,
+    }),
+  postingRefusals: (workspaceId: string, signal?: AbortSignal) =>
+    request<PostingRefusal[]>(`/workspaces/${encodeURIComponent(workspaceId)}/posting-refusals`, {
+      signal,
+    }),
+  sourceScans: (workspaceId: string, options: SourceScanHistoryOptions, signal?: AbortSignal) => {
     const params = new URLSearchParams({
       offset: String(options.offset),
       limit: String(options.limit),
@@ -129,6 +143,7 @@ export const workspacesApi = {
     if (options.latestOnly) params.set("latest_only", "true");
     return request<SourceScanHistory>(
       `/workspaces/${encodeURIComponent(workspaceId)}/source-scans?${params.toString()}`,
+      { signal },
     );
   },
   continueSourceScan: (workspaceId: string, sourceScanId: string) =>
@@ -136,7 +151,11 @@ export const workspacesApi = {
       `/workspaces/${encodeURIComponent(workspaceId)}/source-scans/${encodeURIComponent(sourceScanId)}/continue`,
       { method: "POST" },
     ),
-  sourceScanOutcomes: (workspaceId: string, options: SourceScanOutcomeOptions) => {
+  sourceScanOutcomes: (
+    workspaceId: string,
+    options: SourceScanOutcomeOptions,
+    signal?: AbortSignal,
+  ) => {
     const params = new URLSearchParams({
       task_id: options.taskId,
       sort: options.sort,
@@ -151,9 +170,14 @@ export const workspacesApi = {
     if (options.candidateKind) params.set("candidate_kind", options.candidateKind);
     return request<SourceScanOutcomePage>(
       `/workspaces/${encodeURIComponent(workspaceId)}/source-scan-outcomes?${params.toString()}`,
+      { signal },
     );
   },
-  screenedOutTitles: (workspaceId: string, options: ScreenedOutTitleOptions) => {
+  screenedOutTitles: (
+    workspaceId: string,
+    options: ScreenedOutTitleOptions,
+    signal?: AbortSignal,
+  ) => {
     const params = new URLSearchParams({
       offset: String(options.offset),
       limit: String(options.limit),
@@ -163,6 +187,7 @@ export const workspacesApi = {
     if (options.source) params.set("source", options.source);
     return request<ScreenedOutTitlePage>(
       `/workspaces/${encodeURIComponent(workspaceId)}/screened-out-titles?${params.toString()}`,
+      { signal },
     );
   },
   reviewScreenedOutTitles: (workspaceId: string, ids: string[]) =>
@@ -170,8 +195,8 @@ export const workspacesApi = {
       `/workspaces/${encodeURIComponent(workspaceId)}/screened-out-titles/review`,
       { method: "POST", body: JSON.stringify({ ids }) },
     ),
-  sources: (workspaceId: string) =>
-    request<SourceList>(`/workspaces/${encodeURIComponent(workspaceId)}/sources`),
+  sources: (workspaceId: string, signal?: AbortSignal) =>
+    request<SourceList>(`/workspaces/${encodeURIComponent(workspaceId)}/sources`, { signal }),
   addFoundPosting: (workspaceId: string, body: FoundPostingCreate) =>
     request<FoundPostingAddResponse>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-discoveries`,
@@ -249,13 +274,15 @@ export const workspacesApi = {
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-dispositions/apply`,
       { method: "POST", body: JSON.stringify(body) },
     ),
-  dismissedPendingDiscoveries: (workspaceId: string) =>
+  dismissedPendingDiscoveries: (workspaceId: string, signal?: AbortSignal) =>
     request<DismissedDiscovery[]>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-dispositions/dismissed`,
+      { signal },
     ),
-  pendingDuplicateCandidates: (workspaceId: string) =>
+  pendingDuplicateCandidates: (workspaceId: string, signal?: AbortSignal) =>
     request<PendingDuplicateCandidate[]>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-dispositions/duplicate-candidates`,
+      { signal },
     ),
   disputeRelevanceVerdict: (workspaceId: string, pendingId: string, body: RelevanceDisputeBody) =>
     request<RelevanceDispute>(
@@ -267,9 +294,10 @@ export const workspacesApi = {
       `/workspaces/${encodeURIComponent(workspaceId)}/relevance-disputes/${encodeURIComponent(pendingId)}`,
       { method: "DELETE" },
     ),
-  pendingDispositionHistory: (workspaceId: string, pendingId: string) =>
+  pendingDispositionHistory: (workspaceId: string, pendingId: string, signal?: AbortSignal) =>
     request<PendingDisposition[]>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-discoveries/${encodeURIComponent(pendingId)}/dispositions`,
+      { signal },
     ),
   addSource: (workspaceId: string, body: SourceCreate) =>
     request<Source>(`/workspaces/${encodeURIComponent(workspaceId)}/sources`, {

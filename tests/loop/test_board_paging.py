@@ -5329,7 +5329,7 @@ def test_an_aggregator_read_keeps_each_postings_employer_and_never_claims_comple
     class ScriptedHimalayas(ScriptedPage):
         def get_json(self, url: str, *, headers: Mapping[str, str] | None = None) -> Any:
             requests.append(url)
-            offset = int(url.split("offset=")[1].split("&", maxsplit=1)[0])
+            offset = 20 if "cursor=page-2-token" in url else 0
             jobs: list[dict[str, Any]] = [
                 {
                     "title": f"Role {index}",
@@ -5342,7 +5342,8 @@ def test_an_aggregator_read_keeps_each_postings_employer_and_never_claims_comple
             ]
             if offset == 0:
                 jobs.append({"title": "Unlinked Role", "companyName": "Employer X"})
-            return {"totalCount": 30, "jobs": jobs}
+                return {"totalCount": 30, "jobs": jobs, "nextCursor": "page-2-token"}
+            return {"totalCount": 30, "jobs": jobs, "nextCursor": None}
 
     read = ScriptedHimalayas().listings("", "https://himalayas.app/jobs")
 
@@ -5358,8 +5359,8 @@ def test_an_aggregator_read_keeps_each_postings_employer_and_never_claims_comple
     assert first.requisition_id == "GUID-0"
 
     assert requests == [
-        "https://himalayas.app/jobs/api?offset=0&limit=20",
-        "https://himalayas.app/jobs/api?offset=20&limit=20",
+        "https://himalayas.app/jobs/api?limit=20",
+        "https://himalayas.app/jobs/api?limit=20&cursor=page-2-token",
     ]
 
 

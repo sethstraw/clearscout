@@ -879,9 +879,16 @@ So a miss on a multi-page read only marks the row and queues a content read of
 its own page, and a miss while that check is active keeps the mark. The next
 complete read that also lacks it withdraws it once a completed check read the
 row or found it gone (HTTP 404 or 410), unless the check found the page live. A
-dismissed row withdraws on its next miss without a check, and any other failed
-or cancelled check marks the row again and queues a new one. A single-page
-read withdraws on the first miss.
+dismissed row withdraws on its next miss without a check. Any other row with no
+check on record, or whose check failed or was cancelled, is marked again and
+queues a new check. A single-page read withdraws on the first miss.
+
+A board scan skips the detail read of a posting it read within the rescreen
+window (`RESCREEN_COMPLETED_AFTER` in `source_continuation/rescreen.py`, 7 days)
+and credits the held body at its original read time. On a board that lists
+postings without reading them, such as a sitemap-listed board that once
+deferred or cut a read, a posting whose page closes while it stays listed is
+not seen as closed until that window ends, up to 7 days later.
 
 ```mermaid
 stateDiagram-v2
@@ -903,6 +910,7 @@ stateDiagram-v2
     Pending --> Absent: a complete multi-page read misses it
     Absent --> Pending: the content check finds it live, or a read lists it
     Absent --> Absent: the next complete read misses it before its check completes
+    Absent --> Absent: the next complete read misses it with no check on record, which queues one
     Absent --> Withdrawn: the next complete read misses it after its check completes
     Pending --> Withdrawn: a complete single-page read misses it
     Ready --> Evaluated: discovery.evaluate commits the job and archives the row
@@ -943,8 +951,10 @@ Permission to read a source is often conditional: credit it, link back to the
 posting, do not republish the listing. The condition is stored on the source in
 the words of whoever recorded it, with the address it was published at, and the
 browser states it back when the source is switched on. A catalog entry carries
-its operator's published condition and passes the same gate. Nothing decides
-whether the obligation was met. The record and the prompt are the whole feature.
+its operator's published condition and passes the same gate. The catalog also
+puts a visible credit on every pending, dismissed, observed, or scanned row
+whose address is on a catalog host, and the browser draws it from the wire.
+Nothing decides whether the obligation was met.
 
 ### Reading a platform and its policy
 

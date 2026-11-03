@@ -2,17 +2,24 @@ import { requestJson as request } from "../http";
 import type { ReviewDecision, TailoringPreflight, TailoringReview } from "./types";
 
 export const tailoringApi = {
-  tailoringPreflight: (workspaceId: string, jobId: string, approvalTailoringRunId?: string) => {
+  tailoringPreflight: (
+    workspaceId: string,
+    jobId: string,
+    approvalTailoringRunId?: string,
+    signal?: AbortSignal,
+  ) => {
     const approval = approvalTailoringRunId
       ? `&approval_tailoring_run_id=${encodeURIComponent(approvalTailoringRunId)}`
       : "";
     return request<TailoringPreflight>(
       `/workspaces/${encodeURIComponent(workspaceId)}/jobs/${encodeURIComponent(jobId)}/tailoring-preflight?cover_letter=true${approval}`,
+      { signal },
     );
   },
-  tailoringReview: (runId: string, workspaceId: string) =>
+  tailoringReview: (runId: string, workspaceId: string, signal?: AbortSignal) =>
     request<TailoringReview>(
       `/tailoring-runs/${encodeURIComponent(runId)}/review?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
   decideProposal: (
     proposalId: string,

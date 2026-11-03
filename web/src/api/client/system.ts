@@ -8,8 +8,8 @@ import type {
 } from "./types";
 
 export const systemApi = {
-  health: () => request<Health>("/health"),
-  providers: () => request<Provider[]>("/providers"),
+  health: (signal?: AbortSignal) => request<Health>("/health", { signal }),
+  providers: (signal?: AbortSignal) => request<Provider[]>("/providers", { signal }),
   storeProviderKey: (provider: string, key: string) =>
     request<Provider>(`/providers/${encodeURIComponent(provider)}/key`, {
       method: "PUT",

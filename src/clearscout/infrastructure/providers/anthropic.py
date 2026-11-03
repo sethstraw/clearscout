@@ -149,7 +149,7 @@ class AnthropicProvider:
         return value, record
 
     def _send_message(self, request: dict[str, Any], previous: CallRecord | None) -> Any:
-        import httpx
+        import httpx2
         from anthropic import APIError
 
         try:
@@ -158,7 +158,7 @@ class AnthropicProvider:
             with self._client.messages.stream(**request) as stream:
                 return stream.get_final_message()
         # The SDK wraps a failure before the headers; one during the stream read arrives raw.
-        except (APIError, httpx.TransportError) as error:
+        except (APIError, httpx2.TransportError) as error:
             translated = (
                 translate(error, self.name, "complete this model request")
                 if isinstance(error, APIError)

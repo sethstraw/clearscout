@@ -120,7 +120,6 @@ REVIEWED_EXCEPTIONS = {
     ("python", "certifi", "2026.10.23"),
     ("python", "pypdfium2", "5.14.0"),
     ("python", "tld", "0.13.2"),
-    ("python", "tqdm", "4.70.0"),
 }
 
 

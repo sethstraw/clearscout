@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
@@ -13,6 +13,7 @@ import type {
   MasterCvVersion,
   RequirementGaps,
 } from "../api/client/types";
+import type { components } from "../api/schema";
 import { AppProviders } from "../providers";
 import { server } from "../test/msw/server";
 import { MasterCvPage } from "./MasterCvPage";
@@ -426,6 +427,44 @@ describe("MasterCvPage", () => {
 
     await waitFor(() => expect(sent.saves).toHaveLength(1));
     expect(sent.saves[0]).toEqual({ content: CV, confirm_reread: true });
+  });
+
+  it("names the provider-key fix when the server refuses a paid re-read save", async () => {
+    installHandlers({ impact: { reread_reason: "it has no dated role" } });
+    server.use(
+      http.post(`${WORKSPACE}/master-cv`, () =>
+        HttpResponse.json(
+          {
+            type: "urn:clearscout:problem:free-mode",
+            title: "Free mode",
+            status: 409,
+            detail: "No provider API key is set, so paid actions are off.",
+            correlation_id: "correlation-save",
+            hint: "Add an API key in Settings > Provider.",
+          } satisfies components["schemas"]["Problem"],
+          { status: 409 },
+        ),
+      ),
+    );
+    renderPage();
+    await openEditor();
+
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    const button = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Re-read and save",
+    });
+    await waitFor(() => expect(button.disabled).toBe(false));
+    fireEvent.click(button);
+    const dialog = await screen.findByRole("dialog", { name: "Re-read this CV with the model?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Re-read and save" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".cv-layout .field-error")?.textContent).toBe(
+        "Add a provider key to use paid actions. Open provider settings",
+      ),
+    );
+    const refusal = document.querySelector(".cv-layout .field-error") as HTMLElement;
+    expect(within(refusal).getByRole("link", { name: "Open provider settings" })).toBeTruthy();
   });
 
   it("keeps the paid re-read save off in free mode", async () => {

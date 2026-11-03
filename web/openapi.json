@@ -30,6 +30,31 @@
         "title": "AggregationReport",
         "type": "object"
       },
+      "AggregatorCreditResponse": {
+        "additionalProperties": false,
+        "description": "The visible credit an aggregator's terms ask for beside a posting it listed.",
+        "properties": {
+          "credit_url": {
+            "title": "Credit Url",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "opens_discovery_url": {
+            "default": false,
+            "title": "Opens Discovery Url",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "credit_url"
+        ],
+        "title": "AggregatorCreditResponse",
+        "type": "object"
+      },
       "ApplicationEventInput": {
         "additionalProperties": false,
         "description": "Append-only application status, correction, or reversal.",
@@ -1542,6 +1567,16 @@
             ],
             "title": "Action",
             "type": "string"
+          },
+          "aggregator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AggregatorCreditResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "canonical_url": {
             "title": "Canonical Url",
@@ -8740,6 +8775,16 @@
         "additionalProperties": false,
         "description": "One discovery that is not yet evaluable.",
         "properties": {
+          "aggregator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AggregatorCreditResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "also_in": {
             "items": {
               "type": "string"
@@ -9116,6 +9161,16 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "withdrawal_cause": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingWithdrawalCause"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "withdrawn_at": {
             "anyOf": [
@@ -9656,6 +9711,18 @@
         "title": "PendingReviewStatusFacetResponse",
         "type": "object"
       },
+      "PendingWithdrawalCause": {
+        "description": "Why a withdrawn discovery left the queue, read from its latest withdrawal event.",
+        "enum": [
+          "absent",
+          "listing_ended",
+          "publisher_closed",
+          "content_read_closed",
+          "unrecorded"
+        ],
+        "title": "PendingWithdrawalCause",
+        "type": "string"
+      },
       "PhraseMatch": {
         "additionalProperties": false,
         "description": "Where one configured phrase was found in the master CV, if at all.",
@@ -10049,6 +10116,16 @@
         "additionalProperties": false,
         "description": "Verified full body and source facts for one posting observation.",
         "properties": {
+          "aggregator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AggregatorCreditResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "body": {
             "title": "Body",
             "type": "string"
@@ -10668,6 +10745,21 @@
             "type": "string"
           },
           "type": {
+            "enum": [
+              "urn:clearscout:problem:career-page-unreadable",
+              "urn:clearscout:problem:conflict",
+              "urn:clearscout:problem:database-fault",
+              "urn:clearscout:problem:free-mode",
+              "urn:clearscout:problem:http-error",
+              "urn:clearscout:problem:integrity-conflict",
+              "urn:clearscout:problem:local-boundary",
+              "urn:clearscout:problem:method-not-allowed",
+              "urn:clearscout:problem:missing-idempotency-key",
+              "urn:clearscout:problem:not-found",
+              "urn:clearscout:problem:request-validation",
+              "urn:clearscout:problem:unavailable",
+              "urn:clearscout:problem:validation"
+            ],
             "title": "Type",
             "type": "string"
           }

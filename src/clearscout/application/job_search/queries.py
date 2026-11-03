@@ -311,7 +311,9 @@ def _latest_observation_id(observation: Any) -> Any:
     )
 
 
-def _jobs_statement(workspace_id: str | None, *, include_archived: bool = False) -> Select[Any]:
+def _jobs_statement(
+    workspace_id: str | None, *, include_archived: bool = False
+) -> Select[*tuple[Any, ...]]:
     observation = aliased(PostingObservation)
     body_artifact = aliased(Artifact)
     fit_artifact = aliased(Artifact)

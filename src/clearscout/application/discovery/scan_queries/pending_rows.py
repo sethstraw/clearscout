@@ -21,6 +21,7 @@ from clearscout.application.discovery.pending import (
     listed_pending_discovery_filters,
     source_employer_names,
     undismissed_root_filters,
+    withdrawal_causes,
 )
 from clearscout.application.discovery.proposals import accepted_titles
 from clearscout.application.discovery.relevance_review_queries import RelevanceReviewQueries
@@ -129,11 +130,11 @@ class PendingRowQueries:
     @staticmethod
     def _pending_list_query(
         workspace_id: str,
-        dismissed: Select[tuple[str]],
+        dismissed: Select[str],
         *,
         limit: int,
         closed_only: bool,
-    ) -> Select[tuple[PendingDiscovery]]:
+    ) -> Select[PendingDiscovery]:
         """Select undismissed root rows: closed history newest first, or the active list."""
         if not closed_only:
             return (
@@ -200,6 +201,7 @@ class PendingRowQueries:
             )
             evaluated = evaluated_jobs_for_pending(session, workspace_id, page_rows)
             staged_by_campaign = campaign_staged_ids(session, page_ids)
+            causes = withdrawal_causes(session, workspace_id, page_rows)
             place_reader = parameters.place_reader
             return [
                 pending_response(
@@ -215,6 +217,7 @@ class PendingRowQueries:
                     relevance_review_rejection=rejections.get(item.row.id),
                     place_reader=place_reader,
                     cut_off=cut_off,
+                    withdrawal_cause=causes.get(item.row.id),
                 )
                 for item in page
             ]
@@ -241,6 +244,7 @@ class PendingRowQueries:
         elsewhere = regional_places(
             session, workspace_id, rows, PendingDiscovery.withdrawn_at.is_(None)
         )
+        causes = withdrawal_causes(session, workspace_id, rows)
         return [
             pending_response(
                 item,
@@ -256,6 +260,7 @@ class PendingRowQueries:
                 relevance_review_rejection=context.rejections.get(item.row.id),
                 place_reader=place_reader,
                 cut_off=context.cut_off,
+                withdrawal_cause=causes.get(item.row.id),
             )
             for item in (projections_by_id[row.id] for row in rows)
         ]
@@ -340,6 +345,7 @@ class PendingRowQueries:
             relevance_review_rejection=rejections.get(row.id),
             place_reader=parameters.place_reader,
             cut_off=self.cut_off_content_ids(session, workspace_id, [content]),
+            withdrawal_cause=withdrawal_causes(session, workspace_id, [row]).get(row.id),
         )
 
     def relevance_facts(

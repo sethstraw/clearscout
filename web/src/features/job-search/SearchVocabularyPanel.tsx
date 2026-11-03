@@ -12,6 +12,7 @@ import {
   useSearchVocabularyProviderConfiguration,
   useTaskCosts,
 } from "../../api/hooks";
+import { ErrorNotice } from "../../components/ErrorNotice";
 import { PaidAction } from "../../components/PaidAction";
 import { SearchSuggestions } from "../search-parameters/SearchSuggestions";
 import { SLOW_RUN_NOTICE, useSearchPanelTask, useSlowNotice } from "./useSearchPanelTask";
@@ -169,8 +170,16 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
               Reading the provider model and effort before payment.
             </p>
           )}
-          {search.isError && <p className="field-error">{search.error.message}</p>}
-          {retry.isError && <p className="field-error">{retry.error.message}</p>}
+          {search.isError && (
+            <p className="field-error">
+              <ErrorNotice error={search.error} />
+            </p>
+          )}
+          {retry.isError && (
+            <p className="field-error">
+              <ErrorNotice error={retry.error} />
+            </p>
+          )}
           {queueing ? (
             <p aria-label="Search vocabulary queue status" role="status">
               Queueing search.

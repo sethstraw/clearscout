@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -97,7 +99,7 @@ def _staged_records(
     session: Session, workspace_id: str, source_ids: list[str], pending_id: str
 ) -> list[BoardRecord]:
     """Return the board's withdrawn rows, and its undismissed rows that hold usable evidence."""
-    rows = session.execute(
+    rows: Sequence[tuple[PendingDiscovery, PendingPostingContent | None]] = session.execute(
         select(PendingDiscovery, PendingPostingContent)
         .outerjoin(
             PendingPostingContent,
@@ -155,9 +157,7 @@ def registered_board_holder(
                 Source.source_type == SourceKind.EMPLOYER_BOARD.value,
                 Employer.normalized_name == employer,
             )
-        )
-        .tuples()
-        .all()
+        ).all()
     )
     if not employer or not boards:
         return None

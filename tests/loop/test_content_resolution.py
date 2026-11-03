@@ -33,6 +33,7 @@ from clearscout.application.discovery.pending import (
     latest_disposition_statement,
     reset_pending_queue,
     set_pending_markers,
+    withdrawal_causes,
 )
 from clearscout.application.discovery.posting_fetch import FetchedPosting
 from clearscout.application.discovery.posting_refresh import PostingRefreshService
@@ -65,6 +66,7 @@ from clearscout.application.workspaces import SearchParametersService, Workspace
 from clearscout.application.workspaces.records.access import audit_columns
 from clearscout.domain import (
     PendingDiscoveryReadiness,
+    PendingWithdrawalCause,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -2539,6 +2541,9 @@ def test_closed_resolution_withdraws_the_active_queue_but_retains_its_evidence(
         ).one()
         assert audit.details["evidence_id"] == evidence.id
         assert audit.details["note"] == closed.note
+        assert withdrawal_causes(session, workspace_id, [pending]) == {
+            pending_id: PendingWithdrawalCause.CONTENT_READ_CLOSED
+        }
     with pytest.raises(NotFoundError, match="unavailable"):
         service.preflight(workspace_id, [pending_id])
 

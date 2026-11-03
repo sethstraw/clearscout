@@ -20,7 +20,8 @@ import {
   useTrackPendingDiscovery,
 } from "../../api/hooks";
 import { useConfirmation } from "../../confirmations";
-import { FREE_MODE_REASON, PaidAction } from "../../components/PaidAction";
+import { FREE_MODE_REASON } from "../../components/freeMode";
+import { PaidAction } from "../../components/PaidAction";
 import { EvaluationCostDetails } from "../../components/EvaluationCostDetails";
 import { EmptyState, ErrorState } from "../../components/States";
 import { DiscoveryDispositionManager, DismissSelection } from "./DiscoveryDispositions";

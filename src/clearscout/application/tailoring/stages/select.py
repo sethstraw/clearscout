@@ -59,6 +59,10 @@ class Plan(BaseModel):
     role_bullets: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     education_ids: tuple[str, ...] = ()
     publication_ids: tuple[str, ...] = ()
+    # Master-CV publications left off the offer, in document order.
+    unoffered_publications: tuple[str, ...] = ()
+    # Configured must-consider ids the master CV has no publication for.
+    stale_must_consider: tuple[str, ...] = ()
     # Master-text lines the selected experience bullets cost.
     spent_lines: int = 0
     unspent_lines: int = 0
@@ -183,6 +187,17 @@ def build_plan(
         role_bullets=role_bullets,
         education_ids=education,
         publication_ids=publications,
+        unoffered_publications=tuple(
+            entry.id
+            for entry in inventory.of_kind(EntryKind.PUBLICATION)
+            if entry.id not in publications
+        ),
+        stale_must_consider=tuple(
+            entry_id
+            for entry_id in settings.must_consider_publications
+            if (entry := inventory.entry(entry_id)) is None
+            or entry.kind is not EntryKind.PUBLICATION
+        ),
         spent_lines=spent,
         unspent_lines=max(0, budget - spent),
         overshoot_lines=max(0, spent - budget),
@@ -835,13 +850,15 @@ def _relevant_publications(
     On a derivative a publication list competes with experience for the same
     lines, so relevance decides rather than the shape of a document.
     ``min_publications`` is still honored, because a researcher wants a record
-    visible even where the posting never names a paper.
+    visible even where the posting never names a paper. A must-consider paper
+    is offered cited or not, and ranks ahead of the rest for the cap.
     """
+    marked = set(settings.must_consider_publications)
     ranked = sorted(
         inventory.of_kind(EntryKind.PUBLICATION),
-        key=lambda entry: (-scores.get(entry.id, 0.0), entry.order),
+        key=lambda entry: (entry.id not in marked, -scores.get(entry.id, 0.0), entry.order),
     )
-    earned = [entry for entry in ranked if scores.get(entry.id, 0.0) > 0.0]
+    earned = [entry for entry in ranked if entry.id in marked or scores.get(entry.id, 0.0) > 0.0]
     floor = min(settings.min_publications, len(ranked))
     if len(earned) < floor:
         earned = ranked[:floor]
@@ -873,6 +890,7 @@ def _drop_order(
     selected = tuple(entry_id for ids in role_bullets.values() for entry_id in ids)
     protected = _sole_answers((*selected, *publications, *education), requirements_for, must_haves)
     over_cap: dict[str, list[str]] = {}
+    scores = _must_consider_ranks(publications, scores, settings)
     ranked_publications = sorted(publications, key=lambda entry_id: -scores.get(entry_id, 0.0))
     within: list[str] = ranked_publications[settings.min_publications :]
     floor = settings.min_bullets_per_role
@@ -895,6 +913,17 @@ def _drop_order(
     queues = {key: queue for key, ids in over_cap.items() if (queue := weakest_first(ids))}
     held = {key: len(role_bullets.get(key, ())) for key in queues}
     return (*_deepest_first(queues, held, scores), *weakest_first(within))
+
+
+def _must_consider_ranks(
+    publications: tuple[str, ...], scores: dict[str, float], settings: Settings
+) -> dict[str, float]:
+    """Return ``scores`` with each must-consider paper raised to the strongest offered paper."""
+    marked = set(settings.must_consider_publications).intersection(publications)
+    if not marked:
+        return scores
+    strongest = max((scores.get(entry_id, 0.0) for entry_id in publications), default=0.0)
+    return {**scores, **dict.fromkeys(marked, strongest)}
 
 
 def _deepest_first(

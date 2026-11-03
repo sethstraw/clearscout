@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -405,6 +406,33 @@ def test_a_himalayas_listing_prefers_the_stated_employer_over_the_configured_one
 
     assert listing is not None
     assert listing.employer == "Globex"
+
+
+def test_a_himalayas_listing_states_when_it_stops_being_listed() -> None:
+    expiry = datetime(2026, 11, 20, 12, 30, tzinfo=UTC)
+    job = _himalayas_job(expiryDate=int(expiry.timestamp()))
+
+    listing = source_listing(HIMALAYAS_MAPPING, Posting(job, employer=""))
+
+    assert listing is not None
+    closing = listing.facts.closing_date
+    assert closing is not None
+    assert closing.normalized_value == "2026-11-20T12:30:00+00:00"
+    assert [item.wording for item in closing.statements] == ["Listed until 2026-11-20 12:30 UTC"]
+    assert closing.listing_expired(expiry - timedelta(seconds=1)) is False
+    assert closing.listing_expired(expiry) is True
+
+
+@pytest.mark.parametrize("stated", [None, "", "soon", True])
+def test_a_himalayas_listing_without_a_readable_expiry_states_no_closing_date(
+    stated: object,
+) -> None:
+    job = _himalayas_job() if stated is None else _himalayas_job(expiryDate=stated)
+
+    listing = source_listing(HIMALAYAS_MAPPING, Posting(job, employer=""))
+
+    assert listing is not None
+    assert listing.facts.closing_date is None
 
 
 def test_an_arbeitnow_listing_states_its_fields() -> None:

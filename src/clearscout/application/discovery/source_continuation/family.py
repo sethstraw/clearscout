@@ -108,17 +108,13 @@ def next_pending(
     )
     if automatic_only:
         statement = statement.where(SourceScanFrontierItem.automatic_eligible.is_(True))
-    return (
-        session.execute(
-            statement.order_by(
-                SourceScanFrontierItem.created_at,
-                SourceScanFrontierItem.normalized_url,
-                SourceScanFrontierItem.id,
-            ).limit(1)
-        )
-        .tuples()
-        .first()
-    )
+    return session.execute(
+        statement.order_by(
+            SourceScanFrontierItem.created_at,
+            SourceScanFrontierItem.normalized_url,
+            SourceScanFrontierItem.id,
+        ).limit(1)
+    ).first()
 
 
 def continuation_task_ids(session: Session, workspace_id: str, scan_task_id: str) -> list[str]:
@@ -138,12 +134,12 @@ def continuation_task_ids(session: Session, workspace_id: str, scan_task_id: str
                 SourceScanContinuation.workspace_id == workspace_id,
                 SourceScanContinuation.correlation_id == scan_task_id,
             )
-        ).tuples(),
+        ),
         *session.execute(
             select(continuation_id, generation).where(
                 *continuation_tasks, BackgroundTask.correlation_id == scan_task_id
             )
-        ).tuples(),
+        ),
     }
     if not owned:
         return []
@@ -151,5 +147,5 @@ def continuation_task_ids(session: Session, workspace_id: str, scan_task_id: str
         select(BackgroundTask.id, continuation_id, generation)
         .where(*continuation_tasks, continuation_id.in_({owner for owner, _ in owned}))
         .order_by(BackgroundTask.created_at, BackgroundTask.id)
-    ).tuples()
+    )
     return [task_id for task_id, owner, read in rows if (owner, read) in owned]

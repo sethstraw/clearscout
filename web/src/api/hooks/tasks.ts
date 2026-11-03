@@ -49,7 +49,7 @@ export function useGuidedCampaignProviderConfiguration(
 ): SearchProviderConfiguration {
   const configuration = useQuery({
     queryKey: queryKeys.guidedCampaignConfiguration(workspaceId),
-    queryFn: () => api.guidedCampaignConfiguration(workspaceId),
+    queryFn: ({ signal }) => api.guidedCampaignConfiguration(workspaceId, signal),
     enabled: Boolean(workspaceId && enabled),
   });
   const loaded = !enabled || configuration.data !== undefined;
@@ -67,7 +67,7 @@ export function useSearchVocabularyProviderConfiguration(
 ): SearchProviderConfiguration {
   const configuration = useQuery({
     queryKey: queryKeys.searchVocabularyConfiguration(workspaceId),
-    queryFn: () => api.searchVocabularyConfiguration(workspaceId),
+    queryFn: ({ signal }) => api.searchVocabularyConfiguration(workspaceId, signal),
     enabled: Boolean(workspaceId && enabled),
   });
   const loaded = !enabled || configuration.data !== undefined;
@@ -85,7 +85,7 @@ export function useRelevanceReviewProviderConfiguration(
 ): SearchProviderConfiguration & { batchRows: number | undefined } {
   const configuration = useQuery({
     queryKey: queryKeys.relevanceReviewConfiguration(workspaceId),
-    queryFn: () => api.relevanceReviewConfiguration(workspaceId),
+    queryFn: ({ signal }) => api.relevanceReviewConfiguration(workspaceId, signal),
     enabled: Boolean(workspaceId && enabled),
   });
   const loaded = !enabled || configuration.data !== undefined;
@@ -104,7 +104,7 @@ export function useRelevanceReviewProviderConfiguration(
 function useTaskTypes() {
   return useQuery({
     queryKey: queryKeys.taskTypes,
-    queryFn: api.taskTypes,
+    queryFn: ({ signal }) => api.taskTypes(signal),
     staleTime: Infinity,
   });
 }
@@ -189,7 +189,7 @@ export function useTasks(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.tasks(workspaceId),
     // One board scan's continuation chain alone can fill the route's default of 50.
-    queryFn: () => api.tasks(workspaceId, { limit: LATEST_SEARCH_TASK_WINDOW }),
+    queryFn: ({ signal }) => api.tasks(workspaceId, { limit: LATEST_SEARCH_TASK_WINDOW }, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -202,7 +202,7 @@ export const LATEST_SEARCH_TASK_WINDOW = 250;
 export function useTask(workspaceId: string, taskId: string) {
   return useQuery({
     queryKey: queryKeys.task(workspaceId, taskId),
-    queryFn: () => api.task(taskId, workspaceId),
+    queryFn: ({ signal }) => api.task(taskId, workspaceId, signal),
     enabled: Boolean(workspaceId && taskId),
   });
 }
@@ -210,7 +210,7 @@ export function useTask(workspaceId: string, taskId: string) {
 export function useTaskBilling(workspaceId: string, taskId: string, terminal: boolean) {
   return useQuery({
     queryKey: queryKeys.taskBilling(workspaceId, taskId),
-    queryFn: () => api.taskBilling(taskId, workspaceId),
+    queryFn: ({ signal }) => api.taskBilling(taskId, workspaceId, signal),
     enabled: Boolean(workspaceId && taskId && terminal),
     staleTime: Infinity,
   });

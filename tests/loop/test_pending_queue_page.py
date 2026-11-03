@@ -51,6 +51,7 @@ from clearscout.application.workspaces.records.access import audit_columns
 from clearscout.domain import (
     EvaluationDecision,
     PendingDiscoveryReadiness,
+    PendingWithdrawalCause,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -72,6 +73,7 @@ from clearscout.domain.search_parameters import (
 from clearscout.domain.staged_facts import PublishedFact, StagedListingFacts
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
+    AuditEvent,
     Employer,
     JobEvaluation,
     JobPosting,
@@ -1842,6 +1844,36 @@ def test_marker_chips_list_any_pressed_marker(durable_database: Database) -> Non
     both = _filtered(durable_database, workspace_id, favorite=True, kept=True)
     assert _page_ids(both) == {favorite, kept}
     assert (both.facets.markers.favorite, both.facets.markers.kept) == (1, 1)
+
+
+def test_a_marked_row_whose_board_listing_ended_says_so_on_the_queue_page(
+    durable_database: Database,
+) -> None:
+    workspace_id = scan_workspace(durable_database)
+    now = utc_now()
+    pending_id = seed_pending_discovery(
+        durable_database, workspace_id, employer="Globex", created_at=now, withdrawn_at=now
+    )
+    with durable_database.session() as session:
+        session.add(
+            AuditEvent(
+                workspace_id=workspace_id,
+                action="pending_discovery.withdrawn_expired",
+                entity_type="pending_discovery",
+                entity_id=pending_id,
+                details={},
+                created_by="worker",
+                origin="source.scan",
+            )
+        )
+        set_pending_markers(
+            session, workspace_id, pending_id, favorite=True, kept=False, keep_note=None
+        )
+
+    page = _filtered(durable_database, workspace_id, favorite=True)
+
+    items = {item.id: item for item in (*page.ready.items, *page.attention.items)}
+    assert items[pending_id].withdrawal_cause is PendingWithdrawalCause.LISTING_ENDED
 
 
 def test_relevance_and_review_status_read_the_whole_queue(durable_database: Database) -> None:

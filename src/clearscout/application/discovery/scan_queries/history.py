@@ -87,7 +87,7 @@ def latest_scan_ids_in(session: Session, workspace_id: str) -> frozenset[str]:
     return frozenset(session.scalars(_latest_scan_id_statement(workspace_id)))
 
 
-def _latest_scan_id_statement(workspace_id: str, *, board_only: bool = False) -> Select[tuple[str]]:
+def _latest_scan_id_statement(workspace_id: str, *, board_only: bool = False) -> Select[str]:
     """Select each source's most recent scan id, optionally among board scans only."""
     scoped = select(
         SourceScan.id.label("scan_id"),
@@ -105,13 +105,13 @@ def _latest_scan_id_statement(workspace_id: str, *, board_only: bool = False) ->
     return select(ranked.c.scan_id).where(ranked.c.rank == 1)
 
 
-def kept_scan_id_statement(workspace_id: str) -> Select[tuple[str]]:
+def kept_scan_id_statement(workspace_id: str) -> Select[str]:
     """Select each source's latest scan and latest complete scan, per kind of read."""
     kept = _kept_scan_statement(workspace_id).subquery()
     return select(kept.c.scan_id)
 
 
-def _kept_scan_statement(workspace_id: str) -> Select[tuple[str, bool]]:
+def _kept_scan_statement(workspace_id: str) -> Select[str, bool]:
     """Select each kept scan id with whether it is the latest of its source and kind."""
     kind = (SourceScan.source_id, SourceScan.query_label)
     ranked = (
@@ -179,9 +179,7 @@ def scan_follow_up_states(
             select(SourceScanContinuation.source_scan_id, SourceScanContinuation.id).where(
                 SourceScanContinuation.source_scan_id.in_(scan_ids)
             )
-        )
-        .tuples()
-        .all()
+        ).all()
     )
     states: dict[str, SourceScanFollowUpState] = {
         scan_id: "none" for scan_id in scan_ids if scan_id not in continuation_by_scan
@@ -197,9 +195,7 @@ def scan_follow_up_states(
                 SourceScanFrontierItem.status == "pending",
             )
             .group_by(SourceScanFrontierItem.continuation_id)
-        )
-        .tuples()
-        .all()
+        ).all()
     )
     active_continuation_ids = set(
         session.scalars(
@@ -355,7 +351,7 @@ class ScanHistoryQueries:
                 session, workspace_id, scan_ids, latest_scan_ids_in(session, workspace_id)
             )
             latest_of_kind: dict[str, bool] = dict(
-                session.execute(_kept_scan_statement(workspace_id)).tuples().all()
+                session.execute(_kept_scan_statement(workspace_id)).all()
             )
             screened_out_counts = _screened_out_counts(
                 session,

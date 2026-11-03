@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
+from clearscout.application.contracts import AggregatorCreditResponse
+from clearscout.application.discovery.aggregator_catalog import aggregator_credit
 from clearscout.application.discovery.board_scan import SourceScanService
 from clearscout.application.discovery.starter_sources import StarterSourceInstaller
 from clearscout.bootstrap.api import create_app
@@ -78,3 +81,33 @@ def test_a_workspace_created_over_http_lists_the_shipped_aggregators(
     assert listed["items"]
     assert {item["source_type"] for item in listed["items"]} == {"aggregator"}
     assert not any(item["enabled"] for item in listed["items"])
+
+
+@pytest.mark.parametrize(
+    ("url", "name"),
+    [
+        ("https://himalayas.app/jobs/steward", "Himalayas"),
+        ("https://api.usajobs.gov/job/1", "USAJOBS"),
+        ("HTTPS://WWW.ARBEITNOW.COM:443/jobs/1", "Arbeitnow"),
+        ("https://evilhimalayas.app/jobs/steward", None),
+        ("https://himalayas.app.example.test/jobs/steward", None),
+        ("https://jobs.example.test/steward", None),
+    ],
+)
+def test_a_credit_is_owed_only_on_a_catalog_host_or_its_subdomain(
+    url: str, name: str | None
+) -> None:
+    credit = aggregator_credit(url)
+    assert (credit.name if credit else None) == name
+
+
+def test_the_listing_address_opens_only_when_the_aggregator_listed_that_address() -> None:
+    employer = "https://jobs.example.test/northwind/7"
+    listed = "https://himalayas.app/companies/northwind/jobs/steward"
+
+    assert aggregator_credit(listed, employer) == AggregatorCreditResponse(
+        name="Himalayas", credit_url=listed, opens_discovery_url=True
+    )
+    assert aggregator_credit(employer, listed) == AggregatorCreditResponse(
+        name="Himalayas", credit_url=listed, opens_discovery_url=False
+    )

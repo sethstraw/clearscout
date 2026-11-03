@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw/http";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -546,10 +546,15 @@ describe("PendingDiscoveryRow", () => {
     expect(within(screen.getByRole("rowheader")).queryByText(/Listed on/)).toBeNull();
   });
 
-  it("opens a Himalayas listing at its applicationLink and credits Himalayas with a link", () => {
-    const applicationLink = "https://himalayas.app/companies/initech/jobs/product-manager";
+  it("opens a listing at the address its aggregator requires and credits it with a link", () => {
+    const applicationLink = "https://listings.example.test/companies/initech/jobs/product-manager";
     renderRow({
       ...baseItem(),
+      aggregator: {
+        credit_url: applicationLink,
+        name: "Example Listings",
+        opens_discovery_url: true,
+      },
       discovery_url: applicationLink,
       canonical_url: "https://jobs.example.test/initech/4412",
     });
@@ -557,40 +562,54 @@ describe("PendingDiscoveryRow", () => {
     expect(screen.getByRole("link", { name: "Product Manager" }).getAttribute("href")).toBe(
       applicationLink,
     );
-    const credit = screen.getByRole("link", { name: "Job data from Himalayas" });
+    const credit = screen.getByRole("link", { name: "Job data from Example Listings" });
     expect(credit.getAttribute("href")).toBe(applicationLink);
     // jsdom draws no ::before, so this checks the span sibling that carries the " | " separator.
     expect(credit.closest(".pending-origin > span + span")).not.toBeNull();
     expect(screen.queryByText(/jobs\.example\.test/)).toBeNull();
   });
 
-  it("credits Arbeitnow with a link to arbeitnow.com in place of the host label", () => {
-    const listing = "https://www.arbeitnow.com/jobs/companies/initech/product-manager-1234";
-    renderRow({ ...baseItem(), discovery_url: listing, canonical_url: listing });
+  it("credits the aggregator in place of the host label", () => {
+    const listing = "https://listings.example.test/jobs/initech/product-manager-1234";
+    renderRow({
+      ...baseItem(),
+      aggregator: {
+        credit_url: "https://listings.example.test/",
+        name: "Example Listings",
+        opens_discovery_url: false,
+      },
+      discovery_url: listing,
+      canonical_url: listing,
+    });
 
     expect(screen.getByRole("link", { name: "Product Manager" }).getAttribute("href")).toBe(
       listing,
     );
-    const credit = screen.getByRole("link", { name: "Job data from Arbeitnow" });
-    expect(credit.getAttribute("href")).toBe("https://www.arbeitnow.com/");
+    const credit = screen.getByRole("link", { name: "Job data from Example Listings" });
+    expect(credit.getAttribute("href")).toBe("https://listings.example.test/");
     expect(credit.closest(".pending-origin > span + span")).not.toBeNull();
-    expect(screen.queryByTitle("Listed on arbeitnow.com")).toBeNull();
+    expect(screen.queryByTitle("Listed on listings.example.test")).toBeNull();
   });
 
-  it("keeps the Arbeitnow credit when the row opens an employer address", () => {
+  it("keeps the credit when the row opens an employer address", () => {
     const employerPage = "https://jobs.example.test/initech/77";
     renderRow({
       ...baseItem(),
-      discovery_url: "https://www.arbeitnow.com/jobs/companies/initech/pm-1",
+      aggregator: {
+        credit_url: "https://listings.example.test/",
+        name: "Example Listings",
+        opens_discovery_url: false,
+      },
+      discovery_url: "https://listings.example.test/jobs/initech/pm-1",
       canonical_url: employerPage,
     });
 
     expect(screen.getByRole("link", { name: "Product Manager" }).getAttribute("href")).toBe(
       employerPage,
     );
-    expect(screen.getByRole("link", { name: "Job data from Arbeitnow" }).getAttribute("href")).toBe(
-      "https://www.arbeitnow.com/",
-    );
+    expect(
+      screen.getByRole("link", { name: "Job data from Example Listings" }).getAttribute("href"),
+    ).toBe("https://listings.example.test/");
   });
 
   it("names no board when the posting names the board's own employer", () => {
@@ -790,6 +809,23 @@ describe("PendingDiscoveryRow", () => {
     });
 
     expect(screen.getByText("Germany, United States")).toBeTruthy();
+  });
+
+  it.each([
+    ["listing_ended", "Board listing ended"],
+    ["absent", "No longer listed"],
+  ] as const)("words a row withdrawn as %s by its cause", (cause, label) => {
+    renderRow({
+      ...baseItem(),
+      kept: true,
+      withdrawn_at: "2026-09-20T00:00:00Z",
+      withdrawal_cause: cause,
+    });
+
+    const role = screen.getByText("Product Manager").closest("td");
+    if (!role) throw new Error("Expected the role cell.");
+    expect(within(role).getByText(label)).toBeTruthy();
+    expect(screen.getByText(`${label}; evaluation disabled`)).toBeTruthy();
   });
 
   it("shows a kept row its board no longer lists as gone, with no paid evaluation", () => {

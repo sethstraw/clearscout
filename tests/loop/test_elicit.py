@@ -79,6 +79,28 @@ def test_the_reading_says_which_rung_and_which_phrase_it_read() -> None:
     assert reading.evidence == ("sat in on",)
 
 
+@pytest.mark.parametrize(
+    ("answer", "rung", "phrase"),
+    [
+        ("I worked with the warehouse every week for reporting.", Ownership.USE, "worked with"),
+        ("We shipped the matcher and it went live in March.", Ownership.DEPLOYMENT, "went live"),
+    ],
+)
+def test_the_reading_names_the_lowest_and_highest_doing_rungs(
+    answer: str, rung: Ownership, phrase: str
+) -> None:
+    reading = elicit.reads_as(answer)
+    assert reading.value is rung
+    assert phrase in reading.evidence
+
+
+def test_a_use_answer_cannot_become_an_implementation_claim(record: CvInventory) -> None:
+    line = answered("I worked with the ingestion jobs when writing reports.")
+    with pytest.raises(DiscoveryError) as caught:
+        material(record, line, "Built the ingestion jobs.")
+    assert "claims implementation" in str(caught.value)
+
+
 def test_the_reading_abstains_when_nothing_says_what_was_done() -> None:
     """A reading that answered "yes" with a level would be the whole problem."""
     reading = elicit.reads_as("Yes, at Northwind.")

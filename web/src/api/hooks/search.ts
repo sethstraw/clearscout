@@ -30,7 +30,7 @@ import { useEnqueueTask, useTask, useTasks } from "./tasks";
 export function useSearchParameterOptions() {
   return useQuery({
     queryKey: queryKeys.searchParameterOptions,
-    queryFn: api.searchParameterOptions,
+    queryFn: ({ signal }) => api.searchParameterOptions(signal),
     staleTime: Infinity,
   });
 }
@@ -38,7 +38,7 @@ export function useSearchParameterOptions() {
 export function useSearchParameters(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.searchParameters(workspaceId),
-    queryFn: () => api.searchParameters(workspaceId),
+    queryFn: ({ signal }) => api.searchParameters(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -50,7 +50,8 @@ export function useGuidedCampaignPreview(
 ) {
   return useQuery({
     queryKey: queryKeys.guidedCampaignPreview(workspaceId, maxModelCalls, maxHostedSearches),
-    queryFn: () => api.guidedCampaignPreview(workspaceId, maxModelCalls, maxHostedSearches),
+    queryFn: ({ signal }) =>
+      api.guidedCampaignPreview(workspaceId, maxModelCalls, maxHostedSearches, signal),
     enabled: Boolean(workspaceId),
     retry: false,
   });
@@ -59,7 +60,7 @@ export function useGuidedCampaignPreview(
 export function useLatestGuidedCampaignReport(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.latestGuidedCampaignReport(workspaceId),
-    queryFn: () => api.latestGuidedCampaignReport(workspaceId),
+    queryFn: ({ signal }) => api.latestGuidedCampaignReport(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -81,7 +82,7 @@ export function useAbandonGuidedCampaignAttempt(workspaceId: string) {
 export function useSearchParameterHistory(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.searchParameterHistory(workspaceId),
-    queryFn: () => api.searchParameterHistory(workspaceId),
+    queryFn: ({ signal }) => api.searchParameterHistory(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -108,7 +109,8 @@ export function usePendingDiscoveries(
       closedOnly,
       separateReadinessCohorts,
     ] as const,
-    queryFn: () => api.pendingDiscoveries(workspaceId, limit, closedOnly, separateReadinessCohorts),
+    queryFn: ({ signal }) =>
+      api.pendingDiscoveries(workspaceId, limit, closedOnly, separateReadinessCohorts, signal),
     enabled: Boolean(workspaceId) && enabled,
   });
 }
@@ -132,7 +134,7 @@ export function usePendingDiscoveryPage(
       snapshotBefore,
       filters,
     ),
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api.pendingDiscoveryPage(
         workspaceId,
         limit,
@@ -141,6 +143,7 @@ export function usePendingDiscoveryPage(
         expectedSnapshotSha256,
         snapshotBefore,
         filters,
+        signal,
       ),
     enabled: Boolean(workspaceId),
     // A restart reads the first page unpinned and then pinned, so without the
@@ -161,7 +164,8 @@ export function usePendingDiscoveryChanges(
 ) {
   return useQuery({
     queryKey: queryKeys.pendingDiscoveryChanges(workspaceId, snapshotBefore, filters),
-    queryFn: () => api.pendingDiscoveryChanges(workspaceId, snapshotBefore, filters),
+    queryFn: ({ signal }) =>
+      api.pendingDiscoveryChanges(workspaceId, snapshotBefore, filters, signal),
     enabled: Boolean(workspaceId) && Boolean(snapshotBefore),
     refetchInterval: (query) => {
       const data = query.state.data;
@@ -181,7 +185,7 @@ export function usePendingDiscoveryChanges(
 export function useTitleExclusionCollateral(workspaceId: string, phrases: readonly string[]) {
   return useQuery({
     queryKey: queryKeys.titleExclusionCollateral(workspaceId, phrases),
-    queryFn: () => api.titleExclusionCollateral(workspaceId, phrases),
+    queryFn: ({ signal }) => api.titleExclusionCollateral(workspaceId, phrases, signal),
     enabled: Boolean(workspaceId) && phrases.length > 0,
   });
 }
@@ -196,7 +200,7 @@ export function usePostingRecoveryPreflight(workspaceId: string) {
 export function useDismissedPendingDiscoveries(workspaceId: string) {
   return useQuery({
     queryKey: queryKeys.dismissedPendingDiscoveries(workspaceId),
-    queryFn: () => api.dismissedPendingDiscoveries(workspaceId),
+    queryFn: ({ signal }) => api.dismissedPendingDiscoveries(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -204,7 +208,7 @@ export function useDismissedPendingDiscoveries(workspaceId: string) {
 export function usePendingDuplicateCandidates(workspaceId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.pendingDuplicateCandidates(workspaceId),
-    queryFn: () => api.pendingDuplicateCandidates(workspaceId),
+    queryFn: ({ signal }) => api.pendingDuplicateCandidates(workspaceId, signal),
     enabled: Boolean(workspaceId) && enabled,
   });
 }
@@ -212,7 +216,7 @@ export function usePendingDuplicateCandidates(workspaceId: string, enabled = tru
 export function usePendingDispositionHistory(workspaceId: string, pendingId: string) {
   return useQuery({
     queryKey: queryKeys.pendingDispositionHistory(workspaceId, pendingId),
-    queryFn: () => api.pendingDispositionHistory(workspaceId, pendingId),
+    queryFn: ({ signal }) => api.pendingDispositionHistory(workspaceId, pendingId, signal),
     enabled: Boolean(workspaceId && pendingId),
   });
 }
@@ -412,7 +416,7 @@ export function useConfirmPendingPostingIdentity(workspaceId: string) {
 export function useSearchTitleProposals(workspaceId: string) {
   return useQuery({
     queryKey: ["search-title-proposals", workspaceId] as const,
-    queryFn: () => api.searchTitleProposals(workspaceId),
+    queryFn: ({ signal }) => api.searchTitleProposals(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -441,7 +445,7 @@ export function useRuleOnSearchTitle(workspaceId: string) {
 export function useSearchArchetypeProposals(workspaceId: string) {
   return useQuery({
     queryKey: ["search-archetype-proposals", workspaceId] as const,
-    queryFn: () => api.searchArchetypeProposals(workspaceId),
+    queryFn: ({ signal }) => api.searchArchetypeProposals(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -470,7 +474,7 @@ export function useRuleOnSearchArchetype(workspaceId: string) {
 export function useSearchClusterProposals(workspaceId: string) {
   return useQuery({
     queryKey: ["search-cluster-proposals", workspaceId] as const,
-    queryFn: () => api.searchClusterProposals(workspaceId),
+    queryFn: ({ signal }) => api.searchClusterProposals(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -501,7 +505,7 @@ export function useRuleOnSearchCluster(workspaceId: string) {
 export function useScoreWeightSets(workspaceId: string) {
   return useQuery({
     queryKey: ["score-weight-sets", workspaceId] as const,
-    queryFn: () => api.scoreWeightSets(workspaceId),
+    queryFn: ({ signal }) => api.scoreWeightSets(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }

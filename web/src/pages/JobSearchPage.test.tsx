@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { HttpResponse, http, type HttpHandler } from "msw";
+import { HttpResponse, http, type HttpHandler } from "msw/http";
 import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -222,9 +222,13 @@ describe("JobSearchPage", () => {
           </BrowserRouter>
         </AppProviders>,
       );
+    const candidateSource = async () =>
+      within(await screen.findByRole("region", { name: "Screened candidate filters" })).getByRole(
+        "combobox",
+        { name: "Source" },
+      );
     let view = mount();
-    const filters = await screen.findByRole("region", { name: "Screened candidate filters" });
-    const source = within(filters).getByRole("combobox", { name: "Source" });
+    const source = await candidateSource();
     expect(source).toHaveProperty("value", "Missing & Board");
     fireEvent.change(source, { target: { value: "Acme & Partners" } });
     await waitFor(() =>
@@ -232,10 +236,7 @@ describe("JobSearchPage", () => {
     );
     view.unmount();
     view = mount();
-    expect(await screen.findByRole("combobox", { name: /^Source$/ })).toHaveProperty(
-      "value",
-      "Acme & Partners",
-    );
+    expect(await candidateSource()).toHaveProperty("value", "Acme & Partners");
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     await waitFor(() =>
       expect(new URLSearchParams(window.location.search).has("source")).toBe(false),
@@ -245,7 +246,7 @@ describe("JobSearchPage", () => {
     expect(new URLSearchParams(window.location.search).get("keep")).toBe("unchanged");
     view.unmount();
     mount();
-    expect(await screen.findByRole("combobox", { name: /^Source$/ })).toHaveProperty("value", "");
+    expect(await candidateSource()).toHaveProperty("value", "");
     await waitFor(() => expect(requested.at(-1)?.searchParams.has("source")).toBe(false));
   });
 

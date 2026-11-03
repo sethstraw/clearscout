@@ -1,4 +1,8 @@
-type Problem = { detail?: string; correlation_id?: string };
+import type { components } from "./schema";
+
+export type ProblemType = components["schemas"]["Problem"]["type"];
+type Problem = Partial<components["schemas"]["Problem"]>;
+export const FREE_MODE_PROBLEM: ProblemType = "urn:clearscout:problem:free-mode";
 type IntentRequest = { body: string; expiresAt: number; key: string; pending: number };
 
 // Failed requests keep their original key briefly so a retry cannot become a
@@ -10,12 +14,21 @@ const intentRequests = new Map<string, IntentRequest>();
 export class ApiError extends Error {
   status: number;
   correlationId?: string;
+  problemType?: ProblemType;
+  hint?: string;
 
-  constructor(message: string, status: number, correlationId?: string) {
+  constructor(
+    message: string,
+    status: number,
+    correlationId?: string,
+    problem: { type?: ProblemType; hint?: string | null } = {},
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.correlationId = correlationId;
+    this.problemType = problem.type;
+    this.hint = problem.hint ?? undefined;
   }
 }
 
@@ -25,6 +38,7 @@ async function responseError(response: Response): Promise<ApiError> {
     problem?.detail ?? `ClearScout request failed (${response.status}).`,
     response.status,
     problem?.correlation_id ?? response.headers?.get("X-Correlation-ID") ?? undefined,
+    { type: problem?.type, hint: problem?.hint },
   );
 }
 
@@ -90,8 +104,8 @@ export async function requestIntentJson<T>(path: string, intent: string, body: s
   }
 }
 
-export async function requestText(path: string): Promise<string> {
-  const response = await fetch(`/api/v1${path}`, { headers: { Accept: "text/plain" } });
+export async function requestText(path: string, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(`/api/v1${path}`, { headers: { Accept: "text/plain" }, signal });
   if (!response.ok) throw await responseError(response);
   return response.text();
 }

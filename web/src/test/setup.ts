@@ -3,9 +3,9 @@ import { cleanup } from "@testing-library/react";
 
 import { server } from "./msw/server";
 
-// `onUnhandledRequest: "error"` makes an un-mocked fetch fail the test instead
+// `onUnhandledFrame: "error"` makes an un-mocked fetch fail the test instead
 // of returning a network error the assertion barely explains.
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
 
 const values = new Map<string, string>();

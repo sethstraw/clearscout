@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-import httpx
+import httpx2
 import pytest
 from evals.dataset import (
     AbstainedScore,
@@ -70,7 +70,7 @@ def api() -> FakeProviderAPI:
 def executor(
     api: FakeProviderAPI, master_cv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> FitExecutor:
-    http = httpx.Client(transport=httpx.MockTransport(api))
+    http = httpx2.Client(transport=httpx2.MockTransport(api))
     monkeypatch.setattr(
         "clearscout.application.tailoring.pipeline.service.provider_for",
         lambda name, key, timeout=None: provider_for_http(ProviderName.OPENAI, http, max_retries=0),

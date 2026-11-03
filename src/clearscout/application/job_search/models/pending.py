@@ -5,7 +5,10 @@ from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
 
-from clearscout.application.contracts import PublisherClosingDateResponse
+from clearscout.application.contracts import (
+    AggregatorCreditResponse,
+    PublisherClosingDateResponse,
+)
 from clearscout.application.discovery.screening import (
     ArrangementCategory,
     ArrangementSource,
@@ -31,6 +34,7 @@ from clearscout.application.job_search.models.vocabulary import (
 from clearscout.application.job_search.models.workspace import JobEmployerFacetResponse
 from clearscout.domain import (
     PendingDiscoveryReadiness,
+    PendingWithdrawalCause,
     PostingContentAccessStatus,
     PostingContentExtractionMethod,
     PostingIdentityStatus,
@@ -69,6 +73,7 @@ class PendingDiscoveryResponse(StrictModel):
     location: str
     discovery_url: str
     canonical_url: str
+    aggregator: AggregatorCreditResponse | None = None
     content_status: PostingContentAccessStatus
     content_note: str
     readiness: PendingDiscoveryReadiness
@@ -117,6 +122,8 @@ class PendingDiscoveryResponse(StrictModel):
     arrangement_categories_source: ArrangementSource
     also_in: list[str] = Field(default_factory=list)
     withdrawn_at: datetime | None = None
+    # Set only on withdrawn rows, from the latest withdrawal audit event.
+    withdrawal_cause: PendingWithdrawalCause | None = None
     # The current evaluated posting this discovery already names by requisition
     # or URL, so the SPA can hide the paid evaluation control on a duplicate.
     evaluated_job_id: str | None = None

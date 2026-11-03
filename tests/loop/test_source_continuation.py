@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime, timedelta
 from socket import AF_INET, SOCK_STREAM
@@ -4895,12 +4895,30 @@ def _stage_known_rows(
 
 
 def _missed_once(database: Database, *urls: str) -> None:
-    """Record that an earlier complete multi-page read already missed these rows."""
+    """Record an earlier multi-page miss of these rows and the completed check that read them."""
     with database.session() as session:
-        for row in session.scalars(
-            select(PendingDiscovery).where(PendingDiscovery.discovery_url.in_(urls))
-        ):
-            row.absent_since = utc_now() - timedelta(days=1)
+        _mark_checked_absent(
+            session,
+            session.scalars(
+                select(PendingDiscovery).where(PendingDiscovery.discovery_url.in_(urls))
+            ).all(),
+        )
+
+
+def _mark_checked_absent(session: Any, rows: Sequence[PendingDiscovery]) -> None:
+    """Mark rows absent a day ago, with a completed refresh batch that read each one."""
+    for row in rows:
+        row.absent_since = utc_now() - timedelta(days=1)
+    session.add(
+        BackgroundTask(
+            workspace_id=rows[0].workspace_id,
+            task_type="discovery.refresh_batch",
+            status="completed",
+            payload={"pending_discovery_ids": [row.id for row in rows]},
+            payload_sha256="0" * 64,
+            idempotency_key=new_id(),
+        )
+    )
 
 
 @pytest.mark.parametrize(("members", "protected_count"), [(39, 5), (21, 0)])
@@ -13373,10 +13391,12 @@ def _adopted_jpaginate_rescan(
 
 # A stop after three bodies leaves a continue task; after four, nothing is pending at root time.
 def _premark_unlisted(session: Any, site: Any) -> None:
-    row = session.scalars(
-        select(PendingDiscovery).where(PendingDiscovery.discovery_url == site.job_url(99))
-    ).one()
-    row.absent_since = utc_now() - timedelta(days=1)
+    _mark_checked_absent(
+        session,
+        session.scalars(
+            select(PendingDiscovery).where(PendingDiscovery.discovery_url == site.job_url(99))
+        ).all(),
+    )
 
 
 @pytest.mark.parametrize("premark", [False, True])

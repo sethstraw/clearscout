@@ -6,6 +6,7 @@ import { useEvaluationPreflight, useFreeMode, type TaskCosts } from "../api/hook
 import { useConfirmation } from "../confirmations";
 import type { ConfirmationOptions } from "../providers/ConfirmDialog";
 import { EvaluationCostDetails } from "./EvaluationCostDetails";
+import { FREE_MODE_REASON, PROVIDER_SETTINGS_ACTION } from "./freeMode";
 
 type Activation =
   | {
@@ -18,8 +19,6 @@ type Activation =
   | { onPrepare: () => void; confirmation?: never; onAct?: never; onContinue?: never };
 
 const PAID_MARK = "Paid";
-export const FREE_MODE_REASON = "Add a provider key to use paid actions.";
-const PROVIDER_SETTINGS_PATH = "/settings?tab=provider";
 
 /**
  * The one control for work that can reach a billing provider. The button carries
@@ -132,7 +131,7 @@ export function PaidAction({
       {free && (
         <small className="field-note" id={reasonId}>
           <span>{FREE_MODE_REASON}</span>{" "}
-          <Link to={PROVIDER_SETTINGS_PATH}>Open provider settings</Link>
+          <Link to={PROVIDER_SETTINGS_ACTION.to}>{PROVIDER_SETTINGS_ACTION.label}</Link>
         </small>
       )}
       {estimateError && <p role="alert">{estimateError}</p>}

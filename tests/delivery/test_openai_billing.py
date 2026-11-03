@@ -12,7 +12,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -112,7 +112,7 @@ def test_a_rejected_admin_key_is_reported_without_leaking_the_key() -> None:
     def getter(path: str, params: dict[str, Any]) -> dict[str, Any]:
         raise APIStatusError(
             "forbidden",
-            response=httpx.Response(403, request=httpx.Request("GET", "https://api.openai.com")),
+            response=httpx2.Response(403, request=httpx2.Request("GET", "https://api.openai.com")),
             body=None,
         )
 

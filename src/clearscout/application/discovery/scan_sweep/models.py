@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, TypedDict
 
 from clearscout.application.discovery.content_resolution import PrefetchedContent
 from clearscout.application.discovery.screening import DiscoveryScreening, StructuredHoldout
@@ -64,12 +64,31 @@ class DueBoards:
     omitted: list[tuple[SweepBoard, str]]
 
 
+class ScanCreditRow(TypedDict):
+    """An aggregator credit as a scan's progress record stores it."""
+
+    name: str
+    credit_url: str
+    opens_discovery_url: bool
+
+
+class ScanDiscoveryRow(TypedDict):
+    """One newly staged listing as a scan's progress record stores it."""
+
+    source: str
+    employer: str
+    title: str
+    location: str
+    url: str
+    aggregator: ScanCreditRow | None
+
+
 @dataclass(frozen=True)
 class ProcessedRead:
     """One successful board's contribution back to the sweep totals."""
 
     scan_row: dict[str, Any]
-    discoveries: list[dict[str, str]]
+    discoveries: list[ScanDiscoveryRow]
     withdrawn: list[dict[str, str]]
     new_count: int
     requeued_count: int

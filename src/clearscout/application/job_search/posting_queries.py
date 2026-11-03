@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 
+from clearscout.application.discovery.aggregator_catalog import aggregator_credit
 from clearscout.application.documents.rendered_text import rendered_text
 from clearscout.application.failures import NotFoundError, ValidationError
 from clearscout.application.job_search._support import _observation, _readable_artifact
@@ -87,6 +88,7 @@ def posting_observation(
                 "workspace_id": workspace_id,
                 "source_url": source_url or "",
                 "discovery_url": discovery_url,
+                "aggregator": aggregator_credit(source_url, discovery_url),
                 "logical_type": artifact.logical_type,
                 "mime_type": artifact.mime_type,
                 "sha256": artifact.sha256,

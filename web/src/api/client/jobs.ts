@@ -67,7 +67,7 @@ export type JobListQuery = {
 type JobLedger = { items: Job[]; employers: JobEmployerFacet[] };
 
 export const jobsApi = {
-  jobs: (workspaceId: string, options: JobListQuery = {}) => {
+  jobs: (workspaceId: string, options: JobListQuery = {}, signal?: AbortSignal) => {
     const query = new URLSearchParams({
       workspace_id: workspaceId,
       offset: String(options.offset ?? 0),
@@ -86,39 +86,50 @@ export const jobsApi = {
     for (const employer of options.employer ?? []) query.append("employer", employer);
     if (options.postingStatus) query.append("posting_status", options.postingStatus);
     if (options.includeArchived) query.set("include_archived", "true");
-    return request<JobPage>(`/jobs?${query.toString()}`);
+    return request<JobPage>(`/jobs?${query.toString()}`, { signal });
   },
   jobLedger: async (
     workspaceId: string,
     options: Omit<JobListQuery, "offset" | "limit"> = {},
+    signal?: AbortSignal,
   ): Promise<JobLedger> => {
     const items: Job[] = [];
     for (;;) {
-      const page = await jobsApi.jobs(workspaceId, {
-        ...options,
-        offset: items.length,
-        limit: MAX_PAGE_SIZE,
-      });
+      const page = await jobsApi.jobs(
+        workspaceId,
+        { ...options, offset: items.length, limit: MAX_PAGE_SIZE },
+        signal,
+      );
       items.push(...page.items);
       if (!page.items.length || items.length >= page.total) {
         return { items, employers: page.employers };
       }
     }
   },
-  allJobs: async (workspaceId: string, options: Omit<JobListQuery, "offset" | "limit"> = {}) =>
-    (await jobsApi.jobLedger(workspaceId, options)).items,
-  workspaceSummary: (workspaceId: string) =>
-    request<WorkspaceSummary>(`/workspaces/${encodeURIComponent(workspaceId)}/summary`),
-  workspaceSpend: (workspaceId: string) =>
-    request<SpendSummary>(`/workspaces/${encodeURIComponent(workspaceId)}/spend`),
-  scoreWeightSets: (workspaceId: string) =>
-    request<ScoreWeightSet[]>(`/workspaces/${encodeURIComponent(workspaceId)}/score-weight-sets`),
+  allJobs: async (
+    workspaceId: string,
+    options: Omit<JobListQuery, "offset" | "limit"> = {},
+    signal?: AbortSignal,
+  ) => (await jobsApi.jobLedger(workspaceId, options, signal)).items,
+  workspaceSummary: (workspaceId: string, signal?: AbortSignal) =>
+    request<WorkspaceSummary>(`/workspaces/${encodeURIComponent(workspaceId)}/summary`, { signal }),
+  workspaceSpend: (workspaceId: string, signal?: AbortSignal) =>
+    request<SpendSummary>(`/workspaces/${encodeURIComponent(workspaceId)}/spend`, { signal }),
+  scoreWeightSets: (workspaceId: string, signal?: AbortSignal) =>
+    request<ScoreWeightSet[]>(`/workspaces/${encodeURIComponent(workspaceId)}/score-weight-sets`, {
+      signal,
+    }),
   createScoreWeightSet: (workspaceId: string, body: ScoreWeightSetInput) =>
     request<ScoreWeightSet>(`/workspaces/${encodeURIComponent(workspaceId)}/score-weight-sets`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  job: (jobId: string, workspaceId: string, options: JobHistoryQuery = {}) => {
+  job: (
+    jobId: string,
+    workspaceId: string,
+    options: JobHistoryQuery = {},
+    signal?: AbortSignal,
+  ) => {
     const query = new URLSearchParams({
       workspace_id: workspaceId,
       observation_offset: String(options.observationOffset ?? 0),
@@ -126,7 +137,7 @@ export const jobsApi = {
       application_event_offset: String(options.applicationEventOffset ?? 0),
       history_limit: String(options.historyLimit ?? PAGE_SIZE),
     });
-    return request<JobDetail>(`/jobs/${encodeURIComponent(jobId)}?${query.toString()}`);
+    return request<JobDetail>(`/jobs/${encodeURIComponent(jobId)}?${query.toString()}`, { signal });
   },
   reviewEvaluationCurrentness: (jobId: string, evaluationId: string, workspaceId: string) =>
     request<JobDetail>(
@@ -143,13 +154,15 @@ export const jobsApi = {
       `/jobs/${encodeURIComponent(jobId)}/closing-date?workspace_id=${encodeURIComponent(workspaceId)}`,
       { method: "PUT", body: JSON.stringify(body) },
     ),
-  evidenceSource: (evidenceId: string, workspaceId: string) =>
+  evidenceSource: (evidenceId: string, workspaceId: string, signal?: AbortSignal) =>
     request<EvidenceSource>(
       `/evidence/${encodeURIComponent(evidenceId)}/source?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
-  fitReport: (jobId: string, workspaceId: string) =>
+  fitReport: (jobId: string, workspaceId: string, signal?: AbortSignal) =>
     request<FitReport>(
       `/jobs/${encodeURIComponent(jobId)}/fit-report?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
   fitReportExportUrl: (jobId: string, workspaceId: string) =>
     `/api/v1/jobs/${encodeURIComponent(jobId)}/fit-report/export?workspace_id=${encodeURIComponent(workspaceId)}`,
@@ -186,22 +199,26 @@ export const jobsApi = {
         body: JSON.stringify({ hint } satisfies PostingHintBody),
       },
     ),
-  postingObservation: (observationId: string, workspaceId: string) =>
+  postingObservation: (observationId: string, workspaceId: string, signal?: AbortSignal) =>
     request<PostingObservationBody>(
       `/posting-observations/${encodeURIComponent(observationId)}?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
   postingDiff: (
     jobId: string,
     workspaceId: string,
     fromObservationId: string,
     toObservationId: string,
+    signal?: AbortSignal,
   ) => {
     const query = new URLSearchParams({
       workspace_id: workspaceId,
       from: fromObservationId,
       to: toObservationId,
     });
-    return request<PostingDiff>(`/jobs/${encodeURIComponent(jobId)}/posting-diff?${query}`);
+    return request<PostingDiff>(`/jobs/${encodeURIComponent(jobId)}/posting-diff?${query}`, {
+      signal,
+    });
   },
   appendApplicationEvent: (
     jobId: string,
@@ -213,8 +230,9 @@ export const jobsApi = {
     const intent = JSON.stringify({ status: body.status, notes: body.notes });
     return requestIntentJson<ApplicationEvent>(path, intent, JSON.stringify(body));
   },
-  applicationOptions: (workspaceId: string) =>
+  applicationOptions: (workspaceId: string, signal?: AbortSignal) =>
     request<ApplicationOption[]>(
       `/applications/options?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
 };

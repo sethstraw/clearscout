@@ -17,7 +17,7 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, cast
 
-import httpx
+import httpx2
 
 from clearscout.infrastructure.providers.base import BackgroundDispatch, BackgroundWebSearchProvider
 from clearscout.infrastructure.providers.plan import RequestPlan
@@ -40,7 +40,7 @@ def capture_root() -> Path | None:
     return root
 
 
-def _headers(headers: httpx.Headers) -> dict[str, str]:
+def _headers(headers: httpx2.Headers) -> dict[str, str]:
     return {name: value for name, value in headers.items() if name.lower() not in SECRET_HEADERS}
 
 
@@ -112,10 +112,10 @@ def _claim(root: Path, prefix: str) -> Path:
         return path
 
 
-class _TeedStream(httpx.SyncByteStream):
+class _TeedStream(httpx2.SyncByteStream):
     """Hand each chunk to the SDK and to the capture file at the same time."""
 
-    def __init__(self, inner: httpx.SyncByteStream, on_close: Any) -> None:
+    def __init__(self, inner: httpx2.SyncByteStream, on_close: Any) -> None:
         self._inner = inner
         self._on_close = on_close
         self._chunks: list[bytes] = []
@@ -132,15 +132,15 @@ class _TeedStream(httpx.SyncByteStream):
         self._on_close(b"".join(self._chunks))
 
 
-class WireRecorder(httpx.BaseTransport):
+class WireRecorder(httpx2.BaseTransport):
     """Forward every request and keep both directions of the exchange."""
 
-    def __init__(self, root: Path, inner: httpx.BaseTransport | None = None) -> None:
+    def __init__(self, root: Path, inner: httpx2.BaseTransport | None = None) -> None:
         """Write exchanges into root, sending them through inner."""
         self._root = root
-        self._inner = inner or httpx.HTTPTransport()
+        self._inner = inner or httpx2.HTTPTransport()
 
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         """Return the response unchanged, with its body copied as it is consumed."""
         response = self._inner.handle_request(request)
         sent = {
@@ -165,8 +165,8 @@ class WireRecorder(httpx.BaseTransport):
                 },
             )
 
-        inner_stream = cast(httpx.SyncByteStream, response.stream)
-        return httpx.Response(
+        inner_stream = cast(httpx2.SyncByteStream, response.stream)
+        return httpx2.Response(
             status_code=response.status_code,
             headers=response.headers,
             stream=_TeedStream(inner_stream, finish),

@@ -1,4 +1,4 @@
-import { HttpResponse, http, type HttpHandler } from "msw";
+import { HttpResponse, http, type HttpHandler } from "msw/http";
 
 import { searchParametersState } from "../search-parameters/searchParameterFixtures";
 import type {

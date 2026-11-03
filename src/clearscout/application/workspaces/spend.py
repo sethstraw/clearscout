@@ -563,7 +563,7 @@ def _campaign_attempts_by_task(session: Session, task_ids: Sequence[str]) -> dic
         .where(ModelCall.task_id.in_(task_ids))
         .group_by(ModelCall.task_id)
     ).all()
-    return {task_id: int(count) for task_id, count in rows}
+    return {task_id: int(count) for task_id, count in rows if task_id is not None}
 
 
 def _unit_count(

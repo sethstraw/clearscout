@@ -21,6 +21,8 @@ import {
 } from "../api/hooks";
 import { text } from "../api/json";
 import { ConfirmedActionButton } from "../components/ConfirmedActionButton";
+import { ErrorNotice } from "../components/ErrorNotice";
+import { errorNotice } from "../components/freeMode";
 import { PaidAction } from "../components/PaidAction";
 import { Page } from "../components/Page";
 import { nextSort, type SortDirection } from "../components/sorting";
@@ -288,6 +290,7 @@ export function JobPage() {
     !refreshBilling.isError &&
     refreshBilling.data === undefined;
   const reevaluate = useEnqueueTask(workspaceId);
+  const reevaluateNotice = reevaluate.isError ? errorNotice(reevaluate.error) : null;
   const reevaluateTask = useTask(workspaceId, reevaluate.data?.id ?? "");
   const reevaluationTerminal = ["completed", "failed"].includes(reevaluateTask.data?.status ?? "");
   const reevaluationBilling = useTaskBilling(
@@ -578,7 +581,11 @@ export function JobPage() {
           </ul>
         </aside>
       )}
-      {refresh.isError && <p className="field-error refresh-result">{refresh.error.message}</p>}
+      {refresh.isError && (
+        <p className="field-error refresh-result">
+          <ErrorNotice error={refresh.error} />
+        </p>
+      )}
       {refreshTask.data?.status === "completed" && (
         <aside className="refresh-result" role="status">
           {refreshTask.data.task_type === "posting.refresh_with_rematch" ? (
@@ -610,12 +617,18 @@ export function JobPage() {
       {(reevaluate.isError || reevaluateTask.data?.status === "failed") && (
         <p className="field-error refresh-result" role="alert">
           {reevaluationFailure(
-            reevaluate.isError
-              ? reevaluate.error.message
+            reevaluateNotice
+              ? reevaluateNotice.message
               : (reevaluateTask.data?.error_message ?? null),
             reevaluationBilling.data,
             reevaluationBilling.isError,
             !reevaluate.isError,
+          )}
+          {reevaluateNotice?.action && (
+            <>
+              {" "}
+              <Link to={reevaluateNotice.action.to}>{reevaluateNotice.action.label}</Link>
+            </>
           )}
         </p>
       )}

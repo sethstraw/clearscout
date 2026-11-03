@@ -107,15 +107,23 @@ describe("DiscoveryTable", () => {
     expect(screen.getByText("Senior Data Platform Engineer")).toBeTruthy();
   });
 
-  it("credits Himalayas and Arbeitnow on rows whose address is on their host", () => {
-    const applicationLink = "https://himalayas.app/companies/initech/jobs/data-analyst";
-    const listing = "https://www.arbeitnow.com/jobs/companies/contoso/analyst-1";
+  it("credits only the rows that name an aggregator", () => {
     render(
       <DiscoveryTable
         discoveries={[
-          { employer: "Initech", location: "Remote", title: "Data Analyst", url: applicationLink },
-          { employer: "Contoso", location: "Berlin", title: "Analyst", url: listing },
           {
+            aggregator: {
+              credit_url: "https://listings.example.test/",
+              name: "Example Listings",
+              opens_discovery_url: false,
+            },
+            employer: "Contoso",
+            location: "Berlin",
+            title: "Analyst",
+            url: "https://jobs.example.test/contoso/5",
+          },
+          {
+            aggregator: null,
             employer: "Northwind Research",
             location: "Remote",
             title: "Engineer",
@@ -125,38 +133,12 @@ describe("DiscoveryTable", () => {
       />,
     );
 
-    expect(screen.getByRole("link", { name: "Data Analyst" }).getAttribute("href")).toBe(
-      applicationLink,
-    );
-    expect(screen.getByRole("link", { name: "Job data from Himalayas" }).getAttribute("href")).toBe(
-      applicationLink,
-    );
-    expect(screen.getByRole("link", { name: "Job data from Arbeitnow" }).getAttribute("href")).toBe(
-      "https://www.arbeitnow.com/",
-    );
-    expect(screen.getAllByRole("link", { name: /^Job data from/ })).toHaveLength(2);
-  });
-
-  it("credits Arbeitnow from the discovery address when the row opens elsewhere", () => {
-    render(
-      <DiscoveryTable
-        discoveries={[
-          {
-            employer: "Contoso",
-            location: "Berlin",
-            title: "Analyst",
-            url: "https://jobs.example.test/contoso/5",
-            creditUrl: "https://www.arbeitnow.com/jobs/companies/contoso/analyst-1",
-          },
-        ]}
-      />,
-    );
-
     expect(screen.getByRole("link", { name: "Analyst" }).getAttribute("href")).toBe(
       "https://jobs.example.test/contoso/5",
     );
-    expect(screen.getByRole("link", { name: "Job data from Arbeitnow" }).getAttribute("href")).toBe(
-      "https://www.arbeitnow.com/",
-    );
+    expect(
+      screen.getByRole("link", { name: "Job data from Example Listings" }).getAttribute("href"),
+    ).toBe("https://listings.example.test/");
+    expect(screen.getAllByRole("link", { name: /^Job data from/ })).toHaveLength(1);
   });
 });

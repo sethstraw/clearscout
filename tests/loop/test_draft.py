@@ -411,6 +411,63 @@ def test_a_long_record_is_drafted_to_within_two_lines_of_the_page_budget(
     assert printed == planned, "the page carries a bullet no cited entry backs"
 
 
+PAPERS = (
+    "Example J. Streaming lineage in practice. *Journal of Examples*. 2021;2(1):3-9.",
+    "Example J. A note on batch loads. *Journal of Examples*. 2019;1(2):10-12.",
+    "Example J. Schema governance at scale. *Journal of Examples*. 2023;4(4):20-31.",
+)
+
+
+def _paper_ids(record) -> tuple[str, ...]:
+    return tuple(entry.id for entry in record.of_kind(EntryKind.PUBLICATION))
+
+
+def test_fit_trims_an_unlisted_weaker_paper_before_a_must_consider_one(
+    tmp_path, settings, guardrails
+):
+    """An uncited listed paper ranks with the strongest offered paper, not at zero."""
+    from clearscout.application.tailoring.stages.draft import fit
+
+    record = long_record(tmp_path, PAPERS)
+    strong, weak, listed = _paper_ids(record)
+    bullets = bullet_ids(record)
+    evidence = EvidenceMap(
+        matches=(cited("r01", (*bullets, strong)), cited("r01", (weak,), Strength.WEAK))
+    )
+    marked = settings.model_copy(
+        update={"must_consider_publications": (listed,), "max_bullets_per_role": 40}
+    )
+    plan = build_plan(record, must_haves(1), evidence, marked)
+    fitted = fit(drafted_to_length(record, plan, 0.8), record, plan, marked, guardrails)
+
+    assert listed in plan.publication_ids
+    assert plan.drop_order.index(weak) < plan.drop_order.index(listed)
+    assert fitted.trimmed
+    if listed in fitted.trimmed:
+        assert weak in fitted.trimmed[: fitted.trimmed.index(listed)]
+
+
+def test_a_must_consider_paper_the_budget_forces_out_is_named_in_the_notes(
+    tmp_path, settings, guardrails
+):
+    from clearscout.application.tailoring.pipeline.rewrite import publication_notes
+    from clearscout.application.tailoring.stages.draft import fit
+
+    record = long_record(tmp_path, PAPERS[2:])
+    (listed,) = _paper_ids(record)
+    bullets = bullet_ids(record)
+    # No role passes the cap, so the drop order opens on the weakest item rather than depth.
+    marked = settings.model_copy(
+        update={"must_consider_publications": (listed,), "max_bullets_per_role": 40}
+    )
+    plan = build_plan(record, must_haves(1), EvidenceMap(matches=(cited("r01", bullets),)), marked)
+    fitted = fit(drafted_to_length(record, plan, 1.0), record, plan, marked, guardrails)
+
+    assert listed in fitted.trimmed
+    notes = publication_notes(marked, plan, record, fitted)
+    assert f"Publication trimmed for length: {PAPERS[2]}" in notes
+
+
 def test_fit_keeps_one_of_two_weak_answers_to_a_must_have(tmp_path, settings, guardrails):
     """Both answers rank last, so a drop order read as a plain prefix removes both."""
     from clearscout.application.tailoring.stages.draft import fit

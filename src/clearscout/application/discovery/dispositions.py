@@ -9,6 +9,7 @@ from typing import Any, Literal, cast
 
 from sqlalchemy import exists, select
 
+from clearscout.application.discovery.aggregator_catalog import aggregator_credit
 from clearscout.application.discovery.pending import (
     clear_pending_markers,
     latest_disposition_statement,
@@ -682,6 +683,10 @@ class DiscoveryDispositionService:
                     location=discoveries[row.pending_discovery_id].location,
                     discovery_url=discoveries[row.pending_discovery_id].discovery_url,
                     canonical_url=discoveries[row.pending_discovery_id].canonical_url,
+                    aggregator=aggregator_credit(
+                        discoveries[row.pending_discovery_id].discovery_url,
+                        discoveries[row.pending_discovery_id].canonical_url,
+                    ),
                 )
                 for row in dismissed
                 if row.pending_discovery_id in discoveries

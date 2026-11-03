@@ -10,7 +10,7 @@ import type { TaskCosts } from "./tasks";
 export function useMasterCv(workspaceId: string, versionId = "") {
   return useQuery({
     queryKey: ["master-cv", workspaceId, versionId] as const,
-    queryFn: () => api.masterCv(workspaceId, versionId),
+    queryFn: ({ signal }) => api.masterCv(workspaceId, versionId, signal),
     enabled: Boolean(workspaceId),
     // A workspace with no CV yet is an expected state, not a failure to retry.
     retry: false,
@@ -20,7 +20,7 @@ export function useMasterCv(workspaceId: string, versionId = "") {
 export function useMasterCvVersions(workspaceId: string) {
   return useQuery({
     queryKey: ["master-cv-versions", workspaceId] as const,
-    queryFn: () => api.masterCvVersions(workspaceId),
+    queryFn: ({ signal }) => api.masterCvVersions(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -38,7 +38,8 @@ export function useMasterCvRequirementGaps(
       minRaised ?? null,
       [...importance].sort(),
     ] as const,
-    queryFn: () => api.masterCvRequirementGaps(workspaceId, { minRaised, importance }),
+    queryFn: ({ signal }) =>
+      api.masterCvRequirementGaps(workspaceId, { minRaised, importance }, signal),
     enabled: Boolean(workspaceId),
     placeholderData: (previous) => previous,
   });
@@ -47,7 +48,7 @@ export function useMasterCvRequirementGaps(
 export function useMasterCvDiff(workspaceId: string, fromVersion: string, toVersion: string) {
   return useQuery({
     queryKey: ["master-cv-diff", workspaceId, fromVersion, toVersion] as const,
-    queryFn: () => api.masterCvDiff(workspaceId, fromVersion, toVersion),
+    queryFn: ({ signal }) => api.masterCvDiff(workspaceId, fromVersion, toVersion, signal),
     enabled: Boolean(workspaceId && fromVersion && toVersion && fromVersion !== toVersion),
   });
 }
@@ -78,7 +79,7 @@ export const MASTER_CV_REREAD = "master_cv.reread";
 export function useMasterCvRereadCosts(workspaceId: string): TaskCosts {
   const estimate = useQuery({
     queryKey: ["master-cv-reread-estimate", workspaceId] as const,
-    queryFn: () => api.masterCvRereadEstimate(workspaceId),
+    queryFn: ({ signal }) => api.masterCvRereadEstimate(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
   return useMemo(() => {
@@ -120,7 +121,7 @@ export function useImportMasterCv(workspaceId: string) {
 export function useMasterCvRequirementRulings(workspaceId: string) {
   return useQuery({
     queryKey: ["requirement-rulings", workspaceId] as const,
-    queryFn: () => api.listRequirementRulings(workspaceId),
+    queryFn: ({ signal }) => api.listRequirementRulings(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -155,7 +156,7 @@ export function useClearRequirementRuling(workspaceId: string) {
 export function useMasterCvProposals(workspaceId: string) {
   return useQuery({
     queryKey: ["master-cv-proposals", workspaceId] as const,
-    queryFn: () => api.masterCvProposals(workspaceId),
+    queryFn: ({ signal }) => api.masterCvProposals(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }
@@ -180,7 +181,7 @@ export function useRuleOnMasterCvProposal(workspaceId: string) {
 export function useRefusalPatternProposals(workspaceId: string) {
   return useQuery({
     queryKey: ["refusal-pattern-proposals", workspaceId] as const,
-    queryFn: () => api.refusalPatternProposals(workspaceId),
+    queryFn: ({ signal }) => api.refusalPatternProposals(workspaceId, signal),
     enabled: Boolean(workspaceId),
   });
 }

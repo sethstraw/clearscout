@@ -7,8 +7,9 @@ import math
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, datetime
 from threading import Lock
+from typing import TypeGuard
 
 import httpx
 from sqlalchemy import select
@@ -28,6 +29,7 @@ from clearscout.application.discovery.scan_staging.absence import (
     AbsenceCheck,
     WithdrawingRead,
     withdraw_absent_in_session,
+    withdraw_expired_in_session,
 )
 from clearscout.application.discovery.scan_staging.capture import ListingCapture
 from clearscout.application.discovery.scan_staging.checks import PublisherCheckWrites
@@ -54,7 +56,7 @@ from clearscout.application.failures import ValidationError
 from clearscout.application.job_search.evaluation_targets import remember_posting_url
 from clearscout.application.tasks import ShieldedTaskContext, TaskContext
 from clearscout.domain import PostingContentAccessStatus, utc_now
-from clearscout.domain.identity import normalize_url, url_sha256
+from clearscout.domain.identity import normalize_url, url_host, url_sha256
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
     JobPosting,
@@ -126,6 +128,69 @@ def _tracked_publisher_read(listing: SourceListing) -> FetchedPosting | None:
         robots_basis=None,
         source=listing.source,
         publisher_closing_date=listing.facts.closing_date,
+    )
+
+
+def _relisting_takes_primary(session: Session, job_id: str, url: str) -> bool:
+    """Return whether a board listing of an open tracked job becomes its primary URL."""
+    primary = session.scalar(
+        select(PostingUrl.url).where(
+            PostingUrl.job_posting_id == job_id,
+            PostingUrl.is_primary.is_(True),
+            PostingUrl.archived_at.is_(None),
+        )
+    )
+    # The primary host moving its own posting is the new address; another board never takes it.
+    return primary is None or url_host(primary) == url_host(url)
+
+
+def _remember_tracked_twin(
+    session: Session,
+    job: JobPosting,
+    listing: SourceListing,
+    source_id: str | None,
+    correlation_id: str | None,
+) -> bool:
+    """Record a listing of a tracked job and return whether the job is still open."""
+    open_job = job.archived_at is None
+    # A closed job keeps the twin on file, so later reads protect it, and stays unread.
+    remember_posting_url(
+        session,
+        job,
+        url=listing.url,
+        source_id=source_id,
+        url_type="discovery",
+        make_primary=open_job and _relisting_takes_primary(session, job.id, listing.url),
+        actor="worker",
+        origin="discovery.board_scan",
+        correlation_id=correlation_id,
+    )
+    return open_job
+
+
+def _note_staged_row(
+    pending: PendingDiscovery,
+    listing: SourceListing,
+    unplaced: list[tuple[PendingDiscovery, SourceListing]],
+    row_ids: dict[str, str],
+) -> None:
+    if pending.regional_variant_of is None:
+        unplaced.append((pending, listing))
+    if pending.archived_at is None:
+        row_ids.setdefault(listing.url, pending.id)
+
+
+def _listing_expired(listing: SourceListing, now: datetime) -> bool:
+    closing = listing.facts.closing_date
+    return closing is not None and closing.listing_expired(now)
+
+
+def _expiry_leaves_row_alone(
+    pending: PendingDiscovery | None, source_id: str | None
+) -> TypeGuard[PendingDiscovery]:
+    """Return whether an expired listing must neither relist this row nor take it over."""
+    return pending is not None and (
+        pending.withdrawn_at is not None or pending.source_id != source_id
     )
 
 
@@ -259,7 +324,7 @@ class DiscoveryStaging:
                     PendingDiscovery.fingerprint.in_(by_url),
                     PendingDiscovery.archived_at.is_(None),
                 )
-            ).tuples()
+            )
             return {by_url[fingerprint]: row_id for fingerprint, row_id in rows}
 
     def stage_listings(
@@ -334,9 +399,14 @@ class DiscoveryStaging:
         known, at_address = staged_rows(session, workspace_id)
         at_requisition = {} if refresh_only else rows_by_requisition(known.values())
         claimed: set[str] = set()
-        reset_markers = reset_archive_markers(
-            session, workspace_id, (pending.id for pending in known.values())
+        reset_markers = (
+            {}
+            if refresh_only
+            else reset_archive_markers(
+                session, workspace_id, (pending.id for pending in known.values())
+            )
         )
+        now = utc_now()
         new_listings: list[SourceListing] = []
         requeued_listings: list[SourceListing] = []
         unplaced: list[tuple[PendingDiscovery, SourceListing]] = []
@@ -355,26 +425,20 @@ class DiscoveryStaging:
                 include_closed=True,
             )
             if existing_job is not None:
-                closed = existing_job.archived_at is not None
-                # A closed job keeps the twin on file, so later reads protect it, and stays unread.
-                remember_posting_url(
-                    session,
-                    existing_job,
-                    url=listing.url,
-                    source_id=source_id,
-                    url_type="discovery",
-                    make_primary=not closed,
-                    actor="worker",
-                    origin="discovery.board_scan",
-                    correlation_id=correlation_id,
-                )
-                if not closed:
+                if _remember_tracked_twin(
+                    session, existing_job, listing, source_id, correlation_id
+                ):
                     tracked[str(existing_job.id)] = listing
                 known_listings.append(listing)
                 continue
             pending, by_address = known_row(
                 known, at_address, at_requisition, claimed, fingerprint, listing.url
             )
+            expired = _listing_expired(listing, now)
+            if expired and _expiry_leaves_row_alone(pending, source_id):
+                claimed.add(pending.id)
+                known_listings.append(listing)
+                continue
             if pending is not None:
                 claimed.add(pending.id)
                 requeued = self.rows.refresh_known_pending(
@@ -388,13 +452,13 @@ class DiscoveryStaging:
                     reason=reason,
                     source_id=source_id,
                     correlation_id=correlation_id,
-                    reset_event_id=(reset_markers.get(pending.id) if not refresh_only else None),
+                    reset_event_id=reset_markers.get(pending.id),
                     restored=restored,
                     today=today,
                     by_address=by_address,
                 )
                 (requeued_listings if requeued else known_listings).append(listing)
-            elif refresh_only:
+            elif refresh_only or expired:
                 continue
             else:
                 pending = self.rows.insert_listing(
@@ -409,10 +473,7 @@ class DiscoveryStaging:
                     correlation_id=correlation_id,
                 )
                 new_listings.append(listing)
-            if pending.regional_variant_of is None:
-                unplaced.append((pending, listing))
-            if pending.archived_at is None:
-                row_ids.setdefault(listing.url, pending.id)
+            _note_staged_row(pending, listing, unplaced, row_ids)
         place_unlinked(session, unplaced, known, dismissed, restored, correlation_id=correlation_id)
         refreshes.extend(tracked.items())
         if refresh_only:
@@ -552,6 +613,23 @@ class DiscoveryStaging:
                 )
             ).all()
             return listed_row_ids(staged, urls)
+
+    def withdraw_expired(
+        self,
+        workspace_id: str,
+        source_id: str,
+        *,
+        now: datetime,
+        correlation_id: str | None = None,
+        require_source_read: Callable[[Session], None] | None = None,
+    ) -> list[str]:
+        """Withdraw this source's staged openings whose board-stated end of listing has passed."""
+        with self.database.exclusive_session() as session:
+            if require_source_read is not None:
+                require_source_read(session)
+            return withdraw_expired_in_session(
+                session, workspace_id, source_id, now, correlation_id=correlation_id
+            )
 
     def withdraw_absent(
         self,

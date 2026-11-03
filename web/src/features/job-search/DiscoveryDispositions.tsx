@@ -15,7 +15,7 @@ import {
 import { ErrorState, LoadingState } from "../../components/States";
 import { safeHttpUrl } from "../../api/safeUrl";
 import { AggregatorCreditNote } from "../../components/AggregatorCredit";
-import { postingAddress } from "../../components/aggregatorHosts";
+import { postingAddress } from "./postingAddress";
 import { EmployerName } from "./EmployerName";
 import { postingLabel } from "./fallbacks";
 import { neverReadDiscoveryIds } from "./pendingDiscoveryFilterModel";
@@ -738,7 +738,7 @@ export function DiscoveryDispositionManager({
                             {/* Rows with the same title and employer are only ever told apart by
                                 their address, so show it instead of leaving it in the href alone. */}
                             <p className="field-note dismissed-discovery-url">{url}</p>
-                            <AggregatorCreditNote url={event.discovery_url} />
+                            <AggregatorCreditNote credit={event.aggregator} />
                           </>
                         ) : (
                           event.title

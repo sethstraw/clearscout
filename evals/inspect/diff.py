@@ -20,6 +20,13 @@ from typing import Any
 
 from evals.semantic import StageMeasurement
 
+# The run identity keys that name what a log scored; a live solver records both.
+_DATASET_IDENTITY = ("selection_manifest_sha256", "dataset_sha256")
+
+
+class DatasetMismatchError(ValueError):
+    """Raised when two logs scored different selection manifests or datasets."""
+
 
 @dataclass
 class _Tally:
@@ -55,6 +62,7 @@ class _Run:
 
     label: str
     requested_model: str
+    identity: dict[str, str] = field(default_factory=dict)
     columns: dict[str, _Tally] = field(default_factory=dict)
     cases: dict[tuple[str, str], _Tally] = field(default_factory=dict)
 
@@ -79,8 +87,12 @@ def _read(log_path: Path, label: str) -> _Run:
     ]
     header = records[0] if records and "id" not in records[0] else {}
     identity = header.get("run")
-    requested = identity.get("requested_model") if isinstance(identity, dict) else None
-    run = _Run(label=label, requested_model=str(requested or "unrecorded"))
+    identity = identity if isinstance(identity, dict) else {}
+    run = _Run(
+        label=label,
+        requested_model=str(identity.get("requested_model") or "unrecorded"),
+        identity={key: str(identity[key]) for key in _DATASET_IDENTITY if identity.get(key)},
+    )
     for record in records:
         sample_id = record.get("id")
         if not sample_id:
@@ -97,9 +109,21 @@ def _dollars(tally: _Tally) -> str:
     return f"{text} ({tally.unpriced} unpriced)" if tally.unpriced else text
 
 
+def _require_same_dataset(baseline: _Run, candidate: _Run) -> None:
+    """Refuse two logs that both record a dataset identity and disagree on it."""
+    # A replay log records no identity, so only a digest both logs carry can disagree.
+    for key in _DATASET_IDENTITY:
+        before, after = baseline.identity.get(key), candidate.identity.get(key)
+        if before and after and before != after:
+            raise DatasetMismatchError(
+                f"logs scored different datasets: {key} baseline={before} candidate={after}"
+            )
+
+
 def diff(baseline_path: str, candidate_path: str) -> str:
     """Return markdown comparing two logs' per-case pass counts and per-run spend."""
     runs = [_read(Path(baseline_path), "baseline"), _read(Path(candidate_path), "candidate")]
+    _require_same_dataset(*runs)
     columns = [column for run in runs for column in run.columns]
     cases = sorted({case for run in runs for case, _column in run.cases})
     lines = [
@@ -142,7 +166,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("baseline")
     parser.add_argument("candidate")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    print(diff(args.baseline, args.candidate))
+    try:
+        print(diff(args.baseline, args.candidate))
+    except DatasetMismatchError as error:
+        print(error, file=sys.stderr)
+        return 2
     return 0
 
 

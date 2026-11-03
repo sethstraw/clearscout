@@ -408,10 +408,15 @@ once the board stops listing it. Adding the link of a posting a board already
 staged does not make it yours.
 
 An aggregator read, such as Himalayas or Arbeitnow, takes only a fixed number
-of the site's newest listings, so it is never complete and a scan never marks
-its rows withdrawn. A staged aggregator row whose job has expired stays in the
-queue until you dismiss it, or until **Refresh posting** reads the posting as
-closed.
+of the site's newest listings, so it is never complete and a job missing from
+it is never marked withdrawn. Himalayas states when each job stops being listed, so every
+read of a Himalayas source withdraws a staged row once that time passes, and a
+listing already past it is never staged. If Himalayas still serves the job
+after that time, the row stays withdrawn; a later read that moves the stated
+time forward reopens it. The stated time belongs to Himalayas, so a row another
+source lists afterwards drops it. A job a board closes earlier than it
+stated, or an aggregator row with no stated expiry, stays in the queue until
+you dismiss it, or until **Refresh posting** reads the posting as closed.
 
 The Dismissed panel offers **Restore and keep**. A marked posting that closes
 at its source remains visible as no longer listed, but does not count as ready

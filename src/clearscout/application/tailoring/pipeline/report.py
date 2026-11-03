@@ -44,6 +44,7 @@ from .rewrite import (
     WrittenLetter,
     cap_notes,
     overflow_warning,
+    publication_notes,
     short_page,
     unprinted_earlier_career,
 )
@@ -591,6 +592,7 @@ def _length(settings: Settings, plan: Plan, inventory: CvInventory, fitted: Fitt
         overflow_warning(settings, fitted),
         short_page(settings, plan, fitted),
         *cap_notes(settings, plan, inventory, fitted),
+        *publication_notes(settings, plan, inventory, fitted),
         unprinted_earlier_career(fitted),
     )
     for note in notes:

@@ -13,19 +13,21 @@ export const tasksApi = {
       `/workspaces/${encodeURIComponent(workspaceId)}/evaluation-preflight`,
       { method: "POST", body: JSON.stringify(selection) },
     ),
-  tasks: (workspaceId: string, options: { limit?: number } = {}) => {
+  tasks: (workspaceId: string, options: { limit?: number } = {}, signal?: AbortSignal) => {
     const query = [`workspace_id=${encodeURIComponent(workspaceId)}`];
     if (options.limit !== undefined) query.push(`limit=${options.limit}`);
-    return request<Task[]>(`/tasks?${query.join("&")}`);
+    return request<Task[]>(`/tasks?${query.join("&")}`, { signal });
   },
-  taskTypes: () => request<TaskTypeInfo[]>("/tasks/types"),
-  task: (taskId: string, workspaceId: string) =>
+  taskTypes: (signal?: AbortSignal) => request<TaskTypeInfo[]>("/tasks/types", { signal }),
+  task: (taskId: string, workspaceId: string, signal?: AbortSignal) =>
     request<Task>(
       `/tasks/${encodeURIComponent(taskId)}?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
-  taskBilling: (taskId: string, workspaceId: string) =>
+  taskBilling: (taskId: string, workspaceId: string, signal?: AbortSignal) =>
     request<TaskBilling>(
       `/tasks/${encodeURIComponent(taskId)}/billing?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { signal },
     ),
   enqueueTask: (body: {
     workspace_id: string;

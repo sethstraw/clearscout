@@ -9,6 +9,7 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from clearscout.application.contracts import AggregatorCreditResponse
 from clearscout.application.discovery.board_scan import SourceScanService
 from clearscout.application.discovery.dispositions import (
     BODY_REFUSAL_CATEGORIES,
@@ -72,9 +73,16 @@ from tests.support.scenarios import (
 
 
 def _pending(
-    database: Database, workspace_id: str, title: str, *, variant_of: str | None = None
+    database: Database,
+    workspace_id: str,
+    title: str,
+    *,
+    variant_of: str | None = None,
+    url: str | None = None,
+    canonical: str | None = None,
 ) -> str:
     pending_id = new_id()
+    address = url or f"https://jobs.example.test/{pending_id}"
     with database.session() as session:
         session.add(
             PendingDiscovery(
@@ -85,8 +93,8 @@ def _pending(
                 title=title,
                 location="Remote",
                 staged_facts=StagedListingFacts().as_json(),
-                discovery_url=f"https://jobs.example.test/{pending_id}",
-                canonical_url=f"https://jobs.example.test/{pending_id}",
+                discovery_url=address,
+                canonical_url=canonical or address,
                 reason="Synthetic scan",
                 first_seen_on=date(2026, 1, 1),
                 regional_variant_of=variant_of,
@@ -1237,6 +1245,58 @@ def test_explicit_dismissal_and_restore_append_a_history(
     assert history[0].selection_mode == "explicit"
     assert history[1].category == "human_review"
     assert history[1].supersedes_event_id == history[0].id
+
+
+def test_pending_and_dismissed_rows_name_the_aggregator_that_listed_them(
+    durable_database: Database,
+) -> None:
+    workspace_id = str(
+        WorkspaceService(durable_database, runtime_storage(durable_database))
+        .create(slug="credit", name="Credit")
+        .id
+    )
+    listed = "https://himalayas.app/companies/northwind/jobs/systems-steward"
+    aggregated = _pending(durable_database, workspace_id, "Systems Steward", url=listed)
+    arbeitnow = _pending(
+        durable_database,
+        workspace_id,
+        "Line Steward",
+        url="https://www.arbeitnow.com/jobs/companies/northwind/line-steward",
+    )
+    direct = _pending(durable_database, workspace_id, "Bench Steward")
+    relisted = "https://himalayas.app/companies/northwind/jobs/yard-steward"
+    employer_first = _pending(
+        durable_database,
+        workspace_id,
+        "Yard Steward",
+        url="https://jobs.example.test/northwind/yard-steward",
+        canonical=relisted,
+    )
+    scans = SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    )
+
+    pending = {row.id: row.aggregator for row in scans.list_pending_discoveries(workspace_id)}
+    assert pending[aggregated] == AggregatorCreditResponse(
+        name="Himalayas", credit_url=listed, opens_discovery_url=True
+    )
+    assert pending[arbeitnow] == AggregatorCreditResponse(
+        name="Arbeitnow", credit_url="https://www.arbeitnow.com/"
+    )
+    assert pending[direct] is None
+    assert pending[employer_first] == AggregatorCreditResponse(
+        name="Himalayas", credit_url=relisted, opens_discovery_url=False
+    )
+
+    for pending_id in (aggregated, direct):
+        dismiss_pending_discovery(durable_database, workspace_id, pending_id)
+    dismissed = {
+        row.pending_discovery_id: row.aggregator
+        for row in DiscoveryDispositionService(durable_database).dismissed(workspace_id)
+    }
+    assert dismissed == {aggregated: pending[aggregated], direct: None}
 
 
 def test_changing_an_explicit_reason_requires_a_new_preview(durable_database: Database) -> None:

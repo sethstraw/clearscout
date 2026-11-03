@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Link } from "react-router-dom";
 
 import {
   useEnqueueTask,
@@ -242,7 +243,7 @@ export function ScanPanel({ workspaceId }: { workspaceId: string }) {
         {(scanTask.data || otherActiveScans.length > 0) && (
           <p className="field-note">
             Scan information comes from the recent task window.{" "}
-            <a href="/tasks">View scans in Activity</a>
+            <Link to="/tasks">View scans in Activity</Link>
           </p>
         )}
         {otherActiveScans.length > 0 && (

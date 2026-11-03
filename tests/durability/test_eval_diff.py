@@ -11,16 +11,23 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from evals.inspect.diff import diff
+import pytest
+from evals.inspect.diff import DatasetMismatchError, diff, main
 from evals.semantic import StageMeasurement
 
 from clearscout.shared.costs import Usage
 
 
-def _log(path: Path, rows: list[dict[str, Any]], requested_model: str = "") -> Path:
+def _log(
+    path: Path,
+    rows: list[dict[str, Any]],
+    requested_model: str = "",
+    identity: dict[str, str] | None = None,
+) -> Path:
     header: dict[str, Any] = {"task": "critic-live", "total": len(rows)}
-    if requested_model:
-        header["run"] = {"requested_model": requested_model}
+    run = {**({"requested_model": requested_model} if requested_model else {}), **(identity or {})}
+    if run:
+        header["run"] = run
     path.write_text(
         "".join(json.dumps(row) + "\n" for row in [header, *rows]),
         encoding="utf-8",
@@ -133,6 +140,32 @@ def test_the_model_each_run_requested_is_named(tmp_path: Path) -> None:
 
     assert f"baseline: {baseline} requested_model=gpt-5.6-terra" in table
     assert f"candidate: {candidate} requested_model=gpt-6-sol" in table
+
+
+@pytest.mark.parametrize("key", ["selection_manifest_sha256", "dataset_sha256"])
+def test_logs_that_scored_different_datasets_are_refused(tmp_path: Path, key: str) -> None:
+    """A swapped case would read as a regression or a gain, so the diff names both digests."""
+    baseline = _log(
+        tmp_path / "before.jsonl", [_row("strong_verdict", True)], identity={key: "a" * 64}
+    )
+    candidate = _log(
+        tmp_path / "after.jsonl", [_row("strong_verdict", True)], identity={key: "b" * 64}
+    )
+
+    with pytest.raises(DatasetMismatchError, match=f"{key}.*{'a' * 64}.*{'b' * 64}"):
+        diff(str(baseline), str(candidate))
+    assert main([str(baseline), str(candidate)]) != 0
+
+
+def test_logs_that_scored_the_same_dataset_are_compared(tmp_path: Path) -> None:
+    """Matching digests, or a digest only one log recorded, still produce the comparison."""
+    same = {"selection_manifest_sha256": "a" * 64, "dataset_sha256": "c" * 64}
+    baseline = _log(tmp_path / "before.jsonl", [_row("strong_verdict", True)], identity=same)
+    candidate = _log(tmp_path / "after.jsonl", [_row("strong_verdict", True)], identity=same)
+    replayed = _log(tmp_path / "replay.jsonl", [_row("strong_verdict", True)])
+
+    assert "| strong_verdict | 1/1 | 1/1 |" in diff(str(baseline), str(candidate))
+    assert "| strong_verdict | 1/1 | 1/1 |" in diff(str(baseline), str(replayed))
 
 
 def test_the_comparison_states_what_size_of_gap_it_can_support(tmp_path: Path) -> None:

@@ -26,7 +26,7 @@ from clearscout.delivery.api.http_security import (
     origin_authority,
     secure_headers,
 )
-from clearscout.delivery.api.models.base import FREE_MODE_PROBLEM, Problem
+from clearscout.delivery.api.models.base import FREE_MODE_PROBLEM, Problem, ProblemType
 
 
 async def secure_local_response(request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -84,12 +84,12 @@ def _mutation_refusal(request: Request, host: tuple[str, int]) -> Response | Non
 
 async def not_found(request: Request, error: NotFoundError) -> JSONResponse:
     """Translate a missing application record into a safe problem response."""
-    return problem(request, 404, "Not found", str(error), "not-found")
+    return problem(request, 404, "Not found", str(error), "urn:clearscout:problem:not-found")
 
 
 async def conflict(request: Request, error: ConflictError) -> JSONResponse:
     """Translate an application conflict into a safe problem response."""
-    return problem(request, 409, "Conflict", str(error), "conflict")
+    return problem(request, 409, "Conflict", str(error), "urn:clearscout:problem:conflict")
 
 
 async def free_mode(request: Request, error: FreeModeError) -> JSONResponse:
@@ -106,17 +106,27 @@ async def free_mode(request: Request, error: FreeModeError) -> JSONResponse:
 
 async def invalid(request: Request, error: ValidationError) -> JSONResponse:
     """Translate application validation failure into a safe problem response."""
-    return problem(request, 422, "Validation failed", str(error), "validation")
+    return problem(
+        request, 422, "Validation failed", str(error), "urn:clearscout:problem:validation"
+    )
 
 
 async def unavailable(request: Request, error: UnavailableError) -> JSONResponse:
     """Translate an unavailable dependency into a safe problem response."""
-    return problem(request, 503, "Service unavailable", str(error), "unavailable")
+    return problem(
+        request, 503, "Service unavailable", str(error), "urn:clearscout:problem:unavailable"
+    )
 
 
 async def page_unreadable(request: Request, error: CareerPageUnreadableError) -> JSONResponse:
     """Translate a refused or failed upstream page read into a problem naming its cause."""
-    return problem(request, 502, "Career page unreadable", str(error), "career-page-unreadable")
+    return problem(
+        request,
+        502,
+        "Career page unreadable",
+        str(error),
+        "urn:clearscout:problem:career-page-unreadable",
+    )
 
 
 async def request_invalid(request: Request, error: RequestValidationError) -> JSONResponse:
@@ -133,7 +143,7 @@ async def request_invalid(request: Request, error: RequestValidationError) -> JS
                 400,
                 "Missing Idempotency-Key header",
                 "Requests that create or replay a task require the Idempotency-Key request header.",
-                "missing-idempotency-key",
+                "urn:clearscout:problem:missing-idempotency-key",
                 hint="Send the request again with an Idempotency-Key header set to a unique value.",
             )
     return problem(
@@ -141,7 +151,7 @@ async def request_invalid(request: Request, error: RequestValidationError) -> JS
         422,
         "Validation failed",
         "The request did not match the documented API contract.",
-        "request-validation",
+        "urn:clearscout:problem:request-validation",
     )
 
 
@@ -153,7 +163,7 @@ async def integrity_conflict(request: Request, error: IntegrityError) -> JSONRes
         409,
         "Conflict",
         "The write conflicts with existing durable state.",
-        "integrity-conflict",
+        "urn:clearscout:problem:integrity-conflict",
     )
 
 
@@ -170,23 +180,34 @@ async def database_fault(request: Request, error: InternalError) -> JSONResponse
         500,
         "Internal error",
         "The database refused the operation for an unexpected reason.",
-        "database-fault",
+        "urn:clearscout:problem:database-fault",
     )
 
 
 async def framework_error(request: Request, error: StarletteHTTPException) -> JSONResponse:
     """Translate framework routing errors into the public problem contract."""
-    status, title, detail, problem_type = {
-        404: (404, "No such endpoint", "The requested path is not an endpoint.", "not-found"),
+    known: dict[int, tuple[int, str, str, ProblemType]] = {
+        404: (
+            404,
+            "No such endpoint",
+            "The requested path is not an endpoint.",
+            "urn:clearscout:problem:not-found",
+        ),
         405: (
             405,
             "Method not allowed",
             "That HTTP method is not allowed on this path.",
-            "method-not-allowed",
+            "urn:clearscout:problem:method-not-allowed",
         ),
-    }.get(
+    }
+    status, title, detail, problem_type = known.get(
         error.status_code,
-        (error.status_code, "HTTP error", "The request could not be completed.", "http-error"),
+        (
+            error.status_code,
+            "HTTP error",
+            "The request could not be completed.",
+            "urn:clearscout:problem:http-error",
+        ),
     )
     return problem(request, status, title, detail, problem_type)
 
@@ -211,14 +232,14 @@ def problem(
     status_code: int,
     title: str,
     detail: str,
-    problem_type: str,
+    problem_type: ProblemType,
     *,
     hint: str | None = None,
 ) -> JSONResponse:
     """Build an RFC 9457-style response without internal trace data."""
     correlation_id = str(getattr(request.state, "correlation_id", uuid4()))
     body = Problem(
-        type=f"urn:clearscout:problem:{problem_type}",
+        type=problem_type,
         title=title,
         status=status_code,
         detail=detail,

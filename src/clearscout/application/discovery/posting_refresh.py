@@ -220,9 +220,7 @@ class PostingRefreshService:
             artifact_id = previous.artifact_id
             date = fetched.publisher_closing_date
             source_artifact_ids: dict[ArtifactLogicalType, str] = {}
-            retains_publisher_date = bool(
-                date and any(item.basis == "valid_through" for item in date.statements)
-            )
+            retains_publisher_date = bool(date and date.from_publisher_record)
             if fetched.posting_status != "closed" and (
                 not unchanged
                 or retains_publisher_date

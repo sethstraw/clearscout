@@ -282,6 +282,9 @@ class Settings(BaseSettings):
     # No publication floor is imposed; publications share the page budget.
     min_publications: int = Field(default=0, ge=0)
     max_publications: int = Field(default=5, ge=0)
+    # Master-CV publication ids offered whatever the match cited, within max_publications.
+    # The tailoring report prints each unoffered paper's id; editing its citation changes the id.
+    must_consider_publications: tuple[str, ...] = ()
     # Match protected labels case-insensitively at line starts.
     header_drop: tuple[str, ...] = ()
     max_draft_attempts: int = Field(default=3, ge=1, le=5)

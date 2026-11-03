@@ -1,4 +1,5 @@
-import { HttpResponse, delay, http, type HttpHandler } from "msw";
+import { HttpResponse, http, type HttpHandler } from "msw/http";
+import { delay } from "msw/utils/delay";
 
 import type {
   DismissedDiscovery,

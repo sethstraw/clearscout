@@ -1870,7 +1870,7 @@ def test_cancellation_captures_the_terminal_response_and_stops_the_campaign(
     assert result["cancelled"] is True
     assert provider.background_cancelled == ["resp_scripted_0"]
     with durable_database.session() as session:
-        state = session.scalar(select(GuidedCampaignState))
+        state = session.scalars(select(GuidedCampaignState)).first()
     assert state is not None
     assert state.status == "cancelled"
     assert state.owner_task_id is None
@@ -2069,7 +2069,7 @@ def _run(
 
 def _campaign_state(database: Database) -> GuidedCampaignState:
     with database.session() as session:
-        state = session.scalar(select(GuidedCampaignState))
+        state = session.scalars(select(GuidedCampaignState)).first()
     assert state is not None
     return state
 
@@ -2336,7 +2336,7 @@ def test_abandon_is_refused_unless_the_campaign_is_paused(
     ledger.mark_dispatching(campaign_id, position, task_id, "a" * 64)
     ledger.mark_uncertain(campaign_id, position, task_id, "boom")
     with durable_database.session() as session:
-        state = session.scalar(select(GuidedCampaignState))
+        state = session.scalars(select(GuidedCampaignState)).first()
         assert state is not None
         state.status = "running"
 
@@ -2363,7 +2363,7 @@ def test_abandoning_an_uncertain_attempt_closes_the_campaign_incomplete(
     assert report.status.value == "incomplete"
     assert "abandoned_attempt" in [item.value for item in report.warnings]
     with durable_database.session() as session:
-        state = session.scalar(select(GuidedCampaignState))
+        state = session.scalars(select(GuidedCampaignState)).first()
         assert state is not None
         assert state.status == "incomplete"
         assert state.owner_task_id is None

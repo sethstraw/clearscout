@@ -63,6 +63,12 @@ class PublishedFact:
         )
 
 
+# A board's own statement of when it stops listing a job, unlike a closing date.
+LISTED_UNTIL = "listed_until"
+# Statement bases read from the publisher's record rather than the posting body.
+PUBLISHER_RECORD_BASES = frozenset({"valid_through", LISTED_UNTIL})
+
+
 @dataclass(frozen=True)
 class ClosingDateStatement:
     """One publisher statement, including any unresolved date precision."""
@@ -126,11 +132,25 @@ class PublisherClosingDate:
             return None
         return None
 
+    @property
+    def states_listing_end(self) -> bool:
+        """Report whether a board stated when it stops listing the job."""
+        return any(item.basis == LISTED_UNTIL for item in self.statements)
+
+    @property
+    def from_publisher_record(self) -> bool:
+        """Report whether any statement was read from the publisher's record."""
+        return any(item.basis in PUBLISHER_RECORD_BASES for item in self.statements)
+
+    def listing_expired(self, at: datetime) -> bool:
+        """Return whether a board's stated end of listing has passed; a closing date never does."""
+        return self.states_listing_end and self.has_passed(at) is True
+
     def with_artifacts(
         self, *, body_artifact_id: str | None, publisher_artifact_id: str | None
     ) -> PublisherClosingDate:
         """Bind each statement to its retained body or publisher representation."""
-        has_publisher_statement = any(item.basis == "valid_through" for item in self.statements)
+        has_publisher_statement = self.from_publisher_record
         return replace(
             self,
             artifact_id=(publisher_artifact_id or body_artifact_id)
@@ -144,7 +164,7 @@ class PublisherClosingDate:
                     artifact_id=body_artifact_id
                     if item.basis == "body_label"
                     else publisher_artifact_id
-                    if item.basis == "valid_through"
+                    if item.basis in PUBLISHER_RECORD_BASES
                     else None,
                 )
                 for item in self.statements

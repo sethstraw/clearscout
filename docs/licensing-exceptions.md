@@ -1,8 +1,8 @@
 # Version-bound dependency reviews
 
 This is a record of conservative engineering review, not legal advice.
-`scripts/audit_licenses.py` binds four reviews to an exact version in
-`REVIEWED_EXCEPTIONS`. certifi, pypdfium2, tld, and tqdm declare expressions the
+`scripts/audit_licenses.py` binds three reviews to an exact version in
+`REVIEWED_EXCEPTIONS`. certifi, pypdfium2, and tld declare expressions the
 distributed policy refuses, so the gate fails when any of them changes version.
 
 Build, lint, type and test tooling is held to a reduced policy that permits
@@ -22,12 +22,11 @@ CI produce the same complete inventory. Which of them are distributed comes from
 `uv export --no-dev --frozen`, so the tier is derived from the lockfile rather
 than from a list kept by hand.
 
-| Dependency | Version    | Use                                        | Review decision                                                                                                                                                              |
-| ---------- | ---------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| certifi    | 2026.10.23 | Python runtime CA bundle                   | MPL-2.0 files are consumed unmodified; retain upstream license and notices.                                                                                                  |
-| pypdfium2  | 5.14.0     | Python runtime PDF ingestion               | Metadata names BSD-3-Clause, Apache-2.0, and bundled dependency licenses; upstream distribution supplies the applicable notices. Preserve them when redistributing binaries. |
-| tld        | 0.13.2     | Transitive URL/date extraction dependency  | The expression offers MPL-1.1 as an alternative to GPL/LGPL; this project selects the MPL alternative and does not modify package files.                                     |
-| tqdm       | 4.70.0     | Transitive Python runtime progress utility | MPL-2.0 and MIT metadata reviewed; consumed unmodified with upstream notices retained.                                                                                       |
+| Dependency | Version    | Use                                       | Review decision                                                                                                                                                              |
+| ---------- | ---------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| certifi    | 2026.10.23 | Python runtime CA bundle                  | MPL-2.0 files are consumed unmodified; retain upstream license and notices.                                                                                                  |
+| pypdfium2  | 5.14.0     | Python runtime PDF ingestion              | Metadata names BSD-3-Clause, Apache-2.0, and bundled dependency licenses; upstream distribution supplies the applicable notices. Preserve them when redistributing binaries. |
+| tld        | 0.13.2     | Transitive URL/date extraction dependency | The expression offers MPL-1.1 as an alternative to GPL/LGPL; this project selects the MPL alternative and does not modify package files.                                     |
 
 ## Bundled packages with no notice file
 

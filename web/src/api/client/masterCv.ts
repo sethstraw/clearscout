@@ -64,17 +64,22 @@ export const masterCvApi = {
       },
     );
   },
-  masterCv: (workspaceId: string, versionId = "") => {
+  masterCv: (workspaceId: string, versionId = "", signal?: AbortSignal) => {
     const query = versionId ? `?version_id=${encodeURIComponent(versionId)}` : "";
     return request<MasterCvContent>(
       `/workspaces/${encodeURIComponent(workspaceId)}/master-cv${query}`,
+      { signal },
     );
   },
-  masterCvVersions: (workspaceId: string) =>
-    request<MasterCvVersion[]>(`/workspaces/${encodeURIComponent(workspaceId)}/master-cv/versions`),
+  masterCvVersions: (workspaceId: string, signal?: AbortSignal) =>
+    request<MasterCvVersion[]>(
+      `/workspaces/${encodeURIComponent(workspaceId)}/master-cv/versions`,
+      { signal },
+    ),
   masterCvRequirementGaps: (
     workspaceId: string,
     query: { minRaised?: number; importance?: readonly RequirementImportance[] } = {},
+    signal?: AbortSignal,
   ) => {
     const params = new URLSearchParams();
     if (query.minRaised !== undefined) params.set("min_raised", String(query.minRaised));
@@ -82,11 +87,13 @@ export const masterCvApi = {
     const suffix = params.size ? `?${params}` : "";
     return request<RequirementGaps>(
       `/workspaces/${encodeURIComponent(workspaceId)}/master-cv/requirement-gaps${suffix}`,
+      { signal },
     );
   },
-  listRequirementRulings: (workspaceId: string) =>
+  listRequirementRulings: (workspaceId: string, signal?: AbortSignal) =>
     request<RequirementRulings>(
       `/workspaces/${encodeURIComponent(workspaceId)}/requirement-rulings`,
+      { signal },
     ),
   setRequirementRuling: (
     workspaceId: string,
@@ -104,10 +111,16 @@ export const masterCvApi = {
         `${encodeURIComponent(requirementKey)}`,
       { method: "DELETE" },
     ),
-  masterCvDiff: (workspaceId: string, fromVersion: string, toVersion: string) => {
+  masterCvDiff: (
+    workspaceId: string,
+    fromVersion: string,
+    toVersion: string,
+    signal?: AbortSignal,
+  ) => {
     const query = new URLSearchParams({ from_version: fromVersion, to_version: toVersion });
     return request<{ from_version: string; to_version: string; diff: string }>(
       `/workspaces/${encodeURIComponent(workspaceId)}/master-cv/diff?${query}`,
+      { signal },
     );
   },
 
@@ -123,20 +136,23 @@ export const masterCvApi = {
       method: "POST",
       body: JSON.stringify({ content, confirm_reread: confirmReread }),
     }),
-  masterCvRereadEstimate: (workspaceId: string) =>
+  masterCvRereadEstimate: (workspaceId: string, signal?: AbortSignal) =>
     request<MasterCvRereadEstimate>(
       `/workspaces/${encodeURIComponent(workspaceId)}/master-cv/reread-estimate`,
+      { signal },
     ),
   pendingDiscoveries: (
     workspaceId: string,
     limit = 250,
     closedOnly = false,
     separateReadinessCohorts = false,
+    signal?: AbortSignal,
   ) =>
     request<PendingDiscovery[]>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-discoveries?limit=${limit}` +
         `&closed_only=${closedOnly}` +
         (separateReadinessCohorts ? `&ready_limit=${limit}&attention_limit=${limit}` : ""),
+      { signal },
     ),
   pendingDiscoveryPage: (
     workspaceId: string,
@@ -146,6 +162,7 @@ export const masterCvApi = {
     expectedSnapshotSha256 = "",
     snapshotBefore = "",
     filters: PendingQueueQuery = {},
+    signal?: AbortSignal,
   ) => {
     const query = new URLSearchParams({
       limit: String(limit),
@@ -159,29 +176,38 @@ export const masterCvApi = {
     appendQueueFilters(query, filters);
     return request<PendingDiscoveryPage>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-discoveries/page?${query}`,
+      { signal },
     );
   },
   pendingDiscoveryChanges: (
     workspaceId: string,
     snapshotBefore: string,
     filters: PendingQueueQuery = {},
+    signal?: AbortSignal,
   ) => {
     const query = new URLSearchParams({ snapshot_before: snapshotBefore });
     appendQueueFilters(query, filters);
     return request<PendingDiscoveryChanges>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-discoveries/changes?${query}`,
+      { signal },
     );
   },
-  titleExclusionCollateral: (workspaceId: string, phrases: readonly string[]) => {
+  titleExclusionCollateral: (
+    workspaceId: string,
+    phrases: readonly string[],
+    signal?: AbortSignal,
+  ) => {
     const query = new URLSearchParams(phrases.map((phrase) => ["phrase", phrase]));
     return request<TitleExclusionCollateral>(
       `/workspaces/${encodeURIComponent(workspaceId)}/pending-discoveries/` +
         `title-exclusion-collateral?${query.toString()}`,
+      { signal },
     );
   },
-  searchTitleProposals: (workspaceId: string) =>
+  searchTitleProposals: (workspaceId: string, signal?: AbortSignal) =>
     request<SearchTitleProposalInbox>(
       `/workspaces/${encodeURIComponent(workspaceId)}/search-title-proposals`,
+      { signal },
     ),
   ruleOnSearchTitle: (
     workspaceId: string,
@@ -194,9 +220,10 @@ export const masterCvApi = {
         `${encodeURIComponent(proposalId)}/${ruling}`,
       rejectRequestInit(ruling, reason),
     ),
-  searchArchetypeProposals: (workspaceId: string) =>
+  searchArchetypeProposals: (workspaceId: string, signal?: AbortSignal) =>
     request<SearchArchetypeProposalInbox>(
       `/workspaces/${encodeURIComponent(workspaceId)}/search-archetype-proposals`,
+      { signal },
     ),
   ruleOnSearchArchetype: (
     workspaceId: string,
@@ -209,9 +236,10 @@ export const masterCvApi = {
         `${encodeURIComponent(proposalId)}/${ruling}`,
       rejectRequestInit(ruling, reason),
     ),
-  searchClusterProposals: (workspaceId: string) =>
+  searchClusterProposals: (workspaceId: string, signal?: AbortSignal) =>
     request<SearchClusterProposalInbox>(
       `/workspaces/${encodeURIComponent(workspaceId)}/search-cluster-proposals`,
+      { signal },
     ),
   ruleOnSearchCluster: (
     workspaceId: string,
@@ -224,9 +252,10 @@ export const masterCvApi = {
         `${encodeURIComponent(proposalId)}/${ruling}`,
       rejectRequestInit(ruling, reason),
     ),
-  masterCvProposals: (workspaceId: string) =>
+  masterCvProposals: (workspaceId: string, signal?: AbortSignal) =>
     request<MasterCvProposal[]>(
       `/workspaces/${encodeURIComponent(workspaceId)}/master-cv-proposals`,
+      { signal },
     ),
   refreshMasterCvProposals: (workspaceId: string) =>
     request<MasterCvProposalAggregationReport>(
@@ -239,9 +268,10 @@ export const masterCvApi = {
         `${encodeURIComponent(proposalId)}/${ruling}`,
       { method: "POST" },
     ),
-  refusalPatternProposals: (workspaceId: string) =>
+  refusalPatternProposals: (workspaceId: string, signal?: AbortSignal) =>
     request<RefusalPatternProposal[]>(
       `/workspaces/${encodeURIComponent(workspaceId)}/refusal-pattern-proposals`,
+      { signal },
     ),
   ruleOnRefusalPattern: (workspaceId: string, proposalId: string, ruling: "accept" | "reject") =>
     request<RefusalPatternProposal>(

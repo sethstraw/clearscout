@@ -159,12 +159,12 @@ class InterruptedAnthropic(PausingAnthropic):
     """Pause one server-tool turn, then lose the connection carrying the continuation."""
 
     def _parse(self, **kwargs: Any) -> Any:
-        import httpx
+        import httpx2
         from anthropic import APIConnectionError
 
         if self.requests:
             raise APIConnectionError(
-                request=httpx.Request("POST", "https://api.example.test/messages")
+                request=httpx2.Request("POST", "https://api.example.test/messages")
             )
         return super()._parse(**kwargs)
 
@@ -902,12 +902,12 @@ def test_checking_credentials_costs_no_tokens(provider_class: Any, fake: Any) ->
 
 
 def test_a_rejected_anthropic_key_reports_the_console_url() -> None:
-    import httpx
+    import httpx2
     from anthropic import APIStatusError
 
     error = APIStatusError(
         "unauthorized",
-        response=httpx.Response(401, request=httpx.Request("GET", "https://api.anthropic.com")),
+        response=httpx2.Response(401, request=httpx2.Request("GET", "https://api.anthropic.com")),
         body=None,
     )
     provider = AnthropicProvider(api_key="x", client=cast(Any, FakeAnthropic(error=error)))
@@ -916,12 +916,12 @@ def test_a_rejected_anthropic_key_reports_the_console_url() -> None:
 
 
 def test_a_rejected_openai_key_reports_the_console_url() -> None:
-    import httpx
+    import httpx2
     from openai import APIStatusError
 
     error = APIStatusError(
         "unauthorized",
-        response=httpx.Response(401, request=httpx.Request("GET", "https://api.openai.com")),
+        response=httpx2.Response(401, request=httpx2.Request("GET", "https://api.openai.com")),
         body=None,
     )
     provider = OpenAIProvider(api_key="x", client=cast(Any, FakeOpenAI(error=error)))
@@ -1395,19 +1395,19 @@ def test_returned_model_prices_the_answer_without_rejecting_it(settings, served_
 
 def answering(vendor: str, body: dict[str, Any]) -> Any:
     """Return the real SDK adapter answering one canned body over a mock transport."""
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from tests.support.fake_provider import anthropic_events, openai_events
     from tests.support.provider_clients import provider_for_http
 
     render = anthropic_events if vendor == "anthropic" else openai_events
-    transport = httpx.MockTransport(
-        lambda request: httpx.Response(
+    transport = httpx2.MockTransport(
+        lambda request: httpx2.Response(
             200, content=render(body), headers={"content-type": "text/event-stream"}
         )
     )
-    return provider_for_http(ProviderName(vendor), httpx.Client(transport=transport))
+    return provider_for_http(ProviderName(vendor), httpx2.Client(transport=transport))
 
 
 OPENAI_BODY: dict[str, Any] = {
@@ -1551,12 +1551,12 @@ def test_a_failed_continuation_records_the_paused_turn_as_it_was_sent() -> None:
 
 def _stalled_stream(events: str, failure: type[Exception] | None = None) -> Any:
     """Return a response body that sends the first event and then raises ``failure``."""
-    import httpx
+    import httpx2
 
-    class Stalled(httpx.SyncByteStream):
+    class Stalled(httpx2.SyncByteStream):
         def __iter__(self) -> Iterator[bytes]:
             yield events.split("\n\n", maxsplit=1)[0].encode() + b"\n\n"
-            raise (failure or httpx.ReadTimeout)("The synthetic stream stopped sending.")
+            raise (failure or httpx2.ReadTimeout)("The synthetic stream stopped sending.")
 
     return Stalled()
 
@@ -1567,25 +1567,25 @@ def _stalling_openai(
     failure: type[Exception] | None = None,
 ) -> Any:
     """Return the real OpenAI adapter whose stream stops mid-read on the named tiers."""
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
     from tests.support.provider_clients import provider_for_http
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         tier = json.loads(request.content)["service_tier"]
         if requests is not None:
             requests.append(tier)
         headers = {"content-type": "text/event-stream"}
         if tier in stall_on:
             stalled = _stalled_stream(openai_events(OPENAI_BODY), failure)
-            return httpx.Response(200, stream=stalled, headers=headers)
+            return httpx2.Response(200, stream=stalled, headers=headers)
         answered = openai_events({**OPENAI_BODY, "service_tier": tier})
-        return httpx.Response(200, content=answered, headers=headers)
+        return httpx2.Response(200, content=answered, headers=headers)
 
     return provider_for_http(
-        ProviderName.OPENAI, httpx.Client(transport=httpx.MockTransport(handler)), max_retries=0
+        ProviderName.OPENAI, httpx2.Client(transport=httpx2.MockTransport(handler)), max_retries=0
     )
 
 
@@ -1618,11 +1618,11 @@ DROPPED_CONNECTIONS = ["RemoteProtocolError", "ReadError"]
 def test_an_openai_connection_dropped_mid_stream_is_translated_on_either_tier(
     dropped: str,
 ) -> None:
-    import httpx
+    import httpx2
 
     from clearscout.shared.errors import CapacityError
 
-    failure = getattr(httpx, dropped)
+    failure = getattr(httpx2, dropped)
     flex = _stalling_openai(frozenset({"flex"}), failure=failure)
     standard = _stalling_openai(frozenset({"default"}), failure=failure)
 
@@ -1636,17 +1636,17 @@ def test_an_openai_connection_dropped_mid_stream_is_translated_on_either_tier(
 
 
 def test_a_standard_server_error_is_a_provider_error_not_a_refusal() -> None:
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from clearscout.shared.errors import CapacityError
     from tests.support.provider_clients import provider_for_http
 
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(500, json={"error": {"message": "Synthetic server error."}})
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(500, json={"error": {"message": "Synthetic server error."}})
 
     provider = provider_for_http(
-        ProviderName.OPENAI, httpx.Client(transport=httpx.MockTransport(handler)), max_retries=0
+        ProviderName.OPENAI, httpx2.Client(transport=httpx2.MockTransport(handler)), max_retries=0
     )
 
     with pytest.raises(ProviderError) as raised:
@@ -1656,17 +1656,17 @@ def test_a_standard_server_error_is_a_provider_error_not_a_refusal() -> None:
 
 
 def test_a_flex_request_that_times_out_before_its_headers_is_a_capacity_refusal() -> None:
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from clearscout.shared.errors import CapacityError
     from tests.support.provider_clients import provider_for_http
 
-    def handler(request: httpx.Request) -> httpx.Response:
-        raise httpx.ReadTimeout("No headers arrived.", request=request)
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        raise httpx2.ReadTimeout("No headers arrived.", request=request)
 
     provider = provider_for_http(
-        ProviderName.OPENAI, httpx.Client(transport=httpx.MockTransport(handler)), max_retries=0
+        ProviderName.OPENAI, httpx2.Client(transport=httpx2.MockTransport(handler)), max_retries=0
     )
 
     with pytest.raises(CapacityError):
@@ -1711,7 +1711,7 @@ def test_a_flex_request_that_fails_before_answering_goes_to_standard_without_sdk
     """The adapter keeps the SDK's two retries, which would resend a flex failure twice."""
     import time
 
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
@@ -1719,22 +1719,22 @@ def test_a_flex_request_that_fails_before_answering_goes_to_standard_without_sdk
 
     requests: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         tier = json.loads(request.content)["service_tier"]
         requests.append(tier)
         if tier == "flex":
             if failure == "timeout":
-                raise httpx.ReadTimeout("No headers arrived.", request=request)
+                raise httpx2.ReadTimeout("No headers arrived.", request=request)
             if failure == "connection":
-                raise httpx.ConnectError("The synthetic host refused.", request=request)
-            return httpx.Response(500, json={"error": {"message": "Synthetic server error."}})
+                raise httpx2.ConnectError("The synthetic host refused.", request=request)
+            return httpx2.Response(500, json={"error": {"message": "Synthetic server error."}})
         answered = openai_events({**OPENAI_BODY, "service_tier": tier})
-        return httpx.Response(200, content=answered, headers={"content-type": "text/event-stream"})
+        return httpx2.Response(200, content=answered, headers={"content-type": "text/event-stream"})
 
     sdk_slept: list[float] = []
     monkeypatch.setattr(time, "sleep", sdk_slept.append)
     provider = provider_for_http(
-        ProviderName.OPENAI, httpx.Client(transport=httpx.MockTransport(handler)), max_retries=2
+        ProviderName.OPENAI, httpx2.Client(transport=httpx2.MockTransport(handler)), max_retries=2
     )
     slept: list[float] = []
 
@@ -1748,7 +1748,7 @@ def test_a_flex_request_that_fails_before_answering_goes_to_standard_without_sdk
 
 
 def test_a_flex_capacity_refusal_still_backs_off_before_standard(settings) -> None:
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
@@ -1756,17 +1756,17 @@ def test_a_flex_capacity_refusal_still_backs_off_before_standard(settings) -> No
 
     requests: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         tier = json.loads(request.content)["service_tier"]
         requests.append(tier)
         if tier == "flex":
             refusal = {"error": {"code": "resource_unavailable", "message": "No capacity."}}
-            return httpx.Response(429, json=refusal)
+            return httpx2.Response(429, json=refusal)
         answered = openai_events({**OPENAI_BODY, "service_tier": tier})
-        return httpx.Response(200, content=answered, headers={"content-type": "text/event-stream"})
+        return httpx2.Response(200, content=answered, headers={"content-type": "text/event-stream"})
 
     provider = provider_for_http(
-        ProviderName.OPENAI, httpx.Client(transport=httpx.MockTransport(handler)), max_retries=0
+        ProviderName.OPENAI, httpx2.Client(transport=httpx2.MockTransport(handler)), max_retries=0
     )
     slept: list[float] = []
 
@@ -1786,7 +1786,7 @@ def test_a_flex_capacity_refusal_still_backs_off_before_standard(settings) -> No
 def test_a_flex_rate_limit_timeout_or_conflict_backs_off_and_is_answered_on_flex(
     settings, status: int, code: str
 ) -> None:
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from tests.support.fake_provider import openai_events
@@ -1794,16 +1794,16 @@ def test_a_flex_rate_limit_timeout_or_conflict_backs_off_and_is_answered_on_flex
 
     requests: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         tier = json.loads(request.content)["service_tier"]
         requests.append(tier)
         if len(requests) == 1:
-            return httpx.Response(status, json={"error": {"code": code, "message": "Slow down."}})
+            return httpx2.Response(status, json={"error": {"code": code, "message": "Slow down."}})
         answered = openai_events({**OPENAI_BODY, "service_tier": tier})
-        return httpx.Response(200, content=answered, headers={"content-type": "text/event-stream"})
+        return httpx2.Response(200, content=answered, headers={"content-type": "text/event-stream"})
 
     provider = provider_for_http(
-        ProviderName.OPENAI, httpx.Client(transport=httpx.MockTransport(handler)), max_retries=0
+        ProviderName.OPENAI, httpx2.Client(transport=httpx2.MockTransport(handler)), max_retries=0
     )
     slept: list[float] = []
 
@@ -1832,13 +1832,13 @@ def _refusing_openai(
 
     ``before`` holds the frames sent between ``response.created`` and the refusal.
     """
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from tests.support.fake_provider import _frames, openai_events
     from tests.support.provider_clients import provider_for_http
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         tier = json.loads(request.content)["service_tier"]
         requests.append(tier)
         if tier in refuse_on:
@@ -1846,11 +1846,11 @@ def _refusing_openai(
             body = _frames([created, *before, refused])
         else:
             body = openai_events({**OPENAI_BODY, "service_tier": tier})
-        return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
+        return httpx2.Response(200, content=body, headers={"content-type": "text/event-stream"})
 
     return provider_for_http(
         ProviderName.OPENAI,
-        httpx.Client(transport=httpx.MockTransport(handler)),
+        httpx2.Client(transport=httpx2.MockTransport(handler)),
         max_retries=max_retries,
     )
 
@@ -2111,26 +2111,28 @@ PAUSED_ANTHROPIC_BODY: dict[str, Any] = {**ANTHROPIC_BODY, "stop_reason": "pause
 
 def _stalling_anthropic(answered_turns: int, failure: type[Exception] | None = None) -> Any:
     """Return the real Anthropic adapter that pauses for some turns, then stalls mid-read."""
-    import httpx
+    import httpx2
 
     from clearscout.application.config import ProviderName
     from tests.support.fake_provider import anthropic_events
     from tests.support.provider_clients import provider_for_http
 
-    sent: list[httpx.Request] = []
+    sent: list[httpx2.Request] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         sent.append(request)
         headers = {"content-type": "text/event-stream"}
         if len(sent) <= answered_turns:
-            return httpx.Response(
+            return httpx2.Response(
                 200, content=anthropic_events(PAUSED_ANTHROPIC_BODY), headers=headers
             )
         stalled = _stalled_stream(anthropic_events(ANTHROPIC_BODY), failure)
-        return httpx.Response(200, stream=stalled, headers=headers)
+        return httpx2.Response(200, stream=stalled, headers=headers)
 
     return provider_for_http(
-        ProviderName.ANTHROPIC, httpx.Client(transport=httpx.MockTransport(handler)), max_retries=0
+        ProviderName.ANTHROPIC,
+        httpx2.Client(transport=httpx2.MockTransport(handler)),
+        max_retries=0,
     )
 
 
@@ -2145,12 +2147,12 @@ def test_an_anthropic_stream_that_stalls_mid_read_is_a_provider_error() -> None:
 
 @pytest.mark.parametrize("dropped", DROPPED_CONNECTIONS)
 def test_an_anthropic_connection_dropped_mid_stream_is_a_provider_error(dropped: str) -> None:
-    import httpx
+    import httpx2
 
     from clearscout.infrastructure.providers.base import UnusableResponseError
 
     with pytest.raises(ProviderError) as raised:
-        _stalling_anthropic(0, getattr(httpx, dropped)).complete(plan_for(), Answer, CHOICE)
+        _stalling_anthropic(0, getattr(httpx2, dropped)).complete(plan_for(), Answer, CHOICE)
 
     assert not isinstance(raised.value, UnusableResponseError)
 

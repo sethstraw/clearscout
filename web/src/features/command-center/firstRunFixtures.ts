@@ -1,4 +1,4 @@
-import { HttpResponse, http, type HttpHandler } from "msw";
+import { HttpResponse, http, type HttpHandler } from "msw/http";
 
 import type { MasterCvVersion, Source } from "../../api/client/types";
 import { sourceList } from "../job-search/sourceScanFixtures";

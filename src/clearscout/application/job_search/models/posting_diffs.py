@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+from clearscout.application.contracts import AggregatorCreditResponse
 from clearscout.application.job_search.models.jobs import ObservationResponse
 from clearscout.domain import (
     ArtifactLogicalType,
@@ -16,6 +17,7 @@ class PostingObservationBodyResponse(ObservationResponse):
     workspace_id: str
     source_url: str
     discovery_url: str | None = None
+    aggregator: AggregatorCreditResponse | None = None
     logical_type: ArtifactLogicalType
     mime_type: str
     sha256: str

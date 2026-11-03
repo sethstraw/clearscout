@@ -1,8 +1,8 @@
 """Put board listings into the review queue and mark the ones a board has pulled.
 
 A listing already tracked as a job is refreshed rather than staged again, one
-listing the board states per market is tied to the row staged first, and a
-complete read is the only thing allowed to say an opening is gone.
+listing the board states per market is tied to the row staged first, and only a
+complete read or the board's own stated end of listing may say an opening is gone.
 """
 
 from clearscout.application.discovery.scan_staging.absence import (

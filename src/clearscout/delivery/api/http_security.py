@@ -6,6 +6,9 @@ from urllib.parse import SplitResult, urlsplit
 
 from fastapi.responses import JSONResponse, Response
 
+from clearscout.delivery.api.models.base import ProblemType
+
+LOCAL_BOUNDARY_PROBLEM: ProblemType = "urn:clearscout:problem:local-boundary"
 LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 BROWSER_MUTATION_HEADER = "X-ClearScout-Request"
@@ -74,7 +77,7 @@ def boundary_problem(status: int, title: str, detail: str) -> JSONResponse:
     """Return a path-free RFC-style rejection at the local HTTP boundary."""
     return JSONResponse(
         {
-            "type": "urn:clearscout:problem:local-boundary",
+            "type": LOCAL_BOUNDARY_PROBLEM,
             "title": title,
             "status": status,
             "detail": detail,

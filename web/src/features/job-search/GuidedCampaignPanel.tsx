@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 import {
   LATEST_SEARCH_TASK_WINDOW,
@@ -26,6 +27,7 @@ import { queryKeys } from "../../api/hooks/keys";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { safeHttpUrl } from "../../api/safeUrl";
 import { ConfirmedActionButton } from "../../components/ConfirmedActionButton";
+import { ErrorNotice } from "../../components/ErrorNotice";
 import { PaidAction } from "../../components/PaidAction";
 import { Toggletip } from "../../components/Toggletip";
 import { formatUsd, UNKNOWN_AMOUNT } from "../../components/text";
@@ -949,8 +951,16 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
                 Reading the saved search scope before payment.
               </p>
             ))}
-          {search.isError && <p className="field-error">{search.error.message}</p>}
-          {retry.isError && <p className="field-error">{retry.error.message}</p>}
+          {search.isError && (
+            <p className="field-error">
+              <ErrorNotice error={search.error} />
+            </p>
+          )}
+          {retry.isError && (
+            <p className="field-error">
+              <ErrorNotice error={retry.error} />
+            </p>
+          )}
           {taskStateUnavailable && (
             <p className="field-error">
               Recent guided search status could not be read. Reload before starting another paid
@@ -1032,7 +1042,7 @@ export function GuidedCampaignPanel({ workspaceId }: { workspaceId: string }) {
             <h2>
               {running || queued || queueing || retrying ? "Search in progress" : "Latest search"}
             </h2>
-            {taskId && <a href="/tasks">Task history</a>}
+            {taskId && <Link to="/tasks">Task history</Link>}
           </header>
           <div className="panel-body">
             {failedTask && !retrying && (

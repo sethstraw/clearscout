@@ -1,12 +1,13 @@
 """Wire checks for response vocabularies owned by the application."""
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, get_args
 
 from fastapi.testclient import TestClient
 
 from clearscout.application.tasks import task_types
 from clearscout.bootstrap.api import create_app
+from clearscout.delivery.api.models.base import ProblemType
 from clearscout.domain import ARTIFACT_LOGICAL_TYPES
 from clearscout.infrastructure.persistence.database import Database
 from tests.support.scenarios import studio_workspace
@@ -49,6 +50,14 @@ def test_saved_view_and_task_response_vocabularies_are_closed(tmp_path: Path) ->
         assert resource.get("enum", [resource.get("const")]) == ["jobs"]
     task_type = _resolved_schema(schema, models["TaskResponse"]["properties"]["task_type"])
     assert tuple(task_type["enum"]) == task_types()
+
+
+def test_problem_type_is_a_closed_vocabulary_naming_free_mode(tmp_path: Path) -> None:
+    schema = create_app(data_root=tmp_path).openapi()
+
+    problem_type = schema["components"]["schemas"]["Problem"]["properties"]["type"]
+    assert tuple(problem_type["enum"]) == get_args(ProblemType)
+    assert "urn:clearscout:problem:free-mode" in problem_type["enum"]
 
 
 def test_an_artifact_cannot_be_stored_under_a_label_the_vocabulary_does_not_name(

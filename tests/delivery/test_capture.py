@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 from pydantic import BaseModel
 
@@ -29,7 +29,7 @@ class _Answer(BaseModel):
     verdict: str
 
 
-class _Chunks(httpx.SyncByteStream):
+class _Chunks(httpx2.SyncByteStream):
     def __init__(self, chunks: list[bytes]) -> None:
         self._chunks = chunks
 
@@ -37,15 +37,15 @@ class _Chunks(httpx.SyncByteStream):
         yield from self._chunks
 
 
-class _Streaming(httpx.BaseTransport):
+class _Streaming(httpx2.BaseTransport):
     """Answer with a body delivered in separate chunks under the given headers."""
 
     def __init__(self, chunks: list[bytes], headers: dict[str, str]) -> None:
         self._chunks = chunks
         self._headers = headers
 
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, headers=self._headers, stream=_Chunks(self._chunks))
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, headers=self._headers, stream=_Chunks(self._chunks))
 
 
 def _sse() -> _Streaming:
@@ -79,7 +79,7 @@ def test_a_streamed_answer_reaches_the_caller_before_it_is_written(
     written = tmp_path / "wire-0001.json"
 
     with (
-        httpx.Client(transport=transport) as client,
+        httpx2.Client(transport=transport) as client,
         client.stream("POST", "https://provider.test/v1/responses", json={"ask": "x"}) as reply,
     ):
         chunks = reply.iter_bytes()
@@ -98,7 +98,7 @@ def test_a_gzip_answer_is_captured_as_the_json_the_provider_sent(tmp_path: Path)
     body = gzip.compress(b'{"verdict": "pursue"}')
     inner = _Streaming([body], {"content-type": "application/json", "content-encoding": "gzip"})
 
-    with httpx.Client(transport=WireRecorder(tmp_path, inner=inner)) as client:
+    with httpx2.Client(transport=WireRecorder(tmp_path, inner=inner)) as client:
         reply = client.post("https://provider.test/v1/responses", json={"ask": "x"})
 
     assert reply.json() == {"verdict": "pursue"}
@@ -115,7 +115,7 @@ def test_a_gzip_stream_is_captured_as_readable_events(tmp_path: Path) -> None:
     )
 
     with (
-        httpx.Client(transport=WireRecorder(tmp_path, inner=inner)) as client,
+        httpx2.Client(transport=WireRecorder(tmp_path, inner=inner)) as client,
         client.stream("POST", "https://provider.test/v1/responses", json={"ask": "x"}) as reply,
     ):
         seen = b"".join(reply.iter_bytes())
@@ -128,7 +128,7 @@ def test_an_answer_in_an_unsupported_encoding_is_captured_losslessly(tmp_path: P
     body = b"\x00\x8f\x1b compressed by something we cannot undo"
     inner = _Streaming([body], {"content-type": "application/json", "content-encoding": "compress"})
 
-    with httpx.Client(transport=WireRecorder(tmp_path, inner=inner)) as client:
+    with httpx2.Client(transport=WireRecorder(tmp_path, inner=inner)) as client:
         client.post("https://provider.test/v1/responses", json={"ask": "x"})
 
     kept = _captured(tmp_path)["response"]["body"]
@@ -142,7 +142,7 @@ def test_an_answer_that_is_not_text_is_captured_losslessly(tmp_path: Path) -> No
     body = b"\xff\xd8\xff\xe0 not utf-8 at all"
     inner = _Streaming([body], {"content-type": "application/octet-stream"})
 
-    with httpx.Client(transport=WireRecorder(tmp_path, inner=inner)) as client:
+    with httpx2.Client(transport=WireRecorder(tmp_path, inner=inner)) as client:
         client.post("https://provider.test/v1/responses", json={"ask": "x"})
 
     kept = _captured(tmp_path)["response"]["body"]
@@ -153,7 +153,7 @@ def test_an_answer_that_is_not_text_is_captured_losslessly(tmp_path: Path) -> No
 
 def test_a_captured_request_body_stays_the_json_that_was_sent(tmp_path: Path) -> None:
     """The request is never content-encoded, so it must not take the lossless path."""
-    with httpx.Client(transport=WireRecorder(tmp_path, inner=_sse())) as client:
+    with httpx2.Client(transport=WireRecorder(tmp_path, inner=_sse())) as client:
         client.post(
             "https://provider.test/v1/responses",
             json={"ask": "x"},
@@ -166,7 +166,7 @@ def test_a_captured_request_body_stays_the_json_that_was_sent(tmp_path: Path) ->
 def test_a_captured_request_keeps_no_credential(tmp_path: Path) -> None:
     transport = WireRecorder(tmp_path, inner=_sse())
 
-    with httpx.Client(transport=transport) as client:
+    with httpx2.Client(transport=transport) as client:
         client.post(
             "https://provider.test/v1/responses",
             json={"ask": "x"},

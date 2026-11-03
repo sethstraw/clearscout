@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 
 SECRET_HEADERS = frozenset({"authorization", "x-api-key", "openai-organization", "cookie"})
 IDENTIFYING_HEADERS = frozenset({"openai-project", "x-request-id", "request-id", "cf-ray", "date"})
@@ -32,8 +32,19 @@ REDACTED = "REDACTED"
 
 
 def body_digest(content: bytes) -> str:
-    """Return a hash of the body, which keeps a candidate's CV out of a committed file."""
-    return hashlib.sha256(content).hexdigest()[:32]
+    """Return a hash of the body, which keeps a candidate's CV out of a committed file.
+
+    A JSON object is hashed with its top-level keys sorted, so the SDK's field order does
+    not matter while nested order, such as a schema's property order, still does.
+    """
+    try:
+        parsed = json.loads(content)
+    except ValueError:
+        return hashlib.sha256(content).hexdigest()[:32]
+    if isinstance(parsed, dict):
+        parsed = dict(sorted(parsed.items()))
+    canonical = json.dumps(parsed, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode()).hexdigest()[:32]
 
 
 def redact(text: str) -> str:
@@ -57,7 +68,7 @@ class Interaction:
         """Return what this interaction is matched on."""
         return (self.method, self.url, self.request_digest)
 
-    def response(self) -> httpx.Response:
+    def response(self) -> httpx2.Response:
         """Rebuild the response for the SDK to parse as though it were live.
 
         Transport headers are dropped here as well as on the way in, so a
@@ -68,7 +79,7 @@ class Interaction:
             for name, value in self.headers.items()
             if name.lower() not in TRANSPORT_HEADERS
         }
-        return httpx.Response(self.status, headers=headers, content=self.body.encode())
+        return httpx2.Response(self.status, headers=headers, content=self.body.encode())
 
     def to_json(self) -> dict[str, Any]:
         """Return the JSON form written to a cassette file."""
@@ -118,7 +129,7 @@ class Cassette:
         payload = json.dumps([item.to_json() for item in self.interactions], indent=2)
         self.path.write_text(redact(payload) + "\n", encoding="utf-8")
 
-    def add(self, request: httpx.Request, response: httpx.Response) -> None:
+    def add(self, request: httpx2.Request, response: httpx2.Response) -> None:
         """Record one exchange, with secrets stripped."""
         self.interactions.append(
             Interaction(
@@ -131,7 +142,7 @@ class Cassette:
             )
         )
 
-    def find(self, request: httpx.Request) -> Interaction | None:
+    def find(self, request: httpx2.Request) -> Interaction | None:
         """Return the next unreplayed interaction matching ``request``, if any remains.
 
         Identical requests, such as repeated critic trials, replay their recorded
@@ -152,7 +163,7 @@ class Cassette:
         return not self.interactions
 
 
-def safe_headers(headers: httpx.Headers) -> dict[str, str]:
+def safe_headers(headers: httpx2.Headers) -> dict[str, str]:
     """Remove credentials, account and request identifiers, and transport framing."""
     return {
         name: redact(value)
@@ -164,14 +175,14 @@ def safe_headers(headers: httpx.Headers) -> dict[str, str]:
     }
 
 
-class RecordingTransport(httpx.BaseTransport):
+class RecordingTransport(httpx2.BaseTransport):
     """Pass requests through to the real API and keep a copy of the answers."""
 
-    def __init__(self, cassette: Cassette, inner: httpx.BaseTransport | None = None) -> None:
+    def __init__(self, cassette: Cassette, inner: httpx2.BaseTransport | None = None) -> None:
         self._cassette = cassette
-        self._inner = inner or httpx.HTTPTransport()
+        self._inner = inner or httpx2.HTTPTransport()
 
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         """Forward the request, record the response, and return it unchanged."""
         response = self._inner.handle_request(request)
         response.read()
@@ -179,7 +190,7 @@ class RecordingTransport(httpx.BaseTransport):
         return response
 
 
-class ReplayTransport(httpx.BaseTransport):
+class ReplayTransport(httpx2.BaseTransport):
     """Answer requests from a cassette, and refuse to reach the network.
 
     An unmatched request raises rather than falling through. Silently going
@@ -191,7 +202,7 @@ class ReplayTransport(httpx.BaseTransport):
         self._cassette = cassette
         self.unmatched: list[str] = []
 
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         """Return the recorded response, or fail loudly."""
         found = self._cassette.find(request)
         if found is None:
@@ -204,11 +215,11 @@ class ReplayTransport(httpx.BaseTransport):
         return found.response()
 
 
-def recording_client(cassette: Cassette) -> httpx.Client:
+def recording_client(cassette: Cassette) -> httpx2.Client:
     """Return an httpx client that records everything it does."""
-    return httpx.Client(transport=RecordingTransport(cassette), timeout=120.0)
+    return httpx2.Client(transport=RecordingTransport(cassette), timeout=120.0)
 
 
-def replaying_client(cassette: Cassette) -> httpx.Client:
+def replaying_client(cassette: Cassette) -> httpx2.Client:
     """Return an httpx client that replays a cassette and never goes out."""
-    return httpx.Client(transport=ReplayTransport(cassette), timeout=1.0)
+    return httpx2.Client(transport=ReplayTransport(cassette), timeout=1.0)

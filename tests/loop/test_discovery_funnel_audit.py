@@ -390,9 +390,7 @@ def test_a_scan_commits_each_boards_outcomes_in_one_transaction(
                     SourceScanOutcome.candidate_kind == "board_listing",
                 )
                 .group_by(SourceScanOutcome.source_name)
-            )
-            .tuples()
-            .all()
+            ).all()
         )
     assert per_source == {"Acme": 5, "Globex": 3}
     assert len(outcome_commits) == 2
@@ -624,16 +622,12 @@ def test_scan_history_counts_screened_out_listings_until_they_reach_pending(
     finished = queue.get(str(task.id))
     assert finished.status == "completed", (finished.error_category, finished.error_message)
     with durable_database.session() as session:
-        ledger = (
-            session.execute(
-                select(SourceScanOutcome.url, SourceScanOutcome.reason).where(
-                    SourceScanOutcome.task_id == str(task.id),
-                    SourceScanOutcome.source_name == "Acme",
-                )
+        ledger = session.execute(
+            select(SourceScanOutcome.url, SourceScanOutcome.reason).where(
+                SourceScanOutcome.task_id == str(task.id),
+                SourceScanOutcome.source_name == "Acme",
             )
-            .tuples()
-            .all()
-        )
+        ).all()
     reasons = dict(ledger)
     assert reasons[f"{acme}/staged"] == "staged"
     assert reasons[f"{acme}/foreign"] == "hard_constraint_excluded"
@@ -1381,11 +1375,7 @@ def test_a_repeat_outcome_outside_the_kept_scans_is_pruned_when_its_url_is_seen_
         )
 
     with durable_database.session() as session:
-        kept = set(
-            session.execute(
-                select(SourceScanOutcome.url, SourceScanOutcome.source_scan_id)
-            ).tuples()
-        )
+        kept = set(session.execute(select(SourceScanOutcome.url, SourceScanOutcome.source_scan_id)))
     expected = {
         ("a", -3),
         ("a", -2),
