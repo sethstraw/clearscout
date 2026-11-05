@@ -1,8 +1,8 @@
 # How ClearScout works
 
-Notes for whoever maintains this, me included. [README.md](README.md) is the
-public front door. [SECURITY.md](SECURITY.md) owns the threat boundary.
-[docs/truth-and-provenance.md](docs/truth-and-provenance.md) owns the evidence
+Notes for whoever maintains this, me included. [README.md](../README.md) is the
+public front door. [SECURITY.md](../.github/SECURITY.md) owns the threat boundary.
+[docs/truth-and-provenance.md](truth-and-provenance.md) owns the evidence
 model. This file explains how the components hold those rules together: package
 direction, durable state, generated contracts, provider calls, prompts, and
 artifacts.
@@ -105,7 +105,7 @@ rewritten within one attempt budget. Both are written at the end whether or not
 they passed. `screen` stops after matching; `run` continues through the rest.
 Provider code lives under `infrastructure/providers/`. Prompts are versioned
 files under `prompts/` that ship with the package, documented in
-[prompts/README.md](prompts/README.md).
+[prompts/README.md](../prompts/README.md).
 
 ## Borrowed patterns, and the ones left out
 
@@ -236,7 +236,7 @@ the TypeScript contract used by the client.
 One local worker leases database tasks and persists every stage as an immutable
 event. SSE is a view over those events, not an ephemeral progress channel. What
 the schema and the connection guarantee is in
-[docs/contributing/database-and-migrations.md](docs/contributing/database-and-migrations.md). There is no
+[docs/contributing/database-and-migrations.md](contributing/database-and-migrations.md). There is no
 distributed-worker claim here.
 
 A board scan reads a few boards at once, bounded by `SCAN_LANES`. It writes
@@ -311,7 +311,7 @@ There is no claim of cross-system transactions.
 Historical facts are protected twice. Application code offers append and commit
 operations. Database triggers reject update or delete on the history tables,
 which
-[database-and-migrations.md](docs/contributing/database-and-migrations.md#what-the-schema-guarantees)
+[database-and-migrations.md](contributing/database-and-migrations.md#what-the-schema-guarantees)
 names.
 Current application state is a query over history. Corrections refer to the
 event they supersede and never erase it.
@@ -322,11 +322,11 @@ or adopting a changed packaged default appends a version. Reset removes the
 override from the effective view without rewriting the shipped text.
 
 The decisions behind these boundaries are in
-[docs/architecture-decisions/README.md](docs/architecture-decisions/README.md). Operational
-details are in [docs/contributing/database-and-migrations.md](docs/contributing/database-and-migrations.md),
-[docs/storage-and-portability.md](docs/storage-and-portability.md), and
-[docs/privacy-and-retention.md](docs/privacy-and-retention.md). What these
-layers do from a user's seat is in [docs/user-guide.md](docs/user-guide.md).
+[docs/architecture-decisions/README.md](architecture-decisions/README.md). Operational
+details are in [docs/contributing/database-and-migrations.md](contributing/database-and-migrations.md),
+[docs/storage-and-portability.md](storage-and-portability.md), and
+[docs/privacy-and-retention.md](privacy-and-retention.md). What these
+layers do from a user's seat is in [docs/user-guide.md](user-guide.md).
 What follows is why the seams are where they are.
 
 ### One seed and one workspace authority
@@ -1573,7 +1573,7 @@ them. Only OpenAI has been run against the live API. A recording of that run is
 committed as `tests/cassettes/run_openai.json` and replayed through the real
 SDK. The Anthropic adapter is written against the published API and has never
 been watched working. That is a different claim from the one the offline suite
-supports. [Validation status](docs/validation.md#provider-claims-are-deliberately-uneven)
+supports. [Validation status](validation.md#provider-claims-are-deliberately-uneven)
 owns that claim and does not fold it into "both providers are supported".
 
 Provider-hosted tools are separate capabilities. They are not optional
@@ -1749,7 +1749,7 @@ Deciding that a package is an application is a person's job, not this tool's.
 
 ## Why the prompt suite is shaped this way
 
-[prompts/README.md](prompts/README.md) is the working guidance. This is the
+[prompts/README.md](../prompts/README.md) is the working guidance. This is the
 reasoning behind it, which is a maintainer's question more than a prompt
 author's.
 

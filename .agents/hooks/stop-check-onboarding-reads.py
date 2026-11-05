@@ -18,8 +18,8 @@ from typing import Any
 # The agent instructions file loads into every session, so it is not listed.
 ONBOARDING_DOCS = (
     "README.md",
-    "ARCHITECTURE.md",
-    "CONTRIBUTING.md",
+    "docs/architecture.md",
+    ".github/CONTRIBUTING.md",
     "docs/contributing/backend-development.md",
     "docs/contributing/frontend-development.md",
 )

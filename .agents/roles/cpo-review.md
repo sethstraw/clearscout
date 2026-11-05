@@ -26,7 +26,7 @@ it, and how bad it is if it is wrong.
   adjacent product surface nobody requested.
 
 Read the diff or the described change and whatever surrounding code or docs it
-needs, starting with `README.md`, `ARCHITECTURE.md`, and `docs/user-guide.md`.
+needs, starting with `README.md`, `docs/architecture.md`, and `docs/user-guide.md`.
 Confirm whether a capability, status, or vocabulary term already exists with
 symbol-aware code navigation before taking a description at face value, and
 use text search for docs, config, and literal strings.

@@ -30,7 +30,7 @@ private data on disk; `.gitignore` is not a privacy boundary.
 
 A smaller change that weakens one of those rules is still a regression. The
 full evidence and approval model is in
-[docs/truth-and-provenance.md](docs/truth-and-provenance.md).
+[docs/truth-and-provenance.md](../docs/truth-and-provenance.md).
 
 ## Set up one clone
 
@@ -51,7 +51,7 @@ one launcher that uses the ignored `local-data/` directory instead. It does so
 unless `CLEARSCOUT_DATA_ROOT` is already set. Keep development data synthetic.
 
 To run the local application without supplying a real CV, seed a scratch data
-root as [Try the synthetic workspace](README.md#try-the-synthetic-workspace)
+root as [Try the synthetic workspace](../README.md#try-the-synthetic-workspace)
 shows. Background work also needs a worker on the same root, in a second
 terminal:
 
@@ -65,12 +65,12 @@ Neither the server nor the worker starts or upgrades the database implicitly.
 
 Read the owner for the surface first:
 
-- [backend development](docs/contributing/backend-development.md) for Python
+- [backend development](../docs/contributing/backend-development.md) for Python
   placement, dependency direction, and test seams;
-- [frontend development](docs/contributing/frontend-development.md) for SPA
+- [frontend development](../docs/contributing/frontend-development.md) for SPA
   feature ownership, generated contracts, CSS, and browser checks;
-- [prompts/README.md](prompts/README.md) before changing prompt bytes; and
-- [evals/README.md](evals/README.md) before changing cases, scorers, or baselines.
+- [prompts/README.md](../prompts/README.md) before changing prompt bytes; and
+- [evals/README.md](../evals/README.md) before changing cases, scorers, or baselines.
 
 Search for an existing owner before adding a module, service, hook, component,
 CSS class, or document. Tests should assert the caller-visible or user-visible
@@ -85,7 +85,7 @@ the checkout.
 ## Run the public gate
 
 The verification interface is `scripts/gate.sh <scope>`. The usage block at
-the top of [scripts/gate.sh](scripts/gate.sh) lists every scope and what it
+the top of [scripts/gate.sh](../scripts/gate.sh) lists every scope and what it
 covers.
 
 Run `scripts/gate.sh change` before opening a pull request. It covers
@@ -98,7 +98,7 @@ package steps fetch advisory data and pinned tools; ordinary pytest, web tests,
 scripted evaluations, and CI remove provider credentials and refuse network
 paths that could spend money.
 Do not weaken that boundary to make a test pass. [Validation
-status](docs/validation.md) says what each class of evidence does and does not
+status](../docs/validation.md) says what each class of evidence does and does not
 prove.
 
 Formatting is owned by ruff for Python and Prettier for TypeScript, TSX, CSS,
@@ -128,7 +128,7 @@ ledger consistency and named failure modes. It does not show that a live model
 understood a changed prompt.
 
 Run `scripts/eval.sh` for prompt work and read
-[evals/inspect/METHODOLOGY.md](evals/inspect/METHODOLOGY.md) before preparing a
+[evals/inspect/METHODOLOGY.md](../evals/inspect/METHODOLOGY.md) before preparing a
 scoring set. A live run is a separate paid operation and requires explicit
 operator approval for that run. Do not invoke `--live` during ordinary
 contribution work.
@@ -140,7 +140,7 @@ suite is red deletes the evidence of the regression.
 ## Build synthetic browser evidence
 
 Use the demo seed from
-[Try the synthetic workspace](README.md#try-the-synthetic-workspace) for
+[Try the synthetic workspace](../README.md#try-the-synthetic-workspace) for
 reproducible screenshots and demo records. Pass `--port` to `clearscout serve` to
 run a screenshot workspace beside another server.
 
@@ -159,7 +159,7 @@ approves them. A redacted image is not synthetic test data.
 
 `v0001_schema.py` is the 0.1.0 schema. Applied revisions are frozen, and a
 schema change adds a forward revision. The commands and recovery rules are in
-[docs/contributing/database-and-migrations.md](docs/contributing/database-and-migrations.md).
+[docs/contributing/database-and-migrations.md](../docs/contributing/database-and-migrations.md).
 
 Run migration work only against a scratch data root. A change needs upgrade and
 recovery coverage and an explanation of any immutable boundary it moves.
@@ -170,7 +170,7 @@ AI assistance is allowed. Disclose substantial use in the pull request, review
 the output, check licenses and copied material, and keep private information out
 of prompts and artifacts. Do not submit model output nobody has read. The full
 policy is in
-[docs/contributing/ai-assisted-development.md](docs/contributing/ai-assisted-development.md).
+[docs/contributing/ai-assisted-development.md](../docs/contributing/ai-assisted-development.md).
 
 ## Open the pull request with the limits intact
 

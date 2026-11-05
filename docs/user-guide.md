@@ -18,7 +18,7 @@ Version 0.1.0 is the first public alpha, published as a pre-release on
 [GitHub Releases](https://github.com/sethstraw/clearscout/releases). Verify and
 install its release wheel as described in the
 [README](../README.md#install-a-tagged-release). The contributor setup in
-[CONTRIBUTING.md](../CONTRIBUTING.md) is for changing ClearScout; do not treat a
+[CONTRIBUTING.md](../.github/CONTRIBUTING.md) is for changing ClearScout; do not treat a
 development checkout as a release artifact. ClearScout is not published to PyPI and
 a direct Git install does not contain the production web client.
 
@@ -861,7 +861,7 @@ this image comes from the synthetic demo seed.
 ## Know which actions leave the machine
 
 Reading the database, reports, artifacts, and browser views is local.
-[Security](../SECURITY.md#what-leaves-your-computer) lists each action that
+[Security](../.github/SECURITY.md#what-leaves-your-computer) lists each action that
 reaches the network. Those actions may also create retained provider responses,
 artifacts, and usage records, so read [Privacy and
 retention](privacy-and-retention.md) before using a real CV.

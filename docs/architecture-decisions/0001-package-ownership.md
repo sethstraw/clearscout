@@ -31,6 +31,6 @@ discoverable owner, while shared packages are kept small enough that they do not
 become a second application layer.
 
 This decision records current ownership, not the file moves that established
-it. [ARCHITECTURE.md](../../ARCHITECTURE.md) explains the runtime boundaries;
+it. [The architecture overview](../architecture.md) explains the runtime boundaries;
 [backend development](../contributing/backend-development.md) and [frontend
 development](../contributing/frontend-development.md) own placement instructions.

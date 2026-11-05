@@ -44,5 +44,5 @@ advisory, and workflow checks whose answers can change without a source edit.
 `all` combines both. The scopes change how often a check runs; they do not widen
 what that check proves.
 
-[CONTRIBUTING.md](../../CONTRIBUTING.md) owns the commands. [Validation
+[CONTRIBUTING.md](../../.github/CONTRIBUTING.md) owns the commands. [Validation
 status](../validation.md) owns live-provider, board, browser, and renderer limits.

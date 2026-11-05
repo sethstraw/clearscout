@@ -21,13 +21,36 @@
   <a href="docs/product-tour.md">Product tour</a> |
   <a href="docs/user-guide.md">User guide</a> |
   <a href="docs/validation.md">What is tested</a> |
-  <a href="ARCHITECTURE.md">Architecture</a> |
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="docs/architecture.md">Architecture</a> |
+  <a href=".github/CONTRIBUTING.md">Contributing</a>
 </p>
 
 ClearScout is a local, open-source workspace for finding and tracking jobs,
 comparing postings with one master CV, and drafting resumes and cover letters.
 The source behind each drafted claim stays close enough to check.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/images/command-center.png"><img src="docs/images/command-center.png" alt="Home page listing applications in progress and the best-fitting evaluated jobs"></a>
+      <br><strong>Home.</strong> What needs you today: applications in progress, the best fits with your CV, and open tasks.
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/images/pending-discoveries.png"><img src="docs/images/pending-discoveries.png" alt="Find jobs review queue with screening reasons beside each posting"></a>
+      <br><strong>Find jobs.</strong> Board scans land in one review queue, with the screening reasons beside each posting. Scanning is free.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/images/evidence-and-gaps.png"><img src="docs/images/evidence-and-gaps.png" alt="Evaluation showing requirements that the candidate record does not support"></a>
+      <br><strong>Evidence and gaps.</strong> Each requirement keeps the posting's words beside the CV entry that answers it. A missing answer stays missing.
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/images/application-history.png"><img src="docs/images/application-history.png" alt="Application timeline with appended status events and job notes"></a>
+      <br><strong>Application history.</strong> Status changes append to a timeline. A correction adds an event instead of rewriting one.
+    </td>
+  </tr>
+</table>
 
 Anti-fabrication is the point. A model may select and reorder CV evidence, but
 it may cite only evidence identifiers that exist in the CV selected for that
@@ -43,11 +66,6 @@ provider key is needed. Optional daily or weekly scans run while the local
 worker is running. Evaluation and drafting are separate paid actions, and the
 [free and paid paths](docs/user-guide.md#choose-the-free-or-paid-path) show
 where provider charges begin.
-
-![Redacted live workspace: an evaluation showing requirements that the candidate record does not support](docs/images/evidence-and-gaps.png)
-
-The evaluation keeps the posting's words, the cited CV entry, and an unsupported
-answer apart. A high score elsewhere cannot turn missing evidence into a claim.
 
 Version 0.1.0 is an alpha for technical early adopters. Downloadable builds use
 [tagged releases](#install-a-tagged-release); a source checkout is a contributor
@@ -240,7 +258,7 @@ seen.
 
 The seeded workspace is for evaluation, screenshots, and contributor work. Do
 not replace it with a real CV in a development checkout.
-[CONTRIBUTING.md](CONTRIBUTING.md) owns the complete clone and verification
+[CONTRIBUTING.md](.github/CONTRIBUTING.md) owns the complete clone and verification
 path.
 
 ## Known limits
@@ -336,7 +354,7 @@ The same habit runs through the rest of the program:
 
 Abstention is the feature. An analyzer that says "not stated" three times in
 ten is a better instrument than one that always answers. Those three rows are
-the ones worth a person's time. [Architecture](ARCHITECTURE.md#the-truth-boundary) explains the
+the ones worth a person's time. [Architecture](docs/architecture.md#the-truth-boundary) explains the
 design in full.
 
 ## Local policy decides
@@ -348,7 +366,7 @@ and cost accounting.
 The database, artifacts, postings, notes, and provider-usage records stay under
 a private local data root. Model-backed work sends the bounded input for that
 stage to the provider you configured and may cost money.
-[Security](SECURITY.md#what-leaves-your-computer) lists every request that
+[Security](.github/SECURITY.md#what-leaves-your-computer) lists every request that
 leaves the machine. Reading local reports and records makes none.
 
 In the web client, every paid background task shows its scope and cost
@@ -396,21 +414,21 @@ that it will help someone else get hired.
 
 ## For reviewers
 
-- [Architecture](ARCHITECTURE.md): package direction, durable state, provider
+- [Architecture](docs/architecture.md): package direction, durable state, provider
   calls, and prompts, with the
   [architecture decision records](docs/architecture-decisions/README.md).
 - [Validation status](docs/validation.md): what the code, scripts, browser, and
   live runs have and have not established.
 - [Truth and provenance](docs/truth-and-provenance.md): the evidence and
   approval model.
-- [Security](SECURITY.md) and [privacy and retention](docs/privacy-and-retention.md):
+- [Security](.github/SECURITY.md) and [privacy and retention](docs/privacy-and-retention.md):
   what leaves the machine and what stays.
 - [Prompts](prompts/README.md) and [evaluations](evals/README.md): read them
   without running the application.
 
 ## For contributors
 
-- [CONTRIBUTING.md](CONTRIBUTING.md): setup, the public gate, and pull requests.
+- [CONTRIBUTING.md](.github/CONTRIBUTING.md): setup, the public gate, and pull requests.
 - [Backend development](docs/contributing/backend-development.md),
   [frontend development](docs/contributing/frontend-development.md), and
   [database and migrations](docs/contributing/database-and-migrations.md).
@@ -418,7 +436,7 @@ that it will help someone else get hired.
 - [How it was built](docs/contributing/agent-workflow.md) and
   [AI-assisted development](docs/contributing/ai-assisted-development.md).
 - [Storage and portability](docs/storage-and-portability.md) and
-  [support](SUPPORT.md).
+  [support](.github/SUPPORT.md).
 
 ## AI assistance and license
 
@@ -433,7 +451,7 @@ exist because I did.
 [How it was built](docs/contributing/agent-workflow.md) shows the setup: the
 roles, the review agents, the hooks that refuse bad habits, the
 one-writer-per-file rule, and why the reviews run as panels.
-[Borrowed patterns](ARCHITECTURE.md#borrowed-patterns-and-the-ones-left-out)
+[Borrowed patterns](docs/architecture.md#borrowed-patterns-and-the-ones-left-out)
 covers the model inside the app: which published patterns it follows, and which
 it leaves out on purpose. The contribution policy is in
 [AI-assisted development](docs/contributing/ai-assisted-development.md).

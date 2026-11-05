@@ -59,7 +59,7 @@ rather than silent.
 ## What leaves the machine
 
 The local API binds to loopback only, and the web app talks to that same origin.
-[Security](../SECURITY.md#what-leaves-your-computer) lists every request that
+[Security](../.github/SECURITY.md#what-leaves-your-computer) lists every request that
 does leave and what each one sends. The services those requests reach have
 their own terms and retention.
 

@@ -18,7 +18,7 @@ from pathlib import Path
 GIT_TIMEOUT = 5
 INSTRUCTION_PATHSPECS = (
     "AGENTS.md",
-    "CLAUDE.md",
+    ".claude/CLAUDE.md",
     "*/AGENTS.md",
     "*/CLAUDE.md",
     ".claude/rules/*.md",

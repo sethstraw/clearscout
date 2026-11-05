@@ -245,7 +245,7 @@ It is reached only from the `--record-baselines` branch, which never calls
 
 Regenerating is legitimate when you changed something that should move the
 numbers and you have read the diff and agree with every line of it. It is hiding
-a regression when you ran it because the suite was red. `CONTRIBUTING.md` has
+a regression when you ran it because the suite was red. `.github/CONTRIBUTING.md` has
 the longer version.
 
 ## The scorers

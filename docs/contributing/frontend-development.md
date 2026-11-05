@@ -20,7 +20,7 @@ npm --prefix web run build
 YAML is simpler than one per directory. `format` rewrites every file it covers,
 so in a shared checkout format only the files you changed with
 `npm --prefix web exec -- prettier --write <files>`. Prettier is configured at
-the repository root and described in [CONTRIBUTING.md](../../CONTRIBUTING.md); ESLint keeps only correctness rules and
+the repository root and described in [CONTRIBUTING.md](../../.github/CONTRIBUTING.md); ESLint keeps only correctness rules and
 has no stylistic ones to disagree with.
 
 If you changed the API, run `scripts/generate.sh`. It exports the schema to

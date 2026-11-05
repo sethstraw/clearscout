@@ -67,7 +67,7 @@ third-party page, under the same fetch policy for each request. A scan sends no
 CV text, posting text, or search parameters. A scan runs when you start one, or
 on the workspace's optional schedule, and a scheduled scan runs only while the
 local worker is running. The
-[validation status](docs/validation.md) separates parser coverage from live
+[validation status](../docs/validation.md) separates parser coverage from live
 board observations.
 
 The Cornerstone reader sends one credential: the anonymous bearer token the
@@ -144,7 +144,7 @@ the CV evidence the run selected, so the database holds that text. It never
 holds provider credentials. Task errors are bounded before they are persisted.
 The web API reports credential presence only; it never returns credential
 content. Retention and export boundaries are documented in
-[docs/privacy-and-retention.md](docs/privacy-and-retention.md).
+[docs/privacy-and-retention.md](../docs/privacy-and-retention.md).
 
 ## Local web threat model
 

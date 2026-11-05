@@ -250,4 +250,4 @@ for:
 Use [MANUAL_EVAL.md](MANUAL_EVAL.md) for a side-by-side review sheet of the ones
 a person still has to do. Why the suite is shaped this way, and what the ATS
 claims here do and do not rest on, is in
-[ARCHITECTURE.md](../ARCHITECTURE.md#why-the-prompt-suite-is-shaped-this-way).
+[the architecture overview](../docs/architecture.md#why-the-prompt-suite-is-shaped-this-way).

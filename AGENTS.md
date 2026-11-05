@@ -7,7 +7,7 @@ local files.
 ## Product boundary
 
 ClearScout is a local job-search tool. `README.md` describes the loop it runs and
-`ARCHITECTURE.md` explains why it is shaped that way; read those rather than a
+`docs/architecture.md` explains why it is shaped that way; read those rather than a
 summary here.
 
 `pressume` renders Markdown in a separate sibling project. The two applications
@@ -37,10 +37,10 @@ stay separate, and ClearScout stays free of any dependency on `pressume`.
 Before planning a code change, read:
 
 - `README.md` for the user-facing workflow and current release state.
-- `ARCHITECTURE.md` for the maintainer view.
+- `docs/architecture.md` for the maintainer view.
 - `docs/contributing/backend-development.md` before placing backend code or tests.
 - `docs/contributing/frontend-development.md` before changing the SPA.
-- `CONTRIBUTING.md` for test, privacy, AI-use, and review expectations.
+- `.github/CONTRIBUTING.md` for test, privacy, AI-use, and review expectations.
 
 ## Development workflow
 

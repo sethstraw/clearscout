@@ -55,7 +55,7 @@ def build_context(cwd: Path, source: str = "") -> str:
         f"working tree: {_describe_tree(status_ok, status)}",
     ]
     instructions = [
-        str(root_path / name) for name in ("AGENTS.md", "CLAUDE.md") if (root_path / name).is_file()
+        str(root_path / name) for name in ("AGENTS.md", ".claude/CLAUDE.md") if (root_path / name).is_file()
     ]
     if instructions:
         parts.append("instructions: " + ", ".join(instructions))
