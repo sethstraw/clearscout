@@ -4,6 +4,8 @@ Changes a user would notice, in [Keep a Changelog](https://keepachangelog.com/en
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-05
+
 First public alpha, for technical early adopters. There is no earlier release,
 so this entry lists no changes. [README.md](README.md) and the
 [user guide](docs/user-guide.md) describe what it does, and
@@ -29,4 +31,5 @@ Entries start with the first change after this release.
   and listing reads, refreshes, and every later read of a stored URL honor a
   robots disallow.
 
-[Unreleased]: https://github.com/sethstraw/clearscout/commits/main
+[Unreleased]: https://github.com/sethstraw/clearscout/compare/v0.1.0...main
+[0.1.0]: https://github.com/sethstraw/clearscout/releases/tag/v0.1.0
