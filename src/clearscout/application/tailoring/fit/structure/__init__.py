@@ -11,6 +11,7 @@ from clearscout.application.tailoring.fit.structure.quotes import (
     first_saying,
     posting_title,
     quote_line,
+    unshortened,
 )
 from clearscout.application.tailoring.fit.structure.reading import (
     Answer,
@@ -58,6 +59,7 @@ __all__ = [
     "requirement_lines",
     "requirement_sections",
     "unasked_answer",
+    "unshortened",
     "unwaived",
     "waived_spans",
 ]

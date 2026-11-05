@@ -247,6 +247,72 @@ def test_continuation_claim_waits_for_its_physical_reader_or_confirmed_process_e
     assert after_release is not None and after_release.task.id == child.id
 
 
+@pytest.mark.parametrize("status", [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED])
+def test_finishing_a_source_scan_task_drops_board_results_in_its_terminal_write(
+    durable_database: Database, status: TaskStatus
+) -> None:
+    workspace_id = str(_workspace(durable_database).id)
+    state_target_titles(durable_database, workspace_id, "Data Platform Lead")
+    queue = TaskQueueService(durable_database)
+    roots = [
+        queue.enqueue(
+            workspace_id=workspace_id,
+            task_type="source.scan",
+            payload=validate_task_payload("source.scan", {}),
+            idempotency_key=name,
+        )
+        for name in ("finishing-root", "other-root")
+    ]
+    claimed = queue.claim_next(worker_id="worker-a")
+    assert claimed is not None and claimed.id == roots[0].id
+    stored = {
+        "board_result": {"new_discoveries": 1, "funnel": {"outcomes": []}},
+        "detail_receipts": ["root:finishing-root:1"],
+        "raw": {"listings": 1},
+        "open": True,
+    }
+    with durable_database.session() as session:
+        for ordinal, root in enumerate(roots):
+            source = Source(
+                workspace_id=workspace_id,
+                name=f"Board {ordinal}",
+                source_type=SourceKind.AGGREGATOR.value,
+                url=f"https://example.test/jobs/{ordinal}",
+                priority=1,
+            )
+            session.add(source)
+            session.flush()
+            session.add(
+                SourceScanMember(
+                    workspace_id=workspace_id,
+                    root_task_id=str(root.id),
+                    source_id=source.id,
+                    ordinal=0,
+                    state="completed",
+                    result=stored,
+                )
+            )
+
+    with pytest.raises(ConflictError, match="no longer owns"):
+        queue.finish(str(roots[0].id), worker_id="worker-b", status=status)
+    with durable_database.session() as session:
+        members = list(session.scalars(select(SourceScanMember)))
+        assert all(member.result == stored for member in members)
+
+    finished = queue.finish(str(roots[0].id), worker_id="worker-a", status=status)
+
+    assert finished.status == status
+    with durable_database.session() as session:
+        results = {
+            member.root_task_id: member.result
+            for member in session.scalars(select(SourceScanMember))
+        }
+    assert results[str(roots[0].id)] == {
+        key: value for key, value in stored.items() if key != "board_result"
+    }
+    assert results[str(roots[1].id)] == stored
+
+
 def test_claim_prioritizes_user_work_over_publisher_continuation(
     durable_database: Database,
 ) -> None:

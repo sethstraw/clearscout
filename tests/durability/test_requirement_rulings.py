@@ -74,8 +74,18 @@ def test_met_ruling_drops_the_requirement_from_the_gaps_panel(
         employer="Globex",
         index=1,
         requirements=[
-            {"requirement_id": "REQ-1", "importance": "must_have", "text": "Ship weekly"},
-            {"requirement_id": "REQ-3", "importance": "must_have", "text": "SOC 2 audit"},
+            {
+                "requirement_id": "REQ-1",
+                "importance": "must_have",
+                "text": "Ship weekly",
+                "unmet": True,
+            },
+            {
+                "requirement_id": "REQ-3",
+                "importance": "must_have",
+                "text": "SOC 2 audit",
+                "unmet": True,
+            },
         ],
     )
     ship_key = _first_requirement_key(durable_database, committed.evaluation_id, "REQ-1")
@@ -111,7 +121,12 @@ def test_disputed_ruling_keeps_the_requirement_visible_with_a_flag(
         employer="Globex",
         index=1,
         requirements=[
-            {"requirement_id": "REQ-1", "importance": "must_have", "text": "Ship weekly"},
+            {
+                "requirement_id": "REQ-1",
+                "importance": "must_have",
+                "text": "Ship weekly",
+                "unmet": True,
+            },
         ],
     )
     ship_key = _first_requirement_key(durable_database, committed.evaluation_id, "REQ-1")
@@ -144,7 +159,12 @@ def test_clearing_a_ruling_restores_the_requirement_to_the_gaps_panel(
         employer="Globex",
         index=1,
         requirements=[
-            {"requirement_id": "REQ-1", "importance": "must_have", "text": "Ship weekly"},
+            {
+                "requirement_id": "REQ-1",
+                "importance": "must_have",
+                "text": "Ship weekly",
+                "unmet": True,
+            },
         ],
     )
     ship_key = _first_requirement_key(durable_database, committed.evaluation_id, "REQ-1")
@@ -184,7 +204,12 @@ def test_ruling_attaches_to_the_merged_requirement_key(
         employer="Globex",
         index=1,
         requirements=[
-            {"requirement_id": "REQ-9", "importance": "must_have", "text": "Canada remote"},
+            {
+                "requirement_id": "REQ-9",
+                "importance": "must_have",
+                "text": "Canada remote",
+                "unmet": True,
+            },
         ],
     )
     merged_key = _first_requirement_key(durable_database, committed.evaluation_id, "REQ-9")
@@ -227,7 +252,12 @@ def test_every_ruling_change_writes_an_audit_event(
         employer="Globex",
         index=1,
         requirements=[
-            {"requirement_id": "REQ-1", "importance": "must_have", "text": "Ship weekly"},
+            {
+                "requirement_id": "REQ-1",
+                "importance": "must_have",
+                "text": "Ship weekly",
+                "unmet": True,
+            },
         ],
     )
     ship_key = _first_requirement_key(durable_database, committed.evaluation_id, "REQ-1")

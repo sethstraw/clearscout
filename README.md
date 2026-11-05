@@ -336,8 +336,8 @@ The same habit runs through the rest of the program:
 
 - Every requirement and hard gate carries a quote from the posting, and the
   program looks for it in the fetched body. A requirement whose quote is not
-  found keeps running on its extracted text; a gate whose quote is not found is
-  flagged in the report for a person to read.
+  found keeps running on its extracted text and cites no posting span. A gate
+  whose quote is not found is flagged in the report for a person to read.
 - A deterministic reader works from the raw posting, not from the model's
   summary of it. Its reading is printed beside the model's. There is no merge
   and no tiebreak, because the disagreement is the useful row.
@@ -435,6 +435,7 @@ that it will help someone else get hired.
 - [What the public checks can prove](docs/contributing/test-coverage-map.md).
 - [How it was built](docs/contributing/agent-workflow.md) and
   [AI-assisted development](docs/contributing/ai-assisted-development.md).
+- [Building with agents](docs/building-with-agents.md): lessons from building ClearScout with AI coding agents.
 - [Storage and portability](docs/storage-and-portability.md) and
   [support](.github/SUPPORT.md).
 

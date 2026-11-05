@@ -11,7 +11,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError as PydanticValidationError
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from clearscout.application.failures import ValidationError
@@ -19,6 +19,8 @@ from clearscout.application.job_search.models import ReportRequirementResponse
 from clearscout.domain.requirements import is_boilerplate_requirement
 from clearscout.domain.rulings import HIDING_RULINGS, Ruling
 from clearscout.infrastructure.persistence.models import (
+    JobEvaluation,
+    JobPosting,
     MissedRequirementText,
     RequirementRuling,
 )
@@ -59,7 +61,7 @@ def _missed_texts_from_payload(
     texts: set[str] = set()
     for stored in payload.get("requirements", []):
         requirement = _requirement(stored)
-        if requirement.evidence_keys or not requirement.established:
+        if not requirement.unmet:
             continue
         if is_boilerplate_requirement(requirement.text):
             continue
@@ -100,6 +102,42 @@ def refresh_for_evaluation(
                 correlation_id=correlation_id,
             )
         )
+
+
+def rebuild_for_workspace(session: Session, workspace_id: str) -> int:
+    """Rebuild the workspace's rows from every stored evaluation; return the row count."""
+    session.execute(
+        delete(MissedRequirementText).where(MissedRequirementText.workspace_id == workspace_id)
+    )
+    evaluations = session.execute(
+        select(
+            JobEvaluation.id,
+            JobEvaluation.master_cv_version_id,
+            JobEvaluation.fit_report_payload,
+        )
+        .join(JobPosting, JobPosting.id == JobEvaluation.job_posting_id)
+        .where(
+            JobPosting.workspace_id == workspace_id,
+            JobEvaluation.master_cv_version_id.is_not(None),
+        )
+    ).all()
+    for evaluation_id, master_cv_version_id, payload in evaluations:
+        refresh_for_evaluation(
+            session,
+            workspace_id=workspace_id,
+            master_cv_version_id=master_cv_version_id,
+            evaluation_id=evaluation_id,
+            payload=payload,
+            origin="cli.db.rebuild-missed-requirements",
+            actor="cli",
+        )
+    session.flush()
+    return (
+        session.scalar(
+            select(func.count()).where(MissedRequirementText.workspace_id == workspace_id)
+        )
+        or 0
+    )
 
 
 def missed_requirement_texts_in(

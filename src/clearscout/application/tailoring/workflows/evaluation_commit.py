@@ -116,11 +116,10 @@ def build_evaluation_commit(
     """
     candidate_text = inputs.master_content.decode("utf-8")
     anchors = EvidenceAnchors(output.jd.text, candidate_text)
-    evidence = anchors.items
     requirement_keys = requirement_evidence(
         anchors, output.spec.requirements, output.evidence, output.inventory
     )
-    posting_body_anchor(anchors)
+    body_key = posting_body_anchor(anchors)
     reading_keys = reading_evidence(anchors, output.reading)
 
     place = output.reading.place_fit
@@ -174,26 +173,37 @@ def build_evaluation_commit(
         anchors.posting(f"hard-gate-{position}", gate.text)
         for position, gate in enumerate(output.spec.hard_gates, 1)
     ]
+    paired = disagreement_evidence(
+        anchors,
+        disagreements(output.reading, output.spec),
+        reading_keys,
+        hard_gate_evidence_keys,
+        body_key,
+    )
     fit_report = project_fit_report(
         output,
         candidate_text=candidate_text,
         requirement_keys=requirement_keys,
         hard_gate_evidence_keys=hard_gate_evidence_keys,
         reading_keys=reading_keys,
-        disagreements=disagreement_evidence(
-            anchors,
-            disagreements(output.reading, output.spec),
-            reading_keys,
-            hard_gate_evidence_keys,
-            evidence[0].key,
-        ),
-        fallback_evidence_key=evidence[0].key,
+        disagreements=paired,
+        fallback_evidence_key=body_key,
         search_parameter_set_id=inputs.search_parameter_set_id,
     )
     gaps = gap_requirements(output.spec.requirements, output.evidence)
     pros, cons = evaluation_factors(
-        output.spec.requirements, output.evidence, requirement_keys, evidence[0].key
+        output.spec.requirements, output.evidence, requirement_keys, body_key
     )
+    cited = {key for _, keys in paired for key in keys}
+    cited |= {key for factor in (*pros, *cons) for key in factor.evidence_keys}
+    if not output.spec.requirements:
+        cited.add(body_key)
+    # The body row is kept only when it scores something or a row cites it.
+    evidence = [
+        item
+        for item in anchors.items
+        if item.key != body_key or item.components or item.key in cited
+    ]
     return EvaluationCommit(
         **_observed_posting(inputs, output.jd.text),
         decision=decision,

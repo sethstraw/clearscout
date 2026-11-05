@@ -38,6 +38,7 @@ from clearscout.application.tailoring.fit.structure import (
     Answer,
     first_saying,
     quote_line,
+    unshortened,
 )
 from clearscout.domain.arrangement_grammar import (
     attendance_is_hedged,
@@ -285,7 +286,7 @@ def read_location(lines: tuple[str, ...], title: str) -> Answer[str]:
 
 def _source_quote(quote: str, lines: tuple[str, ...]) -> str:
     """Return ``quote`` re-taken from the sentence a rewritten line came from."""
-    core = quote.removeprefix("...").removesuffix("...")
+    core = unshortened(quote)
     if any(core in " ".join(getattr(line, "source", line).split()) for line in lines):
         return quote
     for line in lines:

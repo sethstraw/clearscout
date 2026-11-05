@@ -180,6 +180,30 @@ def database_archive_cache(
     terminal.success(f"Archived {archived} cached answers from {directory}.")
 
 
+def database_rebuild_missed_requirements(
+    workspace_id: Annotated[
+        str, typer.Option("--workspace-id", help="Workspace whose rows to rebuild.")
+    ],
+    database_url: DatabaseUrlOption = None,
+    data_root: DataRootOption = None,
+) -> None:
+    """Rebuild the missed-requirement texts the ranker reads from stored evaluations.
+
+    Run it after upgrading a database evaluated before those rows were kept.
+    Re-running replaces the rows rather than adding to them.
+    """
+    from clearscout.application.discovery.missed_requirement_reader import (
+        rebuild_for_workspace,
+    )
+    from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
+
+    with _reporting_errors():
+        url = RuntimeStorage.resolve(database_url, data_root=data_root).database_url
+        with open_database(url) as database, database.session() as session:
+            rows = rebuild_for_workspace(session, workspace_id)
+    terminal.success(f"Rebuilt {rows} missed-requirement rows for workspace {workspace_id}.")
+
+
 def database_downgrade(
     revision: Annotated[str, typer.Argument(help="Target revision or 'base'.")] = "-1",
     database_url: DatabaseUrlOption = None,
@@ -207,4 +231,5 @@ db_app.command("upgrade")(database_upgrade)
 db_app.command("import")(database_import)
 db_app.command("backup")(database_backup)
 db_app.command("archive-cache")(database_archive_cache)
+db_app.command("rebuild-missed-requirements")(database_rebuild_missed_requirements)
 db_app.command("downgrade")(database_downgrade)

@@ -42,6 +42,18 @@ class LaneClaim:
     host: str | None
 
 
+def drop_member_board_results(session: Session, root_task_id: str) -> None:
+    """Remove the reclaim-only board results from a batch whose root task has ended."""
+    members = session.scalars(
+        select(SourceScanMember).where(SourceScanMember.root_task_id == root_task_id)
+    )
+    for member in members:
+        if "board_result" in member.result:
+            member.result = {
+                key: value for key, value in member.result.items() if key != "board_result"
+            }
+
+
 def _board_host(url: str | None) -> str | None:
     """Return the host key the fetch client locks for this URL, or None without one."""
     return url_host(url or "") or None
@@ -259,6 +271,9 @@ class TaskLeases:
             if changed.rowcount != 1:
                 raise ConflictError("The worker no longer owns this task lease.")
             session.refresh(task)
+            # The task UPDATE above holds the write lock, so members load fresh and cannot race.
+            if task.task_type == "source.scan":
+                drop_member_board_results(session, task_id)
             self.events.append(
                 session,
                 task,

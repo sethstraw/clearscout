@@ -26,6 +26,7 @@ from clearscout.application.discovery.source_continuation.frontier_carry import 
     advance_generation,
     carried_frontier_item,
     latest_prior_rows,
+    release_superseded_checkpoints,
     reopen_stale_completed_postings,
 )
 from clearscout.application.discovery.source_continuation.frontier_recording import (
@@ -196,7 +197,9 @@ class SourceContinuationCommands:
             if carry_forward and continuation is None
             else ([], None)
         )
-        if continuation is None and not targets and not prior_rows:
+        opening = continuation is None
+        if opening and not targets and not prior_rows:
+            release_superseded_checkpoints(session, source.id, source_scan_id)
             return FrontierPersistResult(None, 0, 0, 0)
         continuation = self._open_continuation(
             session,
@@ -214,6 +217,8 @@ class SourceContinuationCommands:
             carry_forward=carry_forward,
             emitted=emitted,
         )
+        if opening:
+            release_superseded_checkpoints(session, source.id, source_scan_id)
         member = session.scalar(
             select(SourceScanMember).where(
                 SourceScanMember.source_id == source.id,

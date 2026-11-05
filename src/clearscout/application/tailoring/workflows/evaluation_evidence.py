@@ -2,7 +2,7 @@
 
 Every stored score points at readable bytes in the stored posting or the master
 CV. The first supporting anchor carries the three whole-evaluation components,
-and factors cite it by key when a posting yielded no requirements.
+and a row that rests on no quote cites the posting-body anchor.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from collections.abc import Mapping, Sequence
 from clearscout.application.contracts import ScoreEvidenceInput
 from clearscout.application.master_cv.cv import CvInventory
 from clearscout.application.tailoring.fit import Disagreement, Reading
+from clearscout.application.tailoring.fit.structure import unshortened
 from clearscout.application.tailoring.stages.jobspec import Requirement
 from clearscout.application.tailoring.stages.match import EvidenceMap, Match
 from clearscout.application.tailoring.stages.spans import locate
@@ -77,11 +78,55 @@ class EvidenceAnchors:
         direction: EvidenceDirection = EvidenceDirection.SUPPORTS,
     ) -> str:
         """Anchor text to the stored posting, quoting its opening if not found."""
-        start = self.posting_text.find(text)
-        anchored_text = text
-        if start < 0:
-            start, end = _sanitized_span(text, self.posting_text)
-            anchored_text = self.posting_text[start:end]
+        start, end = _posting_span(text, self.posting_text) or (
+            0,
+            min(len(self.posting_text), FALLBACK_CHARACTERS),
+        )
+        self._append_posting(
+            key, start, end, components, classification, strength, requirement_id, direction
+        )
+        return key
+
+    def quote(
+        self,
+        key: str,
+        *texts: str,
+        components: list[ScoreComponent] | None = None,
+        leading: bool = False,
+        classification: EvidenceClassification = EvidenceClassification.DIRECT,
+        strength: EvidenceStrength = EvidenceStrength.MODERATE,
+        requirement_id: str | None = None,
+        direction: EvidenceDirection = EvidenceDirection.SUPPORTS,
+    ) -> str | None:
+        """Anchor the first of ``texts`` the posting contains, or anchor nothing.
+
+        With ``leading``, a placed anchor also claims the whole-evaluation components.
+        """
+        span = next(
+            (found for text in texts if text and (found := _posting_span(text, self.posting_text))),
+            None,
+        )
+        if span is None:
+            return None
+        if leading:
+            components = [*(components or []), *self.leading(direction)]
+        self._append_posting(
+            key, *span, components, classification, strength, requirement_id, direction
+        )
+        return key
+
+    def _append_posting(
+        self,
+        key: str,
+        start: int,
+        end: int,
+        components: list[ScoreComponent] | None,
+        classification: EvidenceClassification,
+        strength: EvidenceStrength,
+        requirement_id: str | None,
+        direction: EvidenceDirection,
+    ) -> None:
+        anchored_text = self.posting_text[start:end]
         self.items.append(
             ScoreEvidenceInput(
                 key=key,
@@ -97,7 +142,6 @@ class EvidenceAnchors:
                 direction=direction,
             )
         )
-        return key
 
     def candidate(
         self,
@@ -130,18 +174,22 @@ class EvidenceAnchors:
         return key
 
 
-def _sanitized_span(text: str, posting: str) -> tuple[int, int]:
-    """Return the raw span of sanitized text in the posting, or of its opening when absent."""
+def _posting_span(text: str, posting: str) -> tuple[int, int] | None:
+    """Return the raw span of text in the posting, matching it sanitized and unshortened."""
+    start = posting.find(text)
+    if start >= 0:
+        return start, start + len(text)
     folded, offsets = sanitize_with_offsets(posting)
-    span = locate(text, folded)
-    if not span.verified:
-        return 0, min(len(posting), FALLBACK_CHARACTERS)
-    return offsets[span.start][0], offsets[span.end - 1][1]
+    for candidate in dict.fromkeys((text, unshortened(text))):
+        span = locate(candidate, folded)
+        if span.verified:
+            return offsets[span.start][0], offsets[span.end - 1][1]
+    return None
 
 
 def _unanswered_anchor(
     anchors: EvidenceAnchors, position: int, requirement: Requirement, match: Match | None
-) -> str:
+) -> str | None:
     """Anchor a requirement the record does not answer to its own words in the posting."""
     classification = (
         EvidenceClassification(match.classification.value)
@@ -156,10 +204,11 @@ def _unanswered_anchor(
         if classification in {EvidenceClassification.GAP, EvidenceClassification.ASSERTED}
         else EvidenceDirection.SUPPORTS
     )
-    return anchors.posting(
+    return anchors.quote(
         f"requirement-{position}-posting",
+        requirement.quote_or_span,
         requirement.text,
-        components=anchors.leading(direction),
+        leading=True,
         classification=classification,
         strength=strength,
         requirement_id=requirement.id,
@@ -177,8 +226,8 @@ def requirement_evidence(
 
     A requirement the record answers is anchored to the entries that answer it.
     One it does not is anchored to the requirement's own words in the posting,
-    marked as limiting rather than supporting, so an unmet requirement still
-    points at something a person can read.
+    marked as limiting rather than supporting. When the posting does not contain
+    those words, the requirement cites nothing rather than unrelated text.
     """
     keys_by_requirement: dict[str, list[str]] = {}
     for position, requirement in enumerate(requirements, 1):
@@ -198,26 +247,26 @@ def requirement_evidence(
                         requirement_id=requirement.id,
                     )
                 )
-        else:
-            keys.append(_unanswered_anchor(anchors, position, requirement, match))
+        elif (key := _unanswered_anchor(anchors, position, requirement, match)) is not None:
+            keys.append(key)
         keys_by_requirement[requirement.id] = keys
     return keys_by_requirement
 
 
-def posting_body_anchor(anchors: EvidenceAnchors) -> None:
-    """Anchor the posting itself when no supporting anchor carries the whole-evaluation scores.
+def posting_body_anchor(anchors: EvidenceAnchors) -> str:
+    """Anchor the posting itself as the evidence of last resort and return its key.
 
-    An evaluation whose every anchor limits its score could not otherwise say
-    what the score was read from, so the stored body becomes the evidence of
-    last resort. This also covers an evaluation with no anchor at all.
+    A row that rests on no quote cites the posting it was read from, never another
+    row's CV entry. The anchor carries the whole-evaluation scores only when no
+    supporting anchor claimed them first.
     """
-    if not anchors.leading_claimed:
-        anchors.leading_claimed = True
-        anchors.posting(
-            "posting-body",
-            anchors.posting_text[: min(len(anchors.posting_text), FALLBACK_CHARACTERS)],
-            components=list(LEADING_COMPONENTS),
-        )
+    components = [] if anchors.leading_claimed else list(LEADING_COMPONENTS)
+    anchors.leading_claimed = True
+    return anchors.posting(
+        "posting-body",
+        anchors.posting_text[: min(len(anchors.posting_text), FALLBACK_CHARACTERS)],
+        components=components,
+    )
 
 
 def disagreement_evidence(
@@ -240,10 +289,11 @@ def disagreement_evidence(
         elif item.gate is not None:
             keys = [hard_gate_evidence_keys[item.gate]]
         else:
-            keys = [
-                anchors.posting(f"disagreement-{position}-{quote_position}", quote)
+            placed = (
+                anchors.quote(f"disagreement-{position}-{quote_position}", quote)
                 for quote_position, quote in enumerate(item.evidence, 1)
-            ]
+            )
+            keys = [key for key in placed if key is not None]
         paired.append((item, keys or [fallback_key]))
     return paired
 
@@ -261,13 +311,13 @@ def reading_evidence(anchors: EvidenceAnchors, reading: Reading) -> dict[str, li
         component = _READING_COMPONENTS.get(name)
         direction = EvidenceDirection.CONTRADICTS if answer.conflict else EvidenceDirection.SUPPORTS
         for position, quote in enumerate(answer.evidence, 1):
-            keys.append(
-                anchors.posting(
-                    f"reading-{name}-{position}",
-                    quote,
-                    components=[component] if component is not None else [],
-                    direction=direction,
-                )
+            key = anchors.quote(
+                f"reading-{name}-{position}",
+                quote,
+                components=[component] if component is not None else [],
+                direction=direction,
             )
+            if key is not None:
+                keys.append(key)
         keys_by_reading[name] = keys
     return keys_by_reading

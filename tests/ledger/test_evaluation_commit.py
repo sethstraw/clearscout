@@ -527,20 +527,51 @@ def test_an_importance_row_cites_the_whole_posting_line_at_its_span() -> None:
     assert (cited.text, cited.char_start) == (LONG_LINE, posting.index(LONG_LINE))
 
 
-def test_a_seniority_row_cites_the_reading_and_stores_no_evidence_of_its_own() -> None:
+def test_a_seniority_row_whose_reading_quotes_no_posting_text_cites_the_posting_body() -> None:
     agreed = _output(("watch",))
     disputed = replace(agreed, spec=agreed.spec.model_copy(update={"seniority": "senior"}))
 
     commit = build_evaluation_commit(_inputs(), disputed)
 
+    # The reading's "title says ..." is its own summary, not posting text.
     [row] = commit.fit_report.disagreements
     [seniority] = [item for item in commit.fit_report.reading if item.question == "Seniority"]
     assert row.subject == "Seniority"
-    assert row.evidence_keys == seniority.evidence_keys != []
+    assert seniority.evidence_keys == []
+    assert row.evidence_keys == ["posting-body"]
     assert commit.score_evidence == build_evaluation_commit(_inputs(), agreed).score_evidence
 
 
-def test_a_row_resting_on_no_quote_cites_the_evaluation_fallback() -> None:
+def test_a_row_resting_on_no_quote_cites_the_posting_body_after_an_answered_requirement() -> None:
+    inputs, output = _pursued(Answer("Where you could work this", note="no place is stated"))
+    disputed = replace(output, spec=output.spec.model_copy(update={"seniority": "senior"}))
+
+    commit = build_evaluation_commit(inputs, disputed)
+
+    # The answered requirement's CV entry is not what a seniority row was read from.
+    [row] = commit.fit_report.disagreements
+    [cited] = [item for item in commit.score_evidence if item.key in row.evidence_keys]
+    assert cited.key == "posting-body"
+    assert cited.components == []
+
+
+def test_no_posting_body_row_is_stored_when_nothing_cites_it() -> None:
+    inputs, output = _pursued(Answer("Where you could work this", note="no place is stated"))
+    gap = Requirement(id="R2", text="Run a regional sales team", importance=Importance.NICE_TO_HAVE)
+    with_gap = replace(
+        output,
+        spec=output.spec.model_copy(update={"requirements": (*output.spec.requirements, gap)}),
+    )
+
+    commit = build_evaluation_commit(inputs, with_gap)
+
+    # The CV answers one requirement and the other is a stated gap, so no row
+    # rests on the posting body and its opening would show as stray evidence.
+    assert commit.fit_report.disagreements == []
+    assert "posting-body" not in [item.key for item in commit.score_evidence]
+
+
+def test_a_row_resting_on_no_quote_cites_the_posting_body() -> None:
     posting = (
         "# Platform Director\n\n## Requirements\n"
         "- Lead a governed data platform under the direction of the CTO"
@@ -557,7 +588,7 @@ def test_a_row_resting_on_no_quote_cites_the_evaluation_fallback() -> None:
 
     [row] = commit.fit_report.disagreements
     assert (row.subject, row.rules_say) == ("Seniority", "not stated")
-    assert row.evidence_keys == [commit.score_evidence[0].key]
+    assert row.evidence_keys == ["posting-body"]
     unasked = replace(output, spec=output.spec.model_copy(update={"seniority": None}))
     assert commit.score_evidence == build_evaluation_commit(_inputs(), unasked).score_evidence
 
@@ -610,6 +641,31 @@ def test_a_rule_refusal_says_the_readers_were_not_compared() -> None:
     section = _markdown(commit).split("## Model and rules disagreements", 1)[1]
     assert section.startswith("\n\nNot compared: a rule refused this posting")
     assert "No disagreement was recorded." not in section
+
+
+def _gaps_section(commit: EvaluationCommit) -> str:
+    return _markdown(commit).split("## Gaps", 1)[1].split("\n## ", 1)[0]
+
+
+def test_an_unmet_requirement_quoted_from_the_posting_is_still_a_gap() -> None:
+    commit = build_evaluation_commit(_inputs(), _output(("watch",)))
+
+    [requirement] = commit.fit_report.requirements
+    assert requirement.evidence_keys == ["requirement-1-posting"]
+    assert requirement.unmet
+    assert "| Lead a governed data platform |" in _gaps_section(commit)
+
+
+def test_the_gaps_table_lists_an_unmet_requirement_once() -> None:
+    output = _output(("watch",))
+    unstated = Requirement(
+        id="R1", text="Hands-on experience with Linear", importance=Importance.MUST_HAVE
+    )
+    output = replace(output, spec=output.spec.model_copy(update={"requirements": (unstated,)}))
+
+    commit = build_evaluation_commit(_inputs(), output)
+
+    assert _gaps_section(commit).count("Hands-on experience with Linear") == 1
 
 
 def test_a_partial_match_is_a_con_but_not_a_gap() -> None:

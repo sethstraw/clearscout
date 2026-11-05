@@ -1,8 +1,8 @@
 """Group what the master CV could not answer across the whole ledger.
 
-A requirement is unanswered when the run settled it and cited no evidence for it,
-the same rule the stored fit report applies to requirements. A requirement the
-run did not settle is not a gap.
+A requirement is unanswered when the stored fit report marks it unmet: the run
+settled it and the record answers it with nothing. A requirement the run did not
+settle is not a gap.
 
 Two postings share a grouped gap when their stored requirement texts match under
 one stated normalization rule. The rule is a text grouping, not a shared
@@ -61,7 +61,7 @@ def _visible_gap(
 ) -> tuple[ReportRequirementResponse, Ruling | None] | None:
     """Return an unanswered visible requirement and its workspace ruling."""
     requirement = _requirement(stored)
-    if requirement.evidence_keys or not requirement.established:
+    if not requirement.unmet:
         return None
     if is_boilerplate_requirement(requirement.text):
         return None

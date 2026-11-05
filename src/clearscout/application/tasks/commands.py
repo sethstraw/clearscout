@@ -19,6 +19,7 @@ from clearscout.application.failures import (
     ValidationError,
 )
 from clearscout.application.tasks.events import TaskEventLog
+from clearscout.application.tasks.leases import drop_member_board_results
 from clearscout.application.tasks.models import TaskResponse
 from clearscout.application.tasks.payloads import SourceScanPayload
 from clearscout.application.tasks.records import (
@@ -916,6 +917,7 @@ class TaskCommands:
             if direct:
                 task.status = TaskStatus.FAILED.value if failed else TaskStatus.COMPLETED.value
                 task.completed_at = utc_now()
+                drop_member_board_results(session, task_id)
 
     def _resumable_members(self, session: Session, task: BackgroundTask) -> list[SourceScanMember]:
         if task.status in {"queued", "running"}:

@@ -37,6 +37,11 @@ def quote_line(text: str, anchor: int | str | None = None) -> str:
     return "..." + flat[start : start + QUOTE - 6] + "..."
 
 
+def unshortened(quote: str) -> str:
+    """Return a ``quote_line`` quote without the ellipses that mark it shortened."""
+    return quote.removeprefix("...").removesuffix("...")
+
+
 def first_saying(lines: tuple[str, ...], phrases: tuple[str, ...]) -> tuple[str, str] | None:
     """Return the first (phrase, line) pair where a line uses one of ``phrases``."""
     for line in lines:

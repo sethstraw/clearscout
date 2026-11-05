@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind
@@ -241,7 +242,100 @@ def test_a_sanitized_reader_line_anchors_past_entities_spelled_in_the_raw_postin
     assert anchor.text == raw[anchor.char_start :]
 
 
-def test_the_posting_body_is_the_evidence_of_last_resort_and_only_that() -> None:
+def test_a_shortened_reader_quote_anchors_to_the_words_it_kept() -> None:
+    raw = "Staff Engineer\n\nYou will own the migration plan, the rollout, and the rollback."
+    anchors = EvidenceAnchors(raw, CANDIDATE)
+
+    anchors.posting("reading-must_have-1", "...own the migration plan, the rollout...")
+
+    anchor = anchors.items[0]
+    assert anchor.text == "own the migration plan, the rollout"
+    assert anchor.char_start == raw.index("own the")
+
+
+def test_an_unanswered_requirement_quotes_its_placed_posting_words() -> None:
+    raw = "About us\n\nWhat you bring\nHands-on Linear experience is a must.\n"
+    anchors = EvidenceAnchors(raw, CANDIDATE)
+    requirement = Requirement(
+        id="r1",
+        text="Hands-on experience with Linear.",
+        importance=Importance.MUST_HAVE,
+        quote_or_span="Hands-on Linear experience is a must.",
+    )
+
+    keys = requirement_evidence(anchors, [requirement], EvidenceMap(), _inventory())
+
+    assert keys == {"r1": ["requirement-1-posting"]}
+    assert anchors.items[0].text == "Hands-on Linear experience is a must."
+
+
+def test_an_unanswered_requirement_the_posting_never_states_quotes_nothing() -> None:
+    anchors = EvidenceAnchors(POSTING, CANDIDATE)
+    requirement = Requirement(
+        id="r1", text="Hands-on experience with Linear.", importance=Importance.MUST_HAVE
+    )
+
+    keys = requirement_evidence(anchors, [requirement], EvidenceMap(), _inventory())
+
+    # Quoting the posting's opening would show a reader unrelated text as the source.
+    assert keys == {"r1": []}
+    assert anchors.items == []
+
+
+def test_a_reader_quote_the_posting_never_states_anchors_nothing() -> None:
+    anchors = EvidenceAnchors(PLAIN_ARRANGEMENT, CANDIDATE)
+    reading = fit.read(PLAIN_ARRANGEMENT, _inventory())
+    invented = replace(reading.location, evidence=("title says 'senior'",))
+    reading = replace(reading, location=invented)
+
+    keys = reading_evidence(anchors, reading)
+
+    assert keys["location"] == []
+    assert not [item for item in anchors.items if item.key.startswith("reading-location")]
+
+
+def test_a_missed_quote_leaves_the_whole_evaluation_components_to_the_posting_body() -> None:
+    anchors = EvidenceAnchors(POSTING, CANDIDATE)
+
+    missed = anchors.quote("absent", "a sentence the posting never made", leading=True)
+    posting_body_anchor(anchors)
+
+    assert missed is None
+    assert [item.key for item in anchors.items] == ["posting-body"]
+    assert anchors.items[0].components == LEADING_COMPONENTS
+
+
+def test_a_supporting_requirement_the_posting_never_states_leaves_leading_to_the_next() -> None:
+    anchors = EvidenceAnchors(POSTING, CANDIDATE)
+    unstated = Requirement(
+        id="r1", text="Hands-on experience with Linear.", importance=Importance.MUST_HAVE
+    )
+    evidence = EvidenceMap(
+        matches=(
+            Match(
+                requirement_id="r1", classification=Classification.DIRECT, strength=Strength.WEAK
+            ),
+            Match(
+                requirement_id="r2",
+                entry_ids=("E1",),
+                classification=Classification.DIRECT,
+                strength=Strength.STRONG,
+            ),
+        )
+    )
+
+    keys = requirement_evidence(
+        anchors, [unstated, _requirement("r2")], evidence, _inventory(_entry("E1", CANDIDATE))
+    )
+    posting_body_anchor(anchors)
+
+    assert keys == {"r1": [], "r2": ["requirement-2-candidate-1"]}
+    answered, body = anchors.items
+    assert answered.components == LEADING_COMPONENTS
+    assert (body.key, body.components) == ("posting-body", [])
+
+
+def test_the_posting_body_carries_the_whole_evaluation_scores_only_when_unclaimed() -> None:
     empty = EvidenceAnchors(POSTING, CANDIDATE)
     posting_body_anchor(empty)
 
@@ -253,4 +347,7 @@ def test_the_posting_body_is_the_evidence_of_last_resort_and_only_that() -> None
     already.posting("one", "migrations", components=already.leading())
     posting_body_anchor(already)
 
-    assert [item.key for item in already.items] == ["one"]
+    assert [(item.key, item.components) for item in already.items] == [
+        ("one", LEADING_COMPONENTS),
+        ("posting-body", []),
+    ]

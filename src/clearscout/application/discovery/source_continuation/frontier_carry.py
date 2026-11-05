@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import date, datetime
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, null, or_, select, update
 from sqlalchemy.orm import Session
 
 from clearscout.application.discovery.source_continuation.limits import (
@@ -26,6 +26,9 @@ from clearscout.infrastructure.persistence.models import (
     SourceScan,
     SourceScanContinuation,
     SourceScanFrontierItem,
+)
+from clearscout.infrastructure.persistence.models.discovery import (
+    release_unnamed_listing_memberships,
 )
 from clearscout.infrastructure.web_fetch.board_reads import scope_owned_by_root
 
@@ -245,6 +248,29 @@ def latest_prior_rows(
     if prior is None or prior.id is None:
         return [], None
     return _carried_prior_rows(session, prior.id, emitted, verified), prior.scanned_on
+
+
+def release_superseded_checkpoints(session: Session, source_id: str, source_scan_id: str) -> None:
+    """Drop checkpoints and memberships from every other scan's frontier of this source."""
+    superseded = (
+        select(SourceScanContinuation.id)
+        .join(SourceScan, SourceScan.id == SourceScanContinuation.source_scan_id)
+        .where(SourceScan.source_id == source_id, SourceScan.id != source_scan_id)
+    )
+    session.execute(
+        update(SourceScanFrontierItem)
+        .where(
+            SourceScanFrontierItem.continuation_id.in_(superseded),
+            or_(
+                SourceScanFrontierItem.stored_checkpoint.is_not(None),
+                SourceScanFrontierItem.listing_membership_sha256.is_not(None),
+            ),
+        )
+        .values(stored_checkpoint=null(), listing_membership_sha256=None)
+        .execution_options(synchronize_session="fetch")
+    )
+    # The after_flush release only runs when ORM frontier rows flush, which a Core UPDATE skips.
+    release_unnamed_listing_memberships(session)
 
 
 def advance_generation(

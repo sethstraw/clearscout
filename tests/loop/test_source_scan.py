@@ -5076,7 +5076,10 @@ def test_a_reclaimed_scan_keeps_released_results_and_reads_only_unfinished_sourc
             unfinished
         )
         saved = session.get(SourceScanMember, member.id)
-        assert saved is not None and saved.result == stored_result
+        assert saved is not None
+        assert saved.result == {
+            key: value for key, value in stored_result.items() if key != "board_result"
+        }
         old = session.get(PendingDiscovery, stale_id)
         assert old is not None
         assert (old.withdrawn_at is not None) == (completed_kind == "completed")
@@ -5086,6 +5089,87 @@ def test_a_reclaimed_scan_keeps_released_results_and_reads_only_unfinished_sourc
                 select(BackgroundTask).where(BackgroundTask.task_type == "source.continue")
             )
         ] == children
+
+
+@pytest.mark.parametrize("outcome", ["completed", "failed", "cancelled"])
+def test_a_finished_scan_batch_drops_each_members_board_result_and_keeps_its_counts(
+    durable_database: Database, outcome: str
+) -> None:
+    from clearscout.infrastructure.persistence.models import SourceScanMember
+
+    workspace_id, acme_id, _ = _two_board_workspace(durable_database)
+    queue = TaskQueueService(durable_database)
+    task = queue.enqueue(
+        workspace_id=workspace_id,
+        task_type="source.scan",
+        payload={"source_ids": [acme_id]},
+        idempotency_key=f"finish-{outcome}",
+    )
+    scripted = ScriptedBoards(
+        {"Acme": [_listing("Data Platform Lead", "https://boards.greenhouse.io/acme/jobs/1")]}
+    )
+
+    class EndingBoard:
+        def listings(
+            self,
+            employer: str,
+            url: str,
+            *,
+            employer_is_authoritative: bool = False,
+            options: object = None,
+        ) -> SourceRead:
+            if outcome == "failed":
+                raise httpx.ConnectError("publisher could not be resolved")
+            if outcome == "cancelled":
+                queue.request_cancellation(str(task.id))
+            return scripted.listings(
+                employer, url, employer_is_authoritative=employer_is_authoritative
+            )
+
+    worker = Worker(
+        durable_database,
+        worker_id=f"finish-{outcome}",
+        handlers=default_handlers(durable_database, fetcher=EndingBoard()),
+    )
+    assert worker.run_once()
+
+    assert queue.get(str(task.id)).status == outcome
+    with durable_database.session() as session:
+        member = session.scalars(
+            select(SourceScanMember).where(SourceScanMember.root_task_id == str(task.id))
+        ).one()
+        assert "board_result" not in member.result
+        counts = [
+            (scan.read_count, scan.result_count) for scan in session.scalars(select(SourceScan))
+        ]
+        assert counts == {"completed": [(1, 1)], "failed": [(0, 0)], "cancelled": []}[outcome]
+
+
+def test_a_direct_source_scan_leaves_no_board_result_on_its_members(
+    durable_database: Database,
+) -> None:
+    from clearscout.infrastructure.persistence.models import SourceScanMember
+
+    workspace_id, acme_id, globex_id = _two_board_workspace(durable_database)
+    result = SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards(
+            {
+                "Acme": [
+                    _listing("Data Platform Lead", "https://boards.greenhouse.io/acme/jobs/1")
+                ],
+                "Globex": [],
+            }
+        ),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    ).scan(workspace_id, source_ids=[acme_id, globex_id])
+
+    assert result["new_discoveries"] == 1
+    with durable_database.session() as session:
+        members = list(session.scalars(select(SourceScanMember)))
+        assert len(members) == 2
+        assert all("board_result" not in member.result for member in members)
 
 
 def test_scan_runs_through_the_worker_with_progress(durable_database: Database) -> None:

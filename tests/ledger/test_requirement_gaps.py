@@ -60,7 +60,7 @@ def _commit(
 def test_the_same_unanswered_requirement_groups_across_postings(
     durable_database: Database, tmp_path: Path
 ) -> None:
-    """A settled requirement with no cited CV evidence is a gap; an unsettled one is not."""
+    """A requirement stored as unmet is a gap; an answered or unsettled one is not."""
     workspace = WorkspaceService(durable_database, runtime_storage(durable_database)).create(
         slug="gaps", name="Gaps"
     )
@@ -69,6 +69,7 @@ def test_the_same_unanswered_requirement_groups_across_postings(
         "requirement_id": "REQ-7",
         "importance": "must_have",
         "text": GOVERNANCE,
+        "unmet": True,
     }
     globex = _commit(
         durable_database,
@@ -108,7 +109,14 @@ def test_the_same_unanswered_requirement_groups_across_postings(
         workspace.id,
         employer="Northwind",
         index=3,
-        requirements=[{"requirement_id": "REQ-4", "importance": "nice_to_have", "text": ON_CALL}],
+        requirements=[
+            {
+                "requirement_id": "REQ-4",
+                "importance": "nice_to_have",
+                "text": ON_CALL,
+                "unmet": True,
+            }
+        ],
     )
 
     page = job_search.requirement_gaps(durable_database, workspace.id)
@@ -122,6 +130,36 @@ def test_the_same_unanswered_requirement_groups_across_postings(
     assert page.gaps[0].raised_by[0].job_posting_id == globex.job_posting_id
     assert page.gaps[0].raised_by[0].importance == "must_have"
     assert page.gaps[1].raised_by[0].importance == "nice_to_have"
+
+
+def test_an_unmet_requirement_quoted_from_the_posting_is_still_a_gap(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    """The posting quote that locates a requirement is not CV evidence answering it."""
+    workspace = WorkspaceService(durable_database, runtime_storage(durable_database)).create(
+        slug="quoted", name="Quoted"
+    )
+    artifacts = artifact_service(durable_database, tmp_path / "artifacts")
+    _commit(
+        durable_database,
+        artifacts,
+        workspace.id,
+        employer="Globex",
+        index=1,
+        requirements=[
+            {
+                "requirement_id": "REQ-1",
+                "importance": "must_have",
+                "text": GOVERNANCE,
+                "evidence_keys": ["posting-location"],
+                "unmet": True,
+            }
+        ],
+    )
+
+    page = job_search.requirement_gaps(durable_database, workspace.id)
+
+    assert [gap.text for gap in page.gaps] == [GOVERNANCE]
 
 
 def test_the_summary_states_the_rule_two_postings_are_grouped_under(
@@ -138,7 +176,14 @@ def test_the_summary_states_the_rule_two_postings_are_grouped_under(
         workspace.id,
         employer="Globex",
         index=1,
-        requirements=[{"requirement_id": "REQ-1", "importance": "must_have", "text": GOVERNANCE}],
+        requirements=[
+            {
+                "requirement_id": "REQ-1",
+                "importance": "must_have",
+                "text": GOVERNANCE,
+                "unmet": True,
+            }
+        ],
     )
 
     page = job_search.requirement_gaps(durable_database, workspace.id)
@@ -163,7 +208,9 @@ def test_case_and_whitespace_differences_group_together(
         workspace.id,
         employer="Globex",
         index=1,
-        requirements=[{"requirement_id": "REQ-1", "importance": "must_have", "text": original}],
+        requirements=[
+            {"requirement_id": "REQ-1", "importance": "must_have", "text": original, "unmet": True}
+        ],
     )
     _commit(
         durable_database,
@@ -171,7 +218,9 @@ def test_case_and_whitespace_differences_group_together(
         workspace.id,
         employer="Initech",
         index=2,
-        requirements=[{"requirement_id": "REQ-1", "importance": "must_have", "text": variant}],
+        requirements=[
+            {"requirement_id": "REQ-1", "importance": "must_have", "text": variant, "unmet": True}
+        ],
     )
 
     page = job_search.requirement_gaps(durable_database, workspace.id)
@@ -190,6 +239,7 @@ def test_min_raised_drops_singletons(durable_database: Database, tmp_path: Path)
         "requirement_id": "REQ-1",
         "importance": "must_have",
         "text": GOVERNANCE,
+        "unmet": True,
     }
     _commit(
         durable_database,
@@ -199,7 +249,12 @@ def test_min_raised_drops_singletons(durable_database: Database, tmp_path: Path)
         index=1,
         requirements=[
             shared,
-            {"requirement_id": "REQ-2", "importance": "nice_to_have", "text": ON_CALL},
+            {
+                "requirement_id": "REQ-2",
+                "importance": "nice_to_have",
+                "text": ON_CALL,
+                "unmet": True,
+            },
         ],
     )
     _commit(
@@ -234,8 +289,18 @@ def test_importance_filter_narrows_the_raised_by_rows(
         employer="Globex",
         index=1,
         requirements=[
-            {"requirement_id": "REQ-1", "importance": "must_have", "text": GOVERNANCE},
-            {"requirement_id": "REQ-2", "importance": "nice_to_have", "text": ON_CALL},
+            {
+                "requirement_id": "REQ-1",
+                "importance": "must_have",
+                "text": GOVERNANCE,
+                "unmet": True,
+            },
+            {
+                "requirement_id": "REQ-2",
+                "importance": "nice_to_have",
+                "text": ON_CALL,
+                "unmet": True,
+            },
         ],
     )
 
@@ -268,8 +333,9 @@ def test_regulatory_boilerplate_is_dropped_from_the_read_model(
                     "PUBLIC BURDEN STATEMENT: According to the Paperwork Reduction Act of 1995"
                     " no persons are required to respond to a collection of information."
                 ),
+                "unmet": True,
             },
-            {"requirement_id": "REQ-2", "importance": "must_have", "text": ANSWERED},
+            {"requirement_id": "REQ-2", "importance": "must_have", "text": ANSWERED, "unmet": True},
         ],
     )
 
@@ -311,6 +377,7 @@ def test_a_bounded_list_says_how_many_gaps_it_left_out(
                 "requirement_id": f"REQ-{position}",
                 "importance": "must_have",
                 "text": f"{GOVERNANCE} in region {position}",
+                "unmet": True,
             }
             for position in range(5)
         ],
@@ -333,6 +400,7 @@ def test_gap_grouping_refuses_a_malformed_stored_requirement() -> None:
                     "importance": "must_have",
                     "text": GOVERNANCE,
                     "evidence_keys": [],
+                    "unmet": True,
                     "span_status": "needs_review",
                     "is_hard_gate": True,
                 },
@@ -353,6 +421,7 @@ def test_one_canonical_gate_requirement_contributes_one_gap() -> None:
         "importance": "must_have",
         "text": GOVERNANCE,
         "evidence_keys": [],
+        "unmet": True,
         "span_status": "needs_review",
     }
     evaluation = JobEvaluation(
@@ -386,6 +455,7 @@ def test_a_rerun_that_answers_a_requirement_drops_it_from_that_posting(
         "requirement_id": "REQ-7",
         "importance": "must_have",
         "text": GOVERNANCE,
+        "unmet": True,
     }
     first = _commit(
         durable_database,
@@ -409,7 +479,7 @@ def test_a_rerun_that_answers_a_requirement_drops_it_from_that_posting(
         workspace.id,
         employer="Globex",
         index=1,
-        requirements=[{**governance, "evidence_keys": ["candidate-platform"]}],
+        requirements=[{**governance, "unmet": False, "evidence_keys": ["candidate-platform"]}],
         supersedes=first.evaluation_id,
     )
 

@@ -12,6 +12,7 @@ import type {
   MasterCvRereadEstimate,
   MasterCvVersion,
   RequirementGaps,
+  Task,
 } from "../api/client/types";
 import type { components } from "../api/schema";
 import { AppProviders } from "../providers";
@@ -208,6 +209,8 @@ function installHandlers(
       HttpResponse.json({ promote_transferable: 0, add_missing: 0 }),
     ),
     http.get(`${WORKSPACE}/requirement-rulings`, () => HttpResponse.json({ rulings: [] })),
+    // AppProviders lists tasks, and every mutation awaits that refetch before it settles.
+    http.get("*/api/v1/tasks", () => HttpResponse.json([] satisfies Task[])),
   );
   return sent;
 }

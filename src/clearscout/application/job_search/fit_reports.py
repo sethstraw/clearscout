@@ -83,7 +83,7 @@ def render_fit_report(
                 else "The posting states none."
             ),
         ),
-        _gaps(proposal, plain_rows, evidence_ids),
+        _gaps(proposal, evidence_ids),
         _unestablished(gate_rows, plain_rows),
         _reading(proposal, evidence_ids),
         _disagreements(proposal, evidence_ids),
@@ -121,20 +121,11 @@ def _requirement_table(
     )
 
 
-def _gaps(
-    proposal: EvaluationCommit,
-    requirements: list[ReportRequirementInput],
-    evidence_ids: dict[str, str],
-) -> str:
+def _gaps(proposal: EvaluationCommit, evidence_ids: dict[str, str]) -> str:
     rows = [
         f"| {table_cell(item.text)} | {_refs(item.evidence_keys, evidence_ids)} |"
         for item in proposal.gaps
     ]
-    rows.extend(
-        f"| {table_cell(item.requirement_id + ': ' + item.text)} | not stated |"
-        for item in requirements
-        if item.established and not item.evidence_keys
-    )
     if not rows:
         return "## Gaps\n\nNo established requirement is unsupported."
     return _table(

@@ -1,37 +1,35 @@
 # How ClearScout works
 
-Notes for whoever maintains this, me included. [README.md](../README.md) is the
-public front door. [SECURITY.md](../.github/SECURITY.md) owns the threat boundary.
+Notes for maintainers. [README.md](../README.md) is the public front door.
+[SECURITY.md](../.github/SECURITY.md) owns the threat boundary.
 [docs/truth-and-provenance.md](truth-and-provenance.md) owns the evidence
-model. This file explains how the components hold those rules together: package
-direction, durable state, generated contracts, provider calls, prompts, and
-artifacts.
+model. This file covers how the parts hold those rules: package direction,
+durable state, generated contracts, provider calls, prompts, and artifacts.
 
 ## Why it is shaped this way
 
-Anti-fabrication is the product. A tailored resume is only useful if every line
-in it is true, so the program makes that checkable. The model may cite only the
-evidence identifiers that exist for the run. Titles, employers, dates,
-education, and publication citations are copied verbatim by the program, never
-written by the model. The model drafts and critiques. Selection, stage order,
-and every check stay in application code.
+Anti-fabrication is the product. A tailored resume is useful only if every line
+is true, so the program makes that checkable. The model may cite only evidence
+identifiers that exist for the run. The program copies titles, employers,
+dates, education, and publication citations verbatim; the model never writes them. The model drafts and
+critiques. Selection, stage order, and every check stay in application code.
 
-It runs on one computer. The database, the files, and the queue are local, and
-the only things that leave are the provider calls a person starts and the reads
-published policy allows. Published policy decides reads: a board's API terms
-and robots.txt, with one exemption for a posting URL a person enters.
+It runs on one computer. The database, files, and queue are local. Only the
+provider calls a person starts and the reads published policy allows leave the
+machine. Published policy means a board's API terms and robots.txt, with one
+exemption for a posting URL a person enters.
 
-There is no autonomous agent here. The workflows are fixed. Python decides which
-stage runs next, and the model is used for bounded interpretation and writing.
-Assembly, checks, reporting, and writing files are all ordinary code. That is
-the right default for any tool whose output someone signs their name to. An
-agent that chooses its own path also chooses what it can skip.
+There is no autonomous agent. The workflows are fixed. Python picks the next
+stage, and the model does bounded interpretation and writing. Assembly, checks,
+reporting, and file writes are ordinary code. An agent that chooses its own
+path also chooses what it can skip, and someone signs their name to this
+output.
 
 The interesting parts, if you only read a few sections:
 
 - [Two readings of one posting, reported apart](#two-readings-of-one-posting-reported-apart):
-  a deterministic reader runs beside the model and disagreements are shown, not
-  resolved.
+  a deterministic reader runs beside the model, and disagreements are shown,
+  not resolved.
 - [The truth boundary](#the-truth-boundary) and
   [Review does not widen the boundary](#review-does-not-widen-the-boundary):
   how a claim is tied to evidence and kept there through approval.
@@ -49,7 +47,7 @@ The interesting parts, if you only read a few sections:
 ## The pipeline
 
 In a workspace, each step of the loop is a queued task. A task marked paid can
-reach a billing provider; every other step is code and policy-permitted reads.
+reach a billing provider. Every other step is code and policy-permitted reads.
 
 ```mermaid
 flowchart TD
@@ -70,8 +68,8 @@ _Task names and the paid flag are `TASK_SPECS` in `application/tasks/registry.py
 staging and screening are `application/discovery/scan_staging/` and
 `application/discovery/screening/`._
 
-The file-based `screen` and `run` commands run the evaluation and tailoring
-steps directly, without the queue.
+The file-based `screen` and `run` commands run evaluation and tailoring
+directly, without the queue.
 
 | Step    | Main code                                  | Purpose                                                     |
 | ------- | ------------------------------------------ | ----------------------------------------------------------- |
@@ -86,85 +84,82 @@ steps directly, without the queue.
 | Approve | `application/tailoring/approval.py`        | Apply a reviewer's decisions, or refuse them                |
 | Report  | `application/tailoring/pipeline/report.py` | Write the review package and provenance table               |
 
-Two commands sit beside that pipeline, not inside it.
-`application/tailoring/batch/` runs the screening steps once per posting and
-compares the results. `application/tailoring/elicit/` asks the person about the
-gaps and can add what they confirm to the master CV. Neither drafts anything.
-Elicitation makes no model call at all.
+Two commands sit beside the pipeline. `application/tailoring/batch/` screens
+each posting once and compares the results. `application/tailoring/elicit/`
+asks the person about gaps and can add what they confirm to the master CV.
+Neither drafts. Elicitation makes no model call.
 
-`application/master_cv/` is the shared intake boundary for CLI and HTTP
-onboarding. It adopts already-conforming Markdown without a model call. Every
-other supported source goes through
-`application.tailoring.pipeline.import_cv`, which keeps its numbered citations,
-authenticity check, loss check, and audit report. Only a passing canonical
-document is registered as an immutable master-CV version.
+`application/master_cv/` is the shared intake for CLI and HTTP onboarding. It
+adopts already-conforming Markdown without a model call. Every other source
+goes through `application.tailoring.pipeline.import_cv`, with its numbered
+citations, authenticity check, loss check, and audit report. Only a passing
+canonical document becomes an immutable master-CV version.
 
-`application/tailoring/pipeline/` connects the steps, and its bounded rewrite
-loop is shared. The resume and the cover letter are both drafted, checked, and
-rewritten within one attempt budget. Both are written at the end whether or not
-they passed. `screen` stops after matching; `run` continues through the rest.
-Provider code lives under `infrastructure/providers/`. Prompts are versioned
-files under `prompts/` that ship with the package, documented in
-[prompts/README.md](../prompts/README.md).
+`application/tailoring/pipeline/` connects the steps and shares one bounded
+rewrite loop. The resume and cover letter are drafted, checked, and rewritten
+within one attempt budget, and both are written at the end, pass or fail.
+`screen` stops after matching; `run` continues. Provider code lives under
+`infrastructure/providers/`. Prompts are versioned files under `prompts/` that
+ship with the package, documented in [prompts/README.md](../prompts/README.md).
 
 ## Borrowed patterns, and the ones left out
 
-The model work follows published patterns. They were picked as much for what
-they rule out as for what they add.
+The model work follows published patterns, picked as much for what they rule
+out as for what they add.
 
 Anthropic's
 [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
 separates workflows, where code decides the path, from agents, which direct
-themselves. It recommends the simplest one that works. ClearScout is a workflow.
+themselves, and recommends the simplest that works. ClearScout is a workflow.
 `pipeline/service.py` calls ingest, extraction, the deterministic reading,
-matching, and selection in a fixed order, and each stage reads the structured
-output of the one before it. That is prompt chaining in the same guide's terms.
+matching, and selection in a fixed order. Each stage reads the structured
+output of the one before. The guide calls that prompt chaining.
 
-Drafting is an evaluator loop in the
-[Self-Refine](https://arxiv.org/abs/2303.17651) shape: draft, check, rewrite.
-`pipeline/rewrite.py` runs the deterministic checks first. The model critic runs
-only when those pass and the draft is risky. The loop stops on a pass, on a
-repeated failure, or when its attempt budget is spent.
+Drafting is a [Self-Refine](https://arxiv.org/abs/2303.17651) loop: draft,
+check, rewrite. `pipeline/rewrite.py` runs the deterministic checks first. The
+model critic runs only when those pass and the draft is risky. The loop stops
+on a pass, a repeated failure, or a spent attempt budget.
 
 A draft is risky in three cases: it is a rewrite, its keyword coverage is below
-`critic_coverage_floor`, or the share of answered requirements resting on
-transferable or stated evidence, or on tailoring-only evidence worded as taking
-part in the work (`PARTICIPATION` in `stages/context.py`), is above
-`critic_transferable_ceiling`. A critic on every passing attempt would run most
-often on the drafts with least to find. Both thresholds are settings, because
-where they fall is a quality judgment measurement is expected to move. A draft
-that passes without a critic is reported as unreviewed, not as approved.
+`critic_coverage_floor`, or the share of answered requirements resting on weak
+evidence is above `critic_transferable_ceiling`. Weak means transferable or
+stated evidence, or tailoring-only evidence worded as taking part in the work
+(`PARTICIPATION` in `stages/context.py`).
+A critic on every passing attempt would mostly run on drafts with least to
+find. Both thresholds are settings, because where they fall is a quality judgment
+measurement is expected to move. A draft that passes without a critic is reported as unreviewed, not
+approved.
 
-Citation is a contract, not a courtesy. Response schemas accept only the
-evidence identifiers that exist for the run, and verification checks provenance
-and numbers. [Gao et al.](https://arxiv.org/abs/2305.14627) found that even
-strong models lack complete citation support about half the time on one
-long-form benchmark when citing is left to them. Here it is not left to them.
+Citation is a contract. Response schemas accept only evidence identifiers that
+exist for the run, and verification checks provenance and numbers.
+[Gao et al.](https://arxiv.org/abs/2305.14627) found strong models lack full
+citation support about half the time on one long-form benchmark when citing is
+left to them. Here it is not left to them.
 
 Abstention is an answer. The deterministic reader returns `not stated` rather
-than guessing (`fit/lexicon.py`), and extraction is told not to infer a
-requirement the posting does not state. [Wen et al.](https://arxiv.org/abs/2407.18418)
-survey abstention as one of the main ways to cut false output.
+than guessing (`fit/lexicon.py`), and extraction is told not to infer an
+unstated requirement. [Wen et al.](https://arxiv.org/abs/2407.18418) survey
+abstention as a main way to cut false output.
 
 Every provider response is a schema with extra fields forbidden, so a reply
-either fits the shape or fails loudly. A condition a rule can read is never sent
-for a paid opinion (`discovery/relevance_review_preparation.py`). Postings and
-CVs are treated as untrusted data, in line with
+fits or fails loudly. A condition a rule can read is never sent for a paid
+opinion (`discovery/relevance_review_preparation.py`). Postings and CVs are
+untrusted data, per
 [OWASP LLM01](https://genai.owasp.org/llmrisk/llm01-prompt-injection/) and
-[Greshake et al.](https://arxiv.org/abs/2302.12173). The limits of that are in
+[Greshake et al.](https://arxiv.org/abs/2302.12173). The limits are in
 [Untrusted input](#untrusted-input).
 
-Left out on purpose. Nothing routes: stages map to model tiers in configuration,
-and no model decides which path an input takes. Batch screening reads postings
-one at a time, not in parallel model calls. No model judge scores the
-evaluations. And the critic shares the drafter's tier by default, so it can
-share the drafter's blind spots; [Zheng et al.](https://arxiv.org/abs/2306.05685)
-document that model judges favor output like their own.
+Left out on purpose. Nothing routes: stages map to model tiers in
+configuration, and no model picks an input's path. Batch screening reads
+postings one at a time, not in parallel model calls. No model judge scores the
+evaluations. The critic shares the drafter's tier by default, so it can share
+its blind spots; [Zheng et al.](https://arxiv.org/abs/2306.05685) show model
+judges favor output like their own.
 
 ## Durable application architecture
 
-The bounded pipeline sits inside a layered package map. An arrow is an import
-a layer may make. Every layer may import `shared`, which imports no other layer.
+The pipeline sits inside a layered package map. An arrow is an import a layer
+may make. Every layer may import `shared`, which imports no other layer.
 
 ```mermaid
 flowchart TD
@@ -183,13 +178,12 @@ flowchart TD
 _Traced from the `forbidden` contracts in `pyproject.toml` `[tool.importlinter]`;
 `infrastructure.persistence` is further forbidden from importing `application`._
 
-Application services coordinate concrete local infrastructure. Infrastructure
-adapters use application-owned configuration and contracts. Neither side may
-reach delivery or bootstrap. Three CLI modules reach bootstrap:
-`delivery/cli/__main__.py` loads the composed Typer app, `workspace.py` runs the
-setup flow, and `runtime.py` starts a composed server or worker. None of them
-assembles a process itself, and an Import Linter contract names the bootstrap
-modules each of the three may import, and no others.
+Application services coordinate local infrastructure. Infrastructure adapters
+use application-owned configuration and contracts. Neither reaches delivery or
+bootstrap. Three CLI modules reach bootstrap: `delivery/cli/__main__.py` loads
+the composed Typer app, `workspace.py` runs setup, and `runtime.py` starts a
+composed server or worker. None assembles a process itself. An Import Linter
+contract names the bootstrap modules each may import, and no others.
 
 - `domain/` owns framework-free identity, vocabulary, and invariants.
 - `application/` owns capability policy and orchestration: master CV,
@@ -204,45 +198,44 @@ modules each of the three may import, and no others.
   normalization.
 
 Import Linter holds these directions. It also keeps deterministic tailoring
-stages from reaching services, persistence, or delivery. Inside the larger
-packages, such as `fit/`, `stages/verify/`, the discovery scan packages, and
-the board read and adapter packages, a layers contract orders the modules from
-the entry point down to the leaves. The task package owns
-its models, payloads, execution protocols, registry, and durable queue.
-`bootstrap/worker.py` binds task types to handlers.
+stages away from services, persistence, and delivery. Inside larger packages,
+such as `fit/`, `stages/verify/`, the discovery scan packages, and the board
+read and adapter packages, a layers contract orders modules from entry point to
+leaves. The task package owns its models, payloads, execution protocols,
+registry, and durable queue. `bootstrap/worker.py` binds task types to
+handlers.
 
 Three capabilities keep one stable service in front of smaller owners.
-`TaskQueueService` is the entry point for tasks: commands own state changes,
-leases own worker coordination, the event log owns sequence numbers, and queries
-shape records. An event is appended inside the transaction that changes the
-task. `DocumentService` sits in front of `DocumentVersionCommands`,
-`DocumentQueries`, and `DocumentArtifactPromotion`. `MasterCvService` sits in
-front of `MasterCvIntake`, `MasterCvVersionCommands`, `MasterCvArtifacts`, and
-`MasterCvQueries`. Board scanning splits the same way: `SourceScanService` owns
-the scan command, and `SourceScanQueries` owns bounded reads of its history.
+`TaskQueueService` fronts tasks: commands own state changes, leases own worker
+coordination, the event log owns sequence numbers, and queries shape records.
+An event is appended in the transaction that changes the task.
+`DocumentService` fronts `DocumentVersionCommands`, `DocumentQueries`, and
+`DocumentArtifactPromotion`. `MasterCvService` fronts `MasterCvIntake`,
+`MasterCvVersionCommands`, `MasterCvArtifacts`, and `MasterCvQueries`. Board
+scanning splits the same way: `SourceScanService` owns the scan command, and
+`SourceScanQueries` owns bounded reads of its history.
 
 The workspace routers are split by concern and composed into one versioned API.
 An evaluation's prompt lineage is its `run_prompt_versions` rows plus the prompt
 fingerprint in the artifact's provenance.
 
 `application/workspaces/prompt_library.py` resolves packaged prompt defaults
-against immutable workspace overrides. The prompt files do not become database
-seed data.
+against immutable workspace overrides. Prompt files are not database seed data.
 
 Typer and FastAPI call the same services. The API does not invoke CLI commands,
 and the SPA cannot bypass server-side validation. The OpenAPI schema generates
-the TypeScript contract used by the client.
+the client's TypeScript contract.
 
 One local worker leases database tasks and persists every stage as an immutable
-event. SSE is a view over those events, not an ephemeral progress channel. What
-the schema and the connection guarantee is in
-[docs/contributing/database-and-migrations.md](contributing/database-and-migrations.md). There is no
-distributed-worker claim here.
+event. SSE is a view over those events, not an ephemeral progress channel. The
+schema and connection guarantees are in
+[docs/contributing/database-and-migrations.md](contributing/database-and-migrations.md).
+There is no distributed-worker claim.
 
 A board scan reads a few boards at once, bounded by `SCAN_LANES`. It writes
-every result from the scanning thread, so one writer faces SQLite. Politeness is
-not the caller's to keep. `PoliteHttpClient` holds a lock per host, so boards
-sharing a host still take their turns while different hosts overlap.
+every result from the scanning thread, so SQLite sees one writer.
+`PoliteHttpClient` holds a lock per host, so boards sharing a host take turns
+while different hosts overlap. Callers do not manage politeness.
 
 Board continuations run across tasks.
 
@@ -273,81 +266,78 @@ _Traced from `Worker.run_forever`, `dispatch`, `_run_slot`, and
 `_handler_outcome` in `bootstrap/worker.py`, and `ScanScheduleService.tick` in
 `application/workspaces/scan_schedule.py`._
 
-The worker runs other tasks one at a time, and runs `source.continue` tasks on
-up to `CLEARSCOUT_CONTINUATION_SLOTS` slots, four by default. The busy-host guard
-keys only on the board source's host, not on the handoff hosts a chunk may also
-read, so per-host politeness rests on `PoliteHttpClient`'s per-host lock, which
-every slot shares because they run in one process with one fetch client.
+The worker runs other tasks one at a time. It runs `source.continue` tasks on
+up to `CLEARSCOUT_CONTINUATION_SLOTS` slots, four by default. The busy-host
+guard keys only on the board source's host, not on handoff hosts a chunk may
+also read. Per-host politeness rests on `PoliteHttpClient`'s lock, which every
+slot shares because they run in one process with one fetch client.
 
 Several slots write at once. Inserting staged rows and appending structured
-hold-outs take one turn on `DiscoveryStaging`, which the board scan shares, and
-a chunk waits for that turn no longer than its time limit; one that runs out is
-re-armed without charging its links. Everything else a chunk does runs outside
-the turn: its publisher reads, Workday detail reads, tracked-job refreshes, and
+hold-outs take one turn on `DiscoveryStaging`, shared with the board scan. A
+chunk waits for that turn no longer than its time limit; one that runs out is
+re-armed without charging its links. The rest of a chunk runs outside the
+turn: publisher reads, Workday detail reads, tracked-job refreshes, and
 automatic content resolution, which reads bodies on its own pool of four lanes
-and stores them as they arrive. Those writes, and those of other inline tasks
-such as a guided campaign, meet at SQLite, where the connection's busy timeout
-absorbs them. A worker stopped with Ctrl-C stops new claims and waits for running
-slots before it withdraws its presence and closes the fetch client. `clearscout stop`
-sends SIGTERM, which also drains running slots. A worker that outlasts the stop
-wait is killed only when every task it is running is in `KILL_SAFE_TASK_TYPES`,
-whose work lease recovery resumes; paid handlers file their spend on exit, so
-they are never killed.
+and stores them as they arrive. Those writes, and those of inline tasks such as
+a guided campaign, meet at SQLite, where the busy timeout absorbs them.
 
-One worker per database is enforced, not assumed. A worker that announces
-itself is refused while another one's presence is live. So is any worker that
-tries to claim. Either may proceed once that presence expires. A one-shot run
-announces nothing, so two of those are not refused. What protects them is the
-claim itself. It is a compare-and-set against the state it read, because SQLite
-emits no row lock. The API and the worker both append to one task. An event
-sequence another writer has taken is retried inside a savepoint.
+Ctrl-C stops new claims and waits for running slots, then withdraws presence
+and closes the fetch client. `clearscout stop` sends SIGTERM, which also drains
+slots. A worker that outlasts the stop wait is killed only when every running
+task is in `KILL_SAFE_TASK_TYPES`, whose work lease recovery resumes. Paid
+handlers file their spend on exit, so they are never killed.
 
-Artifact bytes live outside relational storage. `LocalArtifactStore` performs
+One worker per database is enforced. A worker that announces itself is refused
+while another's presence is live, and so is any worker that tries to claim.
+Either may proceed once that presence expires. A one-shot run announces
+nothing, so two of those are not refused. The claim protects them: it is a
+compare-and-set against the state it read, since SQLite has no row lock. The
+API and the worker both append to one task. An event sequence another writer
+took is retried inside a savepoint.
+
+Artifact bytes live outside relational storage. `LocalArtifactStore` does
 private staged atomic writes, enforces resolved root boundaries, and verifies
 stored SHA-256 and size. It is the only artifact backend. Database commit and
 file promotion use explicit finalize, compensation, and reconciliation paths.
-There is no claim of cross-system transactions.
+There are no cross-system transactions.
 
-Historical facts are protected twice. Application code offers append and commit
-operations. Database triggers reject update or delete on the history tables,
-which
+History is protected twice. Application code offers only append and commit.
+Database triggers reject update or delete on the history tables that
 [database-and-migrations.md](contributing/database-and-migrations.md#what-the-schema-guarantees)
-names.
-Current application state is a query over history. Corrections refer to the
-event they supersede and never erase it.
+names. Current state is a query over history. A correction refers to the event
+it supersedes and never erases it.
 
-Prompt edits follow that same boundary through `PromptLibraryService`. A prompt
-with no workspace edit reads directly from its packaged file. Saving, reverting,
-or adopting a changed packaged default appends a version. Reset removes the
-override from the effective view without rewriting the shipped text.
+Prompt edits follow the same rule through `PromptLibraryService`. A prompt
+with no workspace edit reads its packaged file. Saving, reverting, or adopting
+a changed packaged default appends a version. Reset removes the override from
+the effective view without rewriting shipped text.
 
 The decisions behind these boundaries are in
-[docs/architecture-decisions/README.md](architecture-decisions/README.md). Operational
-details are in [docs/contributing/database-and-migrations.md](contributing/database-and-migrations.md),
+[docs/architecture-decisions/README.md](architecture-decisions/README.md).
+Operational details are in
+[docs/contributing/database-and-migrations.md](contributing/database-and-migrations.md),
 [docs/storage-and-portability.md](storage-and-portability.md), and
-[docs/privacy-and-retention.md](privacy-and-retention.md). What these
-layers do from a user's seat is in [docs/user-guide.md](user-guide.md).
-What follows is why the seams are where they are.
+[docs/privacy-and-retention.md](privacy-and-retention.md). The user's view is in
+[docs/user-guide.md](user-guide.md). What follows is why the seams sit where
+they do.
 
 ### One seed and one workspace authority
 
-`clearscout.toml` is what a file-based command reads, because that run has no
-workspace selected. Creating a workspace copies its path-free run settings,
-job-search parameters, and configured guardrails into the database once. From
-then on, workspace operations read the database. The browser edits the
-versioned parameter and guardrail chains. A later file edit cannot silently
-replace a browser edit.
+A file-based command reads `clearscout.toml`, because it has no workspace.
+Creating a workspace copies its path-free run settings, job-search parameters,
+and guardrails into the database once. After that, workspace operations read
+the database. The browser edits the versioned parameter and guardrail chains,
+and a later file edit cannot silently replace a browser edit.
 
-Each versioned document is one JSON column, not normalized tables. It is read
-and written whole, validated by one model that already owns every rule about its
-shape, and never queried by field. Normalizing it would buy a join nobody needs.
-It would also restate that model's validation in DDL, where the two would
-eventually disagree.
+Each versioned document is one JSON column. It is read and written whole,
+validated by one model that owns its shape, and never queried by field.
+Normalized tables would buy an unused join and restate that validation in DDL,
+where the two would drift.
 
-Writes append and supersede, for the same reason evaluations do. A decision
-made six weeks ago was made against the parameters of six weeks ago. The API
-carries an expected version. Two tabs editing one form should produce a refusal,
-not a last-writer result whose loser left no record.
+Writes append and supersede, as evaluations do. A decision from six weeks ago
+was made against the parameters of six weeks ago. The API carries an expected
+version, so two tabs editing one form get a refusal, not a silent last-writer
+win.
 
 `LearningLoopMetricsService` in `application/workspaces/` is the read model
 behind `GET /api/v1/workspaces/{workspace_id}/learning-loop-metrics`. It counts
@@ -359,109 +349,99 @@ three signals from durable rows:
   missed requirement from the current CV version.
 
 Each signal is a numerator and a denominator, never a rate. A zero denominator
-crosses the wire as absence of evidence, not as a divide-by-zero on the server.
+crosses the wire as absent evidence, not a server divide-by-zero.
 
 ### A scoring policy is content, not a setting
 
-`score_weight_sets` and `score_weight_components` are immutable. Triggers refuse
-UPDATE and DELETE on them. An evaluation stores the policy identifier it was
-scored under. Editing a policy in place would rewrite what a recorded decision
-meant. So authoring appends instead of editing, and a trigger enforces it where
-a convention would not.
+`score_weight_sets` and `score_weight_components` are immutable; triggers
+refuse UPDATE and DELETE. An evaluation stores the policy it was scored under,
+so an in-place edit would rewrite what a recorded decision meant. Authoring
+appends, and a trigger enforces it.
 
-Weights are content-addressed with a digest unique across the whole database.
-Identical weights are one policy, not two that happen to agree. Authoring a
-duplicate is a conflict naming the existing policy, not a constraint violation
-the user cannot read.
+Weights are content-addressed by a digest unique across the database.
+Identical weights are one policy. Authoring a duplicate is a conflict naming
+the existing policy, not an unreadable constraint violation.
 
-The commit path and the authoring path share one arithmetic boundary through
+The commit and authoring paths share one arithmetic boundary through
 `_resolve_weight_set` and `_validate_weights`. A set that could not have scored
-an evaluation cannot be written in the first place.
+an evaluation cannot be written.
 
-`EvaluationScores.overall` excludes a zero-weight component from the composite.
-It does not multiply it by zero, and the two are not the same. Multiplying by
-zero would still require the component to be stated. An abstention on a
-component nobody weights would then suppress a total the weighted components can
-state perfectly well. Exclusion is what lets the shipped policy drop evidence
-from the sum without also making it a required input.
+`EvaluationScores.overall` excludes a zero-weight component from the composite
+rather than multiplying it by zero. Multiplying would still require the
+component to be stated, so an abstention on an unweighted component would
+suppress a total the weighted ones can state. Exclusion lets the shipped policy
+drop evidence from the sum without making it a required input.
 
 ### An edit to the master CV cannot reach an evaluation
 
-`MatchEvidence` snapshots every citation with its own text, character span, and
+`MatchEvidence` snapshots every citation with its text, character span, and
 artifact identifier. `JobEvaluation` pins `master_cv_version_id`. A committed
-evaluation reads the version it was made against, and no later edit can corrupt
-it. An edit can leave the current CV disagreeing with a claim an older
-evaluation still makes. That is drift, not corruption. It is worth reporting,
-not preventing.
+evaluation reads the version it was made against, so no later edit can corrupt
+it. An edit can make the current CV disagree with an older claim. That is
+drift, worth reporting but not preventing.
 
-`application/master_cv/anchoring.py` answers that question. It re-anchors each
-stored citation against the proposed text. The answer is graded, not boolean:
-found or not, changed or not, and material or not. Material means a figure or a
-negation moved. The report is sorted material first and capped, and the omitted
-count travels with it. A truncated list that does not say it was truncated is
-worse than no list.
+`application/master_cv/anchoring.py` reports it. It re-anchors each stored
+citation against the proposed text. The answer is graded: found or not, changed
+or not, and material or not. Material means a figure or a negation moved. The
+report sorts material first and is capped, and the omitted count travels with
+it. A truncated list that does not say it was truncated is worse than no list.
 
-The web save path parses the edited Markdown before doing anything else. An
-edit that breaks the canonical contract fails on a parse error. It does not fall
-through to standardization and a paid provider call.
+The web save path parses edited Markdown first. An edit that breaks the
+canonical contract fails on a parse error. It does not fall through to
+standardization and a paid provider call.
 
 ### Archiving is forced, not preferred
 
-`application_events` is immutable and its triggers refuse DELETE. An
-application's history cannot be removed. Deleting the parent would either fail
-on the foreign key or strand the events. Retiring an application is therefore
-archiving, and the same shape holds for jobs and workspace records. `archived_at`
-is set, children are preserved, and every active selector filters on it.
-Archiving is also the only reversible option. Deleting immutable history could
+`application_events` is immutable, and its triggers refuse DELETE. Deleting
+the parent application would fail on the foreign key or strand the events. So
+retiring an application archives it, and jobs and workspace records work the
+same way. `archived_at` is set, children are kept, and every active selector
+filters on it. Archiving is also reversible, which deleting history could
 never be.
 
-The first status event creates an application row. The evaluation commit does
+The first status event creates an application row; the evaluation commit does
 not. Reading a posting is not applying to it. The ledger's status expression
-already coalesces a missing application to not applied. For a job nobody has
-acted on, that is the truthful answer, not a placeholder standing in for a
-record.
+coalesces a missing application to not applied, which is the true answer for
+a job nobody acted on.
 
 ### Discovery becomes a job through the evaluation transaction
 
-`discovery.evaluate` is the bridge between the mutable discovery queue and the
-immutable job ledger. For a pending discovery it fetches the posting through the
-shared polite fetch policy and runs the existing screening pipeline. It then
-translates the structured job specification, deterministic reading, CV matches,
-and cost ledger into an `EvaluationCommit` and calls
-`job_search.commit_evaluation`. The evaluation commit is the one place that
-constructs a `JobPosting`.
+`discovery.evaluate` bridges the mutable discovery queue and the immutable job
+ledger. For a pending discovery it fetches the posting through the shared
+polite fetch policy and runs the screening pipeline. It then turns the job
+specification, deterministic reading, CV matches, and cost ledger into an
+`EvaluationCommit` and calls `job_search.commit_evaluation`. That commit is
+the one place that constructs a `JobPosting`.
 
-The pending row is archived inside that same database transaction, after the
-evaluation completeness check. A task cannot report a drained queue while
-leaving no ledger job. Nor can it commit a job while leaving the discovery
-active.
+The pending row is archived in the same transaction, after the evaluation
+completeness check. A task cannot drain the queue without a ledger job, or
+commit a job while the discovery stays active.
 
-For reruns, the task carries the existing posting's stable database identifier
-into the same transaction. Jobs without a URL or requisition identifier are
-still evaluated in place, and the new version supersedes the current one. The
-browser's selection action queues one `discovery.evaluate_batch` task over the
-selected rows.
+A rerun carries the existing posting's database identifier into the same
+transaction. Jobs without a URL or requisition identifier are still evaluated
+in place, and the new version supersedes the current one. The browser's
+selection action queues one `discovery.evaluate_batch` task over the selected
+rows.
 
 There is no second durable `screen` operation. Re-evaluating a ledger job uses
 `discovery.evaluate` and writes the next immutable evaluation version. A batch
-comparison still analyzes each selected posting in isolation. Its members point
-directly at the jobs it compared, not at duplicate screening rows. Any edited
-prompt lineage belongs to the immutable batch run.
+comparison still analyzes each posting in isolation. Its members point at the
+jobs it compared, not at duplicate screening rows. Any edited prompt lineage
+belongs to the immutable batch run.
 
 ### Identifying a board is not scraping a page
 
-`infrastructure/web_fetch/board_adapters/` reads published listing data
-(JSON APIs, feeds, sitemaps, declared page data).
+`infrastructure/web_fetch/board_adapters/` reads published listing data: JSON
+APIs, feeds, sitemaps, and declared page data.
 `application/discovery/board_scan.py` coordinates one sweep over them.
-Discovery prefers platforms whose terms permit API reads. A known board URL
-goes to its structured API before any rendered page is considered.
-The shared fetch policy still applies robots checks, a bounded delay, and
-per-host serialization to those API calls. A published interface is not an
-invitation to send unmetered traffic.
+Discovery prefers platforms whose terms permit API reads, and a known board URL
+goes to its API before any rendered page. The shared fetch policy still applies
+robots checks, a bounded delay, and per-host serialization to API calls. A
+published interface is not an invitation to send unmetered traffic.
 
-robots.txt decides every read but one. A single posting URL a person enters
-may be read past a disallow aimed at all crawlers, because a person asked for
-that page. A robots group that names ClearScout still refuses it
+robots.txt decides every read but one. A single posting URL a person enters may
+be read past a disallow aimed at all crawlers, because a person asked for that
+page. A robots group that names ClearScout still refuses it
 (`_robots_basis_locked` in `infrastructure/web_fetch/policy.py`). Board sweeps,
 continuations, and refreshes never get the exemption.
 
@@ -493,158 +473,149 @@ the caller's intent. Choosing an API over a rendered page happens earlier, in
 the board adapters._
 
 Each platform is declared once, as a `BoardPlatform` in its own module under
-`infrastructure/web_fetch/platforms/`. A declaration carries the platform's
-board and job URL patterns, its canonical-root and identity rules, its
-tenancy, its reader, and any continuation readers. The sweep's board lists
-derive from the `PLATFORMS` registry, whose order is the detection order;
-single-posting readers in `ingest/url/platform_readers.py`, listing facts, and discovery's
-board-host tuples still keep their own per-platform entries. Adding a platform means writing
-that module, adding it to `PLATFORMS`, appending its kind to `BoardKind`, whose
-order is the wire vocabulary's, and giving it a record declaration under
-`board_mappings/`. `test_adapter_completeness.py` names whatever else a new
-kind still lacks.
+`infrastructure/web_fetch/platforms/`. A declaration carries board and job URL
+patterns, canonical-root and identity rules, tenancy, its reader, and any
+continuation readers. The sweep's board lists derive from the `PLATFORMS`
+registry, whose order is the detection order. Single-posting readers in
+`ingest/url/platform_readers.py`, listing facts, and discovery's board-host
+tuples still keep their own per-platform entries. To add a platform, write the
+module, add it to `PLATFORMS`, append its kind to `BoardKind` (whose order is
+the wire vocabulary's), and add a record declaration under `board_mappings/`.
+`test_adapter_completeness.py` names whatever else a new kind lacks.
 
-The adapters own transport and paging only. What each board's record means is
-declared once per board under `infrastructure/web_fetch/board_mappings/`. Both
-the board sweep and the single-posting reader in `ingest/url/` map through
-that one declaration, so the two reads cannot drift apart. A declaration holds
-field paths and references to typed derivation functions and nothing
-conditional.
+Adapters own transport and paging only. What a board's record means is declared
+once under `infrastructure/web_fetch/board_mappings/`. The board sweep and the
+single-posting reader in `ingest/url/` both map through it, so the two reads
+cannot drift. A declaration holds field paths and references to typed
+derivation functions, and nothing conditional.
 
-A work arrangement is always a derivation, never a path. A publisher value
-passes through its platform's rule. That includes the check that leaves a hybrid
-or on-site value unresolved when the posting also offers remote work. A retained
-posting body is digested, so the board sweep and the single-posting read compose
-one identical body for a posting.
+A work arrangement is always a derivation, never a path. A publisher value goes
+through its platform's rule, including the check that leaves a hybrid or
+on-site value unresolved when the posting also offers remote work. A retained
+posting body is digested, so the sweep and the single-posting read compose one
+identical body.
 
 A page that names no board but declares its own `JobPosting` markup is read the
-same way. The title, employer, places, and a passed expiry date it states become
-the same staged facts. That is how a guided campaign's single read gets
-structured fields from an ordinary careers page.
+same way. Its title, employer, places, and a passed expiry date become the same
+staged facts. That is how a guided campaign's single read gets structured
+fields from an ordinary careers page.
 
-When a known career URL names no platform, the career page is fetched once. A
+When a known career URL names no platform, the page is fetched once and a
 bounded prefix of its markup is searched for a board identifier. Only the
-identifier is taken, and the openings still come from the platform's API. That
-is the line the module is built around. A board that resolves neither way is
-reported as needing a person. It is not parsed out of HTML.
+identifier is taken; the openings still come from the platform's API. A board
+that resolves neither way is reported as needing a person. It is not parsed out
+of HTML.
 
-The sweep list is filled two ways. Guided search can verify a readable board.
-Evaluation can verify that a fetched posting belongs to one. Either stores the
-address on the employer and makes it eligible for later free sweeps. The user
-also maintains the list directly. A board can be added, its address corrected,
-switched off, or retired. An address naming no known platform is kept, not
-refused. An employer worth tracking stays visible while each sweep records why
-it could not be read.
+The sweep list fills two ways. Guided search can verify a readable board, and
+evaluation can verify that a fetched posting belongs to one. Either stores the
+address on the employer and makes it eligible for free sweeps. The user can
+also add a board, correct its address, switch it off, or retire it. An address
+naming no known platform is kept, and each sweep records why it could not be
+read.
 
-A source is on or off. There is no per-source schedule and no force flag, so one
-control decides whether a source takes part in a sweep. Sources have their own
-write route, because an address the product guessed wrong has to be correctable
-without editing the database. Retiring archives the source, so the scans it
-recorded stay readable. A source row reports what its address states, which
-costs no request, and the outcome of its last scan, which is the evidence of
-whether it can be read.
+A source is on or off. There is no per-source schedule and no force flag.
+Sources have their own write route, so a wrongly guessed address is correctable
+without editing the database. Retiring archives the source, and its scans stay
+readable. A source row reports what its address states, which costs no
+request, and its last scan outcome, which shows whether it can be read.
 
 URL normalization is also the identity boundary between discovery and the job
-ledger. Seeing an untracked URL again updates the mutable pending row with the
-board's current title, location, and requisition identifier. Seeing a tracked
-URL again does not disappear as a duplicate. It enters the same polite posting
-refresh path as an explicit refresh and appends an observation and diff. The
-board's title and location serve as current structured hints. Other observation
-facts are read again from explicit posting text. They become unknown when the
-new body does not state them. An old fact is never copied forward under a new
-observation date. The pending queue has no retry counters or retry schedule.
+ledger. An untracked URL seen again updates the pending row with the board's
+current title, location, and requisition identifier. A tracked URL seen again
+enters the same polite refresh path as an explicit refresh and appends an
+observation and diff. The board's title and location serve as current hints.
+Other facts are read again from posting text and become unknown when the new
+body does not state them. An old fact is never copied forward under a new
+date. The pending queue has no retry counters or schedule.
 
-`PostingRefreshService.refresh` accepts optional `client` and `guard`. Both may
+`PostingRefreshService.refresh` takes optional `client` and `guard`. Both may
 be supplied while the workspace learning-loop policy has
 `enable_dispute_reextraction` on. Then one `jobspec.extract` call re-reads the
-freshly fetched body. It pairs its requirements to the workspace's active
-extraction-dispute rulings by the same `derived_proposal_identity` hash the
-derived-proposal inbox uses. A ruling becomes `REVERSED` only when the model's
-cited quote appears in that body under the normalized-substring check.
+fresh body. It pairs requirements to the workspace's active extraction-dispute
+rulings by the same `derived_proposal_identity` hash the derived-proposal inbox
+uses. A ruling becomes `REVERSED` only when the model's cited quote appears in
+that body under the normalized-substring check.
 
 The paid entry point is the `posting.refresh_with_reextraction` task type,
 driven by `PostingRefreshWithReextractionHandler` in `bootstrap/worker.py`. The
-free `posting.refresh` path calls the same service without a client or guard. It
-makes no model call and can never mark a ruling reversed. Paid and free refreshes
-are separate task types because they are separate contracts, and the SPA reads
-whether a task is paid from the server's task registry, not from a payload flag.
+free `posting.refresh` path calls the same service without a client or guard,
+so it makes no model call and never reverses a ruling. They are separate task
+types because they are separate contracts. The SPA reads whether a task is paid
+from the server's task registry, not from a payload flag.
 
-Pairing by the derived-proposal hash, not by row, is what makes the comparison
-possible. Requirement identifiers are positional within one observation, so a
-disputed row cannot be looked up in a re-extraction of the next one. A whitespace
-change does not lose a dispute, and a requirement restated in different words
-does not resurrect an old one.
+Pairing by the hash, not by row, makes the comparison possible. Requirement
+identifiers are positional within one observation, so a disputed row cannot be
+found in the next one's re-extraction. A whitespace change does not lose a
+dispute, and a requirement restated in new words does not revive an old one.
 
-The separate `posting.refresh_with_rematch` task re-runs only the match stage
-for active fit disputes against the current master CV. It reverses a ruling only
+The separate `posting.refresh_with_rematch` task re-runs only matching for
+active fit disputes against the current master CV. It reverses a ruling only
 when the current match cites a durable CV entry key that the prior match for
-that requirement did not cite. Repeating the old citations does not reverse a
-fit dispute. It does not fetch or re-extract the posting. It does not write a
-new evaluation.
+that requirement did not.
+Repeating old citations does not reverse it. It does not fetch, re-extract, or
+write a new evaluation.
 
-A sweep reads whichever boards are switched on. A failed posting read stays
-visible as a task failure. The one retry below the task queue is the scan
-frontier's: an unread board page stays pending until an automatic row has spent
+A sweep reads whichever boards are on. A failed posting read stays visible as a
+task failure. The one retry below the task queue is the scan frontier's: an
+unread board page stays pending until an automatic row has spent
 `MAX_AUTOMATIC_ATTEMPTS`, three, in `source_continuation/limits.py`.
 
-Coverage is uneven and the module says so where the difference lives, in the
-comments on the fetchers that have never answered a live call. The test suite
-reaches no network. It cannot distinguish a fetcher that works from one that
-merely parses a payload somebody wrote by hand. Neither the code nor the
-documentation is allowed to imply that it can.
+Coverage is uneven, and the comments on fetchers that have never answered a
+live call say so. The test suite reaches no network, so it cannot tell a
+working fetcher from one that parses a hand-written payload. Neither code nor
+docs may imply otherwise.
 
 ### Hosted search proposes; local policy decides
 
-Three separately named tasks divide this work, so what a run will do is legible
-before it starts.
+Three named tasks divide this work, so what a run will do is clear before it
+starts.
 
 `application/discovery/search_vocabulary.py` derives CV-grounded vocabulary. It
 sends one text request that requires CV citations and permits no posting or
 board URLs in its response. It does not fan out, fetch sources, or review
-pending discoveries. Accepted vocabulary feeds the separate free scan of
-registered sources.
+pending discoveries. Accepted vocabulary feeds the free scan of registered
+sources.
 
-`discovery.relevance_review` reviews only the pending discoveries named in its
-payload. It reviews every readable selected row, including a current review,
-and persists every completed batch. The
-queue's separate Review relevance action requires an explicit selection.
+`discovery.relevance_review` reviews only the pending discoveries in its
+payload. It reviews every readable selected row, including one with a current
+review, and persists every completed batch. The queue's Review relevance action
+requires an explicit selection.
 
-Relevance review is its own paid task so a lead from any origin, a free board
-scan included, can be reviewed without paying for a campaign to reach it, and so
-its cost is approved and reported apart from any search. Batches are an
-execution detail, not a cap: the handler continues until every readable
-candidate in the selection has a validated review or a named validation failure.
-A review is current when it matches the same master-CV version, search parameter
-set, source URL, and fetched body. Selecting it again can incur another charge.
+Relevance review is its own paid task, so a lead from any origin, including a
+free board scan, can be reviewed without a campaign, and its cost is approved
+and reported apart. Batches are not a cap: the handler continues until every
+readable candidate in the selection has a validated review or a named validation failure. A
+review is current when it matches the same master-CV version, search parameter
+set, source URL, and fetched body. Selecting it again can charge again.
 
 Before each call the application assigns identifiers to exact source spans, and
 the model may cite only those. A review is stored only after its posting
-citations and CV evidence identifiers validate, and a later one replaces it when
-the source, CV, or search-policy identity changes. The judgment is recall-first.
-It compares responsibilities and capabilities before titles, keeps adjacent or
-transferable work in front of a person, and treats a missing fact as
-uncertainty. It may recommend `unlikely` only from a cited contradiction or
-clearly unrelated work, and it never turns that into a disposition.
-Deterministic screening remains the only owner of hard refusals.
+citations and CV evidence identifiers validate. A later one replaces it when
+the source, CV, or search-policy identity changes. The judgment is
+recall-first. It compares responsibilities and capabilities before titles,
+keeps adjacent or transferable work in front of a person, and treats a missing
+fact as uncertainty. It may recommend `unlikely` only from a cited
+contradiction or clearly unrelated work, and never turns that into a
+disposition. Deterministic screening owns every hard refusal.
 
 `search.guided_campaign` runs a guided campaign. `guided_campaign.py` compiles
 one coverage branch per title topic or focus bundle across every actionable
-market. It groups branches into attempts. It digests the result into a manifest
-that also pins the prompts, model, effort, and service tier. The paid approval
-binds that manifest digest, and the preview and the worker compile the same one.
+market and groups branches into attempts. It digests the result into a
+manifest that also pins the prompts, model, effort, and service tier. The paid
+approval binds that digest, and the preview and worker compile the same one.
 
 `guided_campaign_runner.py` dispatches each attempt as a background response.
-`guided_campaign_ledger.py` owns every persisted transition. Each transition is
-fenced by the owning task, so a stale lease cannot resume a campaign a newer
-task owns. `guided_campaign_admission.py` stages only URLs the provider's own
-search actions surfaced, after a local read under the fetch policy.
+`guided_campaign_ledger.py` owns every persisted transition, each fenced by the
+owning task, so a stale lease cannot resume a campaign a newer task owns.
+`guided_campaign_admission.py` stages only URLs the provider's own search
+actions surfaced, after a local read under the fetch policy.
 `guided_campaign_report.py` reports coverage, staged findings, refusals, and
 cost.
 
 The bounds size the plan. They never stop a planned attempt, and a search
 overrun is a report warning. Provider usage and configured rates feed the
-ledger. Unknown prices remain unknown. Some provider-set charges are absent
-from usage. The separate organization billing comparison cannot attribute those
+ledger. Unknown prices stay unknown. Some provider-set charges are absent from
+usage, and the separate organization billing comparison cannot attribute them
 to a task.
 
 `infrastructure/providers/client.py` owns caching, validation, and accounting.
@@ -656,240 +627,234 @@ result and application-owned source read.
 genai-prices package's bundled catalog. No background pricing requests run. A
 person can ask for a refresh, which fetches the publisher's current data and
 reports which rates moved; a failed fetch keeps the rates in force. Workspace
-overrides still take priority.
-Model support stays explicit, because catalog name matching can be permissive.
-The adapter rejects pricing tiers that the durable price shape cannot represent.
+overrides take priority. Model support stays explicit, because catalog name
+matching can be permissive. The adapter rejects pricing tiers the durable
+price shape cannot represent.
 
-Recorded token costs use that imported policy. Above 272,000 input tokens, the
-shipped OpenAI models use 2x input rates and 1.5x output rates, including cached
-input. Output headroom does not trigger the threshold. Returned usage is priced
-at each rate. The
+Recorded token costs use that imported policy. Above 272,000 input tokens,
+strictly greater, the shipped OpenAI models use 2x
+input rates and 1.5x output rates, including cached input. Output headroom does
+not trigger it. Returned usage is priced at each rate. The
 [provider pricing notes](https://developers.openai.com/api/docs/models/gpt-6-sol)
-state the threshold and multipliers. The threshold is strictly greater than
-272,000, and the adapter enforces that boundary itself instead of taking the
-catalog's. Service-tier adjustments and spend approvals remain application
-responsibilities.
+state the threshold and multipliers, and the adapter enforces the boundary
+itself rather than taking the catalog's. Service-tier adjustments and spend
+approvals stay in the application.
 
-Every returned address is decided locally, because it came from a model. These
-are refused unopened:
+Every returned address came from a model, so it is decided locally. These are
+refused unopened:
 
 - a scheme that is not HTTP,
 - an address instead of a hostname,
 - a local name, and
 - credentials in the URL.
 
-A safe direct posting URL reaches only the pending queue. Evaluation must fetch
-its contents before it can become a ledger job. A safe board lead is read by the
-same board fetcher as a board check. Only listings returned by that board reach
-the queue. A careers page that answers but exposes no supported board
-representation is retained as a disabled source candidate for review. A
-URL-policy refusal or failed fetch is discarded and never becomes source state.
+A safe direct posting URL reaches only the pending queue, and evaluation must
+fetch it before it becomes a ledger job. A safe board lead is read by the same
+board fetcher as a board check, and only listings that board returns reach the
+queue. A careers page that answers but exposes no supported board is kept as a
+disabled source candidate for review. A URL-policy refusal or failed fetch is
+discarded and never becomes source state.
 
-A readable lead is retained as a disabled employer board once at least one of
-its listings stages; a board that stages nothing is reported unresolved and is
-not registered. The person reviews a retained board and switches on Swept
-before a later scan reads it. Model-proposed sources are separate rows. They never overwrite a
-person-maintained source for the employer.
+A readable lead is kept as a disabled employer board once at least one of its
+listings stages. A board that stages nothing is reported unresolved and not
+registered. The person reviews a kept board and switches on Swept before a
+later scan reads it. Model-proposed sources are separate rows and never
+overwrite a person-maintained source for the employer.
 
-Title exclusions are enforced in Python against the normalized form. They are
-not asked for in the prompt. A stated refusal that a model can talk its way past
-is not a refusal. Under strict title matching nothing synthesized joins the
-gate.
+Title exclusions are enforced in Python on the normalized form, not asked for
+in the prompt. A refusal a model can talk past is not a refusal. Under strict
+title matching nothing synthesized joins the gate.
 
-Up to eight alternate titles whose citations survived validation are stored as
-proposals. Each keeps its cited master-CV entry identifiers and the exact
-master-CV version that contained them. Later free sweeps read only proposals the
-user accepted, and only for the current CV version. A rejected title is kept so
-the same name is not offered again. It does not count against the eight. The
-model widens where the tool looks. It never widens what the tool claims about
-the person, and it does not promote its own suggestion into the profile. The
-vocabulary run that proposed a title still uses it for its own queries, since
-that call is already spent. What waits for a ruling is the durable promotion
-every later search reads.
+Up to eight alternate titles whose citations validated are stored as
+proposals. Each keeps its cited master-CV entry identifiers and the CV version
+that held them. Later free sweeps read only accepted proposals, and only for
+the current CV version. A rejected title is kept so it is not offered again,
+and it does not count against the eight. The model widens where the tool looks,
+never what it claims about the person, and it cannot promote its own
+suggestion. The vocabulary run that proposed a title still uses it for its own
+queries, since that call is spent. What waits for a ruling is the durable
+promotion later searches read.
 
 The scan is a worker task with a cancellation and progress context. A workspace
 scan schedule (`application/workspaces/scan_schedule.py`) has the worker queue
-that task when a run is due; runs missed while the worker was down produce one
-catch-up scan, not one per missed occurrence. Its title filter is read from
-the search parameters in force at scan time. An exclusion is honored in every
-mode. A target list narrows in both modes and differs in how far. `strict`
-asks for the stated title inside the posting's own. `guided` asks for more
-than two-thirds of one stated title's meaningful words. A list nobody stated
-narrows nothing.
+it when a run is due. Runs missed while the worker was down produce one
+catch-up scan. Its title filter comes from the search parameters in force at
+scan time. An exclusion holds in every mode. A target list narrows in both
+modes, by different amounts: `strict` wants the stated title inside the
+posting's own, and `guided` wants more than two-thirds of one stated title's
+meaningful words. An empty list narrows nothing.
 
 ### Credentials and unpriced calls cross the API boundary in one direction
 
 The provider endpoints are not workspace-scoped. A keyring entry and a settings
-file belong to the account, not to a ledger. The screen also has to work before
-any workspace or database exists. A key is accepted once and the response
-carries presence only. There is no read path.
+file belong to the account, and the screen must work before any workspace or
+database exists. A key is accepted once, and the response carries presence
+only. There is no read path.
 
 The CLI's keyring store degrades to "not saved" and lets a terminal print the
-reason. The HTTP path raises instead. A screen told the write succeeded would be
-claiming something that did not happen. The backend's own message is passed on
-with any echo of the key removed, since this code did not write that sentence.
+reason. The HTTP path raises instead, because a screen told the write
+succeeded would be wrong. The backend's own message is passed on with any echo
+of the key removed, since this code did not write that sentence.
 
-Spend reporting draws the same kind of line around a number. A model call is
-written with its cost record in one unit of work. So a call with no cost record
-means the price was not configured for the model that served it. Any total that
-would include one is withheld, not summed. That holds per stage and per model as
-well as overall. An understated total is a wrong answer, and a withheld one is a
-true one.
+Spend reporting draws the same line around a number. A model call is written
+with its cost record in one unit of work. So a call with no cost record means
+no price was configured for the model that served it. Any total that would
+include one is withheld, not summed, per stage, per model, and overall. An
+understated total is wrong; a withheld one is true.
 
 ## Finding postings and reading sources
 
 Discovery decides which names a search reads under, what reaches the review
-queue, and what leaves it. Each rule below widens where the tool looks without
+queue, and what leaves it. Each rule widens where the tool looks without
 widening what it claims.
 
 ### Coverage is measured against a matrix
 
-A count of titles proposed, leads fetched, or postings staged does not say
-whether a search covered the search. A guided campaign plans and reports against
-a coverage matrix: every name the run searches under crossed with every place
-the person may work, built from their own parameters and never from a shipped
-list. A staged opening covers the cell whose title shares most of its words and
-whose place its location names. What is left is reported as uncovered.
+A count of titles, leads, or staged postings does not say whether a search was
+covered. A guided campaign plans and reports against a coverage matrix: every
+name the run searches under crossed with every place the person may work,
+built from their own parameters, never a shipped list. A staged opening covers
+the cell whose title shares most of its words and whose place its location
+names. The rest is reported uncovered.
 
-Each branch of the plan is one title topic or focus bundle across every
-actionable market. A title topic carries a floor query the model is asked to
-run first; a focus bundle carries no floor query, and the model searches it
-with its own queries. A branch counts as searched only when a query the
-provider actually ran serves it: for a title topic, a captured query that names
-one of its titles; for a focus bundle, a captured query the model's answer
-attributes to it. A search the model reports but the provider did not run
-counts for nothing. A protected branch family that no captured
-query reached leaves the campaign incomplete, and the next preview lists
-never-searched branches first. A processed attempt records how many job-detail and
-job-page URLs the provider's actions surfaced that the model did not select, so
-an attempt that staged nothing shows whether it found nothing or set postings
-aside. Every attempt shares byte-identical system instructions, with its branch
-count and search budget in the user prompt, so the provider can serve the
-instructions from its cache.
+Each plan branch is one title topic or focus bundle across every actionable
+market. A title topic carries a floor query the model is asked to run first; a
+focus bundle has none, and the model searches it with its own queries. A branch
+counts as searched only when a query the provider actually ran serves it: for a
+title topic, a captured query naming one of its titles; for a focus bundle, a
+captured query the model's answer attributes to it. A search the model reports
+but the provider did not run counts for nothing. A protected branch family no
+captured query reached leaves the campaign incomplete, and the next preview
+lists never-searched branches first.
 
-The matrix counts three sets of names: the stated titles, the ones the run just
-proposed, and the names accepted in the inbox. A board scan searches under the
-accepted names too, so a matrix without them would report better coverage than
-the person is getting. Under strict title matching neither the scan nor a guided
-run uses them. The matrix is capped, and a run states how many cells it dropped
-rather than reporting coverage of a shortened denominator.
+A processed attempt records how many job-detail and job-page URLs the
+provider's actions surfaced that the model did not select. So an attempt that
+staged nothing shows whether it found nothing or set postings aside. Every
+attempt shares byte-identical system instructions, with its branch count and
+search budget in the user prompt, so the provider can cache the instructions.
 
-Each target title may state a track, a leadership or a specialist reading of the
-same career, and coverage is counted per track as well as in total. A senior
-record is advertised under both kinds of name, and a run can answer well for one
-and never reach the other while its total looks healthy. Tracks measure and gate
-nothing. A title with no track is counted under `unlaned`, and `Lane` has no
-member for it, because a value that can be set by accident cannot be told apart
-from a real answer. No track is derived from a title's words. A search may state
-one for a name it proposes, and it becomes durable when the name is accepted.
+The matrix counts three sets of names: stated titles, names the run just
+proposed, and names accepted in the inbox. A board scan searches under accepted
+names too, so leaving them out would overstate coverage. Under strict title
+matching neither the scan nor a guided run uses them. The matrix is capped, and
+a run states how many cells it dropped rather than reporting coverage of a
+shortened denominator.
+
+Each target title may state a track, a leadership or specialist reading of the
+same career. Coverage is counted per track and in total, because a senior
+record is advertised under both kinds of name and a run can reach only one
+while its total looks healthy. Tracks measure and gate nothing. A title with no
+track counts under `unlaned`, and `Lane` has no member for it, so an accidental
+value cannot pass for a real answer. No track is derived from a title's words.
+A search may state one for a name it proposes, and it becomes durable when the
+name is accepted.
 
 ### Proposals wait for a ruling
 
-A search proposes titles, kinds of employer, and capability and domain clusters,
-and a person rules on all three in one inbox. Each keeps its own table and
-reported shape, because each stores something different. Listing what is
-pending, recording a ruling, and refusing a row from another workspace are one
-implementation, since three copies would drift. Capabilities and domains share
-one table with a kind per row, because they differ in what they name, not in
-shape.
+A search proposes titles, kinds of employer, and capability and domain
+clusters, and a person rules on all three in one inbox. Each keeps its own
+table and shape, because each stores something different. Listing pending
+rows, recording a ruling, and refusing a row from another workspace share one
+implementation. Capabilities and domains share one table with a kind per row;
+they differ in what they name, not in shape.
 
 A kind of employer is a kind of organization, never one by name. It is cited to
-the master-CV version it was read from. An accepted kind is stated to later runs
-and never written into the saved search parameters, and an accepted title stays
-out of `target_titles` for the same reason: a proposal is bound to a CV version
-and the parameter set is not, so promotion would let it outlive the record that
-earned it. The person's own kinds outrank a proposed one of the same name.
-Nothing derives a kind from an industry or a size.
+the master-CV version it was read from. An accepted kind is stated to later
+runs and never written into the saved search parameters. An accepted title
+stays out of `target_titles` for the same reason: a proposal is bound to a CV
+version and the parameter set is not, so promotion would let it outlive the
+record that earned it. The person's own kinds outrank a proposed one of the
+same name. Nothing derives a kind from an industry or a size.
 
 A capability is the craft and a domain is the subject matter. Each is a name
-plus the terms a posting is read against. A title filter alone rates two
-openings with unrelated work and one shared title word the same, and no posting
-states a capability's name. A cluster with no terms still matches its own name,
-so stating one is never worse than stating nothing. A boundary, work the person
-does not want, ranks a posting down rather than hiding it. Hiding is what
-`excluded_titles` is for.
+plus terms a posting is read against. A title filter alone rates two openings
+with unrelated work and one shared title word the same, and no posting states a
+capability's name. A cluster with no terms still matches its own name, so
+stating one is never worse than stating nothing. A boundary, work the person does not want, ranks a posting down rather than
+hiding it. Hiding is what `excluded_titles` is for.
 
 ### What reaches the queue, and what leaves it
 
 Automatic admission keeps a board listing out of review only on a precise,
-published fact, such as a structured location naming one place no saved location
-accepts. A structured hybrid or on-site arrangement joins it only when the
-location list is complete, nothing in the values or the body offers remote work,
-and no saved location that may contain a named place accepts that arrangement:
-for a named site, a saved location in its subdivision, or in its country when no
-subdivision resolves; for a bare country or region, any saved location in that
-country. A named site whose country does not resolve keeps the listing in front
-of a person, since the reader cannot place it. A listing held out stays in the
-screening ledger, where it can be promoted. A bare "in office" counts only beside a day
-count in a sentence that requires it. A title carrying a publisher's own test
-marker, such as "test requisition" or "do not apply", is refused before any
-title rule runs (`publisher_test_marker` in `discovery/screening/titles.py`).
+published fact, such as a structured location naming one place no saved
+location accepts. A structured hybrid or on-site arrangement joins it only when
+all of these hold: the location list is complete, nothing in the values or body
+offers remote work, and no saved location that may contain a named place
+accepts that arrangement. For a named site that means a saved location in its
+subdivision, or in its country when no subdivision resolves. For a bare country
+or region it means any saved location in that country. A named site whose
+country does not resolve stays in front of a person, since the reader cannot
+place it. A held-out listing stays
+in the screening ledger, where it can be promoted. A bare "in office" counts
+only beside a day count in a sentence that requires it. A title carrying a
+publisher's test marker, such as "test requisition" or "do not apply", is
+refused before any title rule runs (`publisher_test_marker` in
+`discovery/screening/titles.py`).
 
 A guided campaign also holds out a page it fetched from the publisher when a
 must-have statement in the body states a condition the person saved as
-excluded, through the same gate relevance review applies. A board summary is
-never read for this, because it is not the posting's own text.
+excluded, through the same gate relevance review uses. A board summary is never
+read for this, because it is not the posting's own text.
 
-Removing a listing already in the queue is stricter. Only an explicit conflict
-in a verified, active publisher body does it, such as a stated attendance
-commitment, and each such dismissal is an append-only event that can be
-restored on its own.
+Removing a listing already queued is stricter. Only an explicit conflict in a
+verified, active publisher body does it, such as a stated attendance
+commitment. Each such dismissal is an append-only event that can be restored on
+its own.
 
-A direct posting a guided campaign stages is also a reason to sweep that
+A direct posting a guided campaign stages also triggers a sweep of that
 employer's board, which costs a policy-permitted read and no model call. The
-board address comes from the ledger, where a lead or an earlier sweep recorded
-it. It is never derived by truncating the posting URL, because each
-applicant-tracking platform lays out its paths differently. An employer with no
-recorded board is not swept.
+board address comes from the ledger, where a lead or earlier sweep recorded it.
+It is never derived by truncating the posting URL, because platforms lay out
+paths differently. An employer with no recorded board is not swept.
 
-One opening advertised at several URLs is shown as one queue item only when the
-publisher supplies the same non-empty requisition identifier under the same
-employer identity. The other places are listed beside it, and answering it
-answers them. The variants are linked, not merged, because one employer can
-have two openings under one title and a merge would hide the second for good.
-Boards that mint an identifier per advertisement are handled by a second linker:
-rows whose retained bodies are byte-identical under the same employer and title
-are one advertisement republished. That is the publisher's own text, not a
-resemblance, and it applies only to a body verified as an active posting and
-long enough to be useful. Only a row the queue currently shows can head a
-family, and a later read that renames a row releases its family.
+One opening at several URLs shows as one queue item only when the publisher
+supplies the same non-empty requisition identifier under the same employer
+identity. The other places are listed beside it, and answering it answers them.
+The variants are linked, not merged, because one employer can have two openings
+under one title, and a merge would hide the second for good. Boards that mint
+an identifier per advertisement get a second linker: rows with byte-identical
+retained bodies under the same employer and title are one advertisement
+republished. That is the publisher's own text, not a resemblance, and it
+applies only to a body verified as
+an active posting and long enough to be useful. Only a row the queue currently
+shows can head a family, and a later read that renames a row releases its
+family.
 
-The same opening found on different sites is neither linked nor merged, because
-an aggregator states an employer the program cannot vouch for.
+The same opening on different sites is neither linked nor merged, because an
+aggregator states an employer the program cannot vouch for.
 `duplicate_suggestions` in `application/discovery/posting_identity.py` computes
-a suggestion when the queue is read and stores it nowhere, and a person confirms
-it through the ordinary duplicate dismissal. The guard that refuses to pay twice
-for one posting never reads that suggestion. A guard that blocks a run must not
-act on a resemblance.
+a suggestion when the queue is read and stores it nowhere. A person confirms it
+through the ordinary duplicate dismissal. The guard that refuses to pay twice
+for one posting never reads that suggestion, because a guard that blocks a run
+must not act on a resemblance.
 
-An opening that leaves a board stays in the queue with the date it went and
-sorts below openings still listed, so the disappearance is visible without
-competing for attention. Absence means withdrawal only when the read was
+An opening that leaves a board stays queued with the date it went and sorts
+below listed openings, so the disappearance is visible without competing for
+attention. Absence means withdrawal only when the read was
 complete, so every read carries that claim. A platform API that returns every
-posting is complete. A page whose markup describes some jobs is not, and
-neither is a paged board stopped at its page ceiling, or a large board's first
-scan past the ceiling would retire live jobs. A staged row records the source
-that listed it, and only that source's complete read may withdraw it. Matching
-by employer name across the workspace would withdraw an opening a provider
-search staged under an address the board does not list. A row no source staged
-is never withdrawn.
+posting is complete. A page whose markup describes some jobs is not, nor is a
+paged board stopped at its page ceiling; otherwise a large board's first scan
+would retire live jobs. A staged row records the source that listed it, and
+only that source's complete read may withdraw it. Matching by employer name
+would withdraw an opening a provider search staged under an address the board
+does not list. A row no source staged is never withdrawn.
 
-A read across several listing pages is complete but not atomic: a board that
-reorders between page fetches can drop an opening from every page it served.
-So a miss on a multi-page read only marks the row and queues a content read of
-its own page, and a miss while that check is active keeps the mark. The next
-complete read that also lacks it withdraws it once a completed check read the
-row or found it gone (HTTP 404 or 410), unless the check found the page live. A
-dismissed row withdraws on its next miss without a check. Any other row with no
-check on record, or whose check failed or was cancelled, is marked again and
-queues a new check. A single-page read withdraws on the first miss.
+A multi-page read is complete but not atomic: a board that reorders between
+page fetches can drop an opening from every page it served. So a miss on a
+multi-page read only marks the row and queues a content read of its page, and a
+miss while that check is active keeps the mark. The next complete read that
+also lacks it withdraws it once a completed check read the row or found it gone
+(HTTP 404 or 410), unless the check found the page live. A dismissed row
+withdraws on its next miss without a check. Any other row with no check on
+record, or whose check failed or was cancelled, is marked again and queues a
+new check. A single-page read withdraws on the first miss.
 
 A board scan skips the detail read of a posting it read within the rescreen
 window (`RESCREEN_COMPLETED_AFTER` in `source_continuation/rescreen.py`, 7 days)
 and credits the held body at its original read time. On a board that lists
 postings without reading them, such as a sitemap-listed board that once
-deferred or cut a read, a posting whose page closes while it stays listed is
-not seen as closed until that window ends, up to 7 days later.
+deferred or cut a read, a page that closes while still listed is not seen as
+closed until that window ends, up to 7 days later.
 
 ```mermaid
 stateDiagram-v2
@@ -925,93 +890,91 @@ is `withdraw_absent_in_session` in `application/discovery/scan_staging/absence.p
 
 ### Sources that are not one employer
 
-A source is not always one employer. An aggregator carries many and names none,
-so a source's `employer_id` is optional and the sweep reads `Source.url`. Each
-posting from such a source keeps and displays the employer it declares. That
-name is trusted for the free gates only when the page is a single-tenant board,
-the declared name matches the page host, or the source itself names that
-employer. Otherwise it stays an unverified hint, since `JobPosting` markup
-vouches for the posting and not for the employer it names. A host registered to
-spell another employer's name defeats the host match, and that limit is accepted
-over keeping a list of trusted sites. The schema does not enforce one source per
-employer. The code that creates sources does.
+An aggregator carries many employers and names none, so a source's
+`employer_id` is optional and the sweep reads `Source.url`. Each posting from
+such a source keeps and shows the employer it declares. That name is trusted
+for the free gates only when the page is a single-tenant board, the name
+matches the page host, or the source names that employer. Otherwise it is an
+unverified hint, since `JobPosting` markup vouches for the posting, not the
+employer. A host registered to spell another employer's name defeats the host
+match. That limit is accepted over keeping a list of trusted sites. The schema
+does not enforce one source per employer; the code that creates sources does.
 
 An aggregator adapter takes the newest listings up to one shared budget,
-whatever page size its API uses, and always returns `complete=False`. A full
-read would be hundreds of requests to one host for a product that wants only
-what is new. The market moves while a read runs, so an adapter that paged to
-exhaustion would still not claim completeness.
+whatever its API's page size, and always returns `complete=False`. A full read
+would be hundreds of requests to one host for a product that wants only what is
+new. The market moves during a read, so even paging to exhaustion would not
+claim completeness.
 
 A new workspace starts with a short catalog of aggregators, each switched off.
 An aggregator states nothing about who anyone should work for and an employer
-board would, so the catalog holds no employers, and no ordering, industry, or
-country in it expresses a preference. Naming a host in the catalog neither
-allows nor refuses it. The fetch policy still decides every read.
+board would, so the catalog holds no employers.
+No ordering, industry, or country in it
+expresses a preference. Naming a host in the catalog neither allows nor refuses
+it; the fetch policy decides every read.
 
-Permission to read a source is often conditional: credit it, link back to the
-posting, do not republish the listing. The condition is stored on the source in
-the words of whoever recorded it, with the address it was published at, and the
-browser states it back when the source is switched on. A catalog entry carries
-its operator's published condition and passes the same gate. The catalog also
-puts a visible credit on every pending, dismissed, observed, or scanned row
-whose address is on a catalog host, and the browser draws it from the wire.
-Nothing decides whether the obligation was met.
+Permission to read a source is often conditional: credit it, link back, do not
+republish. The condition is stored on the source in the recorder's words, with
+the address it was published at, and the browser states it back when the
+source is switched on. A catalog entry carries its operator's condition and
+passes the same gate. The catalog also puts a visible credit on every pending,
+dismissed, observed, or scanned row whose address is on a catalog host, drawn
+from the wire. Nothing decides whether the obligation was met.
 
 ### Reading a platform and its policy
 
 Some career sites serve from the employer's own domain, with no hostname or
 tenant path to match. Each such platform is recognized by a narrow fingerprint
 of the fetched markup, defined in its platform module and registered in
-`PLATFORMS` (`infrastructure/web_fetch/platforms/__init__.py`): for example
+`PLATFORMS` (`infrastructure/web_fetch/platforms/__init__.py`). Examples are
 Phenom's `phApp.ddo` object with its site reference, or the `jibecdn.com` asset
 host an iCIMS Jibe site loads. A page that merely names a vendor does not
-match. Phenom and Jibe APIs, and an Avature portal on the employer's own
-domain, answer on the host that served the page, so the adapter contract takes
-the resolved address with the match, which matters when a vanity domain
-redirects. A classic iCIMS site is different: its
-`<label>-<tenant>.icims.com` host is matched directly, and its postings are
-enumerated from the site's sitemap. `SourceResponse.platform` is derived
-from the address alone, so these sources report no platform until a sweep
-reads them.
+match. Phenom and Jibe APIs, and an Avature portal on the employer's domain,
+answer on the host that served the page. So the adapter contract takes the
+resolved address with the match, which matters when a vanity domain redirects.
+A classic iCIMS site's `<label>-<tenant>.icims.com` host is matched directly,
+and its postings come from the site's sitemap. `SourceResponse.platform` is
+derived from the address alone, so these sources report no platform until a
+sweep reads them.
 
-A robots file answering with a 4xx other than 429 is no policy, and the read is
-permitted. RFC 9309 section 2.3.1.3 classes that range as unavailable. A 429
-stays refused beside the 5xx codes, because it withholds a policy rather than
-stating that none exists. The rule names status codes, not hosts. Refusing on
-every 4xx would make a whole supported platform report that it has no board
-API.
+A robots file answering a 4xx other than 429 is no policy, and the read is
+permitted. RFC 9309 section 2.3.1.3 classes that range as unavailable. A 429 is
+refused with the 5xx codes, because it withholds a policy rather than stating
+none exists. The rule names status codes, not hosts. Refusing every 4xx would
+make a whole supported platform report no board API.
 
 ## The truth boundary
 
-The rule the whole design serves: a model may rephrase supported evidence, and
-may not expand the record.
+The rule the design serves: a model may rephrase supported evidence, and may
+not expand the record.
 
-It is enforced by construction, not by instruction. The CV parser gives every
-usable entry a content-derived identifier. Response schemas are built at runtime
-as closed vocabularies over those identifiers. Matching may cite only
-identifiers that exist. Drafting may cite only identifiers that selection
-retained. A citation to something absent from the record cannot be expressed,
-so it does not need to be caught. Employers, titles, dates, degrees, and
-publication citations are copied from the parsed CV, not generated.
+It is enforced by construction, not instruction. The CV parser gives every
+usable entry a content-derived identifier. Response schemas are built at
+runtime as closed vocabularies over those identifiers. Matching may cite only
+identifiers that exist, and drafting only those selection kept. A citation to
+something absent cannot be expressed, so it never needs catching. Employers,
+titles, dates, degrees, and publication citations are copied from the parsed
+CV, not generated.
 
-Drafted lines keep the identifiers they came from. Deterministic checks then
-look for missing provenance, numbers absent from cited evidence, required or
-forbidden wording, and structural problems. The critic handles only what code
-settles badly: preservation, alignment, specificity, readability, and voice.
+Drafted lines keep their source identifiers. Deterministic checks then look for
+missing provenance, numbers absent from cited evidence, required or forbidden
+wording, and structural problems. The critic handles only what code settles badly:
+preservation, alignment, specificity, readability, and voice.
 
-Cover letters have two closed evidence vocabularies. That is not an exception
-to the rule. Candidate claims cite selected CV entry identifiers. Claims about
-the role or employer cite identifiers from a bounded company-research block.
+Cover letters have two closed evidence vocabularies. Candidate claims cite
+selected CV entry identifiers. Claims about the role or employer cite
+identifiers from a bounded company-research block. That is not an exception to
+the rule: both vocabularies are closed.
 
 The stored posting is always present. A workspace tailoring task may also read
 the employer's verified careers URL and one explicitly labeled same-host About
-page. It reads them through the shared polite client, without following
-redirects. Each page is bounded before it reaches the prompt. It is stored as a
-run artifact with its URL and fetch method. If a fresh page cannot be read, the
-newest stored version for that job is reused. A file-based CLI run has no
-verified employer URL, so it uses the posting and does not invent one.
+page, through the shared polite client, without following redirects. Each page
+is bounded before it reaches the prompt and stored as a run artifact with its
+URL and fetch method. If a fresh page cannot be read, the newest stored version
+for that job is reused. A file-based CLI run has no verified employer URL, so
+it uses only the posting.
 
-This makes some failures impossible and others easy to detect. It does not turn
+This makes some failures impossible and others easy to see. It does not turn
 model output into verified fact. That is why the report prints the provenance
 table, and why human review is part of the product and not a disclaimer.
 
@@ -1028,74 +991,68 @@ without a model. It answers the questions extraction also answers:
 - which blocks are the requirement sections, and
 - which lines are must-have against preferred.
 
-It runs in `screen` and in `run`, costs nothing, and reaches nothing.
+It runs in `screen` and `run`, costs nothing, and reaches nothing.
 
-It is given the raw posting, not the model's extraction of it. That is the whole
-reason it is worth having. Two readings derived from the same source are two
-readings. A rule reading of a model's summary would only measure the summary.
-
-Half of what is derived also lives in the shape of the document, not in its
-sentences, and extraction has already flattened that away. A line is preferred
-because it sits under "Nice to have". A sentence is not a requirement because it
-sits under "Benefits and legal".
+It reads the raw posting, not the model's extraction. That is why it is worth
+having: two readings derived from the same source are two readings, while a
+rule reading of a model's summary would only measure the summary.
+Half of what it derives also lives in the document's shape, which extraction
+flattens. A line is preferred because it sits under "Nice to have". A sentence
+is not a requirement because it sits under "Benefits and legal".
 
 **The two are printed separately and neither overrides the other.** There is no
-merge, no precedence, and no average. Where they differ, the report names the
-subject, quotes what each of them read, and stops. One of the two is wrong in
-every such row. The program cannot tell which, and a person can usually settle
-it in thirty seconds. Merging them would destroy exactly the information that
-makes the row worth printing. Letting either win would assert a confidence
-neither reading has earned. A disagreement is not a failure either. It is the
-output.
+merge, precedence, or average. Where they differ, the report names the subject,
+quotes each reading, and stops. One of the two is wrong in every such row. The
+program cannot tell which, but a person can usually settle it in thirty
+seconds. Merging them would destroy exactly the information that makes the
+row worth printing, and letting either win would assert a confidence neither
+reading has earned. A disagreement is not a failure. It is the output.
 
-**Abstention is the feature.** An analyzer that always answers is a worse
-instrument than one that says "not stated" three times in ten. Those three are
-the rows a person has to go and read the posting for.
+**Abstention is the feature.** An analyzer that says "not stated" three times
+in ten beats one that always answers. Those three are the rows a person must
+read the posting for.
 
-Every answer is an `Answer`. It holds either a value with the text it was read
-from, or no value with a note saying what was looked for. `Answer.conflict`
-separates the two reasons for having no value, because they are different facts.
-A posting that names no level has stated nothing. A posting whose title and
-responsibilities describe different jobs has stated something that does not add
-up. A model answering that field confidently is then worth arguing with.
+Every answer is an `Answer`: a value with the text it was read from, or no
+value with a note on what was looked for. `Answer.conflict` separates the two
+reasons for no value. A posting that names no level stated nothing. A posting
+whose title and responsibilities describe different jobs stated something that
+does not add up, and a model answering that field confidently is worth arguing
+with.
 
-**None of it is a score.** No percentage, no grade, no ranking, and no
-prediction about an application. The program already has one number about a
-posting, keyword coverage, and a documented rule against calling it an ATS
-score. This holds the same line. The report section says in its own text that it
-was derived by rules, not by a model, and is not a prediction.
+**None of it is a score.** No percentage, grade, ranking, or prediction about
+an application. The program's one number about a posting is keyword coverage,
+and a documented rule forbids calling it an ATS score. The report section says
+in its own text that it was derived from the posting text by rules, not by a
+model, and is not a prediction.
 
 The role taxonomy in `domain/taxonomy/data.py` is a Python table, not a data
-file. The prompts ship as files because they are text written for a model,
-versioned and fingerprinted as a suite. A lookup table consumed by pure
-functions gets nothing from that. It would pay with a packaging entry, a
-`check-wheel-contents` surface, a parse-error path at runtime, and filesystem
-work inside a pure function. That is the same trade `shaping_fingerprint`
-refuses (see run identity below). A table in `src/` is also already covered by
-the agnosticism scan in `tests/loop/test_agnostic.py`. That scan reads
-`src/**/*.py` and would silently skip a `.toml`.
+file. Prompts ship as files because they are model-facing text, versioned and
+fingerprinted as a suite. A lookup table for pure functions gains nothing from
+that. It would cost a packaging entry, a `check-wheel-contents` surface, a
+runtime parse-error path, and filesystem work in a pure function, the same
+trade `shaping_fingerprint` refuses (see run identity below). A table in `src/`
+is also covered by the agnosticism scan in `tests/loop/test_agnostic.py`, which
+reads `src/**/*.py` and would skip a `.toml`.
 
-Two rules keep that table from becoming one person's configuration file living
-in `src/`. First, it covers more than seventy families across ten sectors. A nurse,
-a designer, a financial analyst, and an electrician are all readable in it, and
-the test asserts the spread instead of trusting it.
+Two rules keep the table from becoming one person's configuration. First, it
+covers more than seventy families across ten sectors. A nurse, a designer, a
+financial analyst, and an electrician are all readable, and a test asserts the
+spread.
 
-Second, a term is a compound phrase wherever the bare noun would be ambiguous.
-"pipeline" is a sales word and a data word. So the table carries "sales
-pipeline" and "data pipeline", and neither carries "pipeline". Fewer than ten of
-its more than five hundred terms are single words, kept because they name one
-thing in any sector. That
-preference is most of what makes the reading abstain on the postings it should
-abstain on.
+Second, a term is a compound phrase wherever the bare noun is ambiguous.
+"pipeline" is a sales word and a data word, so the table carries "sales
+pipeline" and "data pipeline" and not "pipeline". Fewer than ten of its more
+than five hundred terms are single words, kept because they name one thing in
+any sector. That is most of what makes the reading abstain where it should.
 
-What a shipped table cannot know is what a particular market calls things this
-year. `[vocabulary]` in the settings file adds phrases and aliases without
-touching the package. It can only add.
+A shipped table cannot know what a market calls things this year.
+`[vocabulary]` in the settings file adds phrases and aliases without touching
+the package. It can only add.
 
 A found title that names a function with no person noun, such as "Revenue
-Operations", reads at most as a near match against a title that names a person.
-It stays reviewable without claiming a match. Person and function nouns are
-recognized by English word formation, not by a list of fields. Titles that agree
+Operations", reads at most as a near match against a title naming a person. It
+stays reviewable without claiming a match. Person and function nouns are
+recognized by English word formation, not a list of fields. Titles that agree
 on the work and differ in rung agree, titles naming different occupations
 differ, and an identical title always matches. A title sharing a word and an
 occupation with a searched one, in a family the taxonomy declares adjacent,
@@ -1103,92 +1060,90 @@ reaches the bounded review lane, not a match.
 
 ### Eligibility is not a low score
 
-Relevance and eligibility are different questions, and a policy that mixed them
-would rank a job somebody cannot take above one they can. `fit/gates.py` answers
-eligibility on its own, from the deterministic reading and the person's own
-parameters, so it costs nothing and runs before any model. Each gate stands
-eligible, ineligible, or unknown. A posting that states no salary has neither
-met a floor nor failed one, and the unknown conditions are the ones worth asking
-about. Relocation and employment type have no gate, because nothing reads them
-from the posting.
+Relevance and eligibility are different questions. Mixing them would rank a job
+somebody cannot take above one they can. `fit/gates.py` answers eligibility on
+its own, from the deterministic reading and the person's parameters, so it
+costs nothing and runs before any model. Each gate is eligible, ineligible, or
+unknown. A posting that states no salary has neither met nor failed a floor,
+and the unknowns are the ones worth asking about. Relocation and employment
+type have no gate, because nothing reads them from the posting.
 
-A residence rule refuses a listing only when a sentence requires the candidate
-to live somewhere (must reside, live, be based, be located), the person has
-saved at least one location, and every country the sentence names lies outside
-the places those locations accept. A rule naming no country, such as "the same
-country as the job", requires nothing, and country names come from the country
-table in force. Work-authorization or sponsorship wording and a time-zone
-requirement are not residence rules. The body screen and the relevance review read residence through this one
-gate.
+A residence rule refuses a listing only when all three hold: a sentence
+requires the candidate to live somewhere (must reside, live, be based, be
+located), the person has saved at least one location, and every country the
+sentence names lies outside the places those locations accept. A rule naming
+no country, such as "the same country as the job", requires nothing. Country
+names come from the country table in force. Work-authorization or sponsorship
+wording and a time-zone requirement are not residence rules. The body screen
+and the relevance review read residence through this one gate.
 
-A person who marks the place they live is held to that place as well. A rule
-naming only countries they neither live in nor will relocate to refuses, unless
-its clause accepts work authorization or citizenship instead, or speaks of pay
-or a time zone. A negated rule ("no need to be located in") is no rule.
+A person who marks where they live is held to that place too. A rule naming
+only countries they neither live in nor will relocate to refuses, unless its
+clause accepts work authorization or citizenship instead, or speaks of pay or a
+time zone. A negated rule ("no need to be located in") is no rule.
 
 ### How a working arrangement is read
 
 Hybrid means weekly attendance. A cadence rarer than weekly, per month or per
 quarter, is remote work with visits and reads as remote. A stated share of the
 working week in an office is hybrid however it is worded, and a day count is
-compared only against the period it states. A posting naming remote alongside on
-site reads as offering remote work, with the attendance kept in the evidence.
-`REMOTE_REFUSED` covers wording that rules remote out, such as "not eligible for
-remote work".
+compared only against the period it states. A posting naming remote alongside
+on site reads as offering remote work, with the attendance kept in the
+evidence. `REMOTE_REFUSED` covers wording that rules remote out, such as "not
+eligible for remote work".
 
-Remote named as an option or a benefit beside a sentence committing this role to
-attend is a conflict, and it reads as no arrangement with both sentences kept.
+Remote named as an option or benefit beside a sentence committing this role to
+attend is a conflict. It reads as no arrangement, with both sentences kept.
 Whose attendance a sentence states cannot be read reliably from wording, and an
 unknown arrangement never refuses a posting where a wrong "on site" would. An
 onboarding week, an optional visit, and a capped or softened attendance do not
 commit. A role declared remote stands wherever the sentence sits.
 
 The arrangement is read from every line, including the company description and
-the benefits list that requirement extraction skips. Reading it through that
-filter would drop a line carrying `Fully remote` beside `Flexible paid time
-off`, and the arrangement with it.
+benefits list that requirement extraction skips. Otherwise a line carrying
+`Fully remote` beside `Flexible paid time off` would be dropped.
 
 ### A verdict follows weighted fit
 
 An evaluation's verdict comes from the weighted share of the posting's
 requirements the record answers, not from the rule reading. `recommend` in
 `tailoring/batch/analysis.py` pursues at `PURSUE_FIT`, 60 per cent, skips at
-`SKIP_FIT`, 50, and is cautious between them. A stated absolute condition the
-record fails skips outright, ahead of any score. An unmet essential is reported
-and caps the verdict at cautious, but it does not decide it alone.
-`decision` in `tailoring/workflows/evaluation_policy.py` then maps that verdict
-to the ledger decision, and a closed posting, an ineligible place, or a missing
-credential the posting states as absolute wins first. A posting stating
-twenty to forty requirements almost always has one, so a rule keyed on it would
-send most postings to the middle. A run that could not settle a must-have, or
-answered more than one stated condition weakly, commits in neither direction.
-The bounds are measured against adjudicated postings, not chosen. Weighted fit
-feeds both the verdict and the scores the report shows, so the number a reader
-sees is the number the decision used.
+`SKIP_FIT`, 50, and is cautious between. A stated absolute condition the record
+fails skips outright, ahead of any score. An unmet essential is reported and
+caps the verdict at cautious, but does not decide it alone; a posting stating
+twenty to forty requirements almost always has one, so keying on it would send
+most postings to the middle. `decision` in
+`tailoring/workflows/evaluation_policy.py` maps the verdict to the ledger
+decision, and a closed posting, an ineligible place, or a missing credential
+the posting states as absolute wins first. A run that could not settle a
+must-have, or answered more than one stated condition weakly, commits in
+neither direction. The bounds are measured against adjudicated postings, not chosen.
+Weighted fit feeds both the verdict and the report's scores, so the number a
+reader sees is the one the decision used.
 
 The shipped scoring policy covers all five components and gives evidence weight
 zero. Evidence quality inside the overall would score a job higher because the
-tool documented it better, and "is this a good job for me" is a different
-question from "how sure is this assessment". Evidence keeps its own score, shown
-beside the overall. A workspace that disagrees authors its own policy.
+tool documented it better. "Is this a good job for me" differs from "how sure
+is this assessment". Evidence keeps its own score, shown beside the overall. A
+workspace that disagrees authors its own policy.
 
 ### Rulings on a requirement
 
 A person rules on a requirement as `met`, `not_applicable`, `disputed_fit`, or
-`disputed_extraction`. The two disputes select the paid stage that can revisit
-the ruling: a fit dispute re-runs matching against the current master CV, and an
-extraction dispute re-reads the current posting body. `reversed` is a fifth
-value, set only when that stage finds the new evidence it requires. It hides the
-requirement from the gaps view as `met` does, and stays separate because no
-person marked the requirement met.
+`disputed_extraction`. The two disputes pick the paid stage that can revisit
+the ruling: a fit dispute re-runs matching against the current master CV, and
+an extraction dispute re-reads the current posting body. `reversed` is a fifth
+value, set only when that stage finds the new evidence it requires. It hides
+the requirement from the gaps view as `met` does, and stays separate because no
+person marked it met.
 
 ## Review does not widen the boundary
 
 `application/tailoring/changes/` writes what drafting proposed.
 `application/tailoring/approval.py` decides what a person may do about it. Both
 live beside drafting and reporting, not in `application/tailoring/pipeline/`,
-which composes stages. What a proposal is and what an approval may change are
-facts about the draft, not about the order of operations.
+which composes stages, because they are facts about the draft, not about stage
+order.
 
 The artifact holds:
 
@@ -1199,102 +1154,92 @@ The artifact holds:
 - a rationale, and
 - a digest.
 
-The rationale is assembled in Python. Code already holds the requirement text,
-the classification, the excerpts, and the words a line uses that its sources do
-not. A sentence built from those can be recomputed. That is what lets the digest
-prove one was not tampered with. A model-authored sentence could not be
-recomputed. It would be an unverifiable claim inside the artifact whose whole
-purpose is that its claims can be checked. It would also cost a schema field, a
-prompt change, and a new prompt-suite fingerprint for something no reviewer
-asked for.
+The rationale is assembled in Python from the requirement text, the
+classification, the excerpts, and the words a line uses that its sources do
+not. So it can be recomputed, which lets the digest prove it was not tampered
+with. A model-written sentence could not be recomputed. It would be an
+unverifiable claim inside the artifact whose whole purpose is that its claims
+can be checked, and would also cost a schema field, a prompt change, and a new
+prompt-suite fingerprint for something no reviewer asked for.
 
 The digest covers the schema version, the run identity from `RunIdentity` in
-`application/tailoring/runs.py`, and the proposal itself. `RunIdentity.approval`
-is the one field it leaves out. Proposals are what drafting produced before any
-reviewer saw them. A digest that moved when an approval was applied could never
-be checked against the approval that moved it. Everything else is in. A review
-of one CV, posting, prompt suite, configuration, or release cannot be replayed
-against another.
+`application/tailoring/runs.py`, and the proposal. It leaves out only
+`RunIdentity.approval`: proposals are what drafting produced before any review,
+and a digest that moved with an approval could never be checked against it. A
+review of one CV, posting, prompt suite, configuration, or release cannot be
+replayed against another.
 
-Approving is optional, and the guarantee is that it cannot widen what a resume
-may say. A reviewer may reject any line the model wrote and may supply
-replacement text. That text goes through `verify.check_supplied`, which calls
-the same private checks the drafted text goes through instead of restating them.
-It must cite identifiers that exist and were selected for this run. Every figure
-in it must appear in its cited evidence. It must pass the wording, character,
-forbidden-string, and protected-string rules. The document is then assembled and
-checked again in full.
+Approving is optional, and it cannot widen what a resume may say. A reviewer
+may reject any model-written line and supply replacement text. That text goes
+through `verify.check_supplied`, which calls the same private checks drafted
+text goes through. It must cite identifiers that exist and were selected for
+this run. Every figure must appear in its cited evidence. It must pass the
+wording, character, forbidden-string, and protected-string rules. The document
+is then assembled and checked again in full.
 
-A reviewer may not touch a line the assembler copies instead of drafting.
-Employers, titles, dates, education, and publication citations stay where they
-came from.
+A reviewer may not touch a line the assembler copies. Employers, titles, dates,
+education, and publication citations stay as they came.
 
-A rejection removes and never substitutes. A section, a role block, or the
-earlier-career block that loses every line is dropped with its heading, so no
-heading stands over nothing. Rejecting every line of the experience section is
-refused, not written. `RunIdentity` carries the approval's digest. A package
-somebody reviewed is not returned by the reuse check for a run nobody did. Two
-different approvals of one draft are two different runs.
+A rejection removes and never substitutes. A section, role block, or
+earlier-career block that loses every line is dropped with its heading.
+Rejecting every line of the experience section is refused. `RunIdentity`
+carries the approval's digest, so a reviewed package is not reused for an
+unreviewed run, and two approvals of one draft are two runs.
 
-Text the master CV does not support is still refused, and the refusal names the
-route: `clearscout discover`, described next. It is the one place the program
-itself creates a new claim. Every other CV version holds text a person
+Text the master CV does not support is still refused, and the refusal names
+the route: `clearscout discover`, described next. It is the one place the
+program creates a new claim. Every other CV version holds text a person
 imported or edited.
 
 ## Elicitation (`clearscout discover`) is the one place a claim can be created
 
-Everything above narrows what may be said. `application/tailoring/elicit/` is
-the exception. It adds a sentence to the file every other stage treats as true.
-So it is built the way the rest of the program is built. The failure is made
-unrepresentable. Nobody is merely instructed not to cause it.
+Everything above narrows what may be said. `application/tailoring/elicit/` adds
+a sentence to the file every other stage treats as true. So it is built like
+the rest: the failure is made unrepresentable, not merely forbidden.
 
 **It calls no model.** A question is one of five templates and a subject. The
-subject is a gap the matching stage already found or a phrase the person typed.
-There is no prompt file, no new call, and no new prompt-suite fingerprint. A
-model would write a better question. It would also become a second author of the
-claim, at the one point in the program where the person is supposed to be the
-only one.
+subject is a gap matching already found or a phrase the person typed. There is
+no prompt file, no new call, and no new prompt-suite fingerprint. A model would
+write better questions, but it would become a second author of the claim where
+the person must be the only one.
 
-**Three sources are refused by name.** They are the three ways a claim nobody
-made would reach the CV: generated resume text, a model's suggestion, and the
-job description. Two independent barriers stand in front of each. Both have to
-hold, because either alone can be got around.
+**Three sources are refused by name.** They are the three ways an unmade claim
+would reach the CV: generated resume text, a model's suggestion, and the job
+description. Two independent barriers stand in front of each. Both must hold,
+because either alone can be got around.
 
 Every reply records where it came from, and only a person's is accepted. That
-catches text that arrives labeled. Every significant word of a proposed claim
-also has to appear in the replies. That catches text that does not arrive
-labeled. Wording lifted from a draft, a model, or a posting fails on the words
-it uses.
+catches labeled text. Every significant word of a proposed claim must also
+appear in the replies. That catches unlabeled text: wording lifted from a
+draft, a model, or a posting fails on its words.
 
 The posting is the dangerous one, because the question was built from it. A
 posting asking for "owned Kubernetes in production" answered with "yes" is the
-exact shape of the failure.
+exact failure.
 
-**The ladder is a rank, and the rank is only ever used to refuse.** Exposure,
-use, support, evaluation, configuration, implementation, ownership, leadership,
-deployment. Both the claim and the answers are read against the same word list.
-A claim standing higher than the answers is refused with both phrases quoted. So
-the disagreement is about two sentences, not about a verdict. Nothing moves a
-claim down either. Somebody who says they owned a thing is not argued with. The
+**The ladder is a rank, used only to refuse.** Exposure, use, support,
+evaluation, configuration, implementation, ownership, leadership, deployment.
+The claim and the answers are read against the same word list. A claim
+standing higher than the answers is refused with both phrases quoted, so the
+dispute is about two sentences, not a verdict. Nothing moves a claim down: somebody who says they owned a thing is not argued
+with. The
 reading is lexical and says so. The level is confirmed explicitly, and the
-phrase it was read from is printed beside it and recorded.
+phrase it was read from is printed and recorded.
 
 The ladder is not a strict ordering of difficulty, and its middle rungs sit
-close together. That does not matter for what it is used for. The distance
-between "sat in on the design reviews" and "owned it in production" is the
-distance that gets people caught in an interview. Every plausible ordering of
-the rungs agrees about that one.
+close. That does not matter here. The gap between "sat in on the design
+reviews" and "owned it in production" is what gets people caught in an
+interview, and every plausible ordering agrees on it.
 
-**A figure in a claim must appear in a reply.** This is the fabrication that
-would survive everything else in the program. By the time drafting sees a
-number in the master CV, it is the source of truth. The numbers check
-downstream would confirm it against itself.
+**A figure in a claim must appear in a reply.** This fabrication would survive
+everything else. Once a number is in the master CV it is the source of truth,
+and the numbers check would confirm it against itself.
 
-**A gap is closed by written material and by nothing else.** Not by having been
-asked about, and not by an answer whose proposed wording was then refused.
+**A gap is closed by written material and nothing else.** Not by having been
+asked about, and not by an answer whose proposed wording was refused.
 
-Material that survives all of that is pending, not evidence. Eight separate
-confirmations are required, and there is no partial one:
+Material that survives is pending, not evidence. Eight separate confirmations
+are required, with no partial one:
 
 - the exact wording,
 - the metrics, including the absence of any,
@@ -1305,24 +1250,22 @@ confirmations are required, and there is no partial one:
 - that its source is user-confirmed discovery, and
 - what remains ambiguous.
 
-Each is asked, and refusing any ends it. A single "yes" to a printed block is a
-decision about that block's first line. The ownership level and the missing
-metric are the two people skip.
+Each is asked, and refusing any ends it. A single "yes" to a printed block
+would only decide its first line. The ownership level and the missing metric
+are the two people skip.
 
-The write is the last thing and the most dangerous, because it mutates a user
-file. The exact insertion is printed in place before anything happens and
-agreed to separately. The result is parsed before it replaces anything. The
-change is refused unless every identifier the CV already carried still exists.
-The new identifiers must be exactly the confirmed claims, each of the category
-and under the heading it was confirmed for. The replacement itself is a write
-to a temporary sibling followed by a rename. A reader sees the whole old file or
-the whole new one.
+The write comes last, because it mutates a user file. The exact insertion is
+printed in place and agreed to separately. The result is parsed before it
+replaces anything. The change is refused unless every identifier the CV
+already carried still exists. The new identifiers must be exactly the
+confirmed claims, each with the category and heading it was confirmed for. The
+write goes to a temporary sibling and is renamed, so a reader sees the whole
+old file or the whole new one.
 
 A confirmed entry then gets an ordinary content-derived identifier from the
-ordinary parser, because it is ordinary evidence once it is there.
-`Discovery_Log.md` beside the CV is written first. It is the only record that
-the entry came from a conversation. It carries the level, the metrics, the
-scope, the gaps, the ambiguities, and the answers themselves.
+ordinary parser. `Discovery_Log.md` beside the CV is written first. It is the
+only record that the entry came from a conversation, and it carries the level,
+metrics, scope, gaps, ambiguities, and the answers.
 
 ## A batch is postings kept apart, then compared
 
@@ -1330,35 +1273,32 @@ scope, the gaps, the ambiguities, and the answers themselves.
 does arithmetic over the results. Each posting has its own ingestion,
 extraction, deterministic reading, evidence map, posting identity, and cache
 entries. No object in the loop holds two at once. Nothing in the module imports
-drafting, assembly, or the review artifact, and a test asserts that
-structurally.
+drafting, assembly, or the review artifact, and a test asserts that.
 
-Two more tests measure what the module claims. No request sent while screening
-one posting carries a phrase from another. No cache key is shared between two
-postings. Cache keys are content-addressed. Two postings stating exactly the
-same requirements against one CV would legitimately share a matching answer.
-That is the key doing its job, not a leak. The answer depends on the
-requirements and the CV and nothing else.
+Two more tests check the claim. No request sent while screening one posting
+carries a phrase from another. No cache key is shared between two postings.
+Cache keys are content-addressed, so two postings stating exactly the same
+requirements against one CV would rightly share a matching answer. That is not
+a leak; the answer depends only on the requirements and the CV.
 
-Whether two postings ask for the same thing is decided without a model. The same
-sentence twice is one requirement. Otherwise they are joined by a term they both
-use that the batch does not use everywhere. That is what finds "experience
-running Kubernetes in production" against "hands-on with Kubernetes clusters".
-The joining term is printed so a person can disagree with it.
+Whether two postings ask for the same thing is decided without a model. The
+same sentence twice is one requirement. Otherwise they are joined by a term
+both use that the batch does not use everywhere. That finds "experience running
+Kubernetes in production" against "hands-on with Kubernetes clusters". The
+joining term is printed so a person can disagree.
 
-Which words are noise is measured from the batch itself, not listed in the file.
-"clinical" is a distinguishing term in one slate and the word every posting uses
-in another.
+Noise words are measured from the batch, not listed in the file. "clinical" is
+a distinguishing term in one slate and the word every posting uses in another.
 
-This is deliberately not the wording overlap
-`application/tailoring/stages/match.py` uses to pair a gate with the requirement
-restating it. That threshold is right for two sentences from one document. It is
-wrong across postings. "strong experience with widgets" and "strong experience
-with sprockets" share three words in four and are two different requirements.
+This is not the wording overlap `application/tailoring/stages/match.py` uses to
+pair a gate with the requirement restating it. That threshold suits two
+sentences from one document, not postings. "strong experience with widgets" and
+"strong experience with sprockets" share three words in four and are two
+requirements.
 
-A gap's leverage is how many of the postings state it. That is a count of
-documents. The recommendation is three words: pursue, cautious pursue, or skip.
-Stated rules over the evidence map reach it:
+A gap's leverage is how many postings state it. That is a count of documents,
+not of mentions. The recommendation is pursue,
+cautious pursue, or skip, reached by stated rules over the evidence map:
 
 - A stated absolute condition with no evidence at all is a skip, and so is a
   core occupation the search rules out.
@@ -1370,25 +1310,23 @@ Stated rules over the evidence map reach it:
 - Otherwise a weighted fit of 60 per cent or more pursues, 50 or less skips, and
   anything between is a cautious pursue.
 
-Every recommendation carries the reasons it rests on. Each reason quotes the
-posting or the record. There is no percentage, no grade, and no ranking
-presented as a verdict. The reason is the same one that keeps keyword coverage
-from being called an ATS score. A number attached to a job application is read
-as a probability whatever it is labeled. The person's own priority orders the
-report and never touches a recommendation.
+Every recommendation carries its reasons, each quoting the posting or the
+record. No percentage, grade, or ranking is presented as a verdict, for the
+same reason keyword coverage is not an ATS score: a number on a job application
+is read as a probability whatever its label. The person's own priority orders
+the report and never touches a recommendation.
 
 The two features meet at one seam. A batch writes its ranked gaps into
-`batch.json` as a shared discovery queue. `clearscout discover --queue` reads the
-subjects out of it. What crosses is a list of things to ask about. What the
-posting said cannot become a claim. A claim has to survive the rules above, and
-those are about the words the person typed.
+`batch.json` as a shared discovery queue, and `clearscout discover --queue`
+reads the subjects from it. What crosses is a list of things to ask about.
+What the posting said cannot become a claim, because a claim must survive the
+rules above, which are about what the person typed.
 
-`clearscout import` applies the same idea to a different vocabulary. A Word file,
-PDF, image, or text file is reduced to numbered lines. The structuring schema is
-built over the line numbers in that document, so a field cannot cite a line that
-is not there. The model may join wrapped lines, split packed fields, remove
-conversion artifacts, and normalize dates. It may not write professional
-content.
+`clearscout import` applies the same idea to another vocabulary. A Word file,
+PDF, image, or text file is reduced to numbered lines. The structuring schema
+is built over those line numbers, so a field cannot cite a missing line. The
+model may join wrapped lines, split packed fields, remove conversion artifacts,
+and normalize dates. It may not write professional content.
 
 Three checks follow, named in `Import_Report.md`:
 
@@ -1397,18 +1335,18 @@ Three checks follow, named in `Import_Report.md`:
   line and the converted document, or is recorded as a deliberate drop.
 - `compliant`: the result parses as a master CV with the bullet count intact.
 
-The names are shorthand, not proofs. They read extracted text, not page layout.
-They cannot tell whether interleaved columns put text under the wrong role.
+The names are shorthand, not proofs. They read extracted text, not page layout,
+so they cannot tell whether interleaved columns put text under the wrong role.
 
 ## Every stage sees the rules it is judged by
 
-A stage checked against a rule must be given that rule. A check on a rule the
-stage never saw fails the stage for something it could not know, and only a
-run against real work tends to expose it. A critic was asked to justify a work authorization line it was never
-shown. A drafter was failed by regular expression for phrases it had not been
-given. A matcher was judged against distinctions that were never in its prompt.
-When adding a check, the question is not whether the check is right. It is
-whether the thing being checked could have known.
+A stage checked against a rule must be given that rule. Otherwise it fails for
+something it could not know, and usually only a real run exposes it. A critic
+was asked to justify a work authorization line it was never shown. A drafter
+was failed by regular expression for phrases it had not been given. A matcher
+was judged on distinctions never in its prompt. When adding a check, the
+question is not whether the check is right. It is whether the checked stage
+could have known.
 
 ## What a model call is asked for
 
@@ -1419,65 +1357,64 @@ parts:
 - `task`, the one dynamic part, and
 - `evidence`, optional, the large record every drafting stage sends unchanged.
 
-Each is a `Segment` carrying its text and the `prompts/` template it was
-rendered from. A call can say which prompts produced it without keeping any of
-their output. A fourth segment, the `kernel`, is derived rather than passed, so
-no stage can build a request without it. Beside them sit the images, the output
-ceiling, and a `SearchPolicy` for hosted web search.
+Each is a `Segment` carrying its text and the `prompts/` template it came from,
+so a call can name its prompts without keeping their output. A fourth segment,
+the `kernel`, is derived, so no stage can build a request without it. Beside
+them sit the images, the output ceiling, and a `SearchPolicy` for hosted web
+search.
 
-Naming the parts is what makes the adapters comparable. Both vendors get the
-kernel and the instructions as instruction text. Both get the evidence as user
-content, carrying the cache breakpoint, with the task after it. The candidate
-record is data, and it never arrives at instruction authority. OpenAI also keys
-the request on a digest of everything ahead of the breakpoint. Those are two
-renderings of one plan. They are not two prompt boundaries kept in step by hand.
-`tests/delivery/test_adapters.py` pins each whole request shape.
+Named parts make the adapters comparable. Both vendors get the kernel and
+instructions as instruction text, and the evidence as user content carrying
+the cache breakpoint, with the task after it. The candidate record is data and
+never gets instruction authority. OpenAI also keys the request on a digest of
+everything before the breakpoint. These are two renderings of one plan, not two
+boundaries kept in step by hand. `tests/delivery/test_adapters.py` pins each
+whole request shape.
 
 `SearchPolicy` states what a hosted search may do, and each adapter renders the
 parts its vendor has. Search-context size and live access reach OpenAI only.
-What has to match is the deterministic contract above the adapters, not the
-requests below them. Allowed and blocked domains together are
-refused when the policy is built, before a run has spent anything, because
-Anthropic answers that combination with a 400. A search records its query and
-the URL and title of each page it read, never the quoted passages or either
-vendor's continuation blob.
+The deterministic contract above the adapters must match; the requests below
+need not. Allowed and blocked domains together are refused when the policy is
+built, before any spend, because Anthropic answers that combination with a 400.
+A search records its query and the URL and title of each page it read, never
+the quoted passages or either vendor's continuation blob.
 
-A stage states its image detail and verbosity the way it states its effort. Only
-the OpenAI adapter renders either, because Anthropic publishes neither control,
-and ingest ships `high`. The image measurement reports a ceiling where the vendor
-publishes a rule and nothing where it does not. Anthropic's is a 28-pixel patch,
-capped at the 4784 visual tokens an image is downscaled to. OpenAI's is a 32-pixel patch whose fitting edge, patch budget,
-and token multiplier depend on the model and the detail level; the measurement
-applies the rules OpenAI's vision guide publishes for `gpt-6-astra` and the
-`gpt-5.6` family, and reports nothing for a model the guide does not cover. An
-image past a limit a vendor documents as an error is refused locally, since that
-request could not have been answered: for Anthropic an edge over 8000 pixels or
-a base64 payload over 10 MB, and for OpenAI more than 30,000 patches.
+A stage states its image detail and verbosity as it states its effort. Only the
+OpenAI adapter renders either, because Anthropic publishes neither control.
+Ingest ships `high`. The image measurement reports a ceiling where the vendor
+publishes a rule and nothing where it does not. Anthropic's is a 28-pixel
+patch, capped at the 4784 visual tokens an image is downscaled to. OpenAI's is
+a 32-pixel patch whose fitting edge, patch budget, and token multiplier depend
+on the model and detail level. The measurement applies the rules OpenAI's
+vision guide publishes for `gpt-6-astra` and the `gpt-5.6` family, and reports
+nothing for other models. An image past a limit a vendor documents as an error
+is refused locally, since that request could not have been answered: for Anthropic an edge over 8000 pixels or a base64 payload
+over 10 MB, and for OpenAI more than 30,000 patches.
 
 Matching's `requirement_id` field is a closed vocabulary of one fixed
-`VOCABULARY_SIZE`, which grows only for a posting with more requirements than
-that, rather than closed over one posting's identifiers. The response schema is part of the prefix the provider caches, and
-a schema that changes with every posting invalidates a stable prefix of some
-thousands of tokens on each call. Rounding keeps the model inside a small fixed
-set. A row naming a requirement that does not exist is discarded by
-`_normalized_matches` and recorded on the evidence map, and its requirement
-falls through as a missing row: weak output can hide a match and cannot hide a
+`VOCABULARY_SIZE`, grown in steps of that size only for a longer posting,
+rather than closed over one posting's identifiers. Rounding keeps the model
+inside a small fixed set of schemas. The response schema is part
+of the cached prefix, and a per-posting schema would invalidate some thousands
+of prefix tokens on each call. A row naming a requirement that does not exist
+is discarded by `_normalized_matches` and recorded on the evidence map, and its
+requirement falls through as missing: weak output can hide a match but not a
 gap. CV entry identifiers, which carry the citation guarantee, stay exact.
 
 Repeated enums are emitted once and referenced. The guard counts a shared enum
 once, but OpenAI does not document whether it counts one per reference. A
 schema past OpenAI's strict-mode caps, 1,000 enum values in total or 15,000
-characters in a string enum over 250 values, is refused before it is sent. The
-refusal is marked as never created (`infrastructure/providers/base.py`). If
-OpenAI counts per reference, the guard undercounts and OpenAI's own 400 decides.
+characters in a string enum over 250 values, is refused before it is sent and
+marked as never created (`infrastructure/providers/base.py`). If OpenAI counts
+per reference, the guard undercounts and OpenAI's own 400 decides.
 
 ## What a model call reports
 
-Every paid call goes through one method on `Client`. The live narration, the
-cost ledger, and the cache all see the same facts. Adapters return a
-`CallRecord` describing the call: token usage, the model actually served, the
-response identifier, the service tier, why generation stopped, and the full
-request and response envelopes as the provider SDK serializes them.
+Every paid call goes through one method on `Client`, so the live narration, the
+cost ledger, and the cache see the same facts. Adapters return a `CallRecord`:
+token usage, the model actually served, the response identifier, the service
+tier, why generation stopped, and the full request and response envelopes as
+the SDK serializes them.
 
 ```mermaid
 sequenceDiagram
@@ -1515,20 +1452,18 @@ _Traced from `Client.complete`, `_complete_paid`, and `_send_on_flex_first` in
 `infrastructure/providers/images.py`. A workflow then writes the ledger to
 `model_calls` through `record_calls` in `application/workspaces/spend.py`._
 
-`Client` joins that record to the plan and the resolved model. The result is
-one `CallManifest` per call. The ledger keeps them in call order, so a run's
-ledger is its manifest. `record_calls` writes each one to `model_calls`.
+`Client` joins that record to the plan and the resolved model into one
+`CallManifest` per call. The ledger keeps them in call order, so a run's ledger
+is its manifest. `record_calls` writes each one to `model_calls`.
 
-A manifest identifies its request by four digests. They cover the instructions,
-the evidence, the task, and the JSON Schema sent on the wire. Two calls that
-agree on all four were made of the same thing, and a single differing digest
-names which part moved. A fifth digest covers the response, so a change in what
-the model answered is visible without reading the answer.
+A manifest identifies its request by four digests: instructions, evidence,
+task, and the wire JSON Schema. Two calls that agree on all four were made of
+the same thing, and one differing digest names the part that moved. A fifth
+digest covers the response, so a changed answer is visible without reading it.
 
-The text itself is kept too, in `model_call_envelopes`, one row per call holding
-the request and response as sent and received. The digests answer whether
-something moved; the envelopes answer what it was. Beside the digests the
-manifest carries:
+The text is kept too, in `model_call_envelopes`, one row per call with the
+request and response as sent and received. Digests say whether something moved;
+envelopes say what it was. Beside the digests the manifest carries:
 
 - the prompt template names,
 - the provider, the requested model, and the served model,
@@ -1538,17 +1473,14 @@ manifest carries:
 - latency and cost, and
 - whether the response validated.
 
-A call that was billed for and could not be used is recorded too. Truncation, a
-refusal, a content filter, and a payload that fails validation all arrive after
-the provider has charged for the request. If the failure traveled while the
-ledger stayed empty, a run would report a cost lower than the invoice by exactly
-the calls that went wrong. `UnusableResponseError` carries the record out with
-the error for that reason. The stored call is marked as not validated, not
-omitted.
+A billed call that could not be used is recorded too. Truncation, a refusal, a
+content filter, and a failed validation all arrive after the provider charged.
+An empty ledger would understate cost by exactly the calls that went wrong. So
+`UnusableResponseError` carries the record out with the error, and the stored
+call is marked not validated.
 
-`Finish` normalizes that last field across both vendors. An unusable response
-has causes that need different responses, and discarding the reason would make
-them look identical.
+`Finish` normalizes the stop reason across both vendors, because each cause
+needs a different response:
 
 - `truncated` means the object was cut off at the token ceiling. It needs a
   larger ceiling or less effort.
@@ -1558,83 +1490,79 @@ them look identical.
 - `unknown` means the vendor gave a reason this version does not know, or
   paused part-way.
 
-`unknown` is refused, not parsed. Without that branch it would reach schema
-validation and be reported as a mismatch. That confusion is the one the whole
-vocabulary exists to prevent.
+`unknown` is refused, not parsed. Otherwise it would reach schema validation
+and be reported as a mismatch, the confusion this vocabulary exists to
+prevent.
 
 Normalized is not symmetric. `filtered`, `failed`, and `cancelled` are
-Responses API states with no Anthropic equivalent. A value this enum can express is not a value both
-vendors can send, and the enum says so instead of implying parity.
+Responses API states with no Anthropic equivalent, and the enum does not imply
+parity.
 
-Neither is the evidence behind the two adapters. Both are built from one schema
-builder. Both are exercised offline through their real vendor SDK. That is what
-makes the guarantee testable that a schema means the same thing to each of
-them. Only OpenAI has been run against the live API. A recording of that run is
-committed as `tests/cassettes/run_openai.json` and replayed through the real
-SDK. The Anthropic adapter is written against the published API and has never
-been watched working. That is a different claim from the one the offline suite
-supports. [Validation status](validation.md#provider-claims-are-deliberately-uneven)
+Nor is the evidence behind the two adapters. Both are built from one schema
+builder and exercised offline through their real SDK, which makes it testable
+that a schema means the same thing to each. Only OpenAI has run against the
+live API. A recording is committed as `tests/cassettes/run_openai.json` and
+replayed through the real SDK. The Anthropic adapter is written against the
+published API and has never been watched working. That is a different claim
+from the one the offline suite supports.
+[Validation status](validation.md#provider-claims-are-deliberately-uneven)
 owns that claim and does not fold it into "both providers are supported".
 
-Provider-hosted tools are separate capabilities. They are not optional
-arguments that every adapter pretends to support. A synchronous hosted search
-requires the `WebSearchProvider` capability, which both adapters implement. A
-guided campaign requires `BackgroundWebSearchProvider`, which only the OpenAI
-adapter implements. A campaign on any other provider refuses before it claims
-anything.
+Provider-hosted tools are separate capabilities, not optional arguments every
+adapter pretends to support. A synchronous hosted search requires
+`WebSearchProvider`, which both adapters implement. A guided campaign requires
+`BackgroundWebSearchProvider`, which only the OpenAI adapter implements. A
+campaign on any other provider refuses before it claims anything.
 
 Anthropic sends `web_search_20260209` beside the same `output_config.format`
-schema used by ordinary completions. It names `allowed_callers` as `["direct"]`
-instead of letting it default. From that tool version on, the default runs the
-search from inside code execution. That provisions a second server tool nobody
-asked for, and it carries a different feature's retention terms. So the caller
-is stated.
+schema ordinary completions use. It sets `allowed_callers` to `["direct"]`.
+From that tool version on, the default runs the search inside code execution,
+which provisions a second server tool with a different feature's retention
+terms.
 
 A `pause_turn` response is continued with the paused assistant content and the
-identical tool definition, capped at three continuations. Usage from every
-response is summed into the one call record.
+identical tool definition, up to three continuations. Usage from every
+response is summed into one call record.
 
-OpenAI sends `web_search` beside the ordinary strict `text.format` schema in one
-Responses API request. A campaign sends the same request in the background.
-Both adapters pass the plan's search count as the tool call limit: `max_uses`
-for Anthropic and `max_tool_calls` for OpenAI. A campaign report still counts
-what the provider actually ran.
+OpenAI sends `web_search` beside the ordinary strict `text.format` schema in
+one Responses API request. A campaign sends the same request in the
+background. Both adapters pass the plan's search count as the tool call limit:
+`max_uses` for Anthropic and `max_tool_calls` for OpenAI. A campaign report
+still counts what the provider actually ran.
 
-Reasoning tokens are reported separately but are a subset of output tokens,
-never an addition. Both vendors bill them at the output rate inside the output
-total. At high effort, reasoning is usually most of the bill. It is also why a
-generous ceiling can still be exhausted. A run that hides it cannot explain its
-own cost.
+Reasoning tokens are reported separately but are a subset of output tokens. A
+run that hides them cannot explain its own cost.
+Both vendors bill them at the output rate inside the output total. At high
+effort they are usually most of the bill, and why a generous ceiling can still
+run out.
 
 `request_timeout` exists because both SDKs default to ten minutes per request.
-Across several drafting and critic calls, that is an hour before a run that will
-never finish admits it.
+Across several drafting and critic calls, a stuck run could take an hour to
+admit it.
 
 A discount tier is asked for per call and priced from the tier the provider
 says served it. OpenAI serves `flex` at half the standard rate, more slowly, as
-a `service_tier` value on the Responses call the adapter already makes. It
-refuses flex when it has no spare capacity, and a refusal bills nothing. The
-call backs off and asks flex again after 5, 10, and 20 seconds, then resends at
-the standard tier and is billed at the standard rate. A stalled flex call
-resends on standard at once.
-Anthropic publishes no equivalent, and asking it for one is refused before the
-run starts. The tier is an argument, not a setting, so no configuration can put
-interactive drafting or market search on a slower tier.
-`Settings.unattended_tier()` supplies it for queue work nobody waits on. A run
-that asked for a discount and did not get one says so in its own record.
+a `service_tier` value on the Responses call. It refuses flex when it lacks
+capacity, and a refusal bills nothing. The call backs off and retries flex
+after 5, 10, and 20 seconds, then resends at the standard tier and rate. A
+stalled flex call resends on standard at once. Anthropic publishes no
+equivalent, and asking for one is refused before the run starts. The tier is
+an argument, not a setting, so no configuration can put interactive drafting
+or market search on a slower tier. `Settings.unattended_tier()` supplies it for
+queue work nobody waits on. A run that asked for a discount and did not get one
+says so in its record.
 
 ## Untrusted input
 
 **A job description is data written by a stranger.** Raw posting text is used
-for structured extraction and is never passed to the drafter. Extracted keywords
-are normalized and length-bounded before any later stage sees them. The
-evidence restrictions above still hold if a posting contains instructions aimed
-at a model. Treat this as defense in depth, not proof against every
-prompt-injection technique. Adversarial cases belong in the tests.
+for structured extraction and never passed to the drafter. Extracted keywords
+are normalized and length-bounded before later stages see them. The evidence
+restrictions above hold even if a posting contains instructions aimed at a
+model. This is defense in depth, not proof against every prompt-injection
+technique. Adversarial cases belong in the tests.
 
-**The boundary is declared once, in `prompts.py`, not per prompt.** Every
-placeholder of every prompt is declared in `prompts.FIELDS` as one of three
-things.
+**The boundary is declared once, in `prompts.py`.** Every placeholder of every
+prompt is declared in `prompts.FIELDS` as one of three things.
 
 - A block is text the program did not write. `render` wraps it in a named,
   escaped, self-describing untrusted-data block.
@@ -1644,25 +1572,25 @@ things.
 - Everything else is written by the program or by the user's own settings file.
   It is meant to be read as an instruction.
 
-A placeholder with no declaration raises instead of being sent. That is the
-part that matters. Two dozen prompt templates making their own decisions would
-always leave one of them missed. `tests/durability/test_prompts.py` enumerates the
-declarations. It renders every untrusted field with a payload that tries to
-close its own tag. `evals/cases/bounded_posting_text.toml` follows one phrase
-from a posting, one requirement, and one record entry through extraction,
-matching, drafting, and criticism. It counts the times any of them reached a
-request outside a boundary.
+An undeclared placeholder raises instead of being sent. Two dozen templates
+deciding for themselves would miss one. `tests/durability/test_prompts.py`
+enumerates the declarations and renders every untrusted field with a payload
+that tries to close its own tag. `evals/cases/bounded_posting_text.toml`
+follows one phrase from a posting, one requirement, and one record entry
+through extraction, matching, drafting, and criticism, and counts any time one
+reached a request outside a boundary.
 
-**A CV is untrusted too.** It is usually the user's own file. It may have been
-produced by another tool or received from someone else. So it is parsed under
-the same closed-vocabulary rules and gets its own poisoned fixture.
+**A CV is untrusted too.** It is usually the user's own file, but it may come
+from another tool or another person. It
+is parsed under the same closed-vocabulary rules and has its own poisoned
+fixture.
 
-**Non-ASCII is folded by the importer, not by a model.** Typographic punctuation
+**Non-ASCII is folded by the importer, not a model.** Typographic punctuation
 and combining accents are closed string maps. `importer.plain` applies them to
-everything the import writes and to both sides of every comparison it makes. A
-character with no ASCII form is reported by name, not transliterated. Guessing
-at the spelling of somebody's name is worse than telling them their CV carries a
-character this tool cannot.
+everything the import writes and to both sides of every comparison. A character
+with no ASCII form is reported by name, not transliterated. Guessing at the
+spelling of someone's name is worse than saying the CV carries a character this
+tool cannot.
 
 **Credentials never enter the repository or the output.** A key resolves from a
 one-run flag, a provider environment variable, or the system keyring, in that
@@ -1671,26 +1599,26 @@ diagnostic output.
 
 **Everything written is owner-only.** Reports, resumes, cover letters, imported
 master CVs, import reports, and cached responses are created 0600. A cache entry
-contains model output derived from the whole CV. It deserves the same protection
-as the CV. Directories the tool merely writes into are not tightened. Silently
-taking a folder the user chose to 0700 is a surprise, not a security
-improvement.
+holds model output derived from the whole CV and gets the same protection.
+Directories the tool merely writes into are not tightened, because silently
+setting a user's folder to 0700 is a surprise, not a security improvement.
 
 ## Run storage
 
 Runs are filed as `<company>_<role>--<posting-id>/runs/<timestamp>-<inputs>/`.
-The posting identifier is the employer's own requisition number when the URL
-carries one. Otherwise it is a hash of the posting text, marked as the weaker of
-the two in the manifest.
+The posting identifier is the employer's requisition number when the URL
+carries one. Otherwise it is a hash of the posting text, marked in the manifest
+as the weaker kind.
 
 A run is written into a staging directory and moved into place in one
 operation. An interrupted run leaves nothing, not a package that reads as
-finished. Promotion never lands on an existing run.
+finished. Promotion never lands on an
+existing run.
 
 Identical inputs return the run already on disk instead of billing again.
-`RunIdentity` writes down what counts as identical. It lives in `runs.py` beside
-the manifest it is serialized into. Anything absent from that list is a claim
-that it does not affect the output. The list is:
+`RunIdentity` in `runs.py`, beside the manifest it is serialized into, lists
+what counts as identical. Anything absent from that list is a claim that it
+does not affect the output. The list is:
 
 - the posting identifier,
 - the master CV's content hash,
@@ -1701,26 +1629,26 @@ that it does not affect the output. The list is:
 - the digest of the company research available to a cover letter, and
 - the digest of any review approval applied.
 
-The settings hash joins `layout.shaping_fingerprint()`, a digest of the
-length-budget constants. Editing the budget changes what a run produces while
-every declared setting stays the same. The fingerprint is derived from the
-constants themselves, not from the bytes of any source file. So it holds under a
-packaging that does not lay the source out as files.
+The settings hash includes `layout.shaping_fingerprint()`, a digest of the
+length-budget constants, since editing the budget changes output while every
+declared setting stays the same. It is derived from the constants, not from
+source file bytes, so it holds under packaging that does not lay source out as
+files.
 
-`infrastructure/build.py` captures source identity once per process, separately
-from the package version. It hashes source and packaged prompt bytes. It records
-Git HEAD and dirty state when available, and uses the installed RECORD when
-source is absent. Missing identity stays unknown. A run with an unknown or
-different source identity is not automatically reused. Cached responses keep
-their producer identity. They are not relabeled as the current build.
+`infrastructure/build.py` captures source identity once per process, apart from
+the package version. It hashes source and packaged prompt bytes, records Git
+HEAD and dirty state when available, and uses the installed RECORD when source
+is absent. Missing identity stays unknown. A run with unknown or different
+source identity is not reused automatically. Cached responses keep their
+producer identity and are not relabeled as the current build.
 
 `run.json` records what a run was: a content hash of every artifact, how many
 checks it answered and whether they passed, the measured keyword coverage, and
-the model the provider actually served for each billed stage. The last two exist
-because prose is not an interface. The next run of a posting answers "did that
-help" from the recorded number. It does not run a regular expression over the
-previous report. A model substitution changes both the price and the output.
-Without the record it would be visible only in the narration of a verbose run.
+the model the provider served for each billed stage. The next run of a posting
+answers "did that help" from the recorded number, not a regular expression over
+the old report. A model substitution changes price and output, and without the
+record only a verbose run's narration would show it. Both are structured fields
+because prose is not an interface.
 
 Everything a paid call depends on is in the cache key:
 
@@ -1733,12 +1661,11 @@ Everything a paid call depends on is in the cache key:
 
 The master CV reaches the key through the evidence text it is rendered into.
 
-The wire schema matters because it is the contract the provider enforces.
-Editing how it is built has to move the key with it. The prompt-suite and
-shaping fingerprints are deliberately not in the key. Both reach a call only
-through the rendered prompt text, which is keyed already. Adding them again
-would invalidate every cached answer for a change that did not alter a single
-request.
+The wire schema is the contract the provider enforces, so changing how it is
+built must move the key. The prompt-suite and shaping fingerprints are not in
+the key. Both reach a call only through rendered prompt text, which is already
+keyed, and adding them would invalidate every cached answer on changes that
+alter no request.
 
 `--force` skips the reuse check and asks the model again for the stages that
 write the document. Extraction and matching stay cached, because they read the
@@ -1749,18 +1676,16 @@ Deciding that a package is an application is a person's job, not this tool's.
 
 ## Why the prompt suite is shaped this way
 
-[prompts/README.md](../prompts/README.md) is the working guidance. This is the
-reasoning behind it, which is a maintainer's question more than a prompt
-author's.
+[prompts/README.md](../prompts/README.md) is the working guidance. This section
+is the reasoning behind it.
 
 A prompt can be rewritten from the web client, so a rule that lives only in
 prompt text could be deleted. The text between `<!--invariant-->` markers must
 come back word for word in an override. `check_template` in
-`application/prompts.py` refuses one that drops them when it is saved, and
+`application/prompts.py` refuses an override that drops it at save time, and
 `load` checks again before any run uses it.
 
-The suite follows a few durable practices. It does not imitate one provider's
-favorite format.
+The suite follows durable practices rather than one provider's favorite format:
 
 - State the outcome, evidence, constraints, success criteria, and output shape.
 - Separate long or untrusted data from instructions.
@@ -1771,17 +1696,17 @@ favorite format.
 - Use direct, contextual industry language without pretending keyword coverage
   predicts a hiring outcome.
 
-The ATS language is deliberately narrow, and the narrowness is the point.
-Greenhouse publicly documents parsing problems with columns, tables, graphics,
-headers, footers, unclear sections, and abbreviated titles. Workday documents
-contextual direct and indirect skill extraction with source attribution. Those
-two facts support conventional structure, clear titles, contextual terminology,
-and provenance. They do not support a universal ATS percentage or a keyword
-density target, so the program does not claim one.
+The ATS language is deliberately narrow. Greenhouse documents parsing problems
+with columns, tables, graphics, headers, footers, unclear sections, and
+abbreviated titles. Workday documents contextual direct and indirect skill
+extraction with source attribution. Those support conventional structure,
+clear titles, contextual terminology, and provenance. They do not support a
+universal ATS percentage or keyword density target, so the program claims
+neither.
 
-Primary references change as models and provider guidance do. Recheck them
-during a model upgrade. Trust measured behavior in ClearScout's own cases over a
-generic claim in any of them.
+Primary references change with models and provider guidance. Recheck them
+during a model upgrade, and trust measured behavior in ClearScout's own cases
+over a generic claim in any of them.
 
 - [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
 - [OpenAI web search](https://developers.openai.com/api/docs/guides/tools-web-search)
@@ -1795,30 +1720,28 @@ generic claim in any of them.
 
 ## Scope
 
-ClearScout writes reviewable local packages. It maintains a local, append-only
-job-search and application-history ledger. It can track user-recorded
-application state and files. It does not contact employers, submit an
-application, or infer that a generated package was sent. Length is budgeted from
-an estimate in `layout.py`, calibrated against real renders. A renderer is
-always the authority. Those boundaries should not be crossed indirectly through
-a prompt.
+ClearScout writes reviewable local packages. It keeps a local, append-only
+job-search and application-history ledger and can track user-recorded
+application state and files. It does not contact employers, submit
+applications, or infer that a package was sent. Length is budgeted from an
+estimate in `layout.py`, calibrated against real renders, and a renderer is
+always the authority. A prompt must not cross these boundaries indirectly.
 
 Every constant in `layout.py` measures one rendered geometry: a single-column
 US-Letter resume at a conventional body size. The constants were fitted by
 rendering whole documents of known shape through the assembler, varying the
 header, summary, skills, role context, bullets, earlier career, education, and
-publications, and `tests/loop/test_layout.py` holds each shape with its measured
+publications. `tests/loop/test_layout.py` holds each shape with its measured
 lines. Selection spends a budget in master-text lines scaled by
-`DRAFTED_SHARE`, so it buys more than the page holds; the fit pass then
+`DRAFTED_SHARE`, so it buys more than the page holds. The fit pass then
 estimates the drafted Markdown block by block with the same model and trims it
 to the page. A different document design needs the experiment repeated and the
-file edited, which is why no constant lives inside the selection logic.
+file edited, which is why no constant lives inside selection logic.
 
-`--render` and the document-rendering task do not cross that boundary. They look
+`--render` and the document-rendering task stay inside that boundary. They look
 for a renderer on PATH, ask it with a fixed argument list to convert the file
 just written, and report what came back. That list names the theme and density
-`layout.py` was measured in, so a renderer's own default cannot run the page
-long. There is no import and no declared dependency, and a test enforces both. The renderer may be absent, fail, or
-write nothing. Then the run says so and the Markdown is exactly as good as it
-was. The deliverable is the Markdown, and a missing PDF is an inconvenience
-rather than a lost afternoon.
+`layout.py` was measured in, so a renderer's default cannot run the page long.
+There is no import and no declared dependency, and a test enforces both. If the
+renderer is absent, fails, or writes nothing, the run says so and the Markdown
+is unchanged. The deliverable is the Markdown.

@@ -1373,6 +1373,11 @@ def _release_listing_memberships(session: Session, _context: object) -> None:
         for row in (*session.new, *session.dirty, *session.deleted)
     ):
         return
+    release_unnamed_listing_memberships(session)
+
+
+def release_unnamed_listing_memberships(session: Session) -> None:
+    """Delete listing memberships that no frontier row names."""
     frontier = cast(Table, SourceScanFrontierItem.__table__)
     named = select(frontier.c.listing_membership_sha256).where(
         frontier.c.listing_membership_sha256 == _MEMBERSHIPS.c.sha256

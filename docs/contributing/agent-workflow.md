@@ -165,3 +165,6 @@ None of this makes generated code correct. It makes mistakes cheaper to catch
 and harder to ship quietly. The review agents catch a lot, but reviewers that
 share a model family share its blind spots. When they all say yes, that is
 worth remembering.
+
+[Building with agents](../building-with-agents.md) collects the lessons this
+setup came from.

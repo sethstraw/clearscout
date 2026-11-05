@@ -51,6 +51,7 @@ from clearscout.application.discovery.source_continuation.frontier_carry import 
 from clearscout.application.discovery.source_continuation.publisher_targets import (
     publisher_search_row_target,
 )
+from clearscout.application.discovery.source_continuation.rescreen import recent_posting_reads
 from clearscout.application.discovery.source_continuation.targets import (
     frontier_item,
     frontier_target,
@@ -96,6 +97,7 @@ from clearscout.infrastructure.persistence.models import (
     PendingDiscoveryDispositionEvent,
     PendingPostingContent,
     Source,
+    SourceListingMembership,
     SourceScan,
     SourceScanContinuation,
     SourceScanFrontierItem,
@@ -1332,7 +1334,7 @@ def test_terminal_partial_workday_scan_counts_distinct_current_listings(
         retained = session.scalars(select(SourceScanMember)).one().result
         assert retained["raw"] == receipt["raw"]
         assert retained["open"] == receipt["open"]
-        assert retained["board_result"] == receipt["board_result"]
+        assert "board_result" not in retained
         outcomes = session.scalars(
             select(SourceScanOutcome).where(SourceScanOutcome.candidate_kind == "board_listing")
         ).all()
@@ -1880,7 +1882,7 @@ def test_terminal_workday_scan_without_current_root_evidence_retains_initial_cou
                 if missing == "member":
                     continuation.batch_member_id = None
                 elif missing == "receipt":
-                    member.result = {"board_result": member.result["board_result"]}
+                    member.result = {}
                 elif missing == "root":
                     continuation.correlation_id = None
                 elif missing == "source":
@@ -11710,6 +11712,93 @@ def test_request_continuation_refuses_a_scan_superseded_by_a_newer_scan(
         service.request_continuation(workspace_id, stale_scan_id)
 
 
+def test_a_reclaimed_continuation_of_a_superseded_scan_reads_nothing(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    _source(durable_database, workspace_id, "Globex", "https://jobs.example/globex")
+    target = _continuation("https://jobs.example/globex/first")
+
+    class ContinuedBoard:
+        continued: ClassVar[list[str]] = []
+
+        def listings(
+            self,
+            _source_name: str,
+            _url: str,
+            *,
+            employer_is_authoritative: bool = False,
+            options: object = None,
+        ) -> SourceRead:
+            return SourceRead(
+                listings=[],
+                complete=False,
+                raw_count=0,
+                outcome=SourceReadOutcome.CRAWL_CONTINUATION,
+                deferred_targets=(target,),
+            )
+
+        def continue_listings(
+            self,
+            _employer: str,
+            targets: tuple[SourceContinuationTarget, ...],
+            *,
+            root_url: str = "",
+            handoff_scopes: tuple[tuple[str, str, str], ...] = (),
+            employer_is_authoritative: bool = False,
+            options: object = None,
+        ) -> SourceRead:
+            self.continued.extend(item.url for item in targets)
+            return SourceRead(
+                listings=[], complete=True, raw_count=0, outcome=SourceReadOutcome.ATS_COMPLETE
+            )
+
+    board = ContinuedBoard()
+    service = SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=board,
+        posting_fetcher=UnexpectedPostingFetcher(),
+    )
+    service.scan(workspace_id)
+    queue = TaskQueueService(durable_database)
+    claimed = queue.claim_next(worker_id="lost-worker")
+    assert claimed is not None and claimed.task_type == "source.continue"
+    with durable_database.session() as session:
+        source = session.scalars(select(Source)).one()
+        session.expunge(source)
+        task = session.get(BackgroundTask, claimed.id)
+        assert task is not None
+        task.lease_expires_at = utc_now() - timedelta(seconds=1)
+
+    tomorrow = utc_now() + timedelta(days=1)
+    service.sweep.recording.record_scan(
+        source,
+        tomorrow.date(),
+        "completed",
+        0,
+        0,
+        "",
+        started_at=tomorrow,
+        completed_at=tomorrow,
+        read_outcome=SourceReadOutcome.ATS_COMPLETE,
+        deferred_targets=(),
+    )
+    worker = Worker(
+        durable_database,
+        worker_id="reclaiming-worker",
+        handlers={
+            "source.continue": SourceContinuationHandler(durable_database, board, service.sweep)
+        },
+    )
+
+    assert worker.run_once()
+    assert board.continued == []
+    with durable_database.session() as session:
+        statuses = session.scalars(select(SourceScanFrontierItem.status)).all()
+    assert statuses == ["pending"]
+
+
 def test_a_continuation_keeps_chaining_past_the_old_aggregate_read_cap(
     durable_database: Database,
     monkeypatch: pytest.MonkeyPatch,
@@ -13668,3 +13757,171 @@ def test_an_oracle_chain_past_the_offset_window_certifies_only_a_union_matching_
     scan = _board_scan_row(durable_database)
     assert scan.complete is complete
     assert scan.discovery_truncated is not complete
+
+
+def _jobvite_checkpoint(url: str, *ids: str, pending: bool) -> dict[str, object]:
+    return SourceDetailCheckpoint(
+        platform="jobvite",
+        board_url=url,
+        pending_ids=(ids[0],) if pending else (),
+        listing_ids=ids,
+        listing_urls=tuple((each, f"https://jobs.jobvite.com/acme/job/{each}") for each in ids),
+    ).as_json()
+
+
+def _superseded_scans(database: Database) -> tuple[str, str, str, str, str]:
+    """Seed two earlier scans holding checkpoints; return ids and three posting URLs."""
+    workspace_id = _workspace(database)
+    root = "https://jobs.jobvite.com/acme/jobs"
+    source_id = _source(database, workspace_id, "Acme", root)
+    oldest = "https://jobs.jobvite.com/acme/job/a1"
+    older = "https://jobs.jobvite.com/acme/job/b1"
+    owed = "https://jobs.jobvite.com/acme/job/b2"
+    completed = {
+        "source_url": root,
+        "status": "completed",
+        "deferred_reason": POSTING_DETAIL_COMPLETED,
+    }
+    _seed_continuation(
+        database,
+        workspace_id,
+        _scan_row(database, source_id, day=-2),
+        [
+            {
+                **completed,
+                "url": oldest,
+                "detail_checkpoint": _jobvite_checkpoint(oldest, "a1", "a2", pending=False),
+            }
+        ],
+    )
+    _seed_continuation(
+        database,
+        workspace_id,
+        _scan_row(database, source_id, day=-1),
+        [
+            {
+                **completed,
+                "url": older,
+                "detail_checkpoint": _jobvite_checkpoint(older, "b1", "b2", pending=False),
+            },
+            {
+                "url": owed,
+                "source_url": root,
+                "deferred_reason": "jobvite_posting_pending",
+                "detail_checkpoint": _jobvite_checkpoint(owed, "b2", "b1", pending=True),
+            },
+        ],
+    )
+    return workspace_id, source_id, oldest, older, owed
+
+
+def _earlier_frontier(
+    database: Database, source_id: str, scan_id: str
+) -> list[tuple[object, str | None]]:
+    with database.session() as session:
+        return [
+            (row.stored_checkpoint, row.listing_membership_sha256)
+            for row in session.scalars(
+                select(SourceScanFrontierItem)
+                .join(SourceScanContinuation)
+                .join(SourceScan)
+                .where(SourceScan.source_id == source_id, SourceScan.id != scan_id)
+            )
+        ]
+
+
+def _membership_digests(database: Database) -> set[str]:
+    with database.session() as session:
+        return set(session.scalars(select(SourceListingMembership.sha256)))
+
+
+def test_a_newer_scan_of_a_source_releases_the_checkpoints_its_earlier_scans_left(
+    durable_database: Database,
+) -> None:
+    workspace_id, source_id, oldest, older, owed = _superseded_scans(durable_database)
+    scan_id = _scan_row(durable_database, source_id, day=0)
+
+    with durable_database.session() as session:
+        result = SourceContinuationCommands(durable_database).replace_frontier_in_session(
+            session,
+            workspace_id=workspace_id,
+            source_scan_id=scan_id,
+            targets=(),
+            correlation_id=None,
+            carry_forward=True,
+            handoff_scopes=(),
+        )
+
+    assert result.continuation_id is not None
+    [carried] = [row for row in _rows(durable_database, result.continuation_id) if row.url == owed]
+    assert carried.status == "pending"
+    assert carried.detail_checkpoint is not None
+    assert carried.detail_checkpoint["listing_ids"] == ["b2", "b1"]
+    assert _earlier_frontier(durable_database, source_id, scan_id) == [(None, None)] * 3
+    assert _membership_digests(durable_database) == {carried.listing_membership_sha256}
+    with durable_database.session() as session:
+        reads = recent_posting_reads(session, source_id, utc_now() - timedelta(days=30))
+    assert {oldest, older} <= set(reads)
+
+
+def test_a_newer_scan_with_nothing_to_carry_still_releases_earlier_checkpoints(
+    durable_database: Database,
+) -> None:
+    workspace_id, source_id, _, _, _ = _superseded_scans(durable_database)
+    scan_id = _scan_row(durable_database, source_id, day=0)
+
+    with durable_database.session() as session:
+        result = SourceContinuationCommands(durable_database).replace_frontier_in_session(
+            session,
+            workspace_id=workspace_id,
+            source_scan_id=scan_id,
+            targets=(),
+            correlation_id=None,
+            carry_forward=False,
+            handoff_scopes=(),
+        )
+
+    assert result.continuation_id is None
+    assert _earlier_frontier(durable_database, source_id, scan_id) == [(None, None)] * 3
+    assert _membership_digests(durable_database) == set()
+
+
+def test_a_same_day_rescan_keeps_its_completed_posting_checkpoints(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    root = "https://jobs.jobvite.com/acme/jobs"
+    source_id = _source(durable_database, workspace_id, "Acme", root)
+    scan_id = _scan_row(durable_database, source_id, day=0)
+    read = "https://jobs.jobvite.com/acme/job/c1"
+    continuation_id = _seed_continuation(
+        durable_database,
+        workspace_id,
+        scan_id,
+        [
+            {
+                "url": read,
+                "source_url": root,
+                "status": "completed",
+                "deferred_reason": POSTING_DETAIL_COMPLETED,
+                "detail_checkpoint": _jobvite_checkpoint(read, "c1", "c2", pending=False),
+            }
+        ],
+    )
+
+    with durable_database.session() as session:
+        SourceContinuationCommands(durable_database).replace_frontier_in_session(
+            session,
+            workspace_id=workspace_id,
+            source_scan_id=scan_id,
+            targets=(),
+            correlation_id=None,
+            carry_forward=True,
+            handoff_scopes=(),
+        )
+
+    [kept] = _rows(durable_database, continuation_id)
+    assert kept.status == "completed"
+    assert kept.listing_membership_sha256 in _membership_digests(durable_database)
+    assert kept.detail_checkpoint is not None
+    assert kept.detail_checkpoint["listing_ids"] == ["c1", "c2"]
