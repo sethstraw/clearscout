@@ -135,6 +135,10 @@ send it.
   place named only in the title can stay unresolved. A title such as Principal
   Consultant can reach review when it matches an explicitly saved role term.
   Unrelated titles and explicit exclusions can still stop at title screening.
+- An evaluation stored by an earlier build may quote the posting's opening
+  paragraph under a requirement or reading that text does not support. Current
+  builds store no posting quote when the anchor misses, so re-evaluating the
+  job corrects it. No command repairs an old evaluation in place.
 - A relevance verdict of unlikely may cite no CV evidence. It never dismisses a
   row by itself.
 - Board recognition and a readable posting do not mean complete board coverage.
