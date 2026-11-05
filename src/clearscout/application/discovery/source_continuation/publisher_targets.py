@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from clearscout.application.discovery.source_continuation.family import (
     current_scan_family_ids,
@@ -183,7 +183,9 @@ def publisher_search_receipts(
 ) -> tuple[SourceDetailCheckpoint, ...]:
     """Return the scan family's detail checkpoints for one publisher search scope."""
     rows = session.scalars(
-        select(SourceScanFrontierItem).where(
+        select(SourceScanFrontierItem)
+        .options(selectinload(SourceScanFrontierItem.listing_membership))
+        .where(
             SourceScanFrontierItem.continuation_id == continuation.id,
             SourceScanFrontierItem.correlation_id.in_(family),
         )
@@ -263,9 +265,9 @@ def sole_publisher_scope(
 ) -> tuple[tuple[str, str], set[str]] | None:
     """Return the one publisher scope and the URLs of rows that carry no scope."""
     rows = session.scalars(
-        select(SourceScanFrontierItem).where(
-            SourceScanFrontierItem.continuation_id == continuation.id
-        )
+        select(SourceScanFrontierItem)
+        .options(selectinload(SourceScanFrontierItem.listing_membership))
+        .where(SourceScanFrontierItem.continuation_id == continuation.id)
     ).all()
     row_scopes = [(row.normalized_url, row_publisher_scope(row)) for row in rows]
     scopes = {scope for _, scope in row_scopes if scope is not None}

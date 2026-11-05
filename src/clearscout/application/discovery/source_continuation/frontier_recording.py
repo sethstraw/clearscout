@@ -6,7 +6,7 @@ from dataclasses import replace
 from datetime import datetime
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from clearscout.application.discovery.source_continuation.chunk import Chunk
 from clearscout.application.discovery.source_continuation.frontier_refresh import (
@@ -323,9 +323,9 @@ def record_frontier_targets(
     rows = {
         row.normalized_url: row
         for row in session.scalars(
-            select(SourceScanFrontierItem).where(
-                SourceScanFrontierItem.continuation_id == continuation_id
-            )
+            select(SourceScanFrontierItem)
+            .options(selectinload(SourceScanFrontierItem.listing_membership))
+            .where(SourceScanFrontierItem.continuation_id == continuation_id)
         )
     }
     held = set(rows)

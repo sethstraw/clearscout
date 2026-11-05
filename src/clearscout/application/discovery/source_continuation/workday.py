@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from clearscout.application.discovery.source_continuation.chunk import Chunk
 from clearscout.application.discovery.source_continuation.limits import WORKDAY_TRUNCATION_REASONS
@@ -82,7 +82,9 @@ def rebase_workday_listing_coverage(
     if source_scope is not None and source_scope != scope:
         return
     for row in session.scalars(
-        select(SourceScanFrontierItem).where(
+        select(SourceScanFrontierItem)
+        .options(selectinload(SourceScanFrontierItem.listing_membership))
+        .where(
             SourceScanFrontierItem.continuation_id == continuation.id,
             SourceScanFrontierItem.detail_checkpoint.is_not(None),
         )

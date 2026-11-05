@@ -6,7 +6,7 @@ from dataclasses import replace
 from datetime import UTC
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from clearscout.application.discovery.source_continuation.detail_checkpoints import (
     detail_count_checkpoints,
@@ -268,7 +268,9 @@ def _update_native_listing_receipts(
         if represented.get(identity) == url and identity not in completed
     }
     for row in session.scalars(
-        select(SourceScanFrontierItem).where(
+        select(SourceScanFrontierItem)
+        .options(selectinload(SourceScanFrontierItem.listing_membership))
+        .where(
             SourceScanFrontierItem.continuation_id == continuation.id,
             SourceScanFrontierItem.correlation_id.in_(family),
         )
@@ -503,9 +505,9 @@ def _record_native_page_receipts(
             rows = {
                 row.normalized_url: row
                 for row in session.scalars(
-                    select(SourceScanFrontierItem).where(
-                        SourceScanFrontierItem.continuation_id == items[0].continuation_id
-                    )
+                    select(SourceScanFrontierItem)
+                    .options(selectinload(SourceScanFrontierItem.listing_membership))
+                    .where(SourceScanFrontierItem.continuation_id == items[0].continuation_id)
                 )
             }
             record_publisher_listing_receipts(
@@ -562,9 +564,9 @@ def _publisher_settled_pairs(
     """Return completed and protected pairs, counting same-day completions carried in."""
     cutoff = rescreen_cutoff(session, continuation.workspace_id, continuation.id)
     rows = session.scalars(
-        select(SourceScanFrontierItem).where(
-            SourceScanFrontierItem.continuation_id == continuation.id
-        )
+        select(SourceScanFrontierItem)
+        .options(selectinload(SourceScanFrontierItem.listing_membership))
+        .where(SourceScanFrontierItem.continuation_id == continuation.id)
     )
     checkpoints = [
         SourceDetailCheckpoint.from_json(row.detail_checkpoint)

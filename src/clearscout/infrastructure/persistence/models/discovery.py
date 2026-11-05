@@ -1285,6 +1285,7 @@ class SourceScanFrontierItem(IdMixin, AuditMixin, Base):
     )
     # Joined into the row's own SELECT: one snapshot, so a concurrent release of
     # the membership cannot tear the read, and a detached row keeps its listing.
+    # exclusive_session() readers pass selectinload; this default serves plain-session reads.
     listing_membership: Mapped[SourceListingMembership | None] = relationship(
         viewonly=True, lazy="joined"
     )

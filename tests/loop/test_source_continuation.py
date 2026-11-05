@@ -13,7 +13,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 
 import httpx
 import pytest
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.exc import OperationalError
 
 from clearscout.application.discovery.board_scan import SourceScanHandler, SourceScanService
@@ -13971,3 +13971,56 @@ def test_a_same_day_rescan_keeps_its_completed_posting_checkpoints(
     assert kept.listing_membership_sha256 in _membership_digests(durable_database)
     assert kept.detail_checkpoint is not None
     assert kept.detail_checkpoint["listing_ids"] == ["c1", "c2"]
+
+
+def test_a_whole_continuation_load_reads_a_shared_membership_apart_from_its_rows(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    root = "https://jobs.jobvite.com/acme/jobs"
+    source_id = _source(durable_database, workspace_id, "Acme", root)
+    scan_id = _scan_row(durable_database, source_id, day=0)
+    ids = ("d1", "d2", "d3", "d4")
+    continuation_id = _seed_continuation(
+        durable_database,
+        workspace_id,
+        scan_id,
+        [
+            {
+                "url": f"https://jobs.jobvite.com/acme/job/{each}",
+                "source_url": root,
+                "status": "completed",
+                "deferred_reason": POSTING_DETAIL_COMPLETED,
+                "detail_checkpoint": _jobvite_checkpoint(
+                    f"https://jobs.jobvite.com/acme/job/{each}", *ids, pending=False
+                ),
+            }
+            for each in ids
+        ],
+    )
+    membership_reads: list[str] = []
+
+    def record(_conn: object, _cursor: object, statement: str, *_args: object) -> None:
+        if statement.startswith("SELECT") and "source_listing_memberships" in statement:
+            membership_reads.append(statement)
+
+    event.listen(durable_database.engine, "before_cursor_execute", record)
+    try:
+        with durable_database.exclusive_session() as session:
+            SourceContinuationCommands(durable_database).replace_frontier_in_session(
+                session,
+                workspace_id=workspace_id,
+                source_scan_id=scan_id,
+                targets=(),
+                correlation_id=None,
+                carry_forward=True,
+                handoff_scopes=(),
+            )
+    finally:
+        event.remove(durable_database.engine, "before_cursor_execute", record)
+
+    assert membership_reads
+    assert not [each for each in membership_reads if "source_scan_frontier_items" in each]
+    assert {row.listing_membership_sha256 for row in _rows(durable_database, continuation_id)} == (
+        _membership_digests(durable_database)
+    )
