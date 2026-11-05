@@ -247,13 +247,14 @@ export function useCancelTask(workspaceId: string) {
   return useWorkspaceMutation(
     workspaceId,
     (taskId: string) => api.cancelTask(taskId, workspaceId),
-    { successMessage: "Cancellation requested." },
+    { successMessage: "Cancellation requested.", awaitTaskList: true },
   );
 }
 
 export function useRetryTask(workspaceId: string) {
   return useWorkspaceMutation(workspaceId, (taskId: string) => api.retryTask(taskId, workspaceId), {
     successMessage: "Task queued again.",
+    awaitTaskList: true,
   });
 }
 
@@ -263,6 +264,7 @@ export function useResumeTask(workspaceId: string) {
     (taskId: string) => api.resumeTask(taskId, workspaceId),
     {
       successMessage: "Retained source work queued to resume.",
+      awaitTaskList: true,
     },
   );
 }
@@ -270,5 +272,6 @@ export function useResumeTask(workspaceId: string) {
 export function useEnqueueTask(workspaceId: string) {
   return useWorkspaceMutation(workspaceId, api.enqueueTask, {
     successMessage: "Task queued.",
+    awaitTaskList: true,
   });
 }

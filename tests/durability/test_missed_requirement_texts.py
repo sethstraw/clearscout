@@ -15,8 +15,12 @@ from clearscout.application.discovery.missed_requirement_reader import (
     refresh_for_evaluation,
 )
 from clearscout.application.failures import ValidationError
+from clearscout.application.job_search.postings import RequirementRulingService
+from clearscout.application.job_search.postings.rulings import reverse_ruling
 from clearscout.application.workspaces import WorkspaceService
+from clearscout.application.workspaces.records.access import audit_columns
 from clearscout.domain import utc_now
+from clearscout.domain.rulings import Ruling
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
     CandidateProfile,
@@ -311,6 +315,71 @@ def test_refresh_refuses_a_malformed_stored_requirement(durable_database: Databa
             evaluation_id=evaluation_id,
             payload={"requirements": [{"text": "Missing its persisted contract"}]},
         )
+
+
+def test_a_ruling_change_reprojects_the_evaluations_that_carry_its_key(
+    durable_database: Database,
+) -> None:
+    """A hiding ruling drops the missed text at once; clearing it brings the text back."""
+    workspace_id, cv_version_id = seed_evaluated_history(durable_database)
+    with durable_database.session() as session:
+        rebuild_for_workspace(session, workspace_id)
+        session.commit()
+    service = RequirementRulingService(durable_database)
+    audit = audit_columns("local_user", "test", None)
+    terraform = normalize("Terraform module authoring")
+    kubernetes = normalize("Five years of Kubernetes operations experience")
+
+    service.set(
+        workspace_id=workspace_id,
+        requirement_key="req-2",
+        ruling=Ruling.MET,
+        note=None,
+        audit=audit,
+    )
+    with durable_database.session() as session:
+        hidden = missed_requirement_texts_in(session, workspace_id, cv_version_id)
+    service.clear(workspace_id=workspace_id, requirement_key="req-2", audit=audit)
+    with durable_database.session() as session:
+        restored = missed_requirement_texts_in(session, workspace_id, cv_version_id)
+
+    assert hidden == frozenset({kubernetes})
+    assert restored == frozenset({kubernetes, terraform})
+
+
+def test_reversing_a_disputed_ruling_hides_its_missed_text(
+    durable_database: Database,
+) -> None:
+    """A paid re-read that reverses a dispute drops the text without a rebuild."""
+    workspace_id, cv_version_id = seed_evaluated_history(durable_database)
+    with durable_database.session() as session:
+        rebuild_for_workspace(session, workspace_id)
+        session.commit()
+    RequirementRulingService(durable_database).set(
+        workspace_id=workspace_id,
+        requirement_key="req-2",
+        ruling=Ruling.DISPUTED_FIT,
+        note=None,
+        audit=audit_columns("local_user", "test", None),
+    )
+
+    with durable_database.session() as session:
+        reversed_id = reverse_ruling(
+            session,
+            workspace_id=workspace_id,
+            requirement_key="req-2",
+            disputed=Ruling.DISPUTED_FIT,
+            action="ruling.reversed",
+            origin="worker.rematch",
+            details={},
+            correlation_id=None,
+        )
+        session.commit()
+    with durable_database.session() as session:
+        texts = missed_requirement_texts_in(session, workspace_id, cv_version_id)
+
+    assert reversed_id is not None
+    assert texts == frozenset({normalize("Five years of Kubernetes operations experience")})
 
 
 def _unmet(key: str, text: str) -> dict[str, object]:

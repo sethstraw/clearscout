@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 
 import type {
   ScoreWeightSet,
+  SearchParameterVersion,
   SearchParametersSaved,
   SearchParametersState,
 } from "../../api/client/types";
@@ -82,6 +83,9 @@ function installApi(
     ),
     http.get("*/api/v1/job-search-parameters", () => HttpResponse.json(read())),
     http.put("*/api/v1/job-search-parameters", put),
+    http.get("*/api/v1/job-search-parameters/history", () =>
+      HttpResponse.json([] satisfies SearchParameterVersion[]),
+    ),
   );
 }
 
@@ -120,6 +124,9 @@ async function keepAfterConflict(
     ),
     http.get("*/api/v1/job-search-parameters", () =>
       conflicted ? latest() : HttpResponse.json(stored(3, "Synthetic stored thesis")),
+    ),
+    http.get("*/api/v1/job-search-parameters/history", () =>
+      HttpResponse.json([] satisfies SearchParameterVersion[]),
     ),
     http.put("*/api/v1/job-search-parameters", () => {
       conflicted = true;

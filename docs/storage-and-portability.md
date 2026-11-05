@@ -56,8 +56,8 @@ The API and the worker will not create or migrate a missing schema.
 
 After upgrading a database that was evaluated before ClearScout kept missed
 requirements for ranking, run `clearscout db rebuild-missed-requirements
---workspace-id <id>`. Running it again replaces the rows with ones that reflect
-current requirement rulings.
+--workspace-id <id>`. Running it again is safe; setting
+or clearing a requirement ruling already refreshes the rows it affects.
 
 ## SQLite backup and same-root restore
 

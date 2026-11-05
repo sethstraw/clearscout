@@ -200,6 +200,8 @@ def gate_kind_label(kind: GateKind) -> str:
     return "a condition" if kind == "other" else kind.replace("_", " ")
 
 
+_INPUT_DEVICE = r"(computers?|keyboards?|mouse|mice|screens?|monitors?)\b"
+
 _BOILERPLATE_PATTERNS: tuple[re.Pattern[str], ...] = (
     # Paperwork Reduction Act notices carried on federal-adjacent postings.
     re.compile(r"paperwork\s+reduction\s+act", re.IGNORECASE),
@@ -220,7 +222,25 @@ _BOILERPLATE_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"occasional|constant|continuous)\s+"
         r"(sitting|standing|walking|lifting|carrying|reaching|bending|"
         r"kneeling|stooping|crouching|crawling|climbing|typing|keyboard(ing)?|"
-        r"keystrokes?|keyboard\s+use)",
+        r"keystrokes?|keyboard\s+use|computer\s+use|screen\s+time)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(prolonged|extended|extensive|repetitive|repeated|frequent|regular|"
+        r"constant|continuous)\s+use\s+of\s+(an?\s+|the\s+)?" + _INPUT_DEVICE,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(use|using|operate|operating|work\s+at|working\s+at)\s+(an?\s+|the\s+)?"
+        + _INPUT_DEVICE
+        + r"(,?\s+(and\s+)?(an?\s+)?"
+        + _INPUT_DEVICE
+        + r")*\s+(extensively|for\s+(long|extended|prolonged)\s+periods?)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(long|extended|prolonged)\s+periods?\s+of\s+(time\s+)?(screen\s+time|"
+        r"(in\s+front\s+of|at)\s+(an?\s+|the\s+)?(computer\s+)?" + _INPUT_DEVICE + r")",
         re.IGNORECASE,
     ),
     re.compile(

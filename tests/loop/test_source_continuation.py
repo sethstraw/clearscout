@@ -55,6 +55,7 @@ from clearscout.application.discovery.source_continuation.rescreen import recent
 from clearscout.application.discovery.source_continuation.targets import (
     frontier_item,
     frontier_target,
+    read_page_item,
 )
 from clearscout.application.discovery.source_reading import (
     PostingCheck,
@@ -13432,6 +13433,35 @@ def test_a_same_day_rescan_counts_bodies_its_earlier_task_completed(
     assert scan.complete is True
 
 
+def test_a_publisher_search_frontier_stores_each_settled_body_pair_a_bounded_number_of_times(
+    durable_database: Database,
+) -> None:
+    from tests.loop.test_jpaginate_reader import _Portal
+
+    workspace_id = _workspace(durable_database)
+    listing = 24
+    site = _Portal([[job, job + 1] for job in range(1, listing + 1, 2)])
+    site.stop_after_detail = 2
+    _source(durable_database, workspace_id, "Example", site.origin + "/")
+    state_target_titles(durable_database, workspace_id, "Clinical Data Analyst")
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    site.stopped, site.stop_after_detail = False, None
+    while worker.run_once():
+        pass
+
+    scan = _board_scan_row(durable_database)
+    assert scan.raw_count == scan.read_count == listing
+    assert scan.complete is True
+    with durable_database.session() as session:
+        stored = sum(
+            len(SourceDetailCheckpoint.from_json(row.detail_checkpoint).completed)
+            for row in session.scalars(select(SourceScanFrontierItem))
+            if row.detail_checkpoint is not None
+        )
+    assert stored <= 3 * listing
+
+
 def _adopted_jpaginate_rescan(
     database: Database,
     second_stop: int,
@@ -13545,8 +13575,20 @@ def _age_carried_body(session: Any, site: Any) -> None:
             row.completed_at -= timedelta(days=1)
 
 
+def _age_carried_bodies_but_one(session: Any, site: Any) -> None:
+    # One same-day body row must not vouch for siblings whose own rows are a day old.
+    _append_parameters(session, utc_now() - timedelta(days=2))
+    fresh = site.job_url(6)
+    for row in session.scalars(select(SourceScanFrontierItem)):
+        if row.completed_at is not None and row.normalized_url != normalize_fetch_url(fresh):
+            row.completed_at -= timedelta(days=1)
+
+
 @pytest.mark.parametrize("second_stop", [3, 4])
-@pytest.mark.parametrize("alter", [_drop_carried_body, _move_carried_body, _age_carried_body])
+@pytest.mark.parametrize(
+    "alter",
+    [_drop_carried_body, _move_carried_body, _age_carried_body, _age_carried_bodies_but_one],
+)
 def test_an_adopted_rescan_without_a_current_same_day_body_for_each_identity_stays_incomplete(
     durable_database: Database, second_stop: int, alter: Any
 ) -> None:
@@ -13589,24 +13631,28 @@ def test_an_adopted_rescan_refuses_same_day_bodies_completed_before_the_paramete
     assert _withdrawn_urls(durable_database) == set()
 
 
-def _unscope_member_body(session: Any, site: Any) -> SourceScanFrontierItem:
-    row: SourceScanFrontierItem | None = session.scalars(
-        select(SourceScanFrontierItem)
-        .where(
-            SourceScanFrontierItem.deferred_reason == POSTING_DETAIL_COMPLETED,
-            SourceScanFrontierItem.status == "completed",
-        )
-        .order_by(SourceScanFrontierItem.normalized_url)
+def _add_unscoped_body(session: Any, url: str) -> None:
+    # The body a recent read supplied lands as a bare completed row beside the page receipt.
+    page = session.scalars(
+        select(SourceScanFrontierItem).where(SourceScanFrontierItem.deferred_reason == "")
     ).first()
-    assert row is not None
-    row.detail_checkpoint, row.deferred_reason = None, ""
-    return row
+    assert page is not None
+    session.add(
+        read_page_item(
+            page.continuation_id,
+            normalize_fetch_url(url),
+            url,
+            correlation_id=page.correlation_id,
+        )
+    )
+
+
+def _unscope_member_body(session: Any, site: Any) -> None:
+    _add_unscoped_body(session, site.job_url(1))
 
 
 def _unscope_stranger_body(session: Any, site: Any) -> None:
-    row = _unscope_member_body(session, site)
-    row.url = site.job_url(77)
-    row.normalized_url = normalize_fetch_url(row.url)
+    _add_unscoped_body(session, site.job_url(77))
 
 
 # A recent read leaves a member body's row with no scope; only a non-member one refuses.

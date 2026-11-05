@@ -1,9 +1,9 @@
 import { HttpResponse, http, type HttpHandler } from "msw/http";
 
-import type { Health } from "../../api/client/types";
+import type { Health, Task } from "../../api/client/types";
 
-// Every PaidAction reads health for free mode, so a paid-mode health is the one
-// default. Add other mocks per test with `server.use(...)`.
+// Every PaidAction reads health for free mode, and AppProviders always lists
+// tasks, so these two are the defaults. Add other mocks per test with `server.use(...)`.
 export const handlers: HttpHandler[] = [
   http.get("*/api/v1/health", () =>
     HttpResponse.json({
@@ -18,4 +18,5 @@ export const handlers: HttpHandler[] = [
       free_mode: false,
     } satisfies Health),
   ),
+  http.get("*/api/v1/tasks", () => HttpResponse.json([] satisfies Task[])),
 ];

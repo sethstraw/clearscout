@@ -17,6 +17,7 @@ from clearscout.application.discovery.source_continuation.frontier_recording imp
 )
 from clearscout.application.discovery.source_continuation.publisher_targets import (
     listing_receipts_agree,
+    own_listing_pairs,
     publisher_page_membership,
     publisher_search_receipts,
     publisher_search_row_target,
@@ -541,9 +542,13 @@ def _persist_publisher_body_receipt(
             if item.deferred_reason.endswith("_search_page")
             else dict(checkpoint.listing_urls)
         )
-        stored.detail_checkpoint = _publisher_body_checkpoint(
-            checkpoint, retained, bodies, read, unstable=unstable
-        ).as_json()
+        updated = _publisher_body_checkpoint(checkpoint, retained, bodies, read, unstable=unstable)
+        if item.deferred_reason.endswith("_search_detail"):
+            # The scope's page rows hold the union, so a detail row keeps only its own body.
+            updated = replace(
+                updated, completed=own_listing_pairs(updated.completed, stored.normalized_url)
+            )
+        stored.detail_checkpoint = updated.as_json()
     _record_native_page_receipts(session, items, read)
 
 

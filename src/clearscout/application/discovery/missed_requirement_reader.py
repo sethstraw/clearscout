@@ -140,6 +140,44 @@ def rebuild_for_workspace(session: Session, workspace_id: str) -> int:
     )
 
 
+def refresh_for_requirement_key(
+    session: Session, workspace_id: str, requirement_key: str, audit: dict[str, Any]
+) -> None:
+    """Re-project the workspace's evaluations whose stored requirements carry one key."""
+    stored = func.json_each(JobEvaluation.fit_report_payload, "$.requirements").table_valued(
+        "value"
+    )
+    carries_key = (
+        select(stored.c.value)
+        .where(func.json_extract(stored.c.value, "$.requirement_key") == requirement_key)
+        .exists()
+    )
+    evaluations = session.execute(
+        select(
+            JobEvaluation.id,
+            JobEvaluation.master_cv_version_id,
+            JobEvaluation.fit_report_payload,
+        )
+        .join(JobPosting, JobPosting.id == JobEvaluation.job_posting_id)
+        .where(
+            JobPosting.workspace_id == workspace_id,
+            JobEvaluation.master_cv_version_id.is_not(None),
+            carries_key,
+        )
+    ).all()
+    for evaluation_id, master_cv_version_id, payload in evaluations:
+        refresh_for_evaluation(
+            session,
+            workspace_id=workspace_id,
+            master_cv_version_id=master_cv_version_id,
+            evaluation_id=evaluation_id,
+            payload=payload,
+            origin=audit["origin"],
+            correlation_id=audit["correlation_id"],
+            actor=audit["created_by"],
+        )
+
+
 def missed_requirement_texts_in(
     session: Session, workspace_id: str, master_cv_version_id: str
 ) -> frozenset[str]:

@@ -20,6 +20,8 @@ from clearscout.application.discovery.source_continuation.limits import (
     POSTING_DETAIL_COMPLETED,
 )
 from clearscout.application.discovery.source_continuation.publisher_targets import (
+    own_listing_pairs,
+    own_search_detail_target,
     publisher_search_row_target,
 )
 from clearscout.application.discovery.source_continuation.rescreen import recent_posting_reads
@@ -289,16 +291,15 @@ def _recent_body_item(
     """Record a target a recent read already supplied, as a held body when it is a posting."""
     item = read_page_item(continuation_id, normalized, target.url, correlation_id=correlation_id)
     checkpoint = target.detail_checkpoint
-    if not listed_posting(target) or checkpoint is None or not checkpoint.listing_urls:
+    own = own_listing_pairs(checkpoint.listing_urls, normalized) if checkpoint else ()
+    if not listed_posting(target) or checkpoint is None or len(own) != 1:
         return item
     # A listing certification counts only completed pairs, so the held body names its own.
     item.source_url = target.source_url or item.source_url
     item.deferred_reason = POSTING_DETAIL_COMPLETED
     # The original read time keeps the rescreen window from renewing on every skip.
     item.completed_at = read_at
-    item.detail_checkpoint = replace(
-        checkpoint, pending_ids=(), completed=checkpoint.listing_urls
-    ).as_json()
+    item.detail_checkpoint = replace(checkpoint, pending_ids=(), completed=own).as_json()
     return item
 
 
@@ -360,7 +361,8 @@ def record_frontier_targets(
         session, source_id, cutoff, exclude_continuation_id=continuation_id
     )
     inserted_count = absorbed_count = listed_count = 0
-    for normalized, target in deferred.items():
+    for normalized, declared in deferred.items():
+        target = own_search_detail_target(normalized, declared)
         listed_count += listed_posting(target)
         row = rows.get(normalized)
         if row is not None:

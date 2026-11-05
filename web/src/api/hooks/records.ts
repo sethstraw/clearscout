@@ -61,20 +61,30 @@ export function useWorkspaceMutation<TVariables, TResult>(
   options: {
     onSuccess?: (result: TResult) => void | Promise<void>;
     successMessage?: string | ((result: TResult) => string | undefined);
+    /** Hold the mutation pending until the task list is read again. */
+    awaitTaskList?: boolean;
   } = {},
 ) {
   const client = useQueryClient();
   const { showToast } = useToast();
   return useMutation({
     mutationFn,
-    // Matched on the workspace rather than on a list of key prefixes, so a
-    // query added later is refetched without being named here as well. Finished-task billing is
-    // immutable and stays cached rather than joining every workspace mutation refetch.
+    // Matched on the workspace, so a query added later is refetched without being named here.
+    // Finished-task billing is immutable and stays cached; the task list refetches without
+    // holding the mutation pending unless the mutation's visible result is that list.
     onSuccess: async (result) => {
-      await client.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey[1] === workspaceId && query.queryKey[0] !== "task-billing",
+      const inWorkspace = (key: readonly unknown[]) =>
+        key[1] === workspaceId && key[0] !== "task-billing";
+      const isTaskList = (key: readonly unknown[]) => key[0] === queryKeys.tasks(workspaceId)[0];
+      const taskList = client.invalidateQueries({
+        predicate: ({ queryKey }) => inWorkspace(queryKey) && isTaskList(queryKey),
       });
+      await Promise.all([
+        client.invalidateQueries({
+          predicate: ({ queryKey }) => inWorkspace(queryKey) && !isTaskList(queryKey),
+        }),
+        options.awaitTaskList ? taskList : undefined,
+      ]);
       await options.onSuccess?.(result);
       const message =
         typeof options.successMessage === "function"

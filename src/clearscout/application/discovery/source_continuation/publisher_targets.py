@@ -36,6 +36,28 @@ from clearscout.infrastructure.web_fetch.board_reads import (
 )
 
 
+def own_listing_pairs(
+    pairs: tuple[tuple[str, str], ...], normalized_url: str
+) -> tuple[tuple[str, str], ...]:
+    """Keep the identity pairs whose URL is the row's own address."""
+    return tuple(pair for pair in pairs if normalize_fetch_url(pair[1]) == normalized_url)
+
+
+def own_search_detail_target(
+    normalized_url: str, target: SourceContinuationTarget
+) -> SourceContinuationTarget:
+    """Keep only a search-detail target's own settled pair; page rows carry the union."""
+    checkpoint = target.detail_checkpoint
+    if checkpoint is None or not target.deferred_reason.endswith("_search_detail"):
+        return target
+    return replace(
+        target,
+        detail_checkpoint=replace(
+            checkpoint, completed=own_listing_pairs(checkpoint.completed, normalized_url)
+        ),
+    )
+
+
 def _publisher_search_owned_detail_target(
     row: SourceScanFrontierItem,
     target: SourceContinuationTarget,

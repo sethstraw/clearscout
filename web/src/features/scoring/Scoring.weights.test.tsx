@@ -3,10 +3,11 @@ import { HttpResponse, http } from "msw/http";
 import { afterEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-import type { Job, ScoreWeightSet } from "../../api/client/types";
+import type { Job, ScoreWeightSet, SearchParameterVersion } from "../../api/client/types";
 import { AppProviders } from "../../providers";
 import { server } from "../../test/msw/server";
 import { jobSummary } from "../job-ledger/jobFixtures";
+import { searchParametersState } from "../search-parameters/searchParameterFixtures";
 import { ScoringPage } from "./Scoring";
 
 /** Keep browser score previews aligned with server weighting rules. */
@@ -82,6 +83,10 @@ function installApi() {
     ),
     http.get("*/api/v1/jobs", () =>
       HttpResponse.json({ items: JOBS, total: JOBS.length, offset: 0, limit: 250 }),
+    ),
+    http.get("*/api/v1/job-search-parameters", () => HttpResponse.json(searchParametersState())),
+    http.get("*/api/v1/job-search-parameters/history", () =>
+      HttpResponse.json([] satisfies SearchParameterVersion[]),
     ),
   );
 }

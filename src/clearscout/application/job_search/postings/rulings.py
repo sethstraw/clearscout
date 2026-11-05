@@ -16,6 +16,7 @@ from typing import Any, Protocol
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from clearscout.application.discovery.missed_requirement_reader import refresh_for_requirement_key
 from clearscout.domain import utc_now
 from clearscout.domain.rulings import Ruling
 from clearscout.infrastructure.persistence.database import Database
@@ -81,6 +82,8 @@ class RequirementRulingService:
                 )
             )
             session.flush()
+            refresh_for_requirement_key(session, workspace_id, requirement_key, audit)
+            session.flush()
             session.expunge(row)
             return row
 
@@ -118,6 +121,7 @@ class RequirementRulingService:
                 )
             )
             session.flush()
+            refresh_for_requirement_key(session, workspace_id, requirement_key, audit)
             return True
 
     def by_key(self, workspace_id: str) -> dict[str, Ruling]:
@@ -264,6 +268,7 @@ def reverse_ruling(
         return None
     row.ruling = Ruling.REVERSED.value
     row.updated_at = utc_now()
+    audit = {"created_by": "worker", "origin": origin, "correlation_id": correlation_id}
     session.add(
         AuditEvent(
             workspace_id=workspace_id,
@@ -271,11 +276,11 @@ def reverse_ruling(
             entity_type="requirement_ruling",
             entity_id=row.id,
             details={"requirement_key": requirement_key, **details},
-            created_by="worker",
-            origin=origin,
-            correlation_id=correlation_id,
+            **audit,
         )
     )
+    session.flush()
+    refresh_for_requirement_key(session, workspace_id, requirement_key, audit)
     return row.id
 
 

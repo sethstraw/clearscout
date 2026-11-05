@@ -48,5 +48,45 @@ def test_actual_requirements_are_kept(text: str) -> None:
     assert is_boilerplate_requirement(text) is False
 
 
+COMPUTER_USE_NOTICES = (
+    "Ability to use computers and keyboards extensively",
+    "Ability to use a computer and keyboard extensively.",
+    "Extensive use of a computer and keyboard",
+    "Regular use of a computer keyboard and mouse for extended periods",
+    "Must be able to operate a computer for long periods",
+    "Able to work at a computer for prolonged periods of time",
+    "Prolonged computer use",
+    "Extended screen time",
+    "Repetitive use of a keyboard and mouse",
+    "Frequent use of computer, keyboard, and mouse",
+    "Long periods of screen time",
+    "Long periods of time in front of a computer screen",
+    "Constant use of computer monitors",
+)
+
+COMPUTER_SKILLS = (
+    "Proficiency with computers and Microsoft Office",
+    "Experience using computer-aided design tools",
+    "Advanced keyboard shortcuts in Excel",
+    "Computer science degree",
+    "Ability to use data to drive decisions",
+    "Extensive experience with computer vision",
+    "Extensive use of SQL and Python for analysis",
+    "Regular use of analytics dashboards to monitor product health",
+    "Ability to use computer modeling software extensively",
+    "Long periods of ambiguity in early-stage product work",
+)
+
+
+@pytest.mark.parametrize("text", COMPUTER_USE_NOTICES)
+def test_computer_use_physical_notices_are_refused(text: str) -> None:
+    assert is_boilerplate_requirement(text) is True
+
+
+@pytest.mark.parametrize("text", COMPUTER_SKILLS)
+def test_computer_skill_requirements_are_kept(text: str) -> None:
+    assert is_boilerplate_requirement(text) is False
+
+
 def test_empty_text_is_not_boilerplate() -> None:
     assert is_boilerplate_requirement("") is False

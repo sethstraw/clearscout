@@ -40,14 +40,19 @@ function recordInvalidations(): InvalidateQueryFilters[] {
 }
 
 function expectWorkspaceInvalidation(filters: InvalidateQueryFilters[], queryKey: unknown[]) {
-  expect(filters).toHaveLength(1);
-  const predicate = filters[0]?.predicate;
-  expect(predicate).toBeTypeOf("function");
-  const query = (key: unknown[]) =>
-    ({ queryKey: key }) as unknown as Parameters<NonNullable<typeof predicate>>[0];
-  expect(predicate?.(query(queryKey))).toBe(true);
-  expect(predicate?.(query([queryKey[0], "another-workspace"]))).toBe(false);
-  expect(predicate?.(query(["task-billing", workspaceId, "task-1"]))).toBe(false);
+  const predicates = filters.map((filter) => filter.predicate);
+  expect(predicates.length).toBeGreaterThan(0);
+  const invalidated = (key: unknown[]) =>
+    predicates.some((predicate) => {
+      expect(predicate).toBeTypeOf("function");
+      return predicate?.({ queryKey: key } as unknown as Parameters<
+        NonNullable<typeof predicate>
+      >[0]);
+    });
+  expect(invalidated(queryKey)).toBe(true);
+  expect(invalidated([...queryKeys.tasks(workspaceId)])).toBe(true);
+  expect(invalidated([queryKey[0], "another-workspace"])).toBe(false);
+  expect(invalidated(["task-billing", workspaceId, "task-1"])).toBe(false);
 }
 
 /** Accept every mutation: no hook here reads the body, only its invalidations. */
