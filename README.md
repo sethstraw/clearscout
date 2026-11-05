@@ -1,4 +1,29 @@
-# ClearScout
+<p align="center">
+  <img src="web/public/brand/clearscout-mark.svg" alt="ClearScout logo" width="88">
+</p>
+
+<h1 align="center">ClearScout</h1>
+
+<p align="center">
+  <strong>Find the roles your record already fits.</strong><br>
+  One master CV. Evidence-backed drafts. Human approval.
+</p>
+
+<p align="center">
+  <a href="https://github.com/sethstraw/clearscout/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sethstraw/clearscout/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/sethstraw/clearscout/releases"><img alt="Release" src="https://img.shields.io/github/v/release/sethstraw/clearscout?include_prereleases"></a>
+  <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue">
+</p>
+
+<p align="center">
+  <a href="#install-a-tagged-release">Install</a> |
+  <a href="docs/product-tour.md">Product tour</a> |
+  <a href="docs/user-guide.md">User guide</a> |
+  <a href="docs/validation.md">What is tested</a> |
+  <a href="ARCHITECTURE.md">Architecture</a> |
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
 ClearScout is a local, open-source workspace for finding and tracking jobs,
 comparing postings with one master CV, and drafting resumes and cover letters.

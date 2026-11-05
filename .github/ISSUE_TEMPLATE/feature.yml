@@ -1,7 +1,7 @@
 name: Feature request
 description: Propose a broadly useful improvement or configuration option.
 title: "[Feature]: "
-labels: [enhancement]
+labels: [enhancement, needs-triage]
 body:
   - type: textarea
     id: problem
