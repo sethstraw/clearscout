@@ -36,8 +36,8 @@ It streams newline-delimited JSON; each line follows `SourceScanOutcomeResponse`
 in OpenAPI. It accepts the list route's filters and ordering without pagination,
 counts, or facets. A scan includes its continuations; a continuation task exports
 only its own rows. The export is body-free and does not read publisher sites.
-Use the paginated list for interactive views instead of collecting every page.
-for an audit.
+Use the paginated list for interactive views and the export for an audit,
+rather than collecting every page of the list.
 
 ## Where things belong
 

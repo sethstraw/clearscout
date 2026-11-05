@@ -3,9 +3,9 @@
 The harness answers one named question at a time. It never treats a user's past
 correction, a stored classification, or a model's output as the right answer.
 
-The labels it scores against come from reviewer agents, not from people. Two
-agents label each sample blind, and their disagreements are settled separately:
-by a third agent in the match family, by the maintainer in the relevance family.
+The labels it scores against come from two reviewer agents labeling each sample
+blind. Their disagreements are settled separately: by a third agent in the match
+family, and by the maintainer in the relevance family.
 That tells you whether the prompt agrees with a written rubric as those agents
 apply it. It does not tell you whether a person would agree. Every result
 carries that limit.
@@ -384,6 +384,15 @@ axes rather than four misclassifications. The header counts those rows as
 `axes_not_recorded`, so the two counters together give the rows whose axes did
 not decide the mark and the rest of the total is the rows whose axes did.
 
+## What the jobspec boundary task scores against
+
+Eight synthetic postings (`evals/fixtures/jobspec_boundary_cases.jsonl`) run
+against four synthetic boundaries (`evals/fixtures/jobspec_boundaries.json`).
+Each row names the boundary that should fire, or none, and why. A run counts
+false positives, false negatives, and wrong boundaries per case and arm. It is
+live only, and its expected values are written into the fixture, not labeled by
+reviewer agents. Eight cases find defects; they do not measure a rate.
+
 ## What a result can claim
 
 No model judge takes part in the shipped scoring path. The scorer compares a
@@ -428,7 +437,7 @@ names. It is not a lasting claim about the adapter or the provider.
 - A document case's plan comes from a canned match answer the case writes, so a
   change to the match prompt cannot move a `draft`, `cover`, or `critic` result.
   Selection is still the shipped one.
-- The `critic` families review a document assembled from a canned draft. They say
+- The `critic` family reviews a document assembled from a canned draft. It says
   nothing about how the critic reads a document the drafter actually wrote.
 - Each family's reviewed dataset is used for internal defect discovery. Its
   result measures agreement with frozen rubric-based agent labels. It says

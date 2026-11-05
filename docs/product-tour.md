@@ -8,7 +8,7 @@ This is a walk through how ClearScout keeps those questions close to the work.
 You can also read the [prompts](../prompts/README.md) without running the
 application. They show how the model is asked to read, match, draft, and critique.
 
-This tour follows one job from lead to application history. The discovery and
+This tour follows the path a job takes from lead to application history. The discovery and
 evaluation screenshots come from a live workspace with employer names
 redacted. The application timeline comes from the repository's synthetic demo
 workspace. Its person, employers, postings, dates, scores, costs, and documents
@@ -17,15 +17,17 @@ job-board request.
 
 ## Start with a lead
 
-A URL returned by search or a board scan enters Pending discoveries. ClearScout
+A URL returned by search or a board scan enters Pending discoveries (Find jobs >
+Review). ClearScout
 keeps how it was found, the publisher facts available before a full read, and
 typed screening findings beside the lead, but it does not call that an
 evaluation. Unknown facts remain visible rather than becoming an inferred
-match. A board listing whose title alone is not enough to support or refuse it
-stays in the durable screening-outcome ledger without entering Pending or
-relevance review. The person can promote that exact URL into Pending and start
-its policy-gated content read; no listing disappears because it missed the
-automatic admission rule.
+match. A board listing whose title neither fits nor clearly misses your target
+roles is kept, but it does not enter Pending discoveries or relevance review.
+Open the scan under Find jobs > Boards > History to see it in Screened
+candidates. There, Add to pending and read moves it into the queue and reads
+the posting if the publisher's policy allows. No listing is dropped just
+because it missed the automatic rule.
 
 Board and sitemap reads are bounded per task. A supported source can have more
 pages or posting URLs than one task can read. ClearScout then keeps the exact
@@ -33,16 +35,16 @@ next page or URLs as durable continuation work. It does not restart the source
 or drop the unread tail. A sitemap read stopped by a discovery bound says so and
 stays incomplete, so the part it reached is never reported as the whole board.
 
-The optional search-vocabulary action suggests search terms from cited CV
-evidence; it does not fetch postings or review the pending queue. A free scan
+The optional Search terms panel (Find jobs > Web search) suggests search terms
+from cited CV evidence; it does not fetch postings or review the pending queue. A free scan
 reads the registered sources, and explicit evaluation compares selected
 postings with the CV. Historical relevance reviews remain visible with their
 recorded inputs.
 
 ![Redacted live workspace: pending discoveries from a board scan with their relevance reviews](images/pending-discoveries.png)
 
-Both leads came from a board scan, and each row keeps that origin with the date
-it was first seen and its rank. The relevance review marks them Investigate and
+Each row keeps how it was found (a board scan, or added by you) with the date it
+was first seen and its rank. The relevance review marks them Investigate and
 names what a person still has to check, such as uncertain compensation. The
 **Where it came from** filter separates board-scan leads from postings added by
 URL. Employer names and board addresses are replaced with labels.
@@ -75,14 +77,16 @@ The model can change the wording. Citation checks do not prove every semantic
 claim: review qualifications, ownership, and metrics against the linked source.
 [Truth and provenance](truth-and-provenance.md) states the complete rule.
 
-If the CV omits relevant experience, discovery asks the person about
-that gap without calling a model. A complete, explicitly confirmed answer
-creates a new master-CV version; the earlier CV and the evaluation tied to it
-remain unchanged.
+If the CV omits relevant experience, run `clearscout discover` in a terminal.
+It asks you about the gap and calls no model. It writes only complete answers
+you confirmed, after showing the exact change to your master CV file, and it
+logs what it added. Import the updated file to create a new master-CV version;
+earlier versions and the evaluations tied to them stay unchanged.
 
-A direct edit to the master CV is free only when the canonical parser accepts
-it. An edit it rejects goes through ordinary import, which makes a paid
-STRUCTURE call with no cost dialog, or fails when no key is set.
+A direct edit to the master CV is saved free when the canonical parser accepts
+it. When it does not, the CV page shows why after Review changes, and you can
+fix the draft or choose Re-read and save. That is a paid model call, and it
+asks you to confirm, with a cost estimate, first.
 
 ## Approval belongs to exact bytes
 
@@ -119,5 +123,6 @@ suitable PDF, or that a tailored resume will change a hiring outcome. [Validatio
 status](validation.md) explains those limits.
 
 To inspect the workspace yourself, follow [Try the synthetic
-workspace](../README.md#try-the-synthetic-workspace). To use a real CV after a
-release exists, continue with the [user guide](user-guide.md).
+workspace](../README.md#try-the-synthetic-workspace). To use a real CV, install a
+tagged release ([README](../README.md#install-a-tagged-release)) and continue
+with the [user guide](user-guide.md).

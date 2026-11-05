@@ -6,7 +6,7 @@ Versions are exact. A generated inventory is not legal advice; see
 
 Rows marked `development only, not distributed` are build, lint, type and
 test tooling. No wheel, sdist or SPA bundle contains them, so they are held
-to a reduced licence policy and are listed here as a supply-chain record
+to a reduced license policy and are listed here as a supply-chain record
 rather than as a notice obligation.
 
 | Ecosystem | Package | Version | Usage | License | Review category | Project |

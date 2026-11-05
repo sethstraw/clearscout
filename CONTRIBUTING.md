@@ -155,15 +155,10 @@ it. Review the saved image, keep unredacted captures private, and label the
 result as a redacted live workspace. Job titles may remain when the owner
 approves them. A redacted image is not synthetic test data.
 
-The release workflow creates a draft release from a tag. Review the assets,
-checksums, and provenance before separately approving publication on GitHub.
-
 ## Schema changes are explicit
 
-Before the first release tag, update `v0001_schema.py` in place and import an
-existing database into a fresh migrated target. After the first release tag,
-applied revisions are frozen and schema changes add forward revisions. The
-commands and recovery rules are in
+`v0001_schema.py` is the 0.1.0 schema. Applied revisions are frozen, and a
+schema change adds a forward revision. The commands and recovery rules are in
 [docs/contributing/database-and-migrations.md](docs/contributing/database-and-migrations.md).
 
 Run migration work only against a scratch data root. A change needs upgrade and
@@ -189,3 +184,10 @@ any regenerated notices. A dependency is not moved to development scope merely
 to receive a looser license policy; shipped imports decide which policy applies.
 
 Participation is covered by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## Releases
+
+Only the maintainer tags and publishes releases. The release workflow creates a draft release from a tag. It refuses a commit
+without a passing CI run and does not rerun the tests; push `main`, wait for CI,
+then push the tag. Review the assets,
+checksums, and provenance before separately approving publication on GitHub.

@@ -4,15 +4,17 @@
 
 This repository holds product code and invented fixtures, nothing else. Your
 durable database, saved postings, workspace artifacts, backups, logs, exports,
-uploads, and personal settings live under `~/Documents/ClearScout` by default or
-wherever private you point the data root. File-pipeline inputs and `--out`
-packages live at the paths you choose. Raw provider-response caches default to
-the operating system cache directory under `clearscout/responses`.
+uploads, and personal settings live under `~/Documents/ClearScout` by default, or
+under whatever private folder you choose as the data root. File-pipeline inputs
+and `--out` packages live at the paths you choose. Raw provider responses are
+cached in the operating system cache directory under `clearscout/responses` (on
+macOS, `~/Library/Caches/clearscout/responses`). Set `cache = false` in
+`clearscout.toml` to turn the cache off.
 
 Documents is a deliberate default for durable workspace state: you and ordinary
 backup tools can reach it without needing access to an
 application-support folder. The provider cache is a separate deletion and backup
-boundary unless you explicitly place it somewhere else, with one exception: a
+boundary, with one exception: a
 cache entry copied into the database by the archive step stops being separate,
 and lives wherever your database lives.
 
@@ -44,7 +46,7 @@ is append-only, and its database triggers refuse a delete.
 
 Nothing is deleted for you. ClearScout does not expire longitudinal records,
 artifacts, backups, or cache entries on a timer. Immutable evaluations and
-append-only histories stay. There is no export-and-archive workflow. Records you
+append-only histories stay. Nothing exports old records and then deletes them for you. Records you
 are allowed to retire get soft archived; retained records are never quietly
 rewritten.
 

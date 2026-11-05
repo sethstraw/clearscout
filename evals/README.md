@@ -1,7 +1,8 @@
 # Evaluations
 
 Contributor tooling. It is not in the wheel, there is no `clearscout` subcommand
-for it, and `pytest` will not run it.
+for it, and `pytest` will not run it. `scripts/gate.sh py`, and so `change` and
+`all`, runs `python -m evals`, so a failing case fails the gate.
 
 ```bash
 uv run python -m evals                     # run every case against its baseline
@@ -38,7 +39,8 @@ neither prompt text nor raw provider responses. The relevance family sends each
 repeat in the batches production would cut: one task per search context, split
 by the production batch limits, under the response schema production closes over
 that task's CV and conditions. It bills once per call and records each row's batch. It
-is deliberately separate from `python -m evals`. Read [`inspect/METHODOLOGY.md`](inspect/METHODOLOGY.md)
+is deliberately separate from `python -m evals`. [`inspect/README.md`](inspect/README.md)
+gives the commands for each family. Read [`inspect/METHODOLOGY.md`](inspect/METHODOLOGY.md)
 before preparing or comparing a live run. [`RESULTS.md`](RESULTS.md) lists every
 live run on the synthetic sets.
 
@@ -207,7 +209,7 @@ That is not a way of excusing a finding. It is how a case asserts the finding it
 was written to produce, so that a change in the count is a change in behavior.
 
 `[expect.derived]` is the same idea for the deterministic reading in
-`application/tailoring/fit/`, keyed by the field each answer is stored under:
+`src/clearscout/application/tailoring/fit/`, keyed by the field each answer is stored under:
 
 ```toml
 [expect.derived]
@@ -251,11 +253,13 @@ the longer version.
 Two kinds, and the difference matters when reading a result.
 
 **Reported checks** run the shipped check and record what it said.
-`check.<name>` is one score per finding from `stages/verify/`, verbatim.
+`check.<name>` is one score per finding from
+`src/clearscout/application/tailoring/stages/verify/`, verbatim.
 Nothing is restated. A check that changes its verdict moves the baseline, and a
 check that is deleted disappears from it. `keyword_coverage_percent` and
 `unsanitized_keywords` are the same kind. They read `verify.keyword_coverage`
-and the bounds `stages/jobspec.py` enforces.
+and the bounds `src/clearscout/application/tailoring/stages/jobspec.py`
+enforces.
 
 So is `derived.<question>`. It runs the deterministic reading in
 `application/tailoring/fit/` over the case's posting. It writes down each answer
@@ -335,7 +339,7 @@ measurements of a guarantee. `ownership_inflation` and `posting_language_echoed`
 find fabrications that pass every deterministic check. `unsupported_citations`
 uses knowledge a case has and the program cannot: which real entry is the wrong
 evidence for a claim. Each says so where it is defined, with why it has not been
-promoted into `stages/verify/`. A scorer that keeps finding something is the argument
+promoted into `src/clearscout/application/tailoring/stages/verify/`. A scorer that keeps finding something is the argument
 for promoting it.
 
 Latency is measured and printed and deliberately kept out of the baseline. A

@@ -31,8 +31,11 @@ def git_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_migration_guard_reads_claude_serena_and_codex_payloads(load_hook, run_hook) -> None:
+def test_migration_guard_reads_claude_serena_and_codex_payloads(
+    load_hook, run_hook, git_repo: Path
+) -> None:
     migration = load_hook("block-extra-migration")
+    untagged = {"CLAUDE_PROJECT_DIR": str(git_repo)}
     target = "src/clearscout/infrastructure/persistence/migrations/versions/v0002.py"
     assert migration.paths_from_payload({"tool_name": "Write", "tool_input": {"file_path": target}})
     serena = {
@@ -45,12 +48,12 @@ def test_migration_guard_reads_claude_serena_and_codex_payloads(load_hook, run_h
         {"tool_name": "apply_patch", "tool_input": {"command": patch}}
     )
     assert codex == ["ok.py", target]
-    assert run_hook("block-extra-migration", serena).returncode == 2
+    assert run_hook("block-extra-migration", serena, env=untagged).returncode == 2
     edit_v0001 = {
         "tool_name": "Edit",
         "tool_input": {"file_path": target.replace("v0002", "v0001_schema")},
     }
-    assert run_hook("block-extra-migration", edit_v0001).returncode == 0
+    assert run_hook("block-extra-migration", edit_v0001, env=untagged).returncode == 0
 
 
 def test_migration_guard_allows_serena_reads_of_the_versions_directory(run_hook) -> None:

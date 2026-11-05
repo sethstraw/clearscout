@@ -44,16 +44,16 @@ deterministic rules, and track jobs. Paid steps are opt-in. Each one sends a
 bounded input to the OpenAI or Anthropic account you configure. Nothing the
 program schedules by itself is paid; every paid task starts with a person.
 
-| Operation                                   | Cost | Model stages                         |
-| ------------------------------------------- | ---- | ------------------------------------ |
-| Add, preview, schedule, and scan boards     | Free | None                                 |
-| Add a posting link, refresh, track, dismiss | Free | None                                 |
-| Adopt a canonical Markdown or text CV       | Free | None                                 |
-| Import a Word, PDF, image, or other CV      | Paid | STRUCTURE, INGEST                    |
-| Relevance review of selected postings       | Paid | RELEVANCE_REVIEW, up to 20 per call  |
-| Evaluate a posting                          | Paid | JOBSPEC, MATCH                       |
-| Tailor a resume and cover letter            | Paid | JOBSPEC, MATCH, DRAFT, COVER, CRITIC |
-| Search vocabulary or a guided campaign      | Paid | Vocabulary, hosted web search        |
+| Operation                                   | Cost | Model stages                                                     |
+| ------------------------------------------- | ---- | ---------------------------------------------------------------- |
+| Add, preview, schedule, and scan boards     | Free | None                                                             |
+| Add a posting link, refresh, track, dismiss | Free | None                                                             |
+| Adopt a canonical Markdown or text CV       | Free | None                                                             |
+| Import a Word, PDF, image, or other CV      | Paid | STRUCTURE, INGEST                                                |
+| Relevance review of selected postings       | Paid | RELEVANCE_REVIEW, up to 20 per call                              |
+| Evaluate a posting                          | Paid | JOBSPEC, MATCH                                                   |
+| Tailor a resume and cover letter            | Paid | JOBSPEC, MATCH, DRAFT, COVER, CRITIC                             |
+| Search vocabulary or a guided campaign      | Paid | SEARCH_VOCABULARY; GUIDED_CAMPAIGN with OpenAI hosted web search |
 
 The [full table](docs/user-guide.md#choose-the-free-or-paid-path) lists every
 operation, and [typical costs](docs/user-guide.md#typical-costs) gives measured
@@ -84,16 +84,18 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
 The wheel requires Python 3.12 or newer; uv can provision its Python runtime.
 Node, npm, and a source checkout are not needed for the wheel.
 
-When a tagged alpha is published, download its wheel, source archive, and `SHA256SUMS` from
-[GitHub Releases](https://github.com/sethstraw/clearscout/releases). Verify the checksum and build provenance,
+Download the wheel and `SHA256SUMS` from the newest release on
+[GitHub Releases](https://github.com/sethstraw/clearscout/releases). Alpha builds
+are marked as pre-releases. Verify the checksum and build provenance,
 then install the wheel. The provenance command below requires the
 [GitHub CLI](https://cli.github.com/). The installation workflow targets macOS
 and Ubuntu; both must pass on the release revision before publication. Windows
 is not checked. The checksum command below is the macOS form; on Linux use
-`sha256sum -c SHA256SUMS`.
+`sha256sum -c --ignore-missing SHA256SUMS`. `--ignore-missing` skips the
+attached source archive when only the wheel was downloaded.
 
 ```bash
-shasum -a 256 -c SHA256SUMS
+shasum -a 256 -c --ignore-missing SHA256SUMS
 gh attestation verify ./clearscout-*.whl --repo sethstraw/clearscout
 uv tool install ./clearscout-*.whl
 ```
@@ -106,6 +108,11 @@ Some job pages publish their posting only through JavaScript. ClearScout reads
 those in a headless browser: an installed Google Chrome first, then Microsoft
 Edge, then a Chromium installed through Playwright. With none of them, those
 rendered reads fail and every other read still works.
+
+To install that Chromium for a uv tool install, run
+`"$(uv tool dir)/clearscout/bin/playwright" install chromium`. On Ubuntu,
+`install --with-deps chromium` also installs the system libraries it needs and
+asks for sudo.
 
 ### Update or remove
 
@@ -126,11 +133,6 @@ clearscout status
 Keep only the wheel being installed in the current directory. Use the same
 data root and configuration after an update. Read the release's upgrade notes
 before changing storage; preserve the backup until the new version is checked.
-
-A database created before the first release tag needs a fresh migrated target
-and verified import when its schema changes. Follow
-[Migrating](docs/contributing/database-and-migrations.md#migrating) before updating;
-`db upgrade` alone cannot update a changed pre-release `v0001` schema.
 
 To remove the application while keeping your search records:
 
@@ -155,11 +157,16 @@ Open the printed URL and create a workspace. A provider key and CV are optional
 for discovery. Add posting links, or save target titles before scanning boards.
 [Choose a source or posting link](docs/user-guide.md#how-to-choose-a-link).
 
-For evaluation and drafting, import a master CV. Ordinary
-Word, PDF, text, or image intake uses a separately billed provider account.
-Initialization asks for provider access when needed. Invoking it with an
-ordinary CV starts paid restructuring; there is no separate cost-confirmation
-step. A canonical ClearScout Markdown CV is adopted without a model call.
+For evaluation and drafting, add a provider key under Settings > Provider and
+import your CV from the CV page (Import a version from a file). A canonical
+ClearScout Markdown CV imports free; Word, PDF, text, or image files need a paid
+model read.
+
+To do the same from a terminal before the first start, run `clearscout init`
+instead of creating the workspace in the browser, then start ClearScout.
+`init` asks for provider access when needed, starts paid restructuring of an
+ordinary CV with no separate cost confirmation, and creates a new workspace
+each time it runs.
 
 ```bash
 clearscout init --cv ./Existing_CV.docx --name "My Job Search" --slug my-search
@@ -171,16 +178,6 @@ same data root. Use `clearscout status` to inspect them and `clearscout stop` to
 stop them. Neither process runs a schema migration implicitly. Runtime output is
 appended to `clearscout-serve.log` and `clearscout-worker.log` in the ignored
 `.clearscout-runtime` directory under the data root.
-
-In a source checkout on macOS, double-click `Start ClearScout.command` to run the
-server and worker together and open the browser, and `Stop ClearScout.command` to
-stop them. These launchers use the ignored `local-data/` directory in the
-checkout unless `CLEARSCOUT_DATA_ROOT` is exported, not the Documents root the
-installed command uses. Initialize that root once first:
-
-```bash
-uv run clearscout db upgrade --data-root local-data
-```
 
 The [user guide](docs/user-guide.md) follows the complete local workflow.
 `clearscout --help` and `clearscout <command> --help` are the command reference.
@@ -211,7 +208,10 @@ uv run clearscout serve --data-root /tmp/clearscout-demo
 
 Open `http://127.0.0.1:8765`. The demo seed uses invented people, employers,
 postings, scores, provider records, costs, and documents. It makes no provider
-or job-board request and costs nothing.
+or job-board request and costs nothing. `serve` runs without a background
+worker, so the sidebar says the worker is not running and queued tasks stay
+queued. The seed leaves a queued and a running task so those states can be
+seen.
 
 The seeded workspace is for evaluation, screenshots, and contributor work. Do
 not replace it with a real CV in a development checkout.
@@ -256,7 +256,8 @@ CV evidence and reviewed drafts to that record:
 2. Find a posting or add one you already have.
 3. Read the fit, cited evidence, and unanswered requirements.
 4. Draft from the evidence selected for that job.
-5. Approve the exact result and retain what happened next.
+5. Approve the exact result.
+6. Record what happened next.
 
 It drafts. It does not submit applications, contact employers, look up people,
 or decide whether you should apply.
@@ -265,10 +266,10 @@ Discovery, posting observations, fit evaluations, tailored documents,
 approvals, application events, and corrections belong to the same workspace.
 Evaluations and histories append instead of quietly replacing earlier results,
 so a changed posting or corrected application status remains visible. The
-command center separates jobs that need action from jobs that merely score well
+Home page separates jobs that need action from jobs that merely score well
 against the CV:
 
-![Redacted live workspace: the command center separating application urgency from CV fit](docs/images/command-center.png)
+![Redacted live workspace: the Home page separating application urgency from CV fit](docs/images/command-center.png)
 
 ## A generated claim remains checkable
 
@@ -290,9 +291,10 @@ nothing has to catch it.
 
 The same habit runs through the rest of the program:
 
-- Every requirement and hard gate quotes the posting. The quote is placed in the
-  fetched body before the run continues. One that cannot be placed is held for a
-  person.
+- Every requirement and hard gate carries a quote from the posting, and the
+  program looks for it in the fetched body. A requirement whose quote is not
+  found keeps running on its extracted text; a gate whose quote is not found is
+  flagged in the report for a person to read.
 - A deterministic reader works from the raw posting, not from the model's
   summary of it. Its reading is printed beside the model's. There is no merge
   and no tiebreak, because the disagreement is the useful row.
@@ -327,14 +329,12 @@ leaves the machine. Reading local reports and records makes none.
 In the web client, every paid background task shows its scope and cost
 information and asks before it is queued. The CLI and the raw API do not ask:
 `clearscout tasks tailor`, a direct `POST /api/v1/tasks`, and an API retry of a
-failed paid task enqueue paid work with no confirmation. The Model spend report records
+failed paid task enqueue paid work with no confirmation. The Model spend report (Settings > Costs) records
 usage and costs from calls that ran. Missing prices remain unknown, and
 provider invoices may differ.
 
 Search-vocabulary suggestions use CV evidence. Hosted web search and the
-separate free scan of registered sources discover new postings. Both official
-provider adapters keep their normal supported request paths; pricing estimates
-do not restrict model or endpoint selection.
+separate free scan of registered sources discover new postings.
 
 ## Decide whether it fits
 

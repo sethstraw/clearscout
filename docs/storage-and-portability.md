@@ -19,6 +19,7 @@ directory, and it looks like this:
 ```text
 ClearScout/
   clearscout.sqlite3
+  .clearscout-runtime/   (serve and worker logs, process state)
   artifacts/
   workspaces/
     <slug>/
@@ -45,9 +46,9 @@ Point at a custom SQLite URL and its workspaces and artifacts default to sitting
 beside that database rather than under Documents. Give both a database URL and a
 `--data-root` and you get a split: the URL picks the database, the data root
 picks where workspaces and artifacts go implicitly. That is fine if you meant it
-and confusing if you did not. A non-SQLite URL has to come with an explicit local
-data or artifact root; which engines are supported is in
-[database-and-migrations.md](contributing/database-and-migrations.md).
+and confusing if you did not. Only SQLite is
+supported; [database-and-migrations.md](contributing/database-and-migrations.md)
+says why.
 
 Whatever you choose, use the same `--data-root` and `--database-url` for
 `init`, `serve`, `worker`, and the database commands. Pass the same optional
@@ -72,19 +73,20 @@ That snapshot is relational state and nothing else, so keep the data root's
 `artifacts` and `workspaces` directories with it. They hold the immutable bytes
 and your settings. Treat the whole set as sensitive.
 
-To restore into the same root:
+To restore into the same root (omit `--data-root` when you use the default
+Documents data root):
 
-1. Stop `clearscout serve` and `clearscout worker`.
+1. Run `clearscout stop` (or stop `clearscout serve` and `clearscout worker` if
+   you started them separately).
 2. Preserve the damaged database separately; do not overwrite the backup.
 3. Put the verified snapshot back at that data root's `clearscout.sqlite3` path.
 4. Restore the matching `artifacts` and `workspaces` directories if they were
    lost. Do not mix them with a snapshot from another point in time.
-5. Run `clearscout db status --data-root ./private-data` before starting the API.
+5. Run `clearscout db status --data-root ./private-data` and confirm it prints
+   `Schema current: yes` before starting ClearScout.
 6. Open detail or verification workflows to byte-verify referenced artifacts.
 
-The backup test opens the snapshot on its own and checks integrity, foreign
-keys, workspaces, and evaluations. Note that a database-only snapshot is not a
-portable export: the file URIs in it still describe the storage root they came
+A database-only snapshot is not a portable export: the file URIs in it still describe the storage root they came
 from.
 
 ## Importing from another database
@@ -97,11 +99,11 @@ every shared column, and only identical rows are skipped. A primary-key collisio
 where the rows differ is refused, naming the table, the key, and the columns that
 disagree.
 
-Stop or cancel queued and running source scans in the source installation before
-importing, and wait for readers to release their reservations. Restart the source
-worker to recover reservations left by a stopped reader. Reader ownership cannot transfer to
-another process. Collected results and retained links remain importable; resume
-them explicitly after starting the destination worker.
+Before importing, stop or cancel any queued or running board scans in the old
+installation, and wait until none is still reading. If the old worker stopped in
+the middle of a scan, start it again so it releases that scan, then stop it.
+Collected results and saved links import normally; resume them after starting
+the new worker.
 
 Look at a dry run first, every time:
 
@@ -160,17 +162,16 @@ clearscout db archive-cache --data-root ./private-data
 Pass `--cache-directory` to read a cache somewhere other than the per-user
 default, and `--origin` to label the rows. The command reads the cache and
 writes nothing to it. The copies carry the cache key, the response text, and
-the build that produced it; the key is a hash of prompt text nobody stored, so
-a copy cannot be matched back to a recorded model call. Running the command
+the build that produced it; the key is a one-way hash of the request, and an
+archived row stores no model-call identifier, so nothing links a copy to a
+recorded model call. Running the command
 again adds only keys and timestamps the archive does not already hold.
 
 ## How far this scales
 
-One person, one local SQLite database, one worker. The job list and the
-workspace summary issue the same number of SQL statements for a ledger of 1 job
-and one of 40. A test caps both counts, and neither reads artifact files.
-Listing 12 assigned tags takes at most three statements. Hashing bytes is
-reserved for detail and verification, where you asked for it.
+One person, one local SQLite database, one worker. List views do not grow their
+query count with the number of jobs, and they do not read artifact files; byte
+hashing happens only in detail and verification views.
 
 There is no distributed-worker story, no remote object storage, and no high
 availability, and none of those is being claimed. What the connection itself is

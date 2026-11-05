@@ -4,7 +4,7 @@ Use GitHub issues for reproducible bugs and documentation problems. Remove real
 CV text, job-search records, provider responses, API keys, and personal data
 before posting.
 
-Use GitHub private vulnerability reporting for security problems. If that route
+Use GitHub [private vulnerability reporting](https://github.com/sethstraw/clearscout/security/advisories/new) for security problems. If that route
 is unavailable, open a public issue asking for a private contact method and do
 not include exploit details or sensitive data.
 

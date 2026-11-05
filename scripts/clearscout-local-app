@@ -190,7 +190,7 @@ start_app() {
   open_browser
   printf '%s\n' \
     "Leave this window open while using ClearScout." \
-    "Double-click 'Stop ClearScout.command' or press Control-C here to stop both services."
+    "Run 'scripts/clearscout-local-app stop' or press Control-C here to stop both services."
 
   while is_clearscout_process "$SERVER_PID" serve && is_clearscout_process "$WORKER_PID" worker; do
     sleep 1

@@ -348,10 +348,11 @@ def test_tag_release_attaches_distributions_and_checksums() -> None:
 
     assert 'tags: ["v*"]' in workflow
     assert "scripts/check_release_tag.py" in workflow
-    assert workflow.index("scripts/check_release_tag.py") < workflow.index(
-        "bash scripts/gate.sh all"
-    )
-    assert "bash scripts/gate.sh all" in workflow
+    tag_check = workflow.index("scripts/check_release_tag.py")
+    ci_check = workflow.index("actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success")
+    build = workflow.index("bash scripts/gate.sh package")
+    assert tag_check < ci_check < build
+    assert "actions: read" in workflow
     assert "sha256sum" in workflow
     assert "gh release create" in workflow
 

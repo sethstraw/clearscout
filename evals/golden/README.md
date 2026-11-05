@@ -57,7 +57,7 @@ chain behind it: the source mapping, candidates, extraction QA, both reviewer
 packets, raw reviews and proposals, the adjudication, the per-case rulings, and
 the frozen bundles whose digests the manifest pins. Every receipt names the
 model its agent's launch result resolved. The receipts are re-derived from the
-2026-09-25 reviews under the ClearScout hash domains. The packets those agents
+2026-09-25 reviews after the digest domain strings were renamed. The packets those agents
 read were the same cases in another order, and they stay in the private archive. Only the round in force is kept here,
 so the receipts behind an `evals/RESULTS.md` row on an earlier manifest are not
 in the repository.
@@ -160,7 +160,7 @@ instead of riding along unread. No row in the tracked sets carries one.
   "ruling": "met | not_applicable | disputed_fit | disputed_extraction | reversed",
   "current_classification": "DIRECT | TAILORING_ONLY | TRANSFERABLE | ASSERTED | GAP",
   "dimension": "hard",
-  "cv_hash": "<blake2s hex>",
+  "cv_hash": "<sha256 hex of the master CV version the evaluation used>",
   "database_url": "<sqlite URL of the source workspace>"
 }
 ```

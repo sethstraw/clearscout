@@ -30,12 +30,13 @@ only queue topology this supports.
 
 ## Migrating
 
-Before the first release tag, `v0001_schema.py` is the single schema revision
-and changes in place. An existing pre-release database needs a fresh migrated
-target and the verified import procedure in
+`v0001_schema.py` is the schema 0.1.0 shipped. Applied revisions are frozen,
+and a schema change adds a forward revision that `clearscout db upgrade`
+applies. A database created from an untagged pre-release checkout needs a fresh
+migrated target and the verified import procedure in
 [storage-and-portability.md](../storage-and-portability.md#importing-from-another-database).
-After the first release tag, applied revisions are frozen and schema changes
-add forward revisions. Starting the application never changes the schema.
+Starting the application never changes the schema.
 
-Downgrade is a destructive development tool and asks you to confirm. If it is
+`clearscout db downgrade` is a destructive development tool and refuses to
+run without `--yes`. If it is
 your real data at stake, restore a verified backup instead.

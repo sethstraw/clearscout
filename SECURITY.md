@@ -5,7 +5,7 @@ before you point it at a real CV.
 
 ## Reporting a vulnerability
 
-Use GitHub's private vulnerability reporting. If that is not available to you,
+Use GitHub's [private vulnerability reporting](https://github.com/sethstraw/clearscout/security/advisories/new). If that is not available to you,
 open an issue asking for a private contact method, and leave out secrets,
 personal data, and exploit details.
 

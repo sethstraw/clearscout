@@ -38,10 +38,12 @@ flowchart TD
     package --> approval["approval: replacement text rechecked by check_supplied"]
 ```
 
-_Traced from `_entry_id` in `application/master_cv/cv.py`, `response_schema` in
-`stages/match.py`, `draft_schema` in `stages/draft.py`, the rewrite loop in
-`tailoring/pipeline/rewrite.py`, and `check_supplied` in
-`stages/verify/resume.py`._
+_Traced, under `src/clearscout/`, from `_entry_id` in
+`application/master_cv/cv.py`, `response_schema` in
+`application/tailoring/stages/match.py`, `draft_schema` in
+`application/tailoring/stages/draft.py`, the rewrite loop in
+`application/tailoring/pipeline/rewrite.py`, and `check_supplied` in
+`application/tailoring/stages/verify/resume.py`._
 
 After that, deterministic checks look for missing citations, numbers that are not
 in the cited evidence, required and forbidden wording, approval digests, and
@@ -101,15 +103,16 @@ and never calls a model.
 
 ## A new claim comes from you
 
-A new claim enters the master CV three ways: you edit it, you re-import a
-source, or you answer a discovery question. Each appends a new master-CV
-version.
+A new claim enters the master CV three ways: you edit it on the CV page, you
+re-import a source, or you answer `clearscout discover` in a terminal. Edits and
+imports append a new master-CV version.
 
 Discovery asks you about a gap, and it makes no model call at all. It records
-only complete, explicitly confirmed answers, refuses invented figures and
-anything that came from somewhere other than you, appends a new master-CV
-version, and leaves the earlier version and every evaluation tied to it exactly
-as they were. Refusing to add something is a correct outcome, not a failure.
+only complete, explicitly confirmed answers and refuses invented figures and
+anything that came from somewhere other than you. It rewrites your master CV
+file after showing you the exact change and logs what it added; import that
+file to make it a new version. Stored versions and the evaluations tied to them
+are never changed. Refusing to add something is a correct outcome, not a failure.
 
 ## Untrusted input
 

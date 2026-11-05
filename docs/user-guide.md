@@ -14,13 +14,22 @@ to `clearscout --help` and `clearscout <command> --help`.
 
 ## Install the release before using real data
 
-Version 0.1.0 is an alpha. When a tagged alpha is published, verify and install
-its wheel as described in the [README](../README.md#install-a-tagged-release). The contributor setup in
+Version 0.1.0 is the first public alpha, published as a pre-release on
+[GitHub Releases](https://github.com/sethstraw/clearscout/releases). Verify and
+install its release wheel as described in the
+[README](../README.md#install-a-tagged-release). The contributor setup in
 [CONTRIBUTING.md](../CONTRIBUTING.md) is for changing ClearScout; do not treat a
 development checkout as a release artifact. ClearScout is not published to PyPI and
 a direct Git install does not contain the production web client.
 
 ## Initialize one workspace
+
+There are two alternative ways to create a workspace; choose one. The free path
+runs `clearscout db upgrade` and `clearscout start`, then creates the workspace
+in the browser. The CV path runs `clearscout init --cv ...`, which creates the
+database, a workspace, and the master CV in one step; then run
+`clearscout start`. Each `clearscout init` run creates a new workspace, so do
+not run it after creating one in the browser unless you want a second one.
 
 For free discovery, initialize the database and start the local application:
 
@@ -55,6 +64,9 @@ confirmation. Keep the key out of commands you share.
 ```bash
 clearscout init --cv ./Existing_CV.docx --name "My Job Search" --slug my-search
 ```
+
+It prints the paths of the settings file, the master CV, and the database, and
+how the CV was imported.
 
 A canonical ClearScout Markdown CV is adopted without a model call. Other formats
 are extracted, sent to the configured provider for restructuring, then checked
@@ -110,9 +122,10 @@ machine. Paid stages send their selected input to your configured provider.
 
 The CLI follows the same line. `clearscout discover`, `template`, `doctor`,
 `report`, `search show`, `db`, `auth`, `start`, `stop`, `status`, `serve`, and
-`worker` are free. `clearscout run`, `screen`, and `batch` call models and are
-paid. Background tasks run on the OpenAI flex tier and the Anthropic standard
-tier. The CLI and master CV import run on the standard tier.
+`worker` are free. `clearscout run`, `screen`, `batch`, `import`, and
+`tasks tailor` call models and are paid. `clearscout init --cv` is free for a
+canonical Markdown or text CV and paid for any other format. Background tasks run on the OpenAI flex tier and the Anthropic
+standard tier. The CLI and master CV import run on the standard tier.
 
 A paid task with no key set is accepted into the queue and fails when it runs.
 Evaluation and `clearscout run` need a key even when the response cache would
@@ -138,11 +151,11 @@ link when you want to inspect one particular role. Recognition does not guarante
 a permitted or complete read. Check the source's actual coverage and recovery
 action, and use individual-link or published-text intake where allowed.
 
-A CV is optional for discovery. For later evaluation, start with a canonical CV. The
-`clearscout template` command creates its structure; `clearscout template --help`
-shows the output argument. Fill it with your own evidence before importing it.
-Register boards, scan, and inspect listings. On a pending row, select
-**Track job (free)** to add it to Tracked postings without a model evaluation.
+A CV is optional for discovery. For later evaluation, start with a canonical CV. `clearscout template` writes the skeleton to `CV_Master.md` in the current
+directory; pass a path to write it elsewhere. Fill it with your own evidence
+before importing it. Register boards, scan, and inspect listings. On a pending
+row, select **Track job**. It is free, adds the job to **Jobs** without a model
+evaluation, and opens the job's page.
 The job will show **Not evaluated** and no model score. In the job overview,
 you can record your own priority, fit, and note to compare it with other jobs.
 On the Application history tab, record the status and the date it happened.
@@ -213,13 +226,13 @@ clearscout worker
 The worker leases queued work from the same database. Use the same
 `--data-root` for both commands if you override the default. One worker per
 database is supported, and a second one is refused. A task that remains queued
-usually means the worker is absent; the Tasks page records the durable state and
+usually means the worker is absent; the **Activity** page records the durable state and
 any bounded error.
 
 Inside that one worker, board continuations for boards on different hosts read
 at the same time, four at once by default. Two continuations for boards on the
 same host still take turns. Set `CLEARSCOUT_CONTINUATION_SLOTS` (1 to 8) before
-`clearscout start` or `just dev-start`, or pass `--continuation-slots` to
+`clearscout start`, or pass `--continuation-slots` to
 `clearscout worker`, to change that number. Ctrl-C on `clearscout worker` lets the
 running continuations finish first; a second Ctrl-C stops without waiting.
 
@@ -251,18 +264,19 @@ a place does not establish permission to work there. Board scans require at
 least one manually saved target title. Individual posting links remain usable
 without target titles, a CV, or a provider key.
 
-Provider access and CV import are optional links to their existing Settings
-and Master CV pages. No provider call is needed to create a workspace.
+Provider access and CV import are optional links to **Settings > Provider** and
+the **CV** page. No provider call is needed to create a workspace.
 
 The server never returns a provider key to the browser. The browser can send a
 new key once to the local API; later reads return only whether one is present,
 and the server keeps the value in the operating-system keyring.
 
-Settings owns provider access, search parameters, source policy, and
-guardrails. The page is organized into four top-level tabs: Workspace,
-Search, Drafting, and Activity & signals. Search itself splits into a
-Settings sub-tab (the default) and a Sources sub-tab. The Model spend report
-shows recorded calls and costs. A missing price is not a zero price, so totals
+Settings owns search parameters, provider access, drafting guardrails, and
+costs. Its tabs are **Search**, **Provider**, **Drafting**, **Costs**,
+**Notes & tags**, and **Advanced**; Advanced holds **Prompts**,
+**Diagnostics**, and **Posting refusals**. Boards and their reading conditions
+are managed under **Find jobs > Boards**. **Settings > Costs** holds the Model
+spend report, which shows recorded calls and costs. A missing price is not a zero price, so totals
 are withheld when any included call cannot be priced.
 
 ![Redacted live workspace: the model spend report grouped by stage and model](images/model-spend.png)
@@ -270,29 +284,9 @@ are withheld when any included call cannot be priced.
 The report preserves call-level usage as well as totals, so an operator can
 compare the local ledger with the provider account.
 
-## Read the learning-loop signals
-
-The Activity & signals tab shows three readings of whether the workspace's
-own history is improving future runs. It also links to the Model spend report,
-Tasks, and the API Playground. Each signal returns a numerator and a
-denominator. The panel shows a percentage when the denominator is non-zero and
-reads "no data yet" otherwise. A workspace with no history does not read as a
-bad number. Opening the tab reads durable rows on demand;
-these signals do not schedule work.
-
-The three signals are:
-
-- Rejected identities re-proposed. Share of open search-title, employer-kind,
-  and capability-cluster proposals whose identity you already rejected.
-- Master CV proposals accepted. Share of master-CV entry proposals the
-  workspace has accepted.
-- Top 10 pending matching missed requirements. Share of the top ten pending
-  discoveries whose title or location mentions a requirement the CV has left
-  unanswered.
-
 ## Add one posting before widening the search
 
-Open **Find jobs > Review found jobs > Add a posting**. Paste one direct public
+Open **Find jobs > Review > Add a posting**. Paste one direct public
 posting URL, or several with one link per line. The optional title and
 **Check posting** apply to one link at a time.
 
@@ -339,22 +333,26 @@ endpoint. Check the source's actual read result and coverage explanation. When
 a board cannot be read, add an individual posting link or its published text
 where intake permits it. Published reading policy still applies.
 
-Find jobs has four task tabs:
+Find jobs has three tabs:
 
-- Scan your boards reads all enabled sources, an explicit source selection,
-  or one source. Selected scans can include sources excluded from bulk scans;
-  selecting them does not enable them. Read history is filterable by source
-  and result. It shows retained dated source and query records; same-day rescans
-  can replace a record. Optional scheduling uses a saved scope.
-- Find new jobs runs a guided campaign that searches the web for new postings
+- **Boards** scans all enabled sources, an explicit source selection, or one
+  source. Selected scans can include sources excluded from bulk scans;
+  selecting them does not enable them. It manages your sources under
+  **Your boards**, sets an optional **Scan schedule** with a saved scope, and
+  keeps a **History** section with board scan history and screened-out
+  listings and titles. Read history is filterable by source and result. It
+  shows retained dated source and query records; same-day rescans can replace
+  a record.
+- **Review** is the pending queue. Add an individual posting link, inspect its
+  retained content, and track or dismiss it for free. Optional relevance review
+  is a separate paid action on an explicit selection. Choose **Screened out**
+  in the queue filter to see postings that conflict with your rules.
+- **Web search** runs a guided campaign that searches the web for new postings
   and employer boards. It also offers a separate search-vocabulary action. That
   action proposes search terms from cited CV evidence and fetches nothing. Each
   is its own paid task with its own approval and cost.
-- Review found jobs is the pending queue. Add an individual posting link, inspect
-  its retained content, and track or dismiss it for free. Optional relevance
-  review is a separate paid action on an explicit selection.
-- Screened out shows reads and postings the policy declined, and refusal patterns
-  that recur.
+
+**Settings > Advanced > Posting refusals** keeps the refusal history.
 
 A model may propose a source or lead. It does not override URL, robots,
 redirect, rate, or published-condition policy. A board scan sends no CV text or
@@ -377,7 +375,7 @@ Each row also carries Favorite and Keep controls.
 
 ![Redacted live workspace: two discovery rows with Favorite and Keep controls](images/pending-rows.png)
 
-Each row in Review found jobs keeps the source, published summary facts, and
+Each row in **Review** keeps the source, published summary facts, and
 screening findings beside the posting, so a row can be judged without opening its
 details. A finding can match, refuse, or remain unknown;
 missing or incomplete board facts stay unknown rather than being treated as a
@@ -459,9 +457,9 @@ means none was confirmed in the saved evidence.
 
 Filters apply to the whole queue before paging. Each filter's choice counts retain the other filters,
 each lane states its matching range and total, and the newer-rows banner uses
-the same filters. On the Screened out tab, a collapsed
-table counts each source's screened-out listings from its latest board scan,
-with a link to review them.
+the same filters. Under **Find jobs > Boards > History**, the collapsed
+**Screened out in latest scans** table counts each source's screened-out
+listings from its latest board scan, with a link to review them.
 
 The relevance filter uses plain-language states such as High relevance, Needs
 closer look, Low relevance, and Not yet reviewed, and those states order the
@@ -496,21 +494,23 @@ audit is always empty.
 Every step here is free. It reads boards under their published policy and
 calls no model.
 
-1. Save at least one target title under **Settings > Search > Settings**.
-2. Open **Settings > Search > Sources**. Under **Add a source**, paste the
+1. Save at least one target title under **Settings > Search** (Target titles).
+2. Open **Find jobs > Boards**. Under **Your boards > Add a board**, paste the
    **Board or careers address**. A posting link from the board also works as a
    starting point; [How to choose a link](#how-to-choose-a-link) shows the
    shapes.
 3. Choose **Validate** to preview what ClearScout can read there.
-4. Enter the employer name. Record any published **Condition on reading it**.
-   Then choose **Add source**.
+4. Enter the employer name. To record a published reading condition, open
+   **Advanced: reading condition** and fill **Condition on reading it**. Then
+   choose **Add source**.
 5. Switch on **Swept**. A source that states a condition shows it first and
    waits for you to accept it.
-6. Open **Find jobs > Scan your boards > Schedule free scans**. Choose daily
+6. Open **Find jobs > Boards**. Under **Scan schedule**, open
+   **Set up a scan schedule**. Choose daily
    or weekly, a local time, and a named time zone such as `Europe/London`.
 7. Keep the local worker running. Scheduled scans run only while it runs.
    After a shutdown, one catch-up scan runs on the next start.
-8. Review new postings under **Find jobs > Review found jobs**.
+8. Review new postings under **Find jobs > Review**.
 
 ```mermaid
 flowchart LR
@@ -520,14 +520,14 @@ flowchart LR
     C -- no --> E[Swept on]
     D --> E
     E --> F[Scheduled scan]
-    F --> G[Review found jobs]
+    F --> G[Review]
 ```
 
 The sections below give each step in full.
 
 ## Schedule free board scans
 
-Open **Find jobs > Scan your boards > Schedule free scans**. Each workspace
+Open **Find jobs > Boards** and find **Scan schedule**. Each workspace
 has one optional daily or weekly schedule. Choose a local time and named IANA
 time zone, such as `Europe/London`; weekly schedules also need a weekday.
 Save manually entered target titles before enabling a schedule.
@@ -546,32 +546,32 @@ missed run. A repeated local time runs at its first occurrence; a time skipped
 by a clock change shifts forward by the size of the gap.
 
 **Pause schedule** stops future scheduled scans. Active scans continue; cancel
-them separately in Tasks. Resuming does not catch up occurrences missed while
+them separately in **Activity**. Resuming does not catch up occurrences missed while
 paused. Check the saved calendar, next occurrence, and last task or error before
 leaving the page.
 
 ## Add a board manually
 
-Open **Settings > Search > Sources**. A source is a board or careers page,
-not one job's application form.
+Open **Find jobs > Boards**. A source is a board or careers page, not one
+job's application form.
 
-![The source address and kind fields under Add a source](images/source-setup.png)
+![The source address and kind fields under Add a board](images/source-setup.png)
 
-1. Under **Add a source**, paste its **Board or careers address**.
+1. Under **Your boards > Add a board**, paste its **Board or careers address**.
 2. Choose **Employer board** for one employer, or **Aggregator** for a site
    listing several employers.
 3. Choose **Validate**. ClearScout checks the address and reports what it can
    read. Changing the address or kind requires validation again.
-4. Enter a name under **Step 2: Name and terms evidence**. Record any published
-   reading condition and its address in **Condition on reading it** and
-   **Published at**. Leave these blank if you have not checked; blank does
+4. Enter a name under **Step 2: Name the board**. To record a published
+   reading condition, open **Advanced: reading condition** and fill
+   **Condition on reading it** and **Published at**. Leave these blank if you have not checked; blank does
    not mean permission was established.
 5. Choose **Add source**. Check its **Swept** control. If the source states a
    condition, read and confirm it before enabling the scan.
-6. Open **Find jobs > Scan your boards**. Scan all enabled sources, select a
+6. Open **Find jobs > Boards**. Scan all enabled sources, select a
    subset and choose **Scan selected sources**, or use one source's Scan
    control. Check the confirmed scope, result, and read history. New candidates
-   appear under **Review found jobs**.
+   appear under **Review**.
 
 Source setup and scanning call no model. Check both recognized platform and
 observed coverage: recognition alone does not promise a readable or complete
@@ -597,15 +597,16 @@ Guided search finds new addresses. It is useful when the registered boards do
 not cover your search, and it requires the OpenAI adapter's background-response
 support.
 
-1. Save your search parameters under **Settings > Search > Settings**.
-2. Open **Find jobs > Find new jobs** and inspect the campaign preview.
+1. Save your search parameters under **Settings > Search**.
+2. Open **Find jobs > Web search** and inspect the campaign preview.
 3. Read its planned scope and cost information. Confirm only the campaign you
    intend to run. Search-vocabulary suggestions are a separate paid action.
-4. Follow the durable task under **Background tasks**. Its report separates
+4. Follow the durable task under **Activity**. Its report separates
    proposed addresses, local reads, admitted candidates, and refusals.
-5. Review candidates under **Review found jobs**. A search hint is not a
+5. Review candidates under **Find jobs > Review**. A search hint is not a
    verified publisher fact or a full evaluation.
-6. Open **Settings > Search > Sources**. Read the newly registered boards and
+6. Open **Find jobs > Boards**. Read the newly registered boards under
+   **Your boards**, and
    any published conditions. Campaign-discovered boards begin disabled.
    Switch on **Swept** for those you want future free scans to read.
 
@@ -617,7 +618,7 @@ automatically.
 
 ## Read the evidence, not only the score
 
-Tracked postings show the stored verdict and its factors. Open one posting to
+The **Jobs** page shows the stored verdict and its factors. Open one posting to
 inspect the requirement text, source span, CV evidence, unresolved questions,
 and the policy version that produced the result.
 
@@ -657,8 +658,10 @@ enabled dispute re-extraction and the posting has an active extraction dispute,
 a paid Refresh with dispute re-extraction button appears beside it. When fit
 re-match is enabled and the posting has an active fit dispute, a separate paid
 Refresh with fit re-match button appears. Neither appears on an archived job.
-The independent opt-ins are under Settings > Activity & signals > Re-check
-disputed requirements.
+Turn on the opt-ins under **Settings > Advanced > Diagnostics**, in the
+Learning-loop signals panel's **Re-check disputed requirements** section:
+**Enable dispute re-extraction** and **Enable fit re-match**, then
+**Save dispute settings**. Both are off by default.
 
 Each paid action opens the standard spend-confirmation dialog. Re-extraction
 runs one extraction call against the newly fetched body and reverses only when
@@ -691,19 +694,20 @@ no cost dialog. With no key set, the save fails validation instead.
 Open the seeded workspace from the README. This walkthrough reads existing
 records and requires no provider account.
 
-1. Open **Tracked postings** and the Kestrel Freight Systems posting. Its
+1. Open **Jobs** and the Kestrel Freight Systems posting. Its
    overall score is 88, but the evidence view retains unsupported requirements.
 2. Read a requirement beside its CV evidence. For an unsupported requirement,
    check the posting text rather than treating the score as an answer.
-3. Open **Tailored documents**, choose **Open job files**, and inspect the
-   stored resume draft.
+3. Open **Apply > Documents**, choose **Open job files**, and inspect the
+   stored resume draft on the job's **Tailor > Files** tab.
    Follow its cited CV identifiers. Check qualifications, ownership, and numbers
    against the source. Citation checks cannot judge every meaning.
-4. Open **Approval review** and inspect the recorded line-review decisions.
+4. On the same Files view, open the draft and read its **Approval review**
+   section for the recorded line-review decisions.
    The demo retains the original
    draft as well as accept, replace, and reject decisions. Downloading that
    draft does not apply those decisions or make it an approved final resume.
-5. Open **Applications** and inspect the retained corrections and reversals.
+5. Open **Apply > Applications** and inspect the retained corrections and reversals.
    A status change appends history instead of erasing the earlier event.
 
 The demo contains prewritten results. It shows review and record keeping, not
@@ -866,9 +870,30 @@ retention](privacy-and-retention.md) before using a real CV.
 
 `clearscout doctor` checks configuration, the master CV, credentials, and durable
 storage without running a model. `clearscout db status` reports whether the
-database matches the installed build. Database creation, upgrade, import,
-backup, and downgrade are explicit commands because startup must not mutate
-durable state.
+database matches the installed build. Database upgrade (which also creates a
+new database), import, backup, cache archiving, and downgrade are explicit
+`clearscout db` commands because startup must not mutate durable state.
+
+## Read the learning-loop signals in Diagnostics
+
+The Learning-loop signals panel under **Settings > Advanced > Diagnostics**
+shows three readings of whether the workspace's own history is improving future
+runs. The same section shows service health, links to **Activity** and the
+**Data browser**, and holds the API playground. Each signal returns a numerator
+and a denominator. The panel shows a percentage when the denominator is
+non-zero and reads "no data yet" otherwise. A workspace with no history does
+not read as a bad number. Opening the panel reads durable rows on demand; these
+signals do not schedule work.
+
+The three signals are:
+
+- Rejected identities re-proposed. Share of open search-title, employer-kind,
+  and capability-cluster proposals whose identity you already rejected.
+- Master CV proposals accepted. Share of master-CV entry proposals the
+  workspace has accepted.
+- Top 10 pending matching missed requirements. Share of the top ten pending
+  discoveries whose title or location mentions a requirement the CV has left
+  unanswered.
 
 If the CLI exits with an error, read the printed message before retrying. Help
 and successful commands return zero; command, configuration, policy, and

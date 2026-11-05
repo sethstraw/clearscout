@@ -1,6 +1,6 @@
 # What live validation found
 
-ClearScout calls paid models at five stages: requirement extraction (jobspec), evidence matching (match), relevance review, drafting, and critique. Between August and November 2026 the maintainer ran about 170 dated paid runs against those stages and kept a private ledger of each. This file publishes what those runs taught, because a claim like "the model never cites evidence it was not given" is only worth what the evidence behind it is worth.
+ClearScout calls paid models at eleven stages, from CV import to posting recovery. The runs here concentrate on five of them: requirement extraction (jobspec), evidence matching (match), relevance review, drafting of resumes and cover letters, and critique. Between August and November 2026 the maintainer ran about 170 dated paid runs against those stages and kept a private ledger of each. This file publishes what those runs taught, because a claim like "the model never cites evidence it was not given" is only worth what the evidence behind it is worth.
 
 Read these as defect discovery on small samples, not as accuracy claims. Most runs cover 4 to 19 synthetic cases or a handful of real postings, with 1 to 5 draws each. A number here says a behavior happened at least that often under one prompt and one model. It does not carry to real postings in general. [inspect/METHODOLOGY.md](inspect/METHODOLOGY.md) explains what each eval family measures and what it cannot. [RESULTS.md](RESULTS.md) holds the tables; this file is the narrative.
 
@@ -64,7 +64,7 @@ The relevance stage taught the subtler lesson. Under explicit caching the respon
 - Round 3 told the model to decide before summarizing. Unlikely draws rose from 5 to 8 of 27. The response schema puts the summary first on purpose (`tests/durability/test_reasoning_before_label.py`), and wording that fights the schema order loses.
 - Round 4 gained one trial on its target and lost one gold trial. Blocked.
 - Round 5 cut the target failure from 24 to 11 of 39 trials and moved six controls. Not landed: wording could not enforce the class.
-- Rules (a) to (d), 2026-11-01: private 36 to 38 of 45, gold unchanged, absent verdicts with no cited id 14 to 0. Landed, with one target recorded as a limit.
+- Rules (a) to (d), 2026-11-01, a four-rule change to the relevance prompt: 36 to 38 of 45 on the real-workspace labels, unchanged on the synthetic gold set, and `absent` verdicts that cited no CV id fell from 14 to 0. Landed, with one target recorded as a limit.
 
 **Jobspec example cues.** On 2026-09-27, three real postings re-read under a rule that keeps "such as" lists with their items. Requirements that lost their cue fell from 15 to 4, all four legitimate trailing splits. The fix exposed a match-stage reading that calls listed examples unshown.
 
@@ -78,16 +78,16 @@ One limit came out of the review. Round 1 never reproduced the duty-sentence spa
 
 The cases became a permanent eval of eight synthetic postings. Its first run (81 calls, USD 0.5537) scored the old prompt 40 of 40 and the shipped prompt 39 of 40, one missed draw on the generic ML platform. Neither misfired on its domain-tied cases. That is the variance lesson again: a defect seen 3 of 5 times on one live posting did not appear on new synthetic postings, so the set is a regression guard, not proof of the fix.
 
-**Critic.** The 2026-09-22 reseal failed on content preservation. All six draws reported no unsupported claim, and every below-floor draw named a line the program copies verbatim from the CV, not model text. The fix declared those lines and stopped a single minority draw from forcing a rejection. On 2026-09-23 three clean fixtures drew doubts on all three draws. Reading the synthetic CV showed the fixtures were wrong, not the critic.
+**Critic.** The 2026-09-22 reseal (re-recording the replay cassettes) failed on content preservation. All six draws reported no unsupported claim, and every below-floor draw named a line the program copies verbatim from the CV, not model text. The fix declared those lines and stopped a single minority draw from forcing a rejection. On 2026-09-23 three clean fixtures drew doubts on all three draws. Reading the synthetic CV showed the fixtures were wrong, not the critic.
 
 ## Variance and measurement
 
 - One document, 18 critic trials (2026-09-20 and 09-21): 7 fails, 11 passes, all on a genuine unsupported claim. That is a 61.1 per cent miss rate, with a Wilson 95 per cent interval on the catch rate of 0.20 to 0.61. Each draw either saw the distortion or did not; none wavered at the floor.
 - One match case read DIRECT on 2, 0, 0, and 2 of 3 trials across four runs of an unchanged prompt. A fix that "moves" it in one run moved nothing.
-- The boundary defect was 3 of 5 on one posting. One draw or a cached replay cannot see a 3-in-5 effect, so the lane used five draws per case. Even five draws did not reproduce the original span on the live posting.
+- The boundary defect was 3 of 5 on one posting. One draw or a cached replay cannot see a 3-in-5 effect, so the fix rounds used five draws per case. Even five draws did not reproduce the original span on the live posting.
 - Labels come from two blind reviewers and an adjudicator, frozen before a run. A relabel gets a new manifest digest, and rows compare only at the same digest. Rulings are calibration data, not gold.
 - A wrong score is not always a wrong answer. On 2026-09-20 two relevance misses were the scorer reading a field the product deliberately empties. It was fixed from the stored logs, with no rerun bought.
-- `scripts/eval.sh run` replays recorded answers and measures ledger consistency only. Only `--live` tests a prompt. The cassette replay in `tests/delivery/test_recorded.py` runs the real SDK against a recording. Any change to a prompt, schema, or schema docstring changes the request and invalidates it. Reseals on 2026-09-18, 09-22, and 11-02 cost USD 0.12 to 0.31 each.
+- `scripts/eval.sh run` runs a scripted task against a canned provider, or the match replay task against a stored calibration snapshot. Neither tests a prompt; only `--live` does. The cassette replay in `tests/delivery/test_recorded.py` runs the real SDK against a recording. Any change to a prompt, schema, or schema docstring changes the request and invalidates it. Reseals on 2026-09-18, 09-22, and 11-02 cost USD 0.12 to 0.31 each.
 
 ## Structured outputs
 

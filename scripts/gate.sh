@@ -180,7 +180,7 @@ run_web() {
 run_generated() {
   local dir
   dir="$(tmpdir)"
-  step "licence inventory drift" check_license_inventory "$dir"
+  step "license inventory drift" check_license_inventory "$dir"
   step "openapi drift" check_openapi "$dir"
   step "gazetteer index drift" check_gazetteer "$dir"
   step "typescript contract drift" check_typescript_contract "$dir"
@@ -275,7 +275,7 @@ run_security() {
     --disable-pip \
     --progress-spinner=off
   step "web dependency audit" uv_locked python scripts/audit_npm_security.py
-  step "licence inventory" check_license_inventory "$(tmpdir)"
+  step "license inventory" check_license_inventory "$(tmpdir)"
 }
 
 run_package() {

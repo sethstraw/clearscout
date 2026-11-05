@@ -9,7 +9,7 @@ and what it is not.
 The harness is a small in-repo runner with no third-party evaluation framework.
 
 Five families are measured: `match`, `relevance_review`, `draft`, `cover`, and
-`critic`. Each has a live task that spends; all but `relevance_review` also have
+`critic`, plus the jobspec boundary task described below. Each has a live task that spends; all but `relevance_review` also have
 a scripted task that runs offline in the suite. `tasks/` is the list.
 
 `runner.py` loads a task module from `tasks/`, iterates its dataset, and writes a
@@ -66,6 +66,13 @@ the labels in `evals/golden/relevance_review.jsonl`.
   Completed paid rows are fsynced to a mode-0600 `.partial.jsonl` sidecar. They
   are promoted to the final log only when the run completes. A stopping-limit
   refusal keeps its receipt.
+
+A live run needs a provider API key in the environment variable ClearScout
+reads, or stored with `clearscout auth set`; there is no key flag. `--data-root`
+names the workspace whose recorded calls price the estimate and whose master CV
+`--cv-version` reads. For `relevance_review`, `--render-only <private-dir>`
+writes every batch a run would send and calls no provider. The usage block of
+`scripts/eval.sh` lists the rest.
 
 ## The document families
 

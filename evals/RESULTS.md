@@ -199,8 +199,10 @@ launch-alignment case `weak` on all three, and the held-out scale case `weak`
 on two.
 
 Manifest `c5bd1b5b` is the 2026-09-25 labeling round, 19 development cases.
-Sealed under the ClearScout hash domains, the same round is manifest
-`8cfe9e02`. The selection order changed, and one development case changed
+Each digest is computed over a fixed domain string plus the content. When those
+strings were renamed for ClearScout, the same round re-sealed as manifest
+`8cfe9e02`, the one tracked in `golden/receipts/`. The selection order moved
+with the selection-key domain, and one development case changed
 with it. A TAILORING_ONLY production-readiness case that passed strength on
 every run left. A TRANSFERABLE event-ingestion case that missed strength on
 two runs entered. No row above scores `8cfe9e02`, and its first strength count
@@ -368,13 +370,13 @@ where the entry recorded it.
 | 2026-10-15 | jobspec+match | gpt-6.1-sol / low, medium / flex | -                  | 5 postings, 10 calls | boundary fired on 2 expected rows, 0 false positives; 2 rows failed after spend                  | 0.2566 |
 | 2026-10-19 | jobspec       | gpt-6.1-sol / low / flex         | c1a6ab5d, a525041f | 5 branch, 2 control  | degree-ladder rule held; a boundary appeared on one posting in both branch draws                 | 0.1343 |
 | 2026-11-02 | jobspec       | gpt-6.1-sol / low / flex         | -                  | 1 posting x 3        | 1 of 3 set the boundary; 3 of 5 with the 2026-10-19 branch draws on the same prompt              | 0.0754 |
-| 2026-11-02 | jobspec       | gpt-6.1-sol / low / flex         | 6c79be29, b0f44f4e | 5 cases x 2 arms x 5 | see the fix lane below                                                                           | 0.8712 |
-| 2026-11-02 | jobspec       | gpt-6.1-sol / low / flex         | -                  | 6 cases x 2 arms x 5 | round 2 of the fix lane, below                                                                   | 0.9312 |
-| 2026-11-02 | cassette      | shipped settings                 | shipped prompt     | 4 calls              | reseal over the synthetic fixtures; 15 recorded-replay tests pass                                | 0.1459 |
+| 2026-11-02 | jobspec       | gpt-6.1-sol / low / flex         | 6c79be29, b0f44f4e | 5 cases x 2 arms x 5 | see the boundary fix below                                                                       | 0.8712 |
+| 2026-11-02 | jobspec       | gpt-6.1-sol / low / flex         | -                  | 6 cases x 2 arms x 5 | round 2 of the boundary fix, below                                                               | 0.9312 |
+| 2026-11-02 | cassette      | shipped settings                 | shipped prompt     | 4 calls              | reseal (re-recorded cassettes) over the synthetic fixtures; 15 recorded-replay tests pass        | 0.1459 |
 | 2026-11-02 | cassette      | shipped settings                 | amended prompt     | 3 calls              | reseal after the boundary fix; 15 recorded-replay tests pass                                     | 0.1230 |
 | 2026-11-02 | jobspec       | gpt-6.1-sol / low / flex         | 6c79be29, aa8a97be | 8 cases x 2 arms x 5 | first run of the permanent boundary eval, below                                                  | 0.5537 |
 
-The 2026-11-02 fix lane compared the shipped jobspec prompt (`6c79be29`) with
+The 2026-11-02 boundary fix compared the shipped jobspec prompt (`6c79be29`) with
 a candidate that rewrites rules 9 and 10 (`b0f44f4e`). The pass rule was fixed
 before the run. Boundary hits per five draws, baseline then candidate:
 
@@ -402,14 +404,14 @@ positives 5 of 5, and a new synthetic Software Engineer, Payments 5 of 5. An
 offline check of the archetype fallback on 110 recorded occupation texts found
 0 hits. The amended wording is the shipped prompt.
 
-The lane's cases became a permanent eval,
+The fix's cases became a permanent eval,
 [`jobspec_boundary_live_task.py`](inspect/tasks/jobspec_boundary_live_task.py):
 eight synthetic postings against four synthetic boundaries, scored as false
 positive, false negative, or wrong boundary. Its first run compared the old
 prompt with the shipped one over five draws per case. The old prompt answered
 40 of 40 correctly and the shipped prompt 39 of 40; the miss was one draw on
 the generic ML platform case that named no boundary, which fired 5 of 5 in both
-lane rounds. Neither prompt misfired on these synthetic domain-tied cases, so
+fix rounds. Neither prompt misfired on these synthetic domain-tied cases, so
 this set guards against regressions and cannot show the fix's gain. 81 calls,
 USD 0.5537. A first launch stopped at call 71 on a case production refuses
 before any boundary is read; that case was replaced.

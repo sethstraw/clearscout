@@ -149,7 +149,8 @@ secrets out.
 ## Prompt evaluation
 
 Prompt changes run through `scripts/eval.sh`. Its usage block lists the modes,
-and `evals/README.md` says what each one measures. Only `--live` tests prompt
+`evals/inspect/README.md` shows how to run each one, and
+`evals/inspect/METHODOLOGY.md` says what each one measures. Only `--live` tests prompt
 quality. It spends money and needs the maintainer's approval for each run and
 its stated scope; cost estimates are advisory and never stop the run. Read
 `evals/inspect/METHODOLOGY.md` before writing a scoring dataset: rulings are

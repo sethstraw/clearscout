@@ -29,27 +29,33 @@ If you changed the API, run `scripts/generate.sh`. It exports the schema to
 regenerates both into temporary storage and compares them, so a stale client
 fails without rewriting tracked files.
 
-To use it locally, migrate a private database explicitly, run `clearscout serve`,
-and run `clearscout worker` in a second process if you want background work to
-happen. FastAPI serves the production build in `web/dist`. That directory is
-ignored: contributors build it with Node, while release CI puts it into both the
-wheel and source distribution. Vite's dev server is for contributors and
-nothing else.
+To use it locally, run `clearscout db upgrade` against a private data root,
+then `clearscout start` (API and worker together), or `clearscout serve` plus
+`clearscout worker` in a second terminal. FastAPI serves the production build
+in `web/dist`, so run `npm --prefix web run build` first. For live reload, run
+`npm --prefix web run dev` (or `just dev-start` for API, worker, and SPA
+together): Vite serves on port 5173 and proxies `/api` and `/admin` to the API
+on port 8765. `web/dist` is ignored; release CI puts it into both the wheel and
+source distribution.
 
 ## The API playground
 
-`/api-playground` reads `/api/v1/openapi.json` at runtime. Do not add a second
+The API playground (`web/src/features/api-playground/`, shown under Settings >
+Advanced > Diagnostics) reads `/api/v1/openapi.json` at runtime. Do not add a second
 registry of operations or hand-written request examples. It derives parameters
 and JSON samples from the generated schema, makes you acknowledge anything that
 is not a GET, and deliberately hands SSE and binary requests off to the task and
 file interfaces, which have the extra safety behavior those need.
-`/api/v1/docs` redirects here rather than loading Swagger UI's assets from a CDN.
+`/api/v1/docs` opens the playground when the built SPA is served, and the raw
+OpenAPI document otherwise, rather than loading Swagger UI's assets from a CDN.
+The `/api-playground` address redirects to the same place.
 
 ## Where things belong
 
-`web/src/pages/` holds route composition only, one thin module per route in
-`App.tsx`. `web/src/features/<domain>/` owns what that domain needs: its route
-implementation, components, models, hooks, tests, and feature CSS.
+`web/src/pages/` holds route composition only: one thin module per route in
+`App.tsx`, plus the tab modules a route page composes, such as the Apply page's
+Applications and Documents tabs. `web/src/features/<domain>/` owns what that
+domain needs: its route implementation, components, models, hooks, tests, and feature CSS.
 `web/src/components/` and `web/src/hooks/` are for what more than one domain
 uses, so a component with a single consumer belongs to that consumer's feature
 rather than here. Generated transport, providers, truly shared styles, and test

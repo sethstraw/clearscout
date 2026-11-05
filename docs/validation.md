@@ -50,7 +50,9 @@ word such as "supported." The public gate does not stand in for live evidence.
 
 The critic puts the same question `critic_trials` times on one draft, once by
 default. It fails the draft on any unsupported claim any trial named. The
-critic stage bills that many calls for each draft attempt.
+critic stage bills that many calls for each draft attempt it reads. An attempt
+that fails the deterministic checks is not sent to the critic, and neither is a
+first attempt with strong coverage and directly cited evidence.
 
 The critic names, for each claim it doubts, the boundary that claim crosses,
 from the closed set in `ClaimBoundary`. The response schema enforces the set, so
@@ -97,30 +99,19 @@ including ADP and SAP SuccessFactors. These are bounded observations of specific
 sources. They do not establish coverage across a vendor's tenants or later
 publisher changes. The application reports each source's actual read outcome.
 
-Classic iCIMS boards on a `<label>-<tenant>.icims.com` host are enumerated from
-the site's sitemap, so a posting the sitemap does not list is not discovered.
-UKG full-board coverage is unavailable where reading policy refuses the listing
-route. A readable individual posting does not establish permission to read that
-list. Darwinbox public career lists are read from `candidatev2` `allJobs` and
-`home` URLs through the public search. Njoyn challenge pages and other
-challenge-protected pages are unreadable. Some corporate and
-Humi-hosted pages remain unrecognized; vendor attribution alone does not
-establish board coverage. Individual intake of postings from those observed
-pages has not been verified. Use an individual posting link or current published
-text where intake permits it.
+| Platform                                             | How it is read                                                                                                                                                                                        | Known gap                                                                                                                                               |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Classic iCIMS on a `<label>-<tenant>.icims.com` host | Enumerated from the site's sitemap                                                                                                                                                                    | A posting the sitemap does not list is not discovered                                                                                                   |
+| UKG                                                  | Listing read where reading policy allows it                                                                                                                                                           | No full-board coverage where policy refuses the listing route; a readable individual posting does not grant permission to read the list                 |
+| Darwinbox                                            | Public career lists read from `candidatev2` `allJobs` and `home` URLs through the public search                                                                                                       |                                                                                                                                                         |
+| Njoyn and other challenge-protected pages            | Not read                                                                                                                                                                                              | Unreadable                                                                                                                                              |
+| Humi-hosted and some corporate pages                 | Not recognized                                                                                                                                                                                        | Vendor attribution alone does not establish board coverage                                                                                              |
+| JazzHR                                               | Structured posting data first, then the rendered description when that data is absent; missing or ambiguous required elements fail the read, and unknown company and location stay unknown            | The board reader enumerates links in the fetched page, not pagination or lazy-loaded rows; checked only by a bounded offline replay, not across tenants |
+| ADP and Oracle                                       | Employer from structured publisher fields or a bounded leading Company paragraph (ADP), or the published LegalEmployer (Oracle); when absent, the registered source identity with separate provenance | Otherwise the recruiting tenant stays labelled as company not stated; a registered source name is not a publisher-stated company                        |
 
-JazzHR uses structured posting data first, with a rendered-description fallback
-when that data is absent. Missing or ambiguous required elements fail the read;
-unknown company and location remain unknown. A bounded offline replay checked
-board and detail responses; it does not establish behavior across tenants.
-The board reader enumerates links in the fetched page; that does not establish
-coverage of pagination or lazy-loaded rows.
-
-ADP reads explicit employer evidence from structured publisher fields and a
-bounded leading Company paragraph. Oracle uses the published LegalEmployer.
-When absent, discovery can use the registered source identity with separate
-provenance. Otherwise the recruiting tenant stays labelled as company not
-stated. A registered source name is not a publisher-stated company.
+Individual intake of postings from the observed unrecognized pages has not been
+verified. Use an individual posting link or current published text where intake
+permits it.
 
 ## Known limits in 0.1.0
 
@@ -130,7 +121,7 @@ line yourself before you send it.
 
 - Fit measures whether the CV answers a posting, not whether you want the work.
   A qualified but unwanted role, one answered only weakly on its core
-  must-haves, or one paid above your band can still reach `apply_now`.
+  must-haves, or one paid above your band can still reach Apply now.
   Seniority or role-type exclusions written as long sentences may not cap the
   decision.
 - Requirement extraction can split alternative degree paths into separate
@@ -170,8 +161,9 @@ The deterministic reader's vocabulary is English, and it reads US and Canadian
 postings best. A posting in another language mostly reads as not stated.
 
 The page budget is an estimate from the line model in
-`application/tailoring/layout.py`, measured against pressume's traditional
-theme at balanced density on US Letter. Selection buys more than the page holds,
+`application/tailoring/layout.py`, measured against the traditional theme of
+pressume, the separate project that can render approved Markdown, at balanced
+density on US Letter. Selection buys more than the page holds,
 and the drafted Markdown is estimated with the same model and trimmed in drop
 order until it fits. A trim never removes the last printed answer to a
 must-have, an entry a prose line cites, or a role's last bullets. When only

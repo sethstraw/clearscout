@@ -130,8 +130,8 @@ A draft is risky in three cases: it is a rewrite, its keyword coverage is below
 `critic_coverage_floor`, or the share of answered requirements resting on
 transferable or stated evidence, or on tailoring-only evidence worded as taking
 part in the work (`PARTICIPATION` in `stages/context.py`), is above
-`critic_transferable_ceiling`. A critic on every passing attempt costs about a
-quarter of an application and runs most often on the drafts with least to find. Both thresholds are settings, because
+`critic_transferable_ceiling`. A critic on every passing attempt would run most
+often on the drafts with least to find. Both thresholds are settings, because
 where they fall is a quality judgment measurement is expected to move. A draft
 that passes without a critic is reported as unreviewed, not as approved.
 
@@ -199,8 +199,9 @@ modules each of the three may import, and no others.
   fetching.
 - `delivery/` owns typed HTTP routers and CLI commands.
 - `bootstrap/` composes the FastAPI app, Typer app, worker, and setup flow.
-- `shared/` contains only framework-neutral costs, errors, base models, result
-  primitives, and text normalization.
+- `shared/` contains only framework-neutral costs, errors, base models,
+  plain-text layout, figure and quantity reading, result primitives, and text
+  normalization.
 
 Import Linter holds these directions. It also keeps deterministic tailoring
 stages from reaching services, persistence, or delivery. Inside the larger
@@ -1240,7 +1241,7 @@ route: `clearscout discover`, described next. It is the one place the program
 itself creates a new claim. Every other CV version holds text a person
 imported or edited.
 
-## Discovery is the one place a claim can be created
+## Elicitation (`clearscout discover`) is the one place a claim can be created
 
 Everything above narrows what may be said. `application/tailoring/elicit/` is
 the exception. It adds a sentence to the file every other stage treats as true.
