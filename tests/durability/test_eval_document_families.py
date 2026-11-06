@@ -371,8 +371,9 @@ def test_a_boundary_the_case_accepts_catches_its_planted_line() -> None:
         ),
         (
             "boundary_designed_as_shipped",
-            "absent_from_record",
-            "“rolled it out to every producer team” is not in the record.",
+            "planned_not_shipped",
+            "The registry entry says it was designed; “rolled it out to every producer team”"
+            " says it took effect.",
         ),
         (
             "planted_letter_blanket_fit",
