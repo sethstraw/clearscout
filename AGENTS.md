@@ -50,8 +50,10 @@ live provider, and spending money each wait for the maintainer to ask.
 Use focused checks while developing. The public verification interface is:
 
 ```bash
-scripts/gate.sh [fast|change|related|py|web|generated|security|package|workflows|push|all]
+scripts/gate.sh <scope>
 ```
+
+The usage line at the top of `scripts/gate.sh` lists the scopes.
 
 `scripts/generate.sh` is the explicit mutating command for generated artifacts.
 The gate verifies generated artifacts from temporary outputs and should not
