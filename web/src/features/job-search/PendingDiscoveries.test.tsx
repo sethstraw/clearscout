@@ -3130,20 +3130,27 @@ describe("PendingDiscoveries", () => {
     );
   });
 
-  it("returns focus to the queue when a row's confirmed dismissal removes it", async () => {
+  // Confirms a row dismissal, holds the apply open, and drops focus to the body while
+  // the Preview button is disabled; the returned call lets the apply finish.
+  async function confirmDismissalWhileFocusDrops({ rowLeaves }: { rowLeaves: boolean }) {
     const dismissed = new Set<string>();
+    let releaseApply = () => {};
+    const applyHeld = new Promise<void>((resolve) => {
+      releaseApply = resolve;
+    });
     server.use(
       ...dispositionHandlers({
         onApply: async (request) => {
           const body = (await request.json()) as { pending_discovery_ids?: string[] };
           for (const id of body.pending_discovery_ids ?? []) dismissed.add(id);
+          await applyHeld;
         },
       }),
     );
     installRows([], {
       page: () =>
         [queueRow("plain-1", "Plain role", 1), queueRow("plain-2", "Other role", 2)].filter(
-          (candidate) => !dismissed.has(candidate.id),
+          (candidate) => !rowLeaves || !dismissed.has(candidate.id),
         ),
       masterCvVersions: CURRENT_MASTER_CV_VERSIONS,
     });
@@ -3161,7 +3168,7 @@ describe("PendingDiscoveries", () => {
     fireEvent.change(screen.getByLabelText("Dismissal reason"), {
       target: { value: "invalid_page" },
     });
-    const preview = screen.getByRole("button", { name: "Preview dismissal" });
+    const preview = screen.getByRole<HTMLButtonElement>("button", { name: "Preview dismissal" });
     preview.focus();
     fireEvent.click(preview);
     fireEvent.click(
@@ -3171,9 +3178,33 @@ describe("PendingDiscoveries", () => {
     );
 
     await waitFor(() => expect([...dismissed]).toEqual(["plain-1"]));
+    await waitFor(() => expect(preview.disabled).toBe(true));
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
+    expect(document.activeElement).toBe(document.body);
+    return { plainRow, releaseApply };
+  }
+
+  it("returns focus to the queue when a row's confirmed dismissal removes it", async () => {
+    const { releaseApply } = await confirmDismissalWhileFocusDrops({ rowLeaves: true });
+
+    releaseApply();
     await waitFor(() => expect(screen.queryByText("Plain role")).toBeNull());
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole("group", { name: /keyboard triage/i })),
+    );
+  });
+
+  it("returns focus to the row's Dismiss button when its confirmed dismissal keeps it", async () => {
+    const { plainRow, releaseApply } = await confirmDismissalWhileFocusDrops({ rowLeaves: false });
+
+    releaseApply();
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Preview dismissal" })).toBeNull(),
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(plainRow).getByRole("button", { name: "Dismiss from pending" }),
+      ),
     );
   });
 

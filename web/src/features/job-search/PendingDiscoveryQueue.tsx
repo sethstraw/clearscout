@@ -24,6 +24,7 @@ import { FREE_MODE_REASON } from "../../components/freeMode";
 import { PaidAction } from "../../components/PaidAction";
 import { EvaluationCostDetails } from "../../components/EvaluationCostDetails";
 import { EmptyState, ErrorState } from "../../components/States";
+import { focusIsParked, returnFocus } from "../../providers/focusReturn";
 import { DiscoveryDispositionManager, DismissSelection } from "./DiscoveryDispositions";
 import { useDispositionAction } from "./useDispositionAction";
 import { usePendingQueueKeyboard } from "./usePendingQueueKeyboard";
@@ -239,6 +240,7 @@ export function PendingDiscoveryQueue({
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const rowCheckboxes = useRef(new Map<string, HTMLInputElement>());
   const rowDismissButtons = useRef(new Map<string, HTMLButtonElement>());
+  const dismissalFocusId = useRef<string | null>(null);
 
   const evaluationInFlight = (id: string) =>
     queued.has(id) || taskIsInFlight(evaluationTasks.get(id));
@@ -315,7 +317,7 @@ export function PendingDiscoveryQueue({
   const closeDismissal = useCallback((id: string) => {
     setDismissalRowId(null);
     setDismissalPendingId(null);
-    rowDismissButtons.current.get(id)?.focus();
+    dismissalFocusId.current = id;
   }, []);
   const changeDismissalPending = useCallback((id: string, pending: boolean) => {
     setDismissalPendingId(pending ? id : null);
@@ -559,6 +561,18 @@ export function PendingDiscoveryQueue({
       if (item) void reviewOne(item);
     },
     onUndo: () => void undoDismiss(),
+  });
+  const { containerRef } = keyboard;
+  // The row's Dismiss button stays disabled until the cleared pending state commits.
+  useEffect(() => {
+    const id = dismissalFocusId.current;
+    if (id === null) return;
+    dismissalFocusId.current = null;
+    const from = {
+      origin: rowDismissButtons.current.get(id) ?? null,
+      landing: containerRef.current,
+    };
+    if (focusIsParked(from)) returnFocus(from);
   });
 
   const selectableVisibleIds = ordered

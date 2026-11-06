@@ -114,6 +114,7 @@ export function usePendingQueueKeyboard({
   return {
     // -1 while the container is not focused, so no row carries the cursor at rest.
     activeIndex: engaged ? Math.min(focusedIndex, last) : -1,
+    containerRef,
     containerProps: {
       ref: containerRef,
       onKeyDown,
