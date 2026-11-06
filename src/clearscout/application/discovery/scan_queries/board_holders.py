@@ -96,10 +96,18 @@ def _tracked_records(
 
 
 def _staged_records(
-    session: Session, workspace_id: str, source_ids: list[str], pending_id: str
+    session: Session,
+    workspace_id: str,
+    source_ids: list[str],
+    pending_id: str,
+    *,
+    count_dismissed: bool,
 ) -> list[BoardRecord]:
-    """Return the board's withdrawn rows, and its undismissed rows that hold usable evidence."""
-    rows: Sequence[tuple[PendingDiscovery, PendingPostingContent | None]] = session.execute(
+    """Return the board's withdrawn rows, and its rows that hold usable evidence.
+
+    A dismissed row counts only when ``count_dismissed`` is set.
+    """
+    statement = (
         select(PendingDiscovery, PendingPostingContent)
         .outerjoin(
             PendingPostingContent,
@@ -110,8 +118,14 @@ def _staged_records(
             PendingDiscovery.source_id.in_(source_ids),
             PendingDiscovery.id != pending_id,
             PendingDiscovery.archived_at.is_(None),
-            PendingDiscovery.id.not_in(dismissed_pending_discovery_ids(workspace_id)),
         )
+    )
+    if not count_dismissed:
+        statement = statement.where(
+            PendingDiscovery.id.not_in(dismissed_pending_discovery_ids(workspace_id))
+        )
+    rows: Sequence[tuple[PendingDiscovery, PendingPostingContent | None]] = session.execute(
+        statement
     ).all()
     return [
         BoardRecord(
@@ -128,12 +142,35 @@ def _staged_records(
     ]
 
 
+def registered_employer_boards(
+    session: Session, workspace_id: str, employer: str
+) -> dict[str, str]:
+    """Return the employer's enabled job boards in this workspace, mapping source id to URL."""
+    normalized = normalize_text(employer)
+    if not normalized:
+        return {}
+    return dict(
+        session.execute(
+            select(Source.id, Source.url)
+            .join(Employer, Employer.id == Source.employer_id)
+            .where(
+                Source.workspace_id == workspace_id,
+                Source.enabled.is_(True),
+                Source.archived_at.is_(None),
+                Source.source_type == SourceKind.EMPLOYER_BOARD.value,
+                Employer.normalized_name == normalized,
+            )
+        ).all()
+    )
+
+
 def registered_board_holder(
-    session: Session, workspace_id: str, pending_id: str
+    session: Session, workspace_id: str, pending_id: str, *, count_dismissed: bool = False
 ) -> BoardHolder | None:
     """Find an unready row's role among what its employer's enabled boards already supplied.
 
-    Reads only stored records, never the network.
+    Reads only stored records, never the network. ``count_dismissed`` lets a dismissed
+    board row hold the role.
     """
     pending = session.get(PendingDiscovery, pending_id)
     if pending is None or pending.workspace_id != workspace_id:
@@ -145,21 +182,8 @@ def registered_board_holder(
     )
     if current is not None and usable_current_evidence(pending, current):
         return None
-    employer = normalize_text(pending.employer)
-    boards = dict(
-        session.execute(
-            select(Source.id, Source.url)
-            .join(Employer, Employer.id == Source.employer_id)
-            .where(
-                Source.workspace_id == workspace_id,
-                Source.enabled.is_(True),
-                Source.archived_at.is_(None),
-                Source.source_type == SourceKind.EMPLOYER_BOARD.value,
-                Employer.normalized_name == employer,
-            )
-        ).all()
-    )
-    if not employer or not boards:
+    boards = registered_employer_boards(session, workspace_id, pending.employer)
+    if not boards:
         return None
     return board_holder(
         pending.title,
@@ -167,6 +191,8 @@ def registered_board_holder(
         _requisition_keys(pending.employer, pending.requisition_id),
         [
             *_tracked_records(session, workspace_id, boards),
-            *_staged_records(session, workspace_id, list(boards), pending.id),
+            *_staged_records(
+                session, workspace_id, list(boards), pending.id, count_dismissed=count_dismissed
+            ),
         ],
     )

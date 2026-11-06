@@ -26,6 +26,14 @@ def _about(claim: str, line: str) -> bool:
     return len(shared) >= 2 and (span in folded_line or folded_line in span)
 
 
+def _catches(claim: dict[str, Any], planted: dict[str, Any]) -> bool:
+    """Return whether a doubt names the planted line under a boundary the case accepts."""
+    accepted = {planted["boundary"], *planted.get("accepted_boundaries", [])}
+    return claim.get("boundary") in accepted and _about(
+        str(claim.get("claim", "")), planted["line"]
+    )
+
+
 def _by_outcome(solver_output: dict[str, Any], outcome: Outcome) -> list[str]:
     found = solver_output.get("findings")
     if not isinstance(found, list) or not found:
@@ -182,11 +190,7 @@ def critic_doubt_contract() -> Any:
         outcome = _verdict_outcome(solver_output)
         summary = _verdict_summary(solver_output)
         claims = summary["verdict"].get("unsupported_claims") or []
-        # A planted case is caught only by a doubt about its planted line.
-        doubted = any(
-            planted is None or _about(str(claim.get("claim", "")), planted["line"])
-            for claim in claims
-        )
+        doubted = any(planted is None or _catches(claim, planted) for claim in claims)
         boundaries = [str(claim.get("boundary", "")) for claim in claims]
         return {
             "value": doubted == declared,
@@ -220,7 +224,10 @@ def _declared_doubt(sample: dict[str, Any]) -> tuple[bool, str, dict[str, Any] |
     metadata = sample.get("metadata")
     planted = metadata.get("planted") if isinstance(metadata, dict) else None
     if planted is not None and not (
-        isinstance(planted, dict) and isinstance(planted.get("line"), str)
+        isinstance(planted, dict)
+        and isinstance(planted.get("line"), str)
+        and isinstance(planted.get("boundary"), str)
+        and all(isinstance(b, str) for b in planted.get("accepted_boundaries", []))
     ):
-        raise ValueError("a live critic sample's metadata.planted must name its line")
+        raise ValueError("a live critic sample's metadata.planted must name its line and boundary")
     return declared, str(expected_outcome), planted

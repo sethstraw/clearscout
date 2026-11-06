@@ -46,7 +46,10 @@ from clearscout.application.tailoring.stages.verify import (
     critic_finding,
     line_citations,
 )
-from clearscout.infrastructure.web_fetch.company_research import ResearchSource
+from clearscout.infrastructure.web_fetch.company_research import (
+    MAX_SOURCE_CHARACTERS,
+    ResearchSource,
+)
 from evals.case import CVS, resolve_evidence
 from evals.support.client import build_scripted_client
 from evals.support.jobspec import canonical_job_spec, numbered_job_spec
@@ -259,12 +262,26 @@ def letter_payload(
     }
 
 
+# A synthetic url for every sample's posting, which the research block prints beside its text.
+POSTING_URL = "https://jobs.example.com/eval-posting"
+
+
 def research_sources(sample: Mapping[str, Any]) -> tuple[ResearchSource, ...]:
-    """Return the synthetic company research a sample supplies, as the product carries it."""
+    """Return the research a letter is written from: the posting, then the fixture's pages."""
+    posting = sample.get("input")
+    if not isinstance(posting, str) or not posting.strip():
+        raise DocumentSampleError("a letter sample must carry its posting text in input")
     rows = sample_metadata(sample).get("research") or []
     if not isinstance(rows, list):
         raise DocumentSampleError("metadata.research must be a list of sources")
-    return tuple(
+    stored = ResearchSource(
+        id="company.posting",
+        kind="posting",
+        url=POSTING_URL,
+        text=posting[:MAX_SOURCE_CHARACTERS],
+        method="stored_posting_artifact",
+    )
+    return stored, *(
         ResearchSource(
             id=str(row["id"]),
             kind=row["kind"],

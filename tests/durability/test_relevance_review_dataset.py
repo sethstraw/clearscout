@@ -35,7 +35,7 @@ def _first_payload() -> dict[str, object]:
 def test_checked_in_corpus_is_synthetic_input_with_stable_citations() -> None:
     cases = load_relevance_review_corpus()
 
-    assert len(cases) == 16
+    assert len(cases) == 18
     assert {case.split for case in cases} == {"development"}
     assert {case.cv_hash for case in cases} == {synthetic_inventory().content_hash}
     assert all(case.citation_ids[0] == f"{case.id}:span-0001" for case in cases)
@@ -46,7 +46,7 @@ def test_no_accepted_case_names_the_synthetic_candidate_own_employer() -> None:
     """An employer shared with the CV makes a posting look like an internal move."""
     employers = {case.input.posting.employer for case in load_relevance_review_corpus()}
 
-    assert len(employers) == 16
+    assert len(employers) == 18
     assert not any("Northwind" in employer for employer in employers)
 
 

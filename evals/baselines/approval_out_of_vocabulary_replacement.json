@@ -1,12 +1,13 @@
 {
   "case": "approval_out_of_vocabulary_replacement",
-  "prompt_suite": "a0b6c9a19f47",
+  "prompt_suite": "fd815f04798c",
   "schemas": "0905beebe712",
   "scores": {
     "approval_outcome": "refused",
     "check.character policy": "pass",
     "check.critic": "pass",
     "check.document structure": "pass",
+    "check.duration scope": "pass",
     "check.factual review": "warn",
     "check.first person": "pass",
     "check.forbidden strings": "pass",
@@ -47,7 +48,7 @@
     "model_calls": 4,
     "model_rule_disagreements": 0,
     "ownership_inflation": 0,
-    "request.critic": "d7c1c1185384",
+    "request.critic": "1ca4f2daa467",
     "request.draft": "46f800e476ff",
     "request.jobspec": "c40f0e9c4920",
     "request.match": "6d6d13523326",

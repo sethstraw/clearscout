@@ -1,11 +1,12 @@
 {
   "case": "ownership_inflation",
-  "prompt_suite": "a0b6c9a19f47",
+  "prompt_suite": "fd815f04798c",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
     "check.critic": "pass",
     "check.document structure": "pass",
+    "check.duration scope": "pass",
     "check.factual review": "warn",
     "check.first person": "pass",
     "check.forbidden strings": "pass",
@@ -48,7 +49,7 @@
     "model_calls": 4,
     "model_rule_disagreements": 0,
     "ownership_inflation": 2,
-    "request.critic": "60583d597447",
+    "request.critic": "bed03b4e76d4",
     "request.draft": "d52326f90d55",
     "request.jobspec": "177984bf1670",
     "request.match": "109ee31bd408",

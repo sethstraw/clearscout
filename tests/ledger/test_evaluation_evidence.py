@@ -7,6 +7,7 @@ from pathlib import Path
 
 from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind
 from clearscout.application.tailoring import fit
+from clearscout.application.tailoring.fit.structure import RecordLine
 from clearscout.application.tailoring.stages.jobspec import Importance, Requirement
 from clearscout.application.tailoring.stages.match import (
     Classification,
@@ -80,10 +81,11 @@ def test_a_gap_listed_first_leaves_the_whole_evaluation_components_to_supporting
 
     requirement_evidence(anchors, [_requirement("r1"), _requirement("r2")], evidence, inventory)
 
-    unanswered, answered = anchors.items
+    unanswered, answered, answered_posting = anchors.items
     assert unanswered.direction is EvidenceDirection.LIMITS
     assert unanswered.components == []
     assert answered.components == LEADING_COMPONENTS
+    assert answered_posting.components == []
 
 
 def test_an_evaluation_with_only_limiting_anchors_falls_back_to_the_posting_body() -> None:
@@ -115,12 +117,39 @@ def test_an_answered_requirement_anchors_to_the_candidate_entries_that_answer_it
 
     keys = requirement_evidence(anchors, [_requirement("r1")], evidence, inventory)
 
-    assert keys == {"r1": ["requirement-1-candidate-1"]}
-    anchor = anchors.items[0]
+    assert keys == {"r1": ["requirement-1-candidate-1", "requirement-1-posting"]}
+    anchor, posting = anchors.items
+    assert (posting.requirement_id, posting.text) == ("r1", "has run migrations")
+    assert posting.direction is EvidenceDirection.SUPPORTS
+    assert posting.components == []
     assert anchor.master_cv_entry_id == "E1"
     assert anchor.char_start == 0
     assert anchor.char_end == len(CANDIDATE)
     assert anchor.locator == ""
+
+
+def test_an_answered_requirement_the_posting_never_states_cites_only_its_entries() -> None:
+    anchors = EvidenceAnchors(POSTING, CANDIDATE)
+    requirement = Requirement(
+        id="r1", text="Hands-on experience with Linear.", importance=Importance.MUST_HAVE
+    )
+    evidence = EvidenceMap(
+        matches=(
+            Match(
+                requirement_id="r1",
+                entry_ids=("E1",),
+                classification=Classification.DIRECT,
+                strength=Strength.STRONG,
+            ),
+        )
+    )
+
+    keys = requirement_evidence(
+        anchors, [requirement], evidence, _inventory(_entry("E1", CANDIDATE))
+    )
+
+    assert keys == {"r1": ["requirement-1-candidate-1"]}
+    assert [item.key for item in anchors.items] == ["requirement-1-candidate-1"]
 
 
 def test_an_entry_whose_text_has_moved_is_named_rather_than_offset_into() -> None:
@@ -294,6 +323,73 @@ def test_a_reader_quote_the_posting_never_states_anchors_nothing() -> None:
     assert not [item for item in anchors.items if item.key.startswith("reading-location")]
 
 
+def _record_reading(posting: str) -> fit.Reading:
+    reading = fit.read(posting, _inventory())
+    years = fit.Answer(
+        "Years the record covers",
+        6,
+        evidence=("earliest dated role starts 2015, latest ends 2021",),
+        lines=(
+            RecordLine("northwind", "dates", "2018 - 2021"),
+            RecordLine("riverbend-cafe", "dates", "2015 - 2018"),
+        ),
+    )
+    families = fit.Answer(
+        "What the record reads as",
+        "Product management",
+        evidence=("Product management",),
+        lines=(RecordLine("northwind", "title", "Product Manager"),),
+    )
+    return replace(reading, record_years=years, record_families=families)
+
+
+def test_record_readings_cite_the_master_cv_role_lines_they_counted() -> None:
+    candidate = "### Northwind\n**Product Manager**\n2018 - 2021\n### Riverbend Cafe\n2015 - 2018\n"
+    anchors = EvidenceAnchors(PLAIN_ARRANGEMENT, candidate)
+
+    keys = reading_evidence(anchors, _record_reading(PLAIN_ARRANGEMENT))
+
+    anchored = {item.key: item for item in anchors.items}
+    cited = [anchored[key] for key in keys["record_years"] + keys["record_families"]]
+    assert [(item.locator, item.text) for item in cited] == [
+        ("cv:role-northwind-dates", "2018 - 2021"),
+        ("cv:role-riverbend-cafe-dates", "2015 - 2018"),
+        ("cv:role-northwind-title", "Product Manager"),
+    ]
+    for item in cited:
+        assert item.source_kind == "candidate"
+        assert item.master_cv_entry_id is None
+        assert item.requirement_id is None
+        assert item.char_start is not None and item.char_end is not None
+        assert candidate[item.char_start : item.char_end] == item.text
+
+
+def test_a_role_line_the_cv_text_lacks_stores_no_row() -> None:
+    anchors = EvidenceAnchors(PLAIN_ARRANGEMENT, "### Northwind\n**Product Manager**\n")
+
+    keys = reading_evidence(anchors, _record_reading(PLAIN_ARRANGEMENT))
+
+    assert keys["record_years"] == []
+    assert [item.locator for item in anchors.items if item.key.startswith("reading-record")] == [
+        "cv:role-northwind-title"
+    ]
+
+
+def test_a_record_family_the_posting_also_names_stores_no_posting_row() -> None:
+    posting = "Product management lead\n\nWe value product management experience.\n"
+    anchors = EvidenceAnchors(posting, "**Product Manager**\n")
+
+    keys = reading_evidence(anchors, _record_reading(posting))
+
+    record_rows = [
+        item
+        for item in anchors.items
+        if item.key.startswith(("reading-record_families", "reading-record_years"))
+    ]
+    assert keys["record_families"]
+    assert all(item.source_kind == "candidate" for item in record_rows)
+
+
 def test_a_missed_quote_leaves_the_whole_evaluation_components_to_the_posting_body() -> None:
     anchors = EvidenceAnchors(POSTING, CANDIDATE)
 
@@ -329,9 +425,10 @@ def test_a_supporting_requirement_the_posting_never_states_leaves_leading_to_the
     )
     posting_body_anchor(anchors)
 
-    assert keys == {"r1": [], "r2": ["requirement-2-candidate-1"]}
-    answered, body = anchors.items
+    assert keys == {"r1": [], "r2": ["requirement-2-candidate-1", "requirement-2-posting"]}
+    answered, answered_posting, body = anchors.items
     assert answered.components == LEADING_COMPONENTS
+    assert answered_posting.components == []
     assert (body.key, body.components) == ("posting-body", [])
 
 

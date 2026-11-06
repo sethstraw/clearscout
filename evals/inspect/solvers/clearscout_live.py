@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from sqlalchemy import select
 
@@ -65,6 +65,8 @@ _MATCH_PROMPTS = ("match_system", "match_user")
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 
 def inside_repository(path: Path) -> bool:
@@ -416,13 +418,17 @@ def paid_stage_metadata(stage: Stage, prompt_names: Sequence[str], dataset: Path
     scope = paid_run_scope()
     settings = run_settings(scope.provider, stage)
     snapshot = {name: load(name) for name in prompt_names}
-    return {
+    metadata: dict[str, Any] = {
         **scope.as_metadata(),
         **stage_identity(settings, stage),
         "stage": stage.value,
         "dataset_sha256": bytes_sha256(dataset.read_bytes()),
         "prompt_suite_fingerprint": prompt_snapshot_fingerprint(prompt_names, snapshot),
     }
+    # The draw count changes both the critic's verdict and its cost.
+    if stage is Stage.CRITIC:
+        metadata["critic_trials"] = settings.critic_trials
+    return metadata
 
 
 def credential_for(provider_name: ProviderName) -> str:
@@ -549,6 +555,51 @@ def bill_sample(
 
 
 @dataclass(frozen=True)
+class PaidCall(Generic[_T]):
+    """What one billed provider call returned, and the spend it recorded."""
+
+    value: _T
+    ledger: Ledger
+    billing_failure: dict[str, Any] | None
+
+
+def paid_call(
+    call: Callable[[Any], _T],
+    *,
+    provider_name: ProviderName,
+    settings: Settings,
+    run_ledger: Ledger,
+    run_metadata: Mapping[str, Any],
+    prompt_snapshot: Mapping[str, str],
+    database: Database,
+    workspace_id: str,
+    origin: str,
+) -> PaidCall[_T]:
+    """Run ``call`` on a fresh live client under ``prompt_snapshot``, then bill it once.
+
+    The run ledger and the workspace ledger receive the call's entries even when
+    ``call`` raises, because the provider may already have been paid.
+    """
+    call_ledger = Ledger(prices=run_ledger.prices)
+    client = build_live_client(
+        provider_name, credential_for(provider_name), ledger=call_ledger, settings=settings
+    )
+    try:
+        with overriding(prompt_snapshot):
+            value = call(client)
+    finally:
+        run_ledger.entries.extend(call_ledger.entries)
+        billing_failure = bill_sample(
+            database,
+            workspace_id,
+            ledger=call_ledger,
+            provider=str(run_metadata["provider"]),
+            origin=origin,
+        )
+    return PaidCall(value, call_ledger, billing_failure)
+
+
+@dataclass(frozen=True)
 class _ClearScoutLiveSolver:
     run_metadata: dict[str, Any]
     inventory: CvInventory
@@ -560,16 +611,6 @@ class _ClearScoutLiveSolver:
     database: Database
     workspace_id: str
 
-    def _bill(self, ledger: Ledger) -> dict[str, Any] | None:
-        """File this sample's calls, returning the marker a refused write leaves."""
-        return bill_sample(
-            self.database,
-            self.workspace_id,
-            ledger=ledger,
-            provider=str(self.run_metadata["provider"]),
-            origin=_BILLING_ORIGIN,
-        )
-
     def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
         current_prompts = {name: load(name) for name in _MATCH_PROMPTS}
         if _prompt_fingerprint(current_prompts) != self.run_metadata["prompt_suite_fingerprint"]:
@@ -578,22 +619,20 @@ class _ClearScoutLiveSolver:
             )
         spec = sample_job_spec(sample, self.inventory)
         multi = "job_spec" in sample
-        # Each sample is billed once; the run ledger keeps every entry for the report.
-        sample_ledger = Ledger(prices=self.ledger.prices)
-        client = build_live_client(
-            self.provider_name,
-            credential_for(self.provider_name),
-            ledger=sample_ledger,
+        paid = paid_call(
+            lambda client: match(client, self.inventory, numbered_job_spec(spec), self.guardrails),
+            provider_name=self.provider_name,
             settings=self.settings,
+            run_ledger=self.ledger,
+            run_metadata=self.run_metadata,
+            prompt_snapshot=self.prompt_snapshot,
+            database=self.database,
+            workspace_id=self.workspace_id,
+            origin=_BILLING_ORIGIN,
         )
-        try:
-            with overriding(self.prompt_snapshot):
-                evidence = match(client, self.inventory, numbered_job_spec(spec), self.guardrails)
-        finally:
-            self.ledger.entries.extend(sample_ledger.entries)
-            billing_failure = self._bill(sample_ledger)
+        evidence = paid.value
         provenance = sample_provenance(
-            sample_ledger, self.ledger, self.run_metadata, billing_failure
+            paid.ledger, self.ledger, self.run_metadata, paid.billing_failure
         )
         if multi:
             return {

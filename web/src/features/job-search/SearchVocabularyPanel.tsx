@@ -105,7 +105,12 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
   const proposalCountsReady = [titleProposals, archetypeProposals, clusterProposals].every(
     (query) => query.data !== undefined && !query.isError,
   );
-  const busy = queueing || retrying || queued || running;
+  const taskStateUnavailable = tasks.isError || Boolean(taskId && task.isError);
+  const awaitingTaskState =
+    (!tasks.isError && tasks.data === undefined) ||
+    Boolean(taskId && !task.isError && task.data === undefined);
+  const busy =
+    queueing || retrying || queued || running || awaitingTaskState || taskStateUnavailable;
   const inFlightLabel = (idle: string) =>
     queueing ? "Queueing search" : queued ? "Search queued" : running ? "Search running" : idle;
   const vocabularyAction = (
@@ -178,6 +183,12 @@ export function SearchVocabularyPanel({ workspaceId }: { workspaceId: string }) 
           {retry.isError && (
             <p className="field-error">
               <ErrorNotice error={retry.error} />
+            </p>
+          )}
+          {taskStateUnavailable && (
+            <p className="field-error">
+              Recent search vocabulary status could not be read. Reload before starting another paid
+              search.
             </p>
           )}
           {queueing ? (

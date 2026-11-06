@@ -151,4 +151,31 @@ describe("EvidenceWorkspace", () => {
     expect(within(ordinary).queryByText(/posting span/)).toBeNull();
     expect(within(ordinary).queryByText("Hard gate")).toBeNull();
   });
+
+  it("shows an answered requirement's own posting span beside its record entry", () => {
+    renderWorkspace(
+      [
+        row("record-3", {
+          locator: "",
+          master_cv_entry_id: "cv-3",
+          requirement_id: "REQ-3",
+          source_kind: "candidate",
+          text: "Ran synthetic migrations for four teams",
+        }),
+        row("span-3", {
+          locator: "posting:requirement-1-posting",
+          requirement_id: "REQ-3",
+          text: "You have run synthetic migrations",
+        }),
+      ],
+      [requirement("REQ-3", "Synthetic migrations", 0)],
+      [{ requirement_id: "REQ-3", is_hard_gate: false, evidence_keys: ["record-3", "span-3"] }],
+    );
+
+    const answered = card("Synthetic migrations");
+    expect(within(answered).getByText("What the posting asks")).toBeTruthy();
+    expect(within(answered).getByText("You have run synthetic migrations")).toBeTruthy();
+    expect(within(answered).getByText("Ran synthetic migrations for four teams")).toBeTruthy();
+    expect(within(answered).queryByText(/No posting span cites this requirement/)).toBeNull();
+  });
 });

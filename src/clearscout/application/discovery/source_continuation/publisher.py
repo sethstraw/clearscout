@@ -459,7 +459,9 @@ def _publisher_body_checkpoint(
     retained_bodies = {
         identity: url for identity, url in bodies.items() if retained.get(identity) == url
     }
-    protected = dict(checkpoint.protected)
+    protected = {
+        identity: url for identity, url in checkpoint.protected if retained.get(identity) == url
+    }
     if checkpoint.platform.removeprefix("listed:") in NATIVE_LISTED_PLATFORMS:
         protected.update(
             (identity, url)
@@ -481,6 +483,9 @@ def _publisher_body_checkpoint(
         listing_ids=tuple(retained),
         listing_urls=tuple(retained.items()),
         listing_unstable=unstable,
+        pass_listing_ids=tuple(
+            identity for identity in checkpoint.pass_listing_ids if identity in retained
+        ),
     )
 
 
@@ -539,17 +544,12 @@ def _persist_publisher_body_receipt(
         checkpoint = SourceDetailCheckpoint.from_json(
             stored.detail_checkpoint or item.detail_checkpoint
         )
-        retained = (
-            enumeration
-            if item.deferred_reason.endswith("_search_page")
-            else dict(checkpoint.listing_urls)
-        )
-        updated = _publisher_body_checkpoint(checkpoint, retained, bodies, read, unstable=unstable)
+        listing = checkpoint.listing_urls
         if item.deferred_reason.endswith("_search_detail"):
-            # The scope's page rows hold the union, so a detail row keeps only its own body.
-            updated = replace(
-                updated, completed=own_listing_pairs(updated.completed, stored.normalized_url)
-            )
+            # The scope's page rows hold the listing, so a detail row keeps only its own pair.
+            listing = own_listing_pairs(listing, stored.normalized_url)
+        retained = enumeration if item.deferred_reason.endswith("_search_page") else dict(listing)
+        updated = _publisher_body_checkpoint(checkpoint, retained, bodies, read, unstable=unstable)
         stored.detail_checkpoint = updated.as_json()
     _record_native_page_receipts(session, items, read)
 

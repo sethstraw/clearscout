@@ -1,11 +1,12 @@
 {
   "case": "adjacent_defensible_fit",
-  "prompt_suite": "a0b6c9a19f47",
+  "prompt_suite": "fd815f04798c",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
     "check.critic": "pass",
     "check.document structure": "pass",
+    "check.duration scope": "pass",
     "check.factual review": "warn",
     "check.first person": "pass",
     "check.forbidden strings": "pass",
@@ -50,7 +51,7 @@
     "model_rule_disagreements": 1,
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
-    "request.critic": "7addd14201c8",
+    "request.critic": "00dbc1d3dfe6",
     "request.draft": "218d742f8cd8",
     "request.jobspec": "f83dd4900fd3",
     "request.match": "3b1b4a10caec",

@@ -529,6 +529,19 @@ def test_live_shell_refuses_a_paid_scope_option_beside_a_render(
     assert "render=" not in result.stdout
 
 
+def test_live_shell_refuses_a_private_dataset_beside_a_render(tmp_path: Path) -> None:
+    dataset = tmp_path / "private.jsonl"
+    dataset.write_text("{}\n", encoding="utf-8")
+
+    result = _run_eval(
+        [*_render_args(tmp_path), "--dataset", str(dataset)], environment=_stub_uv(tmp_path)
+    )
+
+    assert result.returncode == 64
+    assert "--render-only renders the task fixture and does not take --dataset" in result.stderr
+    assert "render=" not in result.stdout
+
+
 @pytest.mark.parametrize(
     ("extra", "passed"),
     [

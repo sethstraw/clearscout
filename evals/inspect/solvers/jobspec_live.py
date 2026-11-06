@@ -3,6 +3,7 @@
 Only ``scripts/eval.sh --live`` should reach this solver. It sends one posting per
 call with the task's synthetic stated boundaries and records the boundary that
 survived the program's span check, which is the one that skips a posting.
+The extraction solver sends no boundaries and records the requirements kept.
 Each declared prompt arm holds one file per name in ``JOBSPEC_PROMPTS``.
 """
 
@@ -15,31 +16,30 @@ from pathlib import Path
 from typing import Any
 
 from clearscout.application.config import ProviderName, Settings, Stage
-from clearscout.application.prompts import overriding
 from clearscout.application.tailoring.stages.jobspec import JobSpec, extract
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.web_fetch.ingest.text import JDText
 from clearscout.shared.costs import Ledger
 from clearscout.shared.costs.prices import table as price_table
+from clearscout.shared.errors import NoRequirementsError
 from clearscout.shared.layout import plain_layout
 from evals.inspect.labeling import bytes_sha256
 from evals.inspect.solvers.clearscout_live import (
     PromptArm,
     arms_metadata,
-    bill_sample,
     billing_target,
-    credential_for,
     declared_arms,
+    paid_call,
     paid_stage_metadata,
     prompt_snapshot_fingerprint,
     requested_arm,
     run_settings,
     sample_provenance,
 )
-from evals.support.client import build_live_client
 
 JOBSPEC_PROMPTS = ("jobspec_system", "jobspec_user")
 BILLING_ORIGIN = "eval.jobspec_boundary_live"
+EXTRACTION_BILLING_ORIGIN = "eval.jobspec_extraction_live"
 
 
 def load_boundaries(path: Path) -> tuple[str, ...]:
@@ -73,6 +73,32 @@ def boundary_result(spec: JobSpec, boundaries: Sequence[str]) -> dict[str, Any]:
     }
 
 
+def extraction_result(spec: JobSpec | None) -> dict[str, Any]:
+    """Return the requirements one extraction kept, or none when it read none."""
+    requirements = [] if spec is None else spec.requirements
+    return {
+        "completion": str(len(requirements)),
+        "requirements": [
+            {
+                "id": item.id,
+                "text": item.text,
+                "quote": item.quote_or_span,
+                "importance": item.importance.value,
+                "verified": item.verified,
+            }
+            for item in requirements
+        ],
+    }
+
+
+def _extract_or_none(client: Any, sample: dict[str, Any]) -> JobSpec | None:
+    # The stage refuses a posting with no requirements; here that is a scorable answer.
+    try:
+        return extract(client, posting(sample))
+    except NoRequirementsError:
+        return None
+
+
 @dataclass(frozen=True)
 class _JobspecBoundaryLiveSolver:
     """One paid boundary run: one extraction per posting, trial and arm."""
@@ -92,27 +118,20 @@ class _JobspecBoundaryLiveSolver:
             raise RuntimeError(
                 "Live evaluation refused: jobspec prompt bytes changed after run preflight."
             )
-        sample_ledger = Ledger(prices=self.ledger.prices)
-        client = build_live_client(
-            self.provider_name,
-            credential_for(self.provider_name),
-            ledger=sample_ledger,
+        paid = paid_call(
+            lambda client: extract(client, posting(sample), boundaries=self.boundaries),
+            provider_name=self.provider_name,
             settings=self.settings,
+            run_ledger=self.ledger,
+            run_metadata=self.run_metadata,
+            prompt_snapshot=arm.snapshot,
+            database=self.database,
+            workspace_id=self.workspace_id,
+            origin=BILLING_ORIGIN,
         )
-        try:
-            with overriding(arm.snapshot):
-                spec = extract(client, posting(sample), boundaries=self.boundaries)
-        finally:
-            self.ledger.entries.extend(sample_ledger.entries)
-            billing_failure = bill_sample(
-                self.database,
-                self.workspace_id,
-                ledger=sample_ledger,
-                provider=str(self.run_metadata["provider"]),
-                origin=BILLING_ORIGIN,
-            )
+        spec = paid.value
         provenance = sample_provenance(
-            sample_ledger, self.ledger, self.run_metadata, billing_failure
+            paid.ledger, self.ledger, self.run_metadata, paid.billing_failure
         )
         if arm.name is not None:
             provenance["arm"] = arm.name
@@ -138,6 +157,65 @@ def jobspec_boundary_live_solver(
         run_metadata=run_metadata,
         arms=arms,
         boundaries=boundaries,
+        provider_name=provider_name,
+        settings=settings,
+        ledger=Ledger(prices=price_table(settings.prices)),
+        database=database,
+        workspace_id=workspace_id,
+    )
+
+
+@dataclass(frozen=True)
+class _JobspecExtractionLiveSolver:
+    """One paid extraction run: one call per posting, trial and arm."""
+
+    run_metadata: dict[str, Any]
+    arms: tuple[PromptArm, ...]
+    provider_name: ProviderName
+    settings: Settings
+    ledger: Ledger
+    database: Database
+    workspace_id: str
+
+    def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
+        arm = requested_arm(self.arms, sample.get("arm"))
+        if prompt_snapshot_fingerprint(JOBSPEC_PROMPTS, arm.current()) != arm.fingerprint:
+            raise RuntimeError(
+                "Live evaluation refused: jobspec prompt bytes changed after run preflight."
+            )
+        paid = paid_call(
+            lambda client: _extract_or_none(client, sample),
+            provider_name=self.provider_name,
+            settings=self.settings,
+            run_ledger=self.ledger,
+            run_metadata=self.run_metadata,
+            prompt_snapshot=arm.snapshot,
+            database=self.database,
+            workspace_id=self.workspace_id,
+            origin=EXTRACTION_BILLING_ORIGIN,
+        )
+        provenance = sample_provenance(
+            paid.ledger, self.ledger, self.run_metadata, paid.billing_failure
+        )
+        if arm.name is not None:
+            provenance["arm"] = arm.name
+        return {**extraction_result(paid.value), "metadata": provenance}
+
+
+def jobspec_extraction_live_solver(dataset: Path) -> _JobspecExtractionLiveSolver:
+    """Return the prepared solver that runs jobspec extraction live with no boundaries."""
+    run_metadata = paid_stage_metadata(Stage.JOBSPEC, JOBSPEC_PROMPTS, dataset)
+    arms = declared_arms(JOBSPEC_PROMPTS)
+    if declared := arms_metadata(arms):
+        # Declared arms supply every call's bytes, so the working-tree fingerprint names none.
+        run_metadata.pop("prompt_suite_fingerprint", None)
+        run_metadata.update(declared)
+    provider_name = ProviderName(run_metadata["provider"])
+    settings = run_settings(provider_name, Stage.JOBSPEC)
+    database, workspace_id = billing_target()
+    return _JobspecExtractionLiveSolver(
+        run_metadata=run_metadata,
+        arms=arms,
         provider_name=provider_name,
         settings=settings,
         ledger=Ledger(prices=price_table(settings.prices)),

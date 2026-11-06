@@ -41,9 +41,16 @@ classification equals the frozen label.
 | 2026-09-26 | gpt-6-sol     | medium / flex  | 19 x 3         | 56/57   | 0.093774 | -            | c5bd1b5b |
 | 2026-10-04 | gpt-6-sol     | medium / flex  | 19 x 3         | 57/57   | 0.101493 | -            | c5bd1b5b |
 | 2026-10-04 | gpt-6.1-sol   | medium / flex  | 19 x 3         | 54/57   | 0.075995 | -            | c5bd1b5b |
+| 2026-11-05 | gpt-6.1-sol   | medium / flex  | 5 x 1 holdout  | 5/5     | 0.010044 | 9fd6cdd01e3b | 8cfe9e02 |
 
 A `-` in the prompt column means the run's ledger entry did not record the
 fingerprint.
+
+The 2026-11-05 row is the first opening of the held-out split. 5 of 5 has a
+Wilson 95% interval of 0.57 to 1.00, and strength agreed on the 3 cases that
+grade one. All five cases are hard-dimension, so the holdout has no
+behavioral, TAILORING_ONLY, ASSERTED, moderate-strength, or named-tool case,
+which are the shapes every recorded development miss falls in.
 
 Manifests `d70afd58` and `3b54614a` carry the same ten labels; the second drops
 two retention fields. `d55cc1cd` keeps those ten and adds three cases where the
@@ -238,6 +245,21 @@ recommendation equals the frozen one.
 | 2026-09-29 | gpt-6-sol     | low / flex     | 16 x 3 x 2 arm | 86/96   | 0.128    | arms         | -        |
 | 2026-09-29 | gpt-6-sol     | low / flex     | 16 x 3 x 2 arm | 92/96   | 0.1282   | arms         | -        |
 | 2026-11-01 | gpt-6-sol     | low / flex     | 16 x 3 x 2 arm | 88/96   | 0.128    | arms         | -        |
+| 2026-11-05 | gpt-6.1-sol   | low / flex     | 2 x 5 or-list  | 10/10   | 0.024645 | b0c5a552ce7c | 5c211ea1 |
+| 2026-11-05 | gpt-6.1-sol   | low / flex     | 18 x 1         | 17/18   | 0.036174 | b0c5a552ce7c | cf3f1cb8 |
+
+The 2026-11-05 row is a synthetic pair, `rrp-020` and `rrp-021`, that differ
+only in whether the excluded tool is offered alongside alternatives ("Python,
+R, SAS, or a comparable statistical language"). The bare twin read a hard
+conflict on every trial, and the or-list twin read `investigate` with the hard
+condition passing on every trial. So the or-list miss seen on one real posting
+does not reproduce in isolation. The run header scored 5 of 10 because the bare
+twin's axes were labelled `direct` and `established`, which the synthetic CV
+does not support. Both rows now score the recommendation only.
+
+The 18 x 1 row is the first run of the gold set on the shipped model. Every
+recommendation matched; the one miss is `rrp-016`, whose core work read
+`transferable` against a `direct` label, still answering `investigate`.
 
 The two misses on 2026-09-20 are both `insufficient_evidence` rows the scorer used
 for that run graded wrongly; the answers matched the labels. Dataset `36018970`
@@ -312,6 +334,15 @@ their labels, so the draft did not land under its stop rule. The 2026-11-01
 cost is inferred: the round's 24 calls cost USD 0.565384, and the gold half
 above accounts for USD 0.128 of it.
 
+On 2026-11-05 the shipped stage (gpt-6.1-sol, low, flex) re-read 47 dismissed
+real-workspace rows once, in 3 production-sized batches, for USD 0.224649. Of
+the 13 rows the person disputed, 12 left `unlikely` (Wilson 95% 0.67 to 0.99),
+against 4 of 13 by majority in round 5's before arm. Model and prompt both
+changed since then, so the move is not attributable to either. After relabelling
+under the search parameters the rows were reviewed with, 27 of 47 matched: 19 of
+20 rows labelled `investigate` stayed out of `unlikely`, and 14 of 24 labelled
+`unlikely` were lifted, so the remaining error is mostly over-inclusion.
+
 ## Critic
 
 Each case plants one defect in a document assembled offline, or plants none;
@@ -329,6 +360,14 @@ the outcome is what the shipped floors assign the critic's merged verdict.
 | 2026-09-23 | -                  | gpt-6-sol     | medium / flex     | 13 x 3 | 24 fail, 10 warn, 5 pass | 0.288156 | 38e1aa7c0f77 | 37818e8f |
 | 2026-09-23 | letters corrected  | gpt-6-sol     | medium / flex     | 2 x 3  | 6 warn                   | 0.040501 | 38e1aa7c0f77 | fba1467c |
 | 2026-09-23 | letter reworded    | gpt-6-sol     | medium / flex     | 1 x 3  | 2 pass, 1 warn           | 0.019305 | 38e1aa7c0f77 | 1793c30b |
+| 2026-11-05 | 3 draws merged     | gpt-6.1-sol   | medium / flex     | 9      | 8 fail, 1 warn           | 0.128626 | 01b3b875bf8d | 161e965d |
+| 2026-11-05 | duties letter      | gpt-6.1-sol   | medium / flex     | 1 x 5  | 3 warn, 2 fail           | 0.033727 | 01b3b875bf8d | 337623e3 |
+| 2026-11-05 | near boundary      | gpt-6.1-sol   | medium / flex     | 6      | 6 fail                   | 0.069119 | 01b3b875bf8d | b133da29 |
+| 2026-11-05 | restatement clause | gpt-6.1-sol   | medium / flex     | 1 x 5  | 5 warn                   | 0.026197 | a45be004ae75 | f818e4d2 |
+| 2026-11-05 | restatement clause | gpt-6.1-sol   | medium / flex     | 21     | 15 fail, 6 warn          | 0.113406 | a45be004ae75 | f818e4d2 |
+| 2026-11-06 | isolation          | gpt-6.1-sol   | medium / flex     | 1 x 5  | 5 fail                   | 0.040966 | 01b3b875bf8d | -        |
+| 2026-11-06 | letter shapes      | gpt-6.1-sol   | medium / flex     | 4 x 3  | 12 fail                  | 0.067603 | a45be004ae75 | -        |
+| 2026-11-06 | context line       | gpt-6.1-sol   | medium / flex     | 3 x 3  | 5 pass, 4 warn           | 0.046254 | a45be004ae75 | 0224f50d |
 
 The two 2026-09-21 rows are the same six cases run twice to measure spread.
 
@@ -347,12 +386,69 @@ entry says, neither drew a doubt on any trial; the duties letter warns on
 human voice as built, and the company-paragraph letter passed 2 of 3 once its
 company paragraph stopped borrowing the careers page's phrasing.
 
+The 2026-11-05 row is the first critic run on gpt-6.1-sol, with three draws per
+case merged (27 calls) over six doubt cases and three clean ones. Every draw
+caught every planted line, so one draw scores the same 6 of 6 as the union
+(18 of 18 draws, Wilson 95% lower bound 0.82). Two of nine clean draws doubted
+`letter_duties_listed`, and the union turned that into a fail. The shipped
+default stays at one draw. None of these cases sits near the point where draws
+disagree, so the run cannot rule out a defect that one draw catches only
+sometimes. The near-boundary row tests exactly that. It plants six small
+defects, each against its cited entry: a tenure claim alone, a design called
+shipped, a figure written as a word above the evidenced one, "led" for
+"contributed to", one team's modules called company-wide, and an inserted tool
+name. It ran three draws per case, and every draw doubted its planted line (18
+of 18, Wilson 95% lower bound 0.82). Scored for the planted boundary as well,
+15 of 18 hold: every draw on the design-called-shipped line doubted it as team
+contribution or absent from the record, never as `planned_not_shipped`. The
+verdict still fails, so the product outcome is right and the label is not. The duties-letter row ran the clean letter alone at one draw: 2 of 5
+trials failed it, every doubt marking a sentence that restates the posting's
+duties as miscited.
+
+The restatement-clause rows follow a critic prompt that says a sentence
+restating the posting's duties, crediting the candidate with nothing, is judged
+under human voice and is no claim. The same rows also give the letter critic
+the stored posting as research, as the product does; the earlier rows sent
+none. Alone at one draw, the duties letter drew no doubt on 5 of 5 trials and
+warned on human voice each time. The isolation row holds the posting research
+and removes the clause (the earlier prompt, `01b3b875bf8d`): all 5 trials
+failed, each doubting every restated duty as miscited. So the clause removed
+the doubts, and the posting alone made them more frequent. Across all 21 cases at one
+draw, every planted and near-boundary line was doubted, including a new letter
+case that hides a credit inside a restated duty, and no clean case drew a
+doubt. Three clean cases warned where the scripted outcome is pass, on style
+or voice rather than a claim; two of them flag the same fixture line that 13 of
+19 resume cases share.
+
+The letter-shapes row plants four more credits inside a restated duty: a
+credential the record lacks, "I have done each of these duties", "work I led"
+for contributed work, and an unsupported figure about the employer. Every draw
+failed the letter on its planted line, and 11 of 12 doubts carried the planted
+boundary within the scored span; the twelfth quoted the blanket claim across
+an ellipsis, which the span match does not join.
+
+The context-line row rewrites that shared fixture line to the master CV's own
+wording ("..., working with analysts and clinicians on definitions.") and runs
+the two clean resume cases and `adequate_quality` three times each. No trial
+flagged the line. Both clean cases passed 2 of 3; each third trial flagged a
+summary phrase instead. Outcome agreement was 6 of 9, and no trial drew a doubt.
+
 ## Draft and cover letter
 
-| date       | family | model         | effort / tier     | cases | result                                                   | cost     |
-| ---------- | ------ | ------------- | ----------------- | ----- | -------------------------------------------------------- | -------- |
-| 2026-09-20 | draft  | gpt-5.6-terra | medium / standard | 6     | 6 cleared `verify.check`; factual review warned on 6     | 0.077315 |
-| 2026-09-20 | cover  | gpt-5.6-terra | medium / standard | 5     | 5 cleared `verify.check_letter`; letter echo warned on 5 | 0.039728 |
+| date       | family | model         | effort / tier     | cases | result                                                      | cost     |
+| ---------- | ------ | ------------- | ----------------- | ----- | ----------------------------------------------------------- | -------- |
+| 2026-09-20 | draft  | gpt-5.6-terra | medium / standard | 6     | 6 cleared `verify.check`; factual review warned on 6        | 0.077315 |
+| 2026-09-20 | cover  | gpt-5.6-terra | medium / standard | 5     | 5 cleared `verify.check_letter`; letter echo warned on 5    | 0.039728 |
+| 2026-11-05 | draft  | gpt-6.1-sol   | medium / flex     | 6     | 6 cleared `verify.check`; factual review warned on 6        | 0.039893 |
+| 2026-11-05 | cover  | gpt-6.1-sol   | medium / flex     | 5     | 2 cleared; letter provenance failed 3 (harness, below)      | 0.027390 |
+| 2026-11-05 | cover  | gpt-6.1-sol   | medium / flex     | 5     | 5 cleared `verify.check_letter`; factual review warned on 5 | 0.023416 |
+
+The first 2026-11-05 cover run sent no company research, where the product
+always sends the stored posting as `company.posting`. With nothing to cite,
+three letters carried a sentence saying no research was supplied, and
+provenance failed it. The second row writes each letter from the posting and
+the fixture's pages, and checks it against the same research, as the product
+does.
 
 ## Stage experiments outside eval.sh
 
@@ -415,3 +511,81 @@ fix rounds. Neither prompt misfired on these synthetic domain-tied cases, so
 this set guards against regressions and cannot show the fix's gain. 81 calls,
 USD 0.5537. A first launch stopped at call 71 on a case production refuses
 before any boundary is read; that case was replaced.
+
+## Jobspec requirement extraction
+
+[`jobspec_extraction_live_task.py`](inspect/tasks/jobspec_extraction_live_task.py)
+scores which requirements extraction reads from nine synthetic postings, each
+built around one shape: prose requirements, an or-equivalent degree, a degree
+ladder, a nice-to-have section, boilerplate notices, a duty list, a posting with
+no stated requirement, an illustrative tool list, and stance words inside a
+sentence. A case passes when every expected requirement is extracted with its
+importance, no extracted quote is missing from the posting, and no boilerplate
+is read as a requirement. A quote must share at least half its content words
+with the span it matches, and recalls only the one span it mostly states. Every
+content word of a quote must appear in the text of some requirement citing it,
+so a split such as "writing and tuning SQL" into two requirements passes while
+a lone text that drops "tuning" fails; stance words such as "must" and "plus"
+are left to the importance field.
+
+| date       | model       | effort / tier | cases x trials | correct | requirements | cost     | prompt       | dataset  |
+| ---------- | ----------- | ------------- | -------------- | ------- | ------------ | -------- | ------------ | -------- |
+| 2026-11-05 | gpt-6.1-sol | low / flex    | 9 x 1          | 9/9     | 26/26        | 0.026207 | 9dbd3f6b59d5 | 8fb86622 |
+
+Nine cases at one draw give a Wilson 95% lower bound of 0.70; the set finds
+regressions in these shapes and does not measure a rate. The stored log
+rescored offline under the overlap floor and the text check still reads 9/9
+and 26/26: its ten texts that each leave out a quote word are halves of
+splits the prompt asks for.
+
+## Search vocabulary
+
+[`search_vocabulary_live_task.py`](inspect/tasks/search_vocabulary_live_task.py)
+asks the shipped stage for titles and employer archetypes on four synthetic
+CVs, each with labeled acceptable and unacceptable proposals: excluded titles,
+a minimum level, a domain switch, and titles already stated. Precision counts
+labeled proposals only; unlabeled proposals are reported as coverage.
+
+| date       | model       | effort / tier | cases x trials | passed | unlabeled | cost     | prompt       | dataset  |
+| ---------- | ----------- | ------------- | -------------- | ------ | --------- | -------- | ------------ | -------- |
+| 2026-11-06 | gpt-6.1-sol | low / flex    | 4 x 1          | 4/4    | 23/34     | 0.048295 | 96e419874e91 | ced126de |
+
+The run first scored 1 of 4, with unlabeled proposals counted against
+precision. No proposal was unacceptable, excluded, or a repeat of a stated
+title, and every acceptable match cited entries that support it. Rescored
+offline over labeled proposals only, all four pass at precision 1.0, but 23 of
+34 proposals fall outside the label set, and the domain-switch case passes on
+a single labeled proposal. The labels are too thin for this to measure
+usefulness yet.
+
+## Web stages
+
+[`posting_recovery_live_task.py`](inspect/tasks/posting_recovery_live_task.py)
+and [`guided_campaign_live_task.py`](inspect/tasks/guided_campaign_live_task.py)
+read the real web through hosted search, so their cases are real postings and
+a real parameter set, kept in a private dataset passed with `--dataset`.
+
+| date       | stage            | model       | effort / tier | cases | result                                | cost     | prompt       |
+| ---------- | ---------------- | ----------- | ------------- | ----- | ------------------------------------- | -------- | ------------ |
+| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4     | 0/4 recovered the expected posting    | 0.118034 | 7428e1976831 |
+| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4     | 0/4; preflight settles 2 at no cost   | 0.147007 | dc85127c61db |
+| 2026-11-06 | guided_campaign  | gpt-6.1-sol | low / flex    | 1     | every check held; 4 searches, 3 picks | 0.076204 | 814417e97572 |
+
+Recovery missed every case. Two targets sit behind an employer careers page
+that refuses ClearScout's reads; the model twice returned that same blocked
+host, once with the right job id, and once followed a job id to an applicant
+system the employer had left. A fourth answer named a link it had not opened,
+which the product refuses.
+
+The second recovery row runs after three deterministic fixes: a candidate on a
+host that refused the known read is marked failed per URL on shared ATS hosts,
+the request names the employer's one registered board, and preflight refuses a
+row whose registered board already holds the role. The eval sends every case
+to the model, but the product would not: on the live data, preflight names the
+expected open Ashby posting as the holder for both blocked Inovalon rows. The
+model still missed all four. For the blocked rows it returned the careers page
+with Ashby job ids of requisitions archived in September. The aggregator copy
+found nothing, and the AbCellera answer was again refused for an uncited link.
+The campaign case is the live workspace's parameter set:
+both branches were credited, no query named an excluded term, and two of its
+three picks were postings the workspace had not seen.

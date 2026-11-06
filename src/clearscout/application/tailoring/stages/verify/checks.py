@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from enum import Enum
+from typing import NamedTuple
 
 from clearscout.application.master_cv.cv import CvInventory
 from clearscout.application.tailoring.stages.draft import (
@@ -19,11 +21,17 @@ from clearscout.shared.text import sentence_pieces
 
 from .citations import cited, source_text, typed_source_text
 from .lexicon import (
+    DURATION_FRAME_WORDS,
     FIRST_PERSON_VERB,
+    FUNCTION_WORDS,
     LICENSED_CREDENTIAL,
+    NUMBER_WORDS,
     OWNERSHIP_VERBS,
     QUALIFIER,
     WORD,
+    Duration,
+    bare_word,
+    durations_in,
     figures_in,
 )
 
@@ -149,6 +157,122 @@ def _untraced_figures(line: DraftedLine, sources: list[str]) -> list[tuple[list[
         if raws:
             found.append((raws, sentence))
     return found
+
+
+class _Attachment(NamedTuple):
+    """A duration and the words of the clause stretch it is stated about."""
+
+    duration: Duration
+    stretch: str
+    subject: frozenset[str]
+
+
+class _Pairing(Enum):
+    """How a drafted duration relates to the durations its cited entries state."""
+
+    PAIRED = "paired"
+    MOVED = "moved"
+    UNSTATED = "unstated"
+    UNSURE = "unsure"
+
+
+def duration_scope(lines: Sequence[DraftedLine], inventory: CvInventory) -> Finding:
+    """Fail a duration its cited evidence states of another subject, or not as a duration.
+
+    A value no cited entry carries is left to ``figures``. A subject too weakly
+    paired to call either way warns instead of failing.
+    """
+    check = "duration scope"
+    failed: list[str] = []
+    unpaired: list[str] = []
+    for line in lines:
+        entries = source_text(inventory, line.source_ids)
+        cited = [_attachments(text) for text in entries]
+        for attachment in _attachments(line.text):
+            pairing, stretch = _paired(attachment, entries, cited)
+            claim = f"{attachment.duration.raw!r} in {line.text.strip()[:80]!r}"
+            if pairing is _Pairing.MOVED:
+                failed.append(f"{claim}: its evidence states it of {stretch!r}")
+            elif pairing is _Pairing.UNSTATED:
+                failed.append(f"{claim}: stated as this duration by no cited entry")
+            elif pairing is _Pairing.UNSURE:
+                unpaired.append(claim)
+    unsure = f"subject not paired, review: {'; '.join(unpaired)}" if unpaired else ""
+    if failed:
+        detail = f"{len(failed)} duration(s) off their evidence: {'; '.join(failed)}"
+        return Finding(check, Outcome.FAIL, "; ".join(filter(None, (detail, unsure))))
+    if unpaired:
+        return Finding(check, Outcome.WARN, unsure, redraftable=False)
+    return Finding(check, Outcome.PASS, "every traced duration keeps its evidence's subject")
+
+
+def _paired(
+    claim: _Attachment, entries: Sequence[str], cited: Sequence[list[_Attachment]]
+) -> tuple[_Pairing, str]:
+    """Pair one drafted duration with its evidence, with the stretch it was moved from.
+
+    Moved means the claim's subject sits with another duration, or in an entry
+    stating none of this one, while every stretch stating it shares no word.
+    """
+    readings = claim.duration.readings
+    stating = [item for found in cited for item in found if item.duration.readings & readings]
+    if not stating:
+        values = {value for value, _ in readings}
+        carried = {value for text in entries for _, found in figures_in(text) for value in found}
+        return (_Pairing.UNSTATED if values & carried else _Pairing.PAIRED), ""
+    if not claim.subject or any(claim.subject & item.subject for item in stating):
+        return _Pairing.PAIRED, ""
+    need = min(2, len(claim.subject))
+    if any(
+        len(claim.subject & words) >= need
+        for words in _subjects_elsewhere(readings, entries, cited, stating)
+    ):
+        return _Pairing.MOVED, stating[0].stretch.strip()
+    return _Pairing.UNSURE, ""
+
+
+def _subjects_elsewhere(
+    readings: frozenset[tuple[str, str]],
+    entries: Sequence[str],
+    cited: Sequence[list[_Attachment]],
+    stating: list[_Attachment],
+) -> list[frozenset[str]]:
+    """Return the subjects of other durations, and of cited entries stating none of these."""
+    holders = {index for index, found in enumerate(cited) for item in found if item in stating}
+    others = [
+        item.subject for found in cited for item in found if not item.duration.readings & readings
+    ]
+    return others + [
+        _subject_words(text) for index, text in enumerate(entries) if index not in holders
+    ]
+
+
+def _attachments(text: str) -> list[_Attachment]:
+    """Split each clause at its durations; the first also owns the words before it."""
+    found = []
+    for sentence in sentence_pieces(text):
+        for clause in sentence.split(";"):
+            durations = durations_in(clause)
+            for index, duration in enumerate(durations):
+                start = duration.start if index else 0
+                end = durations[index + 1].start if index + 1 < len(durations) else len(clause)
+                stretch = clause[start:end]
+                found.append(_Attachment(duration, stretch, _subject_words(stretch)))
+    return found
+
+
+def _subject_words(text: str) -> frozenset[str]:
+    """Return the content words of ``text``, a plural read as its singular."""
+    words = {bare_word(word) for word in WORD.findall(text)}
+    stems = {word[:-1] if len(word) > 3 and word.endswith("s") else word for word in words}
+    return frozenset(
+        word
+        for word in stems
+        if len(word) > 2
+        and word.isalpha()
+        and word not in FUNCTION_WORDS | DURATION_FRAME_WORDS
+        and word not in NUMBER_WORDS
+    )
 
 
 def structure(markdown: str) -> Finding:

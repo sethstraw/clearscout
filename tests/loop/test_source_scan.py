@@ -822,6 +822,31 @@ def test_a_cancelled_batch_keeps_its_source_reserved_until_the_reader_exits(
     assert resumed.status == "queued"
 
 
+def test_a_second_resume_while_the_first_is_queued_claims_no_source(
+    durable_database: Database,
+) -> None:
+    workspace_id, acme_id, _globex_id = _two_board_workspace(durable_database)
+    queue = TaskQueueService(durable_database)
+    root = queue.enqueue(
+        workspace_id=workspace_id,
+        task_type="source.scan",
+        payload={"source_ids": [acme_id]},
+        idempotency_key="root",
+    )
+    queue.request_cancellation(str(root.id))
+    assert queue.get(str(root.id)).status == "cancelled"
+
+    first = queue.commands.resume_source_batch(workspace_id, str(root.id), "first-click")
+    second = queue.commands.resume_source_batch(workspace_id, str(root.id), "second-click")
+
+    with durable_database.session() as session:
+        holders = queue.commands.source_batch_members_in_session(session, str(first.id))
+        latecomers = queue.commands.source_batch_members_in_session(session, str(second.id))
+        assert [(m.state, m.released_at) for m in holders] == [("queued", None)]
+        assert [m.state for m in latecomers] == ["already_in_progress"]
+        assert all(m.released_at is not None for m in latecomers)
+
+
 def test_cancellation_stops_a_queued_lane_before_its_initial_publisher_read(
     durable_database: Database, monkeypatch: pytest.MonkeyPatch
 ) -> None:

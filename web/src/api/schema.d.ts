@@ -6706,6 +6706,8 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+            /** Identity Sha256 */
+            identity_sha256: string;
             /**
              * Issued At
              * Format: date-time

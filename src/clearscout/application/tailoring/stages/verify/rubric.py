@@ -25,7 +25,14 @@ QUOTED_CLAIM_WORDS = 3
 
 # The checks that fail a line for claiming what its citations do not support.
 SUPPORT_CHECKS = frozenset(
-    {"sources cited", "numbers traced", "letter provenance", "letter numbers", "claim ownership"}
+    {
+        "sources cited",
+        "numbers traced",
+        "duration scope",
+        "letter provenance",
+        "letter numbers",
+        "claim ownership",
+    }
 )
 
 # The prose a model wrote in each document the critic reads, the only place it may find a claim.

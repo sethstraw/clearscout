@@ -13,6 +13,15 @@ ValueT = TypeVar("ValueT")
 
 
 @dataclass(frozen=True)
+class RecordLine:
+    """One master-CV role header line a record reading counted, copied verbatim."""
+
+    role_key: str
+    field: Literal["dates", "title"]
+    text: str
+
+
+@dataclass(frozen=True)
 class Answer(Generic[ValueT]):
     """One derived answer, or an explicit refusal to give one.
 
@@ -27,6 +36,8 @@ class Answer(Generic[ValueT]):
     evidence: tuple[str, ...] = ()
     note: str = ""
     conflict: bool = False
+    # Master-CV role lines a record reading rests on; posting readings leave it empty.
+    lines: tuple[RecordLine, ...] = ()
 
     @property
     def stated(self) -> bool:

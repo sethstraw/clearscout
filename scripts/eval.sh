@@ -21,7 +21,9 @@
 #     [--model <id>] [--effort <level>] [--ids <id,id,...>]
 #     [--prompt-arm <name>=<private-dir> ...] [--cv-version <id>]
 #     [--selection-manifest <private-path> --selection-manifest-sha256 <sha256>
-#     --selection-manifest-bytes-sha256 <sha256>]
+#     --selection-manifest-bytes-sha256 <sha256>] [--dataset <private-path>]
+#     --dataset runs the task on that JSONL instead of its tracked fixture, and the
+#     run records that file's sha256.
 #     --model sends that model on the task's own stage instead of the shipped
 #     one, and the estimate reads only that model's history.
 #     --effort does the same for the stage's effort level, which the model must
@@ -77,7 +79,8 @@ Subcommands:
     --i-approve $X.XX --output-dir <private-path> [--trials N] [--model <id>] \
     [--effort <level>] [--ids <id,id,...>] [--prompt-arm <name>=<private-dir> ...] \
     [--cv-version <id>] [--selection-manifest <private-path> \
-    --selection-manifest-sha256 <sha256> --selection-manifest-bytes-sha256 <sha256>]
+    --selection-manifest-sha256 <sha256> --selection-manifest-bytes-sha256 <sha256>] \
+    [--dataset <private-path>]
   --live <task_file> --data-root <path> --provider <provider> --render-only <private-dir> \
     [--model <id>] [--effort <level>] [--cv-version <id>] \
     [--limit N | --ids <id,id,...>] [--split <split>] [--prompt-arm <name>=<private-dir> ...]
@@ -123,13 +126,13 @@ live_run() {
   local output_dir="" stage="" trials="" ids="" model="" effort=""
   local selection_manifest="" selection_manifest_sha256=""
   local selection_manifest_bytes_sha256=""
-  local prompt_arms="" prompt_arm_names="" arms=0 cv_version="" render_dir=""
+  local prompt_arms="" prompt_arm_names="" arms=0 cv_version="" render_dir="" dataset=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --data-root|--limit|--ids|--split|--provider|--i-approve|\
       --output-dir|--trials|--model|--effort|--prompt-arm|--selection-manifest|\
       --selection-manifest-sha256|--selection-manifest-bytes-sha256|--cv-version|\
-      --render-only)
+      --render-only|--dataset)
         if [[ $# -lt 2 || "$2" == --* ]]; then
           printf 'Missing value for --live option: %s\n' "$1" >&2
           exit 64
@@ -166,6 +169,7 @@ live_run() {
       --selection-manifest-bytes-sha256) selection_manifest_bytes_sha256="$2"; shift 2 ;;
       --cv-version) cv_version="$2"; shift 2 ;;
       --render-only) render_dir="$2"; shift 2 ;;
+      --dataset) dataset="$2"; shift 2 ;;
       --*)
         printf 'Unknown --live option: %s\n' "$1" >&2
         exit 64
@@ -181,6 +185,10 @@ live_run() {
   if [[ -n "$render_dir" ]]; then
     if [[ -n "$approve$output_dir$trials" ]]; then
       printf 'Refused: --render-only renders one trial and spends nothing; it takes no --i-approve, --output-dir, or --trials.\n' >&2
+      exit 64
+    fi
+    if [[ -n "$dataset" ]]; then
+      printf 'Refused: --render-only renders the task fixture and does not take --dataset.\n' >&2
       exit 64
     fi
     if [[ -z "$task_file" || -z "$data_root" || -z "$provider" ]]; then
@@ -199,7 +207,7 @@ live_run() {
   # The task file owns its stage, so the estimate and the run cannot disagree.
   stage="$(sed -n 's/^STAGE = "\([a-z_]*\)"$/\1/p' "$task_file" | head -1)"
   case "$stage" in
-    match|relevance_review|jobspec|draft|cover|critic) ;;
+    match|relevance_review|jobspec|draft|cover|critic|posting_recovery|guided_campaign|search_vocabulary) ;;
     "")
       printf 'Refused: %s declares no STAGE.\n' "$task_file" >&2
       exit 64
@@ -346,7 +354,7 @@ live_run() {
     CLEARSCOUT_EVAL_DATABASE_URL="$database_url" \
     uv run python -m evals.inspect.runner "$task_file" \
       --log-dir "$output_dir" "${selection[@]}" --split "$split" --trials "$trials" \
-      --arms "$arms"
+      --arms "$arms" ${dataset:+--dataset "$dataset"}
 }
 
 case "$SUBCOMMAND" in

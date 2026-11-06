@@ -38,6 +38,7 @@ CLASSIFICATIONS = frozenset({"DIRECT", "TAILORING_ONLY", "TRANSFERABLE", "ASSERT
 PLANTED_CHECKS = {
     "sources cited": "uncited_summary",
     "numbers traced": "invented_figure",
+    "duration scope": "moved_duration",
     "first person": "first_person_summary",
     "must-have coverage": "dropped_must_have",
     "ownership verbs": "promoted_ownership",

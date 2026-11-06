@@ -310,20 +310,29 @@ class _SearchSlice:
         protected = tuple(
             (item, url) for item, url in self.listing_urls.items() if url in self.protected
         )
+        listing: dict[str, Any] = {
+            "completed": completed,
+            "protected": protected,
+            "page_fingerprints": tuple(self.fingerprints),
+            "listing_ids": listing_ids,
+            "listing_urls": listing_urls,
+            "pass_listing_ids": pass_ids,
+        }
         deferred = tuple(
             replace(
                 target,
                 detail_checkpoint=replace(
                     target.detail_checkpoint,
-                    completed=completed,
-                    protected=protected,
-                    page_fingerprints=tuple(self.fingerprints),
-                    listing_ids=listing_ids,
-                    listing_urls=listing_urls,
                     listing_total=self.total,
                     listing_unstable=self.unstable,
                     listing_pass=self.listing_pass,
-                    pass_listing_ids=pass_ids,
+                    # A detail row keeps its own pair; the cursor and receipt hold the listing.
+                    **(
+                        {}
+                        if target.deferred_reason.endswith("_search_detail")
+                        and not self.enumeration_only
+                        else listing
+                    ),
                 ),
             )
             if (coverage is not None or not self.enumeration_only)
@@ -691,11 +700,14 @@ def publisher_search_detail(
             detail_checkpoint=replace(
                 item.detail_checkpoint,
                 listing_facts=checkpoint.listing_facts,
-                listing_ids=checkpoint.listing_ids,
-                listing_urls=checkpoint.listing_urls,
-                completed=checkpoint.completed,
-                protected=checkpoint.protected,
-                page_fingerprints=checkpoint.page_fingerprints,
+                listing_ids=tuple(
+                    identity
+                    for identity in checkpoint.listing_ids
+                    if identity in checkpoint.pending_ids
+                ),
+                listing_urls=tuple(
+                    pair for pair in checkpoint.listing_urls if pair[0] in checkpoint.pending_ids
+                ),
                 listing_total=checkpoint.listing_total,
                 listing_unstable=checkpoint.listing_unstable,
             )

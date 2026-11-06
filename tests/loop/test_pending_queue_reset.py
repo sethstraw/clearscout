@@ -447,6 +447,7 @@ def test_reset_keeps_a_pending_row_guarded_by_paid_recovery(
         approval=PostingRecoveryApprovalManifest(
             pending_discovery_ids=(pending_id,),
             snapshot_sha256="a" * 64,
+            identity_sha256="0" * 64,
             provider="synthetic",
             model="synthetic-model",
             system_prompt_sha256="b" * 64,

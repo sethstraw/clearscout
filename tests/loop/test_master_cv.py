@@ -877,6 +877,43 @@ def test_impact_reports_changed_figures_and_ignores_whitespace(
         assert session.scalar(select(func.count()).select_from(MasterCvVersion)) == 1
 
 
+def test_impact_reports_a_deleted_role_line_a_record_reading_quoted(
+    durable_database: Database, tmp_path: Path, master_cv: Path
+) -> None:
+    workspace = _workspace(durable_database, tmp_path)
+    service = MasterCvService(
+        durable_database, runtime_storage(durable_database, tmp_path / "artifacts")
+    )
+    cv_text = master_cv.read_bytes().decode("utf-8")
+    service.import_source(
+        workspace_id=str(workspace.id), filename="CV.md", content=master_cv.read_bytes()
+    )
+    role = next(role for role in parse_cv(master_cv).roles if role.dates)
+    assert role.dates is not None
+    start = cv_text.index(role.dates)
+    commit = _evaluation_citing(str(workspace.id), cv_text, CITED_QUOTE)
+    header = ScoreEvidenceInput(
+        key="reading-record_years-1",
+        source_kind=EvidenceSourceKind.CANDIDATE,
+        text=role.dates,
+        char_start=start,
+        char_end=start + len(role.dates),
+        locator=f"cv:role-{role.key}-dates",
+        classification=EvidenceClassification.DIRECT,
+    )
+    job_search.commit_evaluation(
+        durable_database,
+        artifact_service(durable_database, tmp_path / "artifacts"),
+        commit.model_copy(update={"score_evidence": [*commit.score_evidence, header]}),
+    )
+
+    impact = service.impact(str(workspace.id), cv_text.replace(role.dates, ""))
+
+    assert impact.citation_count == 2
+    gone = [citation for citation in impact.citations if not citation.drift.found]
+    assert [(citation.quote, citation.entry_carried) for citation in gone] == [(role.dates, None)]
+
+
 def test_impact_only_reports_drift_introduced_by_the_proposed_edit(
     durable_database: Database, tmp_path: Path, master_cv: Path
 ) -> None:

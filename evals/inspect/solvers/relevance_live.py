@@ -41,7 +41,11 @@ from typing import Any
 from pydantic import BaseModel
 
 from clearscout.application.config import ProviderName, Settings, Stage
-from clearscout.application.discovery.relevance_review import review_plan
+from clearscout.application.discovery.relevance_review import (
+    RelevanceReviewItemFailure,
+    review_plan,
+)
+from clearscout.application.discovery.relevance_review_records import ValidatedRelevanceReview
 from clearscout.application.job_search.models import RelevanceReviewBatchResponse
 from clearscout.application.master_cv.cv import CvInventory, parse_cv
 from clearscout.application.master_cv.service import MasterCvService
@@ -60,10 +64,9 @@ from evals.inspect.runner import SPLITS, dataset_samples
 from evals.inspect.solvers.clearscout_live import (
     PromptArm,
     arms_metadata,
-    bill_sample,
     billing_target,
-    credential_for,
     inside_repository,
+    paid_call,
     paid_stage_metadata,
     prompt_snapshot_fingerprint,
     requested_arm,
@@ -72,7 +75,6 @@ from evals.inspect.solvers.clearscout_live import (
     stage_identity,
 )
 from evals.inspect.solvers.clearscout_live import declared_arms as shared_declared_arms
-from evals.support.client import build_live_client
 from evals.support.inventory import synthetic_inventory
 from evals.support.relevance import (
     RelevanceCase,
@@ -179,6 +181,27 @@ class BatchRequest:
         }
 
 
+def _validated(
+    client: Any, request: BatchRequest
+) -> (
+    tuple[
+        RelevanceReviewBatchResponse,
+        list[ValidatedRelevanceReview],
+        list[RelevanceReviewItemFailure],
+    ]
+    | UnusableResponseError
+):
+    """Send one batch and validate it, returning a truncated answer's error instead of raising."""
+    try:
+        raw = client.complete(request.plan, request.schema)
+    except UnusableResponseError as error:
+        if error.record.finish is not Finish.TRUNCATED:
+            raise
+        return error
+    response = RelevanceReviewBatchResponse.model_validate(raw.model_dump(mode="json"))
+    return (response, *request.case.validate(response))
+
+
 @dataclass(frozen=True)
 class _RelevanceLiveSolver:
     """One paid relevance-review run: production-shaped batches, shipped validation."""
@@ -249,38 +272,25 @@ class _RelevanceLiveSolver:
 
     def _reviewed(self, request: BatchRequest) -> Iterator[tuple[int, BatchOutcome]]:
         """Send one batch, bill it once, and split the shipped validation over its members."""
-        call_ledger = Ledger(prices=self.ledger.prices)
-        client = build_live_client(
-            self.provider_name,
-            credential_for(self.provider_name),
-            ledger=call_ledger,
+        paid = paid_call(
+            lambda client: _validated(client, request),
+            provider_name=self.provider_name,
             settings=self.settings,
+            run_ledger=self.ledger,
+            run_metadata=self.run_metadata,
+            prompt_snapshot=request.arm.snapshot,
+            database=self.database,
+            workspace_id=self.workspace_id,
+            origin=BILLING_ORIGIN,
         )
-        truncated: UnusableResponseError | None = None
-        try:
-            with overriding(request.arm.snapshot):
-                raw = client.complete(request.plan, request.schema)
-            response = RelevanceReviewBatchResponse.model_validate(raw.model_dump(mode="json"))
-            valid, failures = request.case.validate(response)
-        except UnusableResponseError as error:
-            if error.record.finish is not Finish.TRUNCATED:
-                raise
-            truncated = error
-        finally:
-            self.ledger.entries.extend(call_ledger.entries)
-            billing_failure = bill_sample(
-                self.database,
-                self.workspace_id,
-                ledger=call_ledger,
-                provider=str(self.run_metadata["provider"]),
-                origin=BILLING_ORIGIN,
-            )
+        call_ledger, billing_failure = paid.ledger, paid.billing_failure
         call = request.provenance(call_ledger)
-        if truncated is not None:
-            failed = FailedCall(truncated, call)
+        if isinstance(paid.value, UnusableResponseError):
+            failed = FailedCall(paid.value, call)
             for position in request.positions:
                 yield position, failed
             return
+        response, valid, failures = paid.value
         share = None if call["call_dollars"] is None else call["call_dollars"] / call["size"]
         for member, (position, posting) in enumerate(
             zip(request.positions, request.case.pending, strict=True)

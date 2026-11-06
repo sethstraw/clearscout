@@ -12,7 +12,7 @@ from collections.abc import Mapping, Sequence
 from clearscout.application.contracts import ScoreEvidenceInput
 from clearscout.application.master_cv.cv import CvInventory
 from clearscout.application.tailoring.fit import Disagreement, Reading
-from clearscout.application.tailoring.fit.structure import unshortened
+from clearscout.application.tailoring.fit.structure import RecordLine, unshortened
 from clearscout.application.tailoring.stages.jobspec import Requirement
 from clearscout.application.tailoring.stages.match import EvidenceMap, Match
 from clearscout.application.tailoring.stages.spans import locate
@@ -40,6 +40,8 @@ _READING_COMPONENTS = {
     "place_fit": ScoreComponent.ELIGIBILITY,
     "pay_fit": ScoreComponent.COMPENSATION,
 }
+
+_RECORD_READINGS = frozenset({"record_years", "record_families"})
 
 
 class EvidenceAnchors:
@@ -173,6 +175,24 @@ class EvidenceAnchors:
         )
         return key
 
+    def role_line(self, key: str, line: RecordLine) -> str | None:
+        """Anchor a master-CV role header line, which has no entry id to cite; None on a miss."""
+        start = self.candidate_text.find(line.text)
+        if start < 0 or not line.text:
+            return None
+        self.items.append(
+            ScoreEvidenceInput(
+                key=key,
+                source_kind=EvidenceSourceKind.CANDIDATE,
+                text=line.text,
+                char_start=start,
+                char_end=start + len(line.text),
+                locator=f"cv:role-{line.role_key}-{line.field}",
+                classification=EvidenceClassification.DIRECT,
+            )
+        )
+        return key
+
 
 def _posting_span(text: str, posting: str) -> tuple[int, int] | None:
     """Return the raw span of text in the posting, matching it sanitized and unshortened."""
@@ -187,10 +207,15 @@ def _posting_span(text: str, posting: str) -> tuple[int, int] | None:
     return None
 
 
-def _unanswered_anchor(
-    anchors: EvidenceAnchors, position: int, requirement: Requirement, match: Match | None
+def _posting_anchor(
+    anchors: EvidenceAnchors,
+    position: int,
+    requirement: Requirement,
+    match: Match | None,
+    *,
+    leading: bool,
 ) -> str | None:
-    """Anchor a requirement the record does not answer to its own words in the posting."""
+    """Anchor a requirement to its own words in the posting."""
     classification = (
         EvidenceClassification(match.classification.value)
         if match is not None
@@ -208,7 +233,7 @@ def _unanswered_anchor(
         f"requirement-{position}-posting",
         requirement.quote_or_span,
         requirement.text,
-        leading=True,
+        leading=leading,
         classification=classification,
         strength=strength,
         requirement_id=requirement.id,
@@ -224,10 +249,10 @@ def requirement_evidence(
 ) -> dict[str, list[str]]:
     """Anchor each requirement to its candidate entries, or to the posting.
 
-    A requirement the record answers is anchored to the entries that answer it.
-    One it does not is anchored to the requirement's own words in the posting,
-    marked as limiting rather than supporting. When the posting does not contain
-    those words, the requirement cites nothing rather than unrelated text.
+    Every requirement is anchored to its own words in the posting; one the record
+    answers cites the entries that answer it first. An unanswered requirement's
+    posting words read as limiting rather than supporting. When the posting does
+    not contain those words, no posting row is stored rather than unrelated text.
     """
     keys_by_requirement: dict[str, list[str]] = {}
     for position, requirement in enumerate(requirements, 1):
@@ -247,7 +272,8 @@ def requirement_evidence(
                         requirement_id=requirement.id,
                     )
                 )
-        elif (key := _unanswered_anchor(anchors, position, requirement, match)) is not None:
+        leading = not keys
+        if key := _posting_anchor(anchors, position, requirement, match, leading=leading):
             keys.append(key)
         keys_by_requirement[requirement.id] = keys
     return keys_by_requirement
@@ -303,10 +329,18 @@ def reading_evidence(anchors: EvidenceAnchors, reading: Reading) -> dict[str, li
 
     A conflicting answer located two statements that cannot both be true, so its
     quotes contradict the finding instead of supporting it. A question the
-    posting did not answer quotes nothing and anchors nothing.
+    posting did not answer quotes nothing and anchors nothing. A reading of the
+    master CV cites the role lines it counted and never searches the posting.
     """
     keys_by_reading: dict[str, list[str]] = {}
     for name, answer in reading.named():
+        if name in _RECORD_READINGS:
+            keys_by_reading[name] = [
+                key
+                for position, line in enumerate(answer.lines, 1)
+                if (key := anchors.role_line(f"reading-{name}-{position}", line)) is not None
+            ]
+            continue
         keys: list[str] = []
         component = _READING_COMPONENTS.get(name)
         direction = EvidenceDirection.CONTRADICTS if answer.conflict else EvidenceDirection.SUPPORTS

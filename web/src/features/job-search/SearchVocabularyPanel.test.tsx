@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { HttpResponse, http } from "msw/http";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type {
   Health,
@@ -189,6 +189,60 @@ describe("SearchVocabularyPanel", () => {
     expect(enqueued).toEqual([
       { workspace_id: "workspace-1", task_type: "search.vocabulary", payload: {} },
     ]);
+  });
+
+  it("keeps the paid action disabled until the queued task's state loads", async () => {
+    const enqueued = installHandlers(vocabularyTask());
+    const release: { current?: () => void } = {};
+    let holdTaskRead = false;
+    server.use(
+      http.get(`${API}/tasks/task-1`, () =>
+        holdTaskRead
+          ? new Promise<Response>((resolve) => {
+              release.current = () => resolve(HttpResponse.json(vocabularyTask()));
+            })
+          : HttpResponse.json(vocabularyTask()),
+      ),
+    );
+    panel();
+    await waitUntilReady();
+
+    holdTaskRead = true;
+    fireEvent.click(screen.getByRole("button", { name: "Propose new search terms" }));
+    fireEvent.click(screen.getByRole("button", { name: "Propose search terms" }));
+    await waitFor(() => expect(release.current).toBeDefined());
+
+    expect(enqueued).toHaveLength(1);
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Propose new search terms" }),
+    ).toHaveProperty("disabled", true);
+    release.current?.();
+    expect(await screen.findByRole("button", { name: "Search running" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
+  it("says why the paid action is disabled when recent search status cannot be read", async () => {
+    installHandlers(null);
+    server.use(http.get(`${API}/tasks`, () => new HttpResponse(null, { status: 500 })));
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      panel();
+      // The app retries a failed read once, one second later.
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(
+        await screen.findByText(
+          "Recent search vocabulary status could not be read. Reload before starting another paid search.",
+        ),
+      ).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(screen.getByRole("button", { name: "Propose new search terms" })).toHaveProperty(
+      "disabled",
+      true,
+    );
   });
 
   it("fails closed when the configured provider tier is unavailable", async () => {

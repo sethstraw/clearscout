@@ -1,6 +1,9 @@
 """Read models for board scans, refusals, and staged discovery review."""
 
-from clearscout.application.discovery.scan_queries.board_holders import registered_board_holder
+from clearscout.application.discovery.scan_queries.board_holders import (
+    registered_board_holder,
+    registered_employer_boards,
+)
 from clearscout.application.discovery.scan_queries.history import (
     QUERY_LABEL,
     SCREENED_OUT_REASONS,
@@ -37,5 +40,6 @@ __all__ = [
     "kept_scan_id_statement",
     "refusal_text",
     "registered_board_holder",
+    "registered_employer_boards",
     "require_workspace_in",
 ]

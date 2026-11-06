@@ -11,6 +11,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import AnyHttpUrl, BaseModel, Field, create_model
 from pydantic import ValidationError as PydanticValidationError
+from sqlalchemy.orm import Session
 
 from clearscout.application.config import Settings, Stage
 from clearscout.application.discovery.content_resolution import (
@@ -22,7 +23,11 @@ from clearscout.application.discovery.content_resolution import (
     validate_resolved_posting_content,
 )
 from clearscout.application.discovery.paid_task import billed_run
-from clearscout.application.discovery.scan_queries import registered_board_holder
+from clearscout.application.discovery.posting_identity import posting_host
+from clearscout.application.discovery.scan_queries import (
+    registered_board_holder,
+    registered_employer_boards,
+)
 from clearscout.application.failures import ConflictError, ValidationError
 from clearscout.application.prompts import digest as prompt_digest
 from clearscout.application.prompts import load, render
@@ -49,7 +54,12 @@ from clearscout.infrastructure.providers.plan import (
     Segment,
     schema_digest,
 )
-from clearscout.infrastructure.web_fetch.boards import single_tenant_board
+from clearscout.infrastructure.web_fetch.board_platform import host_match
+from clearscout.infrastructure.web_fetch.boards import (
+    BOARD_PATTERNS,
+    JOB_URL_PATTERNS,
+    single_tenant_board,
+)
 from clearscout.shared.costs import CallManifest, ModelPrice, Usage, cents
 from clearscout.shared.costs.prices import priced_model
 from clearscout.shared.costs.prices import table as price_table
@@ -114,6 +124,14 @@ READABLE_SOURCE_AUTHORITIES = frozenset(
     {PostingSourceAuthority.PUBLISHER_BODY, PostingSourceAuthority.ATS}
 )
 
+# Read outcomes where the site refused the client, so its other pages refuse it too.
+_HOST_REFUSALS = frozenset(
+    {
+        PostingContentAccessStatus.ACCESS_BLOCKED.value,
+        PostingContentAccessStatus.SESSION_REQUIRED.value,
+    }
+)
+
 
 class PostingRecoveryObservation(StrictModel):
     """One bounded, URL-scoped observation with no posting-body field."""
@@ -163,7 +181,8 @@ class RecoveryCandidate:
 
     url: str
     observation: PostingRecoveryObservation
-    # The known URL whose last deterministic read already failed; reading it again repeats that.
+    # The known URL whose last read failed, or a page on a host that refused that read;
+    # reading it repeats the failure.
     already_failed: bool = False
 
 
@@ -220,11 +239,16 @@ class AssistedContentResolutionService:
                 f"Assisted posting recovery accepts at most {MAX_ASSISTED_RECOVERY_ITEMS} items."
             )
         with self.database.session() as session:
+            targets = _with_registered_boards(session, workspace_id, preflight.targets)
             on_board = [
                 f"{target.id} is held by {holder.entity_type.replace('_', ' ')} "
                 f"{holder.entity_id} at {holder.url}"
-                for target in preflight.targets
-                if (holder := registered_board_holder(session, workspace_id, target.id))
+                for target in targets
+                if (
+                    holder := registered_board_holder(
+                        session, workspace_id, target.id, count_dismissed=True
+                    )
+                )
             ]
         if on_board:
             raise ValidationError(
@@ -232,7 +256,7 @@ class AssistedContentResolutionService:
                 "holds: " + "; ".join(on_board)
             )
         return _approval_manifest(
-            preflight.targets,
+            targets,
             preflight.snapshot_sha256,
             settings,
             issued_at=issued_at,
@@ -252,8 +276,10 @@ class AssistedContentResolutionService:
         approval_time = _aware_now(now)
         _validate_approval_time(approval, approval_time)
         current = self.content.preflight(workspace_id, list(approval.pending_discovery_ids))
+        with self.database.session() as session:
+            targets = _with_registered_boards(session, workspace_id, current.targets)
         expected = _approval_manifest(
-            current.targets,
+            targets,
             current.snapshot_sha256,
             settings,
             issued_at=approval.issued_at,
@@ -269,7 +295,7 @@ class AssistedContentResolutionService:
             provider=self.provider,
         ) as run:
             client = run.build_client()
-            items = self._recover_targets(workspace_id, current.targets, client, context)
+            items = self._recover_targets(workspace_id, targets, client, context)
             return AssistedPostingRecoveryBatch(
                 items=items,
                 model_calls_made=len(run.ledger.entries),
@@ -334,29 +360,25 @@ class AssistedContentResolutionService:
         target: PostingResolutionTarget,
         client: Client,
     ) -> AssistedPostingRecoveryItem:
-        entries = client.ledger.entries
-        before = len(entries)
         try:
-            raw = client.complete(request_plan(target, client.settings), response_schema(target.id))
-            response = PostingRecoveryResponse.model_validate(raw.model_dump(mode="json"))
-            candidates = validated_recovery_candidates(target, response, entries[before:])
-        except (ProviderError, ValidationError, ValueError) as error:
-            if isinstance(error, ProviderError) and not _schema_refused(error):
-                return _failed(target.id, PostingRecoveryOutcome.PROVIDER_FAILED, error)
-            for position in range(before, len(entries)):
-                client.ledger.refuse(position)
+            search = cited_recovery_search(target, client)
+        except RecoveryResponseRefusedError as error:
             return _failed(target.id, PostingRecoveryOutcome.RESPONSE_REFUSED, error)
-        decision, candidate = recovery_decision(candidates)
+        except ProviderError as error:
+            return _failed(target.id, PostingRecoveryOutcome.PROVIDER_FAILED, error)
+        response, decision, candidate = search.response, search.decision, search.candidate
         if candidate is None or decision is not PostingRecoveryDecision.CANDIDATE_READY:
             outcome, detail = _DECIDED_WITHOUT_READING[decision]
-            if decision is PostingRecoveryDecision.NOT_FOUND and not _captured_source_urls(
-                entries[before]
-            ):
+            if decision is PostingRecoveryDecision.NOT_FOUND and not search.searched_sources:
                 detail = "Hosted search returned no sources and opened no pages."
             if candidate is not None and candidate.already_failed:
+                place = (
+                    "is the known URL,"
+                    if _url_key(candidate.url) == _url_key(target.url)
+                    else f"is on {posting_host(target.url)}, where the known URL was"
+                )
                 detail = (
-                    "The cited candidate is the known URL, already read as "
-                    f"{known_url_read_outcome(target)}."
+                    f"The cited candidate {place} already read as {known_url_read_outcome(target)}."
                 )
             return AssistedPostingRecoveryItem(
                 target.id,
@@ -494,8 +516,13 @@ def request_plan(target: PostingResolutionTarget, settings: Settings) -> Request
     if (known_read := known_url_read_outcome(target)) is not None:
         fields["known_url_read_outcome"] = known_read
     # Only an employer's own ATS tenant is named; any other host may be a reposting site.
-    if single_tenant_board(target.url) and (host := url_host(target.url)):
+    # A registered board on another host means the employer left that tenant.
+    board_host = url_host(target.registered_board_url) if target.registered_board_url else ""
+    host = url_host(target.url) if single_tenant_board(target.url) else ""
+    if host and board_host in {"", host}:
         fields["known_publisher_domain"] = host
+    if target.registered_board_url:
+        fields["registered_board_url"] = target.registered_board_url
     identity = json.dumps(
         fields,
         ensure_ascii=True,
@@ -546,6 +573,7 @@ def _approval_manifest(
     return PostingRecoveryApprovalManifest(
         pending_discovery_ids=tuple(target.id for target in targets),
         snapshot_sha256=snapshot_sha256,
+        identity_sha256=_combined_digest(plan.task.digest for plan in plans),
         provider=settings.provider.value,
         model=choice.model,
         system_prompt_sha256=prompt_digest(load("posting_recovery_system")),
@@ -612,11 +640,81 @@ def validated_recovery_candidates(
         raise ValidationError("Posting recovery requires exactly one provider call per identity.")
     manifest = new_entries[0]
     _validate_search_record(manifest)
+    known_read = known_url_read_outcome(target)
+    host_refused = known_read in _HOST_REFUSALS and not _shared_ats_host(target.url)
     return _cited_candidates(
         target.url,
         response,
         _captured_source_urls(manifest),
-        known_failed=known_url_read_outcome(target) is not None,
+        known_failed=known_read is not None,
+        failed_host=posting_host(target.url) if host_refused else None,
+    )
+
+
+def _shared_ats_host(url: str) -> bool:
+    """Return whether a URL is a record on an ATS or aggregator host serving many employers."""
+    return any(host_match(pattern, url) for _, pattern in BOARD_PATTERNS) or any(
+        host_match(pattern, url) for pattern in JOB_URL_PATTERNS
+    )
+
+
+def _with_registered_boards(
+    session: Session, workspace_id: str, targets: tuple[PostingResolutionTarget, ...]
+) -> tuple[PostingResolutionTarget, ...]:
+    return tuple(
+        replace(
+            target,
+            registered_board_url=_registered_board_url(session, workspace_id, target.employer),
+        )
+        for target in targets
+    )
+
+
+def _registered_board_url(session: Session, workspace_id: str, employer: str) -> str:
+    """Return the employer's job board address when the workspace registers exactly one."""
+    urls = list(registered_employer_boards(session, workspace_id, employer).values())
+    return urls[0] if len(urls) == 1 else ""
+
+
+class RecoveryResponseRefusedError(ValidationError):
+    """A recovery answer the program refused; its billed calls are already marked refused."""
+
+
+@dataclass(frozen=True)
+class RecoverySearch:
+    """One identity's validated cited search and the decision it settles, before any read."""
+
+    response: PostingRecoveryResponse
+    candidates: list[RecoveryCandidate]
+    decision: PostingRecoveryDecision
+    candidate: RecoveryCandidate | None
+    searched_sources: bool
+
+
+def cited_recovery_search(target: PostingResolutionTarget, client: Client) -> RecoverySearch:
+    """Send one identity's cited search and settle it without reading a page.
+
+    A provider failure other than a schema refusal propagates unchanged.
+    """
+    entries = client.ledger.entries
+    before = len(entries)
+    try:
+        raw = client.complete(request_plan(target, client.settings), response_schema(target.id))
+        response = PostingRecoveryResponse.model_validate(raw.model_dump(mode="json"))
+        candidates = validated_recovery_candidates(target, response, entries[before:])
+    except (ProviderError, ValidationError, ValueError) as error:
+        if isinstance(error, ProviderError) and not _schema_refused(error):
+            raise
+        for position in range(before, len(entries)):
+            client.ledger.refuse(position)
+        raise RecoveryResponseRefusedError(str(error)) from error
+    decision, candidate = recovery_decision(candidates)
+    return RecoverySearch(
+        response,
+        candidates,
+        decision,
+        candidate,
+        searched_sources=bool(_captured_source_urls(entries[before])),
     )
 
 
@@ -686,6 +784,7 @@ def _cited_candidates(
     captured_urls: set[str],
     *,
     known_failed: bool,
+    failed_host: str | None,
 ) -> list[RecoveryCandidate]:
     known = _url_key(known_url)
     _validate_supporting_urls(response, known, captured_urls)
@@ -698,10 +797,8 @@ def _cited_candidates(
         observation = observations.get(key)
         if observation is None or observation.identity not in {"exact", "plausible"}:
             continue
-        accepted.setdefault(
-            key,
-            RecoveryCandidate(candidate, observation, already_failed=known_failed and key == known),
-        )
+        failed = (known_failed and key == known) or posting_host(candidate) == failed_host
+        accepted.setdefault(key, RecoveryCandidate(candidate, observation, already_failed=failed))
     return list(accepted.values())
 
 

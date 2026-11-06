@@ -5,6 +5,7 @@
   "scores": {
     "check.character policy": "pass",
     "check.document structure": "pass",
+    "check.duration scope": "pass",
     "check.factual review": "warn",
     "check.first person": "pass",
     "check.forbidden strings": "fail",

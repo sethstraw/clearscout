@@ -7381,7 +7381,7 @@ def test_fresh_listing_windows_exclude_carried_recovery_membership(
         if kind == "fxrecruiter":
             assert not stored.complete
             checkpoint = SourceDetailCheckpoint.from_json(historical.detail_checkpoint)
-            assert (historical_id, detail_url(int(historical_id))) in checkpoint.listing_urls
+            assert checkpoint.listing_urls == ((str(own), old_url),)
         if not failed_reopen:
             assert (
                 session.scalar(
@@ -7558,7 +7558,7 @@ def test_empty_search_page_history_cannot_promote_an_old_failed_detail_map(
         ).one()
         retained = SourceDetailCheckpoint.from_json(old.detail_checkpoint)
         assert old.status == "pending" and not old.automatic_eligible
-        assert retained.listing_urls == checkpoint.listing_urls
+        assert retained.listing_urls == (("99", old_url),)
         assert retained.failed_attempts == (("99", 1),)
         assert all(row.withdrawn_at is None for row in session.scalars(select(PendingDiscovery)))
     assert site.detail_url(98) not in site.requests
@@ -13433,33 +13433,103 @@ def test_a_same_day_rescan_counts_bodies_its_earlier_task_completed(
     assert scan.complete is True
 
 
-def test_a_publisher_search_frontier_stores_each_settled_body_pair_a_bounded_number_of_times(
-    durable_database: Database,
-) -> None:
-    from tests.loop.test_jpaginate_reader import _Portal
+_LARGE_LISTING = 200
 
-    workspace_id = _workspace(durable_database)
-    listing = 24
-    site = _Portal([[job, job + 1] for job in range(1, listing + 1, 2)])
-    site.stop_after_detail = 2
-    _source(durable_database, workspace_id, "Example", site.origin + "/")
-    state_target_titles(durable_database, workspace_id, "Clinical Data Analyst")
-    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
-    assert worker.run_once()
-    site.stopped, site.stop_after_detail = False, None
-    while worker.run_once():
-        pass
 
-    scan = _board_scan_row(durable_database)
-    assert scan.raw_count == scan.read_count == listing
-    assert scan.complete is True
-    with durable_database.session() as session:
-        stored = sum(
-            len(SourceDetailCheckpoint.from_json(row.detail_checkpoint).completed)
+def _stored_listing_pairs(database: Database) -> int:
+    """Count the completed, protected and membership pairs every frontier row stores."""
+    with database.session() as session:
+        checkpoints = [
+            SourceDetailCheckpoint.from_json(row.detail_checkpoint)
             for row in session.scalars(select(SourceScanFrontierItem))
             if row.detail_checkpoint is not None
-        )
-    assert stored <= 3 * listing
+        ]
+    return sum(
+        len(checkpoint.completed) + len(checkpoint.protected) + len(checkpoint.listing_urls)
+        for checkpoint in checkpoints
+    )
+
+
+# A page stop leaves a cursor, so the later detail stop defers bodies from a continue task;
+# without one, the later stop interrupts the retries of bodies the scan task deferred.
+# A scan whose first task holds a page cursor stays uncertified on this portal.
+@pytest.mark.parametrize(
+    ("page_stop", "detail_stops", "certified"),
+    [(None, (100, 150), True), (5, (None, 150), False)],
+)
+def test_a_publisher_search_frontier_stores_listing_pairs_linear_in_the_listing(
+    durable_database: Database,
+    page_stop: int | None,
+    detail_stops: tuple[int | None, int],
+    certified: bool,
+) -> None:
+    stored = _drain_large_portal_scan(durable_database, page_stop, detail_stops)
+
+    scan = _board_scan_row(durable_database)
+    assert scan.raw_count == scan.read_count == _LARGE_LISTING
+    assert scan.complete is certified
+    assert max(stored) <= 4 * _LARGE_LISTING, stored
+
+
+def _drain_large_portal_scan(
+    database: Database,
+    page_stop: int | None,
+    detail_stops: tuple[int | None, int],
+    alter_after_scan: Any = None,
+) -> list[int]:
+    """Scan a large portal to a drained frontier; return the pairs stored after each task."""
+    from tests.loop.test_jpaginate_reader import _Portal
+
+    workspace_id = _workspace(database)
+    site = _Portal([list(range(job, job + 20)) for job in range(1, _LARGE_LISTING + 1, 20)])
+    site.stop_after_page, site.stop_after_detail = page_stop, detail_stops[0]
+    _source(database, workspace_id, "Example", site.origin + "/")
+    state_target_titles(database, workspace_id, "Clinical Data Analyst")
+    worker = _enqueue_scan(database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    if alter_after_scan is not None:
+        with database.session() as session:
+            alter_after_scan(session)
+    stored = [_stored_listing_pairs(database)]
+    site.stopped, site.stop_after_detail = False, detail_stops[1]
+    while worker.run_once():
+        site.stopped = False
+        stored.append(_stored_listing_pairs(database))
+    return stored
+
+
+def _stamp_listing_on_detail_rows(session: Any) -> None:
+    """Give every pending search-detail row the whole listing, as older builds stored it."""
+    rows = session.scalars(select(SourceScanFrontierItem)).all()
+    listing = next(
+        SourceDetailCheckpoint.from_json(row.detail_checkpoint)
+        for row in rows
+        if row.detail_checkpoint is not None
+        and str(row.detail_checkpoint["platform"]).startswith("search:")
+    )
+    for row in rows:
+        if row.deferred_reason.endswith("_search_detail") and row.detail_checkpoint is not None:
+            row.detail_checkpoint = replace(
+                SourceDetailCheckpoint.from_json(row.detail_checkpoint),
+                listing_ids=listing.listing_ids,
+                listing_urls=listing.listing_urls,
+                completed=listing.completed,
+                protected=listing.protected,
+            ).as_json()
+
+
+def test_a_retried_detail_row_drops_the_listing_an_older_checkpoint_carried(
+    durable_database: Database,
+) -> None:
+    stored = _drain_large_portal_scan(
+        durable_database, None, (100, 150), alter_after_scan=_stamp_listing_on_detail_rows
+    )
+
+    scan = _board_scan_row(durable_database)
+    assert scan.raw_count == scan.read_count == _LARGE_LISTING
+    assert scan.complete is True
+    assert stored[0] > _LARGE_LISTING**2 // 4
+    assert stored[-1] <= 4 * _LARGE_LISTING, stored
 
 
 def _adopted_jpaginate_rescan(

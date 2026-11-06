@@ -593,12 +593,15 @@ def board_holder(
         return None
     mine = _folded_places(title, places)
     survivors = [record for record in hits if not _conflicts(mine, requisitions, record)]
-    if len({normalize_url(record.holder.url) for record in survivors}) != 1:
+    # A closed record at another address is an earlier posting of the role, not a rival.
+    open_urls = {normalize_url(record.holder.url) for record in survivors if not record.closed}
+    if len(open_urls) != 1:
         return None
-    if any(record.closed for record in survivors):
+    held = [record for record in survivors if normalize_url(record.holder.url) in open_urls]
+    if any(record.closed for record in held):
         return None
     # A tracked posting at the same address outranks a pending row beside it.
-    return min(survivors, key=lambda record: record.holder.entity_type != "job_posting").holder
+    return min(held, key=lambda record: record.holder.entity_type != "job_posting").holder
 
 
 def _requisition(url: str) -> str | None:

@@ -1550,6 +1550,45 @@ def test_the_record_is_read_by_the_same_rules_as_the_posting(inventory: CvInvent
     assert "earliest dated role starts 2014, latest ends 2026" in reading.record_years.evidence[0]
 
 
+TWO_ROLES = """# PAT LEE
+
+Toronto | pat@example.com
+
+## PROFESSIONAL EXPERIENCE
+
+### Northwind
+
+**Product Manager**
+2018 - 2021 | Toronto
+
+- Owned the roadmap
+
+### Riverbend Cafe
+
+**Barista**
+2015 - 2018
+
+- Made coffee
+"""
+
+
+def test_the_record_readings_name_the_role_lines_they_counted(tmp_path: Path) -> None:
+    """Years cite every dated role's dates; families cite only roles that carried one."""
+    path = tmp_path / "CV.md"
+    path.write_text(TWO_ROLES, encoding="utf-8")
+    reading = reading_of(DATA_ARCHITECT, parse_cv(path))
+
+    assert reading.record_years.value == 2021 - 2015
+    assert [(line.role_key, line.field, line.text) for line in reading.record_years.lines] == [
+        ("northwind", "dates", "2018 - 2021"),
+        ("riverbend-cafe", "dates", "2015 - 2018"),
+    ]
+    assert reading.record_families.value == "Product management"
+    assert [(line.role_key, line.field, line.text) for line in reading.record_families.lines] == [
+        ("northwind", "title", "Product Manager"),
+    ]
+
+
 def test_a_record_with_no_dates_is_refused_rather_than_guessed(tmp_path: Path) -> None:
     """A CV whose roles carry no years cannot have a span, and does not get one."""
     path = tmp_path / "CV.md"

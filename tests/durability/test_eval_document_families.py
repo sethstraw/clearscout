@@ -24,7 +24,7 @@ from evals.inspect.scorers.document_checks import (
     verifier_contract,
     verifier_result,
 )
-from evals.inspect.solvers import document_live
+from evals.inspect.solvers import clearscout_live, document_live
 from evals.inspect.solvers.clearscout_live import prompt_snapshot_fingerprint
 from evals.inspect.solvers.document_scripted import (
     cover_scripted_solver,
@@ -78,9 +78,9 @@ def _header(log: Path) -> dict[str, Any]:
 @pytest.mark.parametrize(
     ("task", "dataset", "total"),
     [
-        ("draft_scripted_task.py", "draft_cases.jsonl", 6),
+        ("draft_scripted_task.py", "draft_cases.jsonl", 8),
         ("cover_scripted_task.py", "cover_cases.jsonl", 5),
-        ("critic_scripted_task.py", "critic_cases.jsonl", 13),
+        ("critic_scripted_task.py", "critic_cases.jsonl", 25),
     ],
 )
 def test_a_scripted_document_task_runs_offline_and_every_case_scores_as_declared(
@@ -117,19 +117,38 @@ def _drafted_lines(case: dict[str, Any]) -> list[str]:
     )
 
 
+def _letter_sentences(case: dict[str, Any]) -> list[list[str]]:
+    paragraphs = case["metadata"]["scripted_letter"]["paragraphs"]
+    return [re.split(r"(?<=\.) ", paragraph["text"]) for paragraph in paragraphs]
+
+
 def test_a_planted_critic_case_differs_from_its_clean_control_by_its_planted_line() -> None:
     """The document is the variable here, so a differing verdict is the one planted line."""
     cases = {case["id"]: case for case in _cases("critic_cases.jsonl")}
-    control = cases["strong_verdict"]
 
     planted = [case for case in cases.values() if "planted" in case["metadata"]]
 
-    assert planted
+    assert any("scripted_letter" in case["metadata"] for case in planted)
     for case in planted:
+        line = case["metadata"]["planted"]["line"]
+        if "scripted_draft" in case["metadata"]:
+            control = cases["strong_verdict"]
+            assert case["job_spec"] == control["job_spec"], case["id"]
+            assert _drafted_lines(case) == sorted([*_drafted_lines(control), line]), case["id"]
+            continue
+        control = cases["letter_duties_listed"]
         assert case["job_spec"] == control["job_spec"], case["id"]
-        assert _drafted_lines(case) == sorted(
-            [*_drafted_lines(control), case["metadata"]["planted"]["line"]]
-        ), case["id"]
+        changed = [
+            (before, after)
+            for kept, written in zip(
+                _letter_sentences(control), _letter_sentences(case), strict=True
+            )
+            for before, after in zip(kept, written, strict=True)
+            if before != after
+        ]
+        [(before, after)] = changed
+        assert after == line, case["id"]
+        assert line.startswith(before.removesuffix(".")), case["id"]
 
 
 def test_the_draft_log_names_which_checks_failed_and_how_often(tmp_path: Path) -> None:
@@ -137,6 +156,7 @@ def test_the_draft_log_names_which_checks_failed_and_how_often(tmp_path: Path) -
     log = runner.run_task(str(TASKS / "draft_scripted_task.py"), log_dir=tmp_path / "logs")
 
     assert _header(log)["failed_checks"] == {
+        "duration scope": 1,
         "first person": 1,
         "must-have coverage": 1,
         "numbers traced": 2,
@@ -166,7 +186,7 @@ def test_the_critic_log_counts_the_outcomes_the_shipped_floors_assigned(tmp_path
     """The critic family reports a distribution to read, not an invented pass rate."""
     log = runner.run_task(str(TASKS / "critic_scripted_task.py"), log_dir=tmp_path / "logs")
 
-    assert _header(log)["critic_outcomes"] == {"fail": 7, "warn": 3, "pass": 3}
+    assert _header(log)["critic_outcomes"] == {"fail": 19, "warn": 3, "pass": 3}
 
 
 def test_a_planted_uncited_line_fails_provenance_and_its_untraceable_span() -> None:
@@ -295,6 +315,37 @@ def test_a_doubt_about_some_other_line_does_not_catch_a_planted_claim() -> None:
 
     assert missed["value"] is False
     assert caught["value"] is True
+
+
+def test_a_doubt_inside_the_planted_line_under_another_boundary_does_not_catch_it() -> None:
+    """The restatement half of a planted letter sentence is true, so doubting it is a miss."""
+    sample = _case("critic_cases.jsonl", "planted_letter_duty_with_credit")
+    restated = {
+        "boundary": "miscited",
+        "claim": "“The first duty is operating the streaming ingestion core and its feeds”",
+    }
+    credit = {"boundary": "absent_from_record", "claim": "“I owned its on-call rotation”"}
+
+    missed = critic_doubt_contract()(
+        sample, {"completion": "fail", "verdict": {"unsupported_claims": [restated]}}
+    )
+    caught = critic_doubt_contract()(
+        sample, {"completion": "fail", "verdict": {"unsupported_claims": [credit]}}
+    )
+
+    assert missed["value"] is False
+    assert caught["value"] is True
+
+
+def test_a_boundary_the_case_accepts_catches_its_planted_line() -> None:
+    """A case may list a second boundary that reads the same defect equally well."""
+    sample = copy.deepcopy(_case("critic_cases.jsonl", "planted_absent_from_record"))
+    doubt = {"boundary": "individual_ownership", "claim": "“owned the on-call rotation”"}
+    output = {"completion": "fail", "verdict": {"unsupported_claims": [doubt]}}
+
+    assert critic_doubt_contract()(sample, output)["value"] is False
+    sample["metadata"]["planted"]["accepted_boundaries"] = ["individual_ownership"]
+    assert critic_doubt_contract()(sample, output)["value"] is True
 
 
 def test_a_doubt_quoting_one_term_of_the_planted_line_does_not_catch_it() -> None:
@@ -494,7 +545,7 @@ def test_a_live_document_run_sends_the_choice_the_run_names_to_its_stage_only(
     monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
     monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
     monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
-    monkeypatch.setattr(document_live, "credential_for", lambda provider: "test-key")
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider: "test-key")
     monkeypatch.setattr(eval_client, "provider_for", lambda provider, key: FakeProvider())
     built: list[Any] = []
 
@@ -505,7 +556,7 @@ def test_a_live_document_run_sends_the_choice_the_run_names_to_its_stage_only(
         built.append(eval_client.build_live_client(*args, **kwargs).settings)
         raise StoppedError
 
-    monkeypatch.setattr(document_live, "build_live_client", observed_client)
+    monkeypatch.setattr(clearscout_live, "build_live_client", observed_client)
     solver = document_live.document_live_solver(Stage.DRAFT, FIXTURES / "draft_cases.jsonl")
 
     try:
@@ -600,7 +651,7 @@ def test_a_live_critic_row_keeps_what_each_draw_doubted_flagged_and_advised(
     ]
     calls = iter(answers)
     provider = ScriptedProvider(script={"CriticVerdict": lambda _schema: next(calls)})
-    monkeypatch.setattr(document_live, "credential_for", lambda provider_name: "test-key")
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "test-key")
     monkeypatch.setattr(eval_client, "provider_for", lambda provider_name, key: provider)
     shipped = document_live.document_live_solver(Stage.CRITIC, FIXTURES / "critic_cases.jsonl")
     # Two draws keep the answer order scripted; later draws are otherwise asked together.
@@ -641,7 +692,7 @@ def test_a_live_letter_critique_is_asked_as_the_product_asks_about_a_letter(
     sample = _case("critic_cases.jsonl", "letter_company_paragraph")
     verdict = sample["metadata"]["scripted_verdict"]
     provider = ScriptedProvider(script={"CriticVerdict": lambda _schema: verdict})
-    monkeypatch.setattr(document_live, "credential_for", lambda provider_name: "test-key")
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "test-key")
     monkeypatch.setattr(eval_client, "provider_for", lambda provider_name, key: provider)
     shipped = document_live.document_live_solver(Stage.CRITIC, FIXTURES / "critic_cases.jsonl")
     solver = replace(shipped, settings=shipped.settings.model_copy(update={"critic_trials": 1}))
@@ -653,11 +704,57 @@ def test_a_live_letter_critique_is_asked_as_the_product_asks_about_a_letter(
 
     [(_, request)] = provider.calls
     research = sample["metadata"]["research"][0]
+    assert 0 <= request.task.text.find(sample["input"]) < request.task.text.find(research["text"])
     assert "cover letter" in request.instructions.text
-    assert "Paragraph 4, source_ids: company.careers" in request.task.text
+    assert "Paragraph 3, source_ids: company.careers" in request.task.text
     assert research["text"] in request.task.text
     assert output["finding"]["check"] == "letter critic"
     assert output["completion"] == sample["expect"]["critic_outcome"]
+
+
+def test_a_live_cover_letter_is_written_beside_the_posting_then_the_company_research(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, durable_database_url: str
+) -> None:
+    """Production researches a letter from the stored posting first, so the eval does too."""
+    from evals.support import client as eval_client
+    from evals.support.documents import LETTER_SCHEMA_KEY, letter_payload, research_sources
+
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
+    from tests.support.doubles import ScriptedProvider
+
+    database = Database(durable_database_url)
+    try:
+        with database.session() as session:
+            session.add(Workspace(slug="ws", name="Workspace"))
+    finally:
+        database.dispose()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
+    sample = runner._solver_input(_case("critic_cases.jsonl", "letter_company_paragraph"))
+    answer = letter_payload(
+        sample["metadata"]["scripted_letter"], document_context(sample), research_sources(sample)
+    )
+    provider = ScriptedProvider(script={LETTER_SCHEMA_KEY: lambda _schema: answer})
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "test-key")
+    monkeypatch.setattr(eval_client, "provider_for", lambda provider_name, key: provider)
+    solver = document_live.document_live_solver(Stage.COVER, FIXTURES / "cover_cases.jsonl")
+
+    try:
+        result = solver(sample)
+    finally:
+        solver.database.dispose()
+
+    [(_, request)] = provider.calls
+    text = request.task.text
+    research = sample["metadata"]["research"][0]
+    provenance = next(f for f in result["findings"] if f["check"] == "letter provenance")
+    assert provenance["outcome"] == "pass", provenance["detail"]
+    assert 0 <= text.find("company.posting") < text.find(research["id"])
+    assert 0 <= text.find(sample["input"]) < text.find(research["text"])
 
 
 def test_a_live_document_run_binds_its_stage_prompts_and_dataset_bytes(
@@ -678,6 +775,7 @@ def test_a_live_document_run_binds_its_stage_prompts_and_dataset_bytes(
     monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
     monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "5")
     monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEARSCOUT_CRITIC_TRIALS", "3")
     dataset = FIXTURES / "draft_cases.jsonl"
 
     solver = document_live.document_live_solver(Stage.CRITIC, dataset)
@@ -685,6 +783,7 @@ def test_a_live_document_run_binds_its_stage_prompts_and_dataset_bytes(
     try:
         metadata = solver.run_metadata
         assert metadata["stage"] == "critic"
+        assert metadata["critic_trials"] == 3
         assert metadata["prompt_suite_fingerprint"] == prompt_snapshot_fingerprint(
             document_live.CRITIC_PROMPTS,
             {name: load(name) for name in document_live.CRITIC_PROMPTS},

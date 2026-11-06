@@ -81,6 +81,8 @@ class PostingRecoveryApprovalManifest(StrictModel):
     model: str
     system_prompt_sha256: str
     user_prompt_sha256: str
+    # The rendered per-identity requests, which carry the registered board re-read at recover.
+    identity_sha256: str
     schema_sha256: str
     settings_sha256: str
     price_sha256: str

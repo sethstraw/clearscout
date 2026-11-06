@@ -370,6 +370,113 @@ def test_a_span_spelled_in_decades_that_no_citation_states_fails(inventory, sett
     )
 
 
+def _scoped(inventory, settings, text: str, evidence: str, *also: str) -> Finding:
+    """Return the duration finding for one sentence citing an entry carrying ``evidence``."""
+    record, entry_id = evidence_record(inventory, evidence)
+    markdown = f"# JANE\n\njane.doe@example.com\n\n---\n\n## Summary\n\n{text}\n"
+    draft = simple_draft(record, text, (entry_id, *also))
+    return finding(build(record, settings, draft, markdown), "duration scope")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "8 years leading data projects.",
+        "8+ years leading data projects.",
+        "Eight years leading data projects.",
+        "Data projects led over eight years.",
+    ],
+)
+def test_a_duration_moved_onto_a_subject_its_evidence_gives_another_fails(
+    inventory, settings, text: str
+) -> None:
+    """The figure traces, so only the subject it is attached to shows the borrowing."""
+    evidence = "8 years in clinical pharmacy; 2 years leading data projects."
+    record, entry_id = evidence_record(inventory, evidence)
+    markdown = f"# JANE\n\njane.doe@example.com\n\n---\n\n## Summary\n\n{text}\n"
+    report = build(record, settings, simple_draft(record, text, (entry_id,)), markdown)
+
+    assert outcome(report, "numbers traced") is Outcome.PASS
+    assert outcome(report, "duration scope") is Outcome.FAIL
+    assert "duration scope" in report.redraftable_checks()
+    assert "clinical pharmacy" in finding(report, "duration scope").detail
+
+
+@pytest.mark.parametrize(
+    ("text", "evidence"),
+    [
+        (
+            "2 years leading data projects.",
+            "8 years in clinical pharmacy; 2 years leading data projects.",
+        ),
+        (
+            "Two years leading data projects.",
+            "Eight years in pharmacy, then 2 years leading data projects.",
+        ),
+        ("Two decades of schema governance.", "Ran schema governance for 20 years."),
+        ("Eleven years of schema governance.", "Ran schema governance for eleven years."),
+    ],
+)
+def test_a_duration_kept_on_its_evidence_subject_passes(
+    inventory, settings, text: str, evidence: str
+) -> None:
+    assert _scoped(inventory, settings, text, evidence).outcome is Outcome.PASS
+
+
+def test_a_duration_borrowed_from_a_second_citation_fails(inventory, settings) -> None:
+    """The second entry names the line's subject and states no duration, so the span moved."""
+    quality = next(e for e in inventory.entries if e.text.startswith("Introduced data quality"))
+    scope = _scoped(
+        inventory,
+        settings,
+        "Introduced data quality rules over 3 years.",
+        "Ran the warehouse migration for 3 years.",
+        quality.id,
+    )
+    assert scope.outcome is Outcome.FAIL
+
+
+@pytest.mark.parametrize(
+    ("text", "evidence"),
+    [
+        ("8 years leading data projects.", "8 months leading data projects."),
+        ("Delivered the migration in 6 weeks.", "Cut the migration from 6 hours to 90 minutes."),
+    ],
+)
+def test_a_value_its_evidence_never_states_as_this_duration_fails(
+    inventory, settings, text: str, evidence: str
+) -> None:
+    """The bare value traces, so the number check alone would pass the changed unit."""
+    record, entry_id = evidence_record(inventory, evidence)
+    markdown = f"# JANE\n\njane.doe@example.com\n\n---\n\n## Summary\n\n{text}\n"
+    report = build(record, settings, simple_draft(record, text, (entry_id,)), markdown)
+
+    assert outcome(report, "numbers traced") is Outcome.PASS
+    assert outcome(report, "duration scope") is Outcome.FAIL
+
+
+def test_a_subject_neither_side_pairs_warns_without_a_redraft(inventory, settings) -> None:
+    scope = _scoped(
+        inventory,
+        settings,
+        "Eleven years of platform leadership.",
+        "Ran schema governance for 11 years.",
+    )
+    assert scope.outcome is Outcome.WARN
+    assert not scope.redraftable
+    assert "not paired" in scope.detail
+
+
+def test_a_duration_no_citation_states_is_left_to_the_number_check(inventory, settings) -> None:
+    scope = _scoped(
+        inventory,
+        settings,
+        "Eleven years of schema governance.",
+        "Ran schema governance for the platform team.",
+    )
+    assert scope.outcome is Outcome.PASS
+
+
 def test_first_person_in_drafted_prose_fails(inventory, settings) -> None:
     entry = inventory.entries[0]
     draft = simple_draft(inventory, "I built the platform.", (entry.id,))

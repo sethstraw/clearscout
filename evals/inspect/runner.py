@@ -37,6 +37,7 @@ from clearscout.shared.errors import ClearscoutError
 from evals.inspect.labeling import bytes_sha256
 from evals.inspect.outcomes import BatchOutcome, FailedCall
 from evals.inspect.product_questions import ProductQuestion
+from evals.retrieval_metrics import Rate
 from evals.semantic import StageMeasurement
 from evals.support.jobspec import canonical_job_spec
 
@@ -619,6 +620,42 @@ def _scope_header(
     return scope
 
 
+def _usd_total(rows: list[dict[str, Any]]) -> tuple[float | None, int]:
+    """Return the summed spend live solvers recorded, or None, and the paid rows left unpriced.
+
+    A truncated batch row carries no share of its call, so each such batch's
+    call cost is counted once.
+    """
+    spent: list[float] = []
+    unpriced = 0
+    batches: set[str] = set()
+    for row in rows:
+        solver_output = row.get("solver_output")
+        if not isinstance(solver_output, dict):
+            continue
+        metadata = solver_output.get("metadata")
+        if not isinstance(metadata, dict):
+            continue
+        batch = metadata.get("batch")
+        if "actual_dollars" in metadata:
+            dollars = metadata["actual_dollars"]
+        elif "failure" in solver_output and isinstance(batch, dict):
+            identity = json.dumps(batch, sort_keys=True)
+            if identity in batches:
+                continue
+            batches.add(identity)
+            dollars = batch.get("call_dollars")
+        elif "failure" in solver_output:
+            dollars = None
+        else:
+            continue
+        if dollars is None:
+            unpriced += 1
+        else:
+            spent.append(float(dollars))
+    return (sum(spent) if spent else None), unpriced
+
+
 def _write_log(
     log_dir: Path,
     *,
@@ -648,11 +685,25 @@ def _write_log(
             "score_kind": score_kind,
             "total": total,
         }
+        rows = list(rows)
         # A recorded family has no pass mark, so a rate over its rows would be a
         # quality claim it cannot support; its tallies carry the result instead.
         if score_kind == JUDGED:
             header["passed"] = passed
             header["accuracy"] = passed / total if total else 0.0
+            if (
+                interval := Rate(numerator=passed, denominator=total).wilson_interval()
+            ) is not None:
+                header["accuracy_wilson95"] = list(interval)
+            # Trials repeat a case, so the interval's n overstates independent evidence.
+            distinct = len({str(row["id"]) for row in rows if "id" in row})
+            if distinct and distinct != total:
+                header["distinct_cases"] = distinct
+        usd_total, unpriced_rows = _usd_total(rows)
+        if usd_total is not None:
+            header["usd_total"] = usd_total
+        if unpriced_rows:
+            header["usd_unpriced_rows"] = unpriced_rows
         if requirement_counts is not None:
             # One sample can carry several requirement outcomes; report both.
             requirement_total, requirement_passed = requirement_counts
@@ -762,7 +813,13 @@ def run_task(
         raise ValueError("evaluation trials must be at least 1")
     if arms < 1:
         raise ValueError("evaluation arms must be at least 1")
-    solver: Solver = module.solver()
+    # A task's solver() reads its module DATASET_PATH, so --dataset reaches the solver here.
+    default_dataset = module.DATASET_PATH
+    module.DATASET_PATH = resolved_dataset
+    try:
+        solver: Solver = module.solver()
+    finally:
+        module.DATASET_PATH = default_dataset
     preflight_metadata = _solver_run_metadata(solver)
     _verify_run_scope(
         log_dir,

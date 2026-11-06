@@ -113,7 +113,9 @@ def test_a_priced_call_reaches_the_workspace_ledger(
     sample = Ledger()
     sample.record(_manifest())
 
-    _solver(database, workspace_id)._bill(sample)
+    clearscout_live.bill_sample(
+        database, workspace_id, ledger=sample, provider="openai", origin="eval.match_live"
+    )
 
     try:
         with database.session() as session:
@@ -128,6 +130,48 @@ def test_a_priced_call_reaches_the_workspace_ledger(
     assert calls[0].origin == "eval.match_live"
     assert len(costs) == 1
     assert costs[0].model_call_id == calls[0].id
+
+
+def test_a_paid_call_that_raises_after_spending_still_bills_and_propagates(
+    durable_database_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _workspace(durable_database_url, ["only"])
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
+    billed: list[int] = []
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(
+        clearscout_live, "build_live_client", lambda *args, **kwargs: kwargs["ledger"]
+    )
+    monkeypatch.setattr(
+        clearscout_live,
+        "record_calls",
+        lambda session, **kwargs: billed.append(len(kwargs["ledger"].entries)),
+    )
+    run_ledger = Ledger()
+
+    def spend_then_fail(ledger: Ledger) -> None:
+        ledger.record(_manifest())
+        raise RuntimeError("answer could not be parsed")
+
+    try:
+        with pytest.raises(RuntimeError, match="could not be parsed"):
+            clearscout_live.paid_call(
+                spend_then_fail,
+                provider_name=ProviderName.OPENAI,
+                settings=Settings(provider=ProviderName.OPENAI),
+                run_ledger=run_ledger,
+                run_metadata={"provider": "openai"},
+                prompt_snapshot={},
+                database=database,
+                workspace_id=workspace_id,
+                origin="eval.match_live",
+            )
+    finally:
+        database.dispose()
+
+    assert len(run_ledger.entries) == 1
+    assert billed == [1]
 
 
 def test_a_live_requirement_the_run_never_established_is_not_credited(
@@ -374,9 +418,9 @@ def test_a_relevance_sample_survives_a_ledger_write_that_failed(
     _workspace(durable_database_url, ["only"])
     monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
     database, workspace_id = clearscout_live.billing_target()
-    monkeypatch.setattr(relevance_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
     monkeypatch.setattr(
-        relevance_live, "build_live_client", lambda *args, **kwargs: _paid_relevance_client(kwargs)
+        clearscout_live, "build_live_client", lambda *args, **kwargs: _paid_relevance_client(kwargs)
     )
     monkeypatch.setattr(
         clearscout_live, "record_calls", _refuse_billing(RuntimeError("database is locked"))
@@ -408,7 +452,9 @@ def test_billing_nothing_writes_nothing(
     monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
     database, workspace_id = clearscout_live.billing_target()
 
-    _solver(database, workspace_id)._bill(Ledger())
+    clearscout_live.bill_sample(
+        database, workspace_id, ledger=Ledger(), provider="openai", origin="eval.match_live"
+    )
 
     try:
         with database.session() as session:

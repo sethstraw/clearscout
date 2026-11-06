@@ -317,7 +317,7 @@ critic as the only reviewer that can. A letter case is critiqued as the product
 critiques a letter: as a cover letter, indexed by paragraph, beside the
 synthetic company research its paragraphs may cite.
 
-A result over five or six cases exposes a defect; it supports no rate on the
+A result over eight or fewer cases exposes a defect; it supports no rate on the
 quality of a document. The critic family's rate is the exception, and only
 because it scores a constructed fact rather than a judgment: read it as "which
 cases did the critic get wrong", never as a quality score. Measuring how stable

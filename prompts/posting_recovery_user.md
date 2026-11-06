@@ -4,4 +4,6 @@ known_url_read_outcome appears only when the application already read the known 
 
 known_publisher_domain appears only when the known URL is a record on the employer's ATS, and it names the ATS host that holds the known record. Search that host only for a newer record of the same title; otherwise look for the employer's careers page. Without it, the known URL's host may be an aggregator or the employer's own careers site. When it is the careers page, look for the same posting's record on the ATS that page uses: a job id in the known URL's path or query may name it, and you may open that record to check it.
 
+registered_board_url appears only when this workspace registers a job board for the employer, and it names that board's address. Search that board first, before following any job id in the known URL, which may name a system the employer has left. A record there is this posting's first-party page only when it shows the same title and the same location or team the known posting shows; a same-title record for another location or team is a different posting. The board address itself is not a candidate: list only a record URL the search returned or you opened.
+
 {{posting_identity}}

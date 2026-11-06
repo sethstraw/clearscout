@@ -218,6 +218,17 @@ def test_the_critic_prompt_counts_an_unoffered_entry_as_evidence_for_a_miscitati
     assert "(not offered)" not in f"{text} {flat('critic_system')}"
 
 
+def test_the_critic_prompt_reads_a_posting_restatement_as_voice_not_a_claim() -> None:
+    """A duty restated with no candidate credit was being doubted as miscited."""
+    text = flat("critic_user")
+    assert (
+        "credits the candidate with no work, skill, tool, title, length of service, or result, "
+        "makes no claim about the candidate: judge it under `human_voice`"
+    ) in text
+    assert "Any part of a sentence that does credit the candidate is judged as a claim" in text
+    assert "and so is every written line of a resume" in text
+
+
 def test_the_critic_prompt_says_the_index_carries_each_cited_entrys_text() -> None:
     text = flat("critic_user")
     assert "then the text of each record entry it cites" in text

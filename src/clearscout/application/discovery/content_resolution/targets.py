@@ -40,6 +40,8 @@ class PostingResolutionTarget:
     # Blank where the display hint is not publisher identity, so it cannot contradict a read.
     expected_employer: str
     expected_title: str
+    # Blank unless the workspace registers exactly one job board for the employer.
+    registered_board_url: str = ""
 
 
 @dataclass(frozen=True)

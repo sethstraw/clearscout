@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, TypeVar, cast
@@ -34,6 +35,7 @@ from clearscout.application.discovery.content_resolution import (
 from clearscout.application.discovery.hints import PendingDiscoveryHintsService
 from clearscout.application.failures import ConflictError, ValidationError
 from clearscout.application.prompts import render
+from clearscout.application.tasks import TaskQueueService
 from clearscout.application.workspaces import WorkspaceService
 from clearscout.domain import (
     PendingDiscoveryReadiness,
@@ -54,6 +56,7 @@ from clearscout.infrastructure.persistence.models import (
     PendingDiscovery,
     PendingPostingContent,
     PostingUrl,
+    Source,
 )
 from clearscout.infrastructure.providers.base import CallRecord, Provider, Search, SearchSource
 from clearscout.infrastructure.providers.cache import ResponseCache
@@ -65,6 +68,7 @@ from tests.support.artifacts import runtime_storage
 from tests.support.fake_provider import FakeProviderAPI
 from tests.support.provider_clients import provider_for_http
 from tests.support.scenarios import (
+    dismiss_pending_discovery,
     employer_board,
     scan_workspace,
     seed_unread_row,
@@ -1179,10 +1183,190 @@ def test_preflight_refuses_a_row_its_employers_registered_board_already_holds(
         assert (row.canonical_url, row.current_content_id) == ("", None)
 
 
-def _identity_sent(target: PostingResolutionTarget) -> dict[str, str]:
-    task = request_plan(target, Settings(provider=ProviderName.OPENAI)).task.text
+@pytest.mark.parametrize("dismissed", [True, False])
+def test_preflight_refuses_a_row_a_board_twin_holds_beside_the_roles_closed_earlier_posting(
+    durable_database: Database, tmp_path: Path, dismissed: bool
+) -> None:
+    """The board reposted the role at a new address; the person may have dismissed the twin."""
+    workspace_id = scan_workspace(durable_database, slug="assisted-board-twin")
+    board = employer_board(durable_database, workspace_id, "Example Systems")
+    board_url = "https://example-systems.example.test/careers/jobs"
+    tracked_board_posting(
+        durable_database,
+        workspace_id,
+        board,
+        title="Operations Lead",
+        url=f"{board_url}/7c1e4b2a-0d3f-4a5b-8c6d-9e0f1a2b3c4d",
+        closed=True,
+    )
+    twin_url = f"{board_url}/2f0c6a1e-5b7d-4c3e-9a8f-1d2e3f4a5b6c"
+    twin = seed_unread_row(
+        durable_database,
+        workspace_id,
+        employer="Example Systems",
+        title="Operations Lead",
+        url=twin_url,
+        source_id=board,
+    )
+    reader = PostingContentResolutionService(
+        durable_database,
+        ScriptedResolver([_readable(twin_url)]),
+        storage=runtime_storage(durable_database, tmp_path),
+    )
+    snapshot = reader.preflight(workspace_id, [twin]).snapshot_sha256
+    reader.resolve_batch(workspace_id, [twin], snapshot, origin="discovery.refresh_batch")
+    if dismissed:
+        dismiss_pending_discovery(durable_database, workspace_id, twin)
+    pending_id = seed_unread_row(
+        durable_database,
+        workspace_id,
+        employer="Example Systems",
+        title="Operations Lead",
+        url="https://careers.example.test/careers/job/?gh_jid=4821",
+    )
+    provider = ScriptedSearchProvider([])
+    service = AssistedContentResolutionService(
+        durable_database,
+        PostingContentResolutionService(
+            durable_database,
+            ScriptedResolver([]),
+            storage=runtime_storage(durable_database, tmp_path),
+        ),
+        provider=provider,
+    )
+
+    with pytest.raises(ValidationError, match="registered board already holds") as refused:
+        service.preflight(
+            workspace_id, [pending_id], Settings(provider=ProviderName.OPENAI), now=NOW
+        )
+
+    assert f"pending discovery {twin} at {twin_url}" in str(refused.value)
+    assert provider.calls == []
+
+
+def _identity_block(task: str) -> dict[str, str]:
     block = task.split("<posting_identity>\n", 1)[1].split("\n</posting_identity>", 1)[0]
     return cast(dict[str, str], json.loads(block))
+
+
+def _identity_sent(target: PostingResolutionTarget) -> dict[str, str]:
+    return _identity_block(request_plan(target, Settings(provider=ProviderName.OPENAI)).task.text)
+
+
+_NORTHWIND_BOARD = "https://northwind.example.test/careers"
+
+
+@pytest.mark.parametrize(
+    ("boards", "expected"),
+    [(0, None), (1, _NORTHWIND_BOARD), (2, None)],
+)
+def test_the_request_names_the_employers_board_only_when_the_workspace_registers_exactly_one(
+    durable_database: Database, tmp_path: Path, boards: int, expected: str | None
+) -> None:
+    """Approval and recovery each look the board up, and the approved manifest still matches."""
+    workspace_id = scan_workspace(durable_database, slug="assisted-board-hint")
+    first = employer_board(durable_database, workspace_id, "Northwind") if boards else ""
+    if boards == 2:
+        with durable_database.session() as session:
+            registered = session.get(Source, first)
+            assert registered is not None
+            session.add(
+                Source(
+                    workspace_id=workspace_id,
+                    employer_id=registered.employer_id,
+                    name="Northwind research careers",
+                    source_type="employer_board",
+                    url="https://jobs.lever.co/northwind-research",
+                    priority=1,
+                    enabled=True,
+                )
+            )
+    pending_id = seed_unread_row(
+        durable_database,
+        workspace_id,
+        employer="Northwind",
+        title="Operations Lead",
+        url=KNOWN_URL,
+    )
+    provider = ScriptedSearchProvider(
+        [(_response(pending_id, candidates=[], supporting=[], observations=[]), _record())]
+    )
+    service = AssistedContentResolutionService(
+        durable_database,
+        PostingContentResolutionService(
+            durable_database,
+            ScriptedResolver([]),
+            storage=runtime_storage(durable_database, tmp_path),
+        ),
+        provider=provider,
+    )
+    settings = Settings(provider=ProviderName.OPENAI)
+    approval = service.preflight(workspace_id, [pending_id], settings, now=NOW)
+    task = TaskQueueService(durable_database).enqueue(
+        workspace_id=workspace_id,
+        task_type="posting.recover_batch",
+        payload={"approval": approval.model_dump(mode="json")},
+        idempotency_key=f"recover-{pending_id}",
+    )
+
+    batch = service.recover(workspace_id, approval, settings, task_id=task.id, now=NOW)
+
+    assert [item.outcome for item in batch.items] == [PostingRecoveryOutcome.NOT_FOUND]
+    [plan] = provider.calls
+    sent = _identity_block(plan.task.text)
+    assert sent.get("registered_board_url") == expected
+    assert ("registered_board_url" in sent) is (expected is not None)
+
+
+def test_a_board_changed_after_approval_refuses_the_approved_recovery_before_any_call(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = scan_workspace(durable_database, slug="assisted-board-moved")
+    board_id = employer_board(durable_database, workspace_id, "Northwind")
+    pending_id = seed_unread_row(
+        durable_database, workspace_id, employer="Northwind", title="Operations Lead", url=KNOWN_URL
+    )
+    provider = ScriptedSearchProvider([])
+    service = AssistedContentResolutionService(
+        durable_database,
+        PostingContentResolutionService(
+            durable_database,
+            ScriptedResolver([]),
+            storage=runtime_storage(durable_database, tmp_path),
+        ),
+        provider=provider,
+    )
+    settings = Settings(provider=ProviderName.OPENAI)
+    approval = service.preflight(workspace_id, [pending_id], settings, now=NOW)
+    with durable_database.session() as session:
+        board = session.get(Source, board_id)
+        assert board is not None
+        board.url = "https://jobs.lever.co/northwind"
+
+    with pytest.raises(ConflictError):
+        service.recover(workspace_id, approval, settings, task_id="task-board-moved", now=NOW)
+    assert provider.calls == []
+
+
+@pytest.mark.parametrize(
+    ("board", "names_ats_host"),
+    [
+        ("https://boards.greenhouse.io/examplesystems", True),
+        ("https://jobs.lever.co/examplesystems", False),
+    ],
+)
+def test_the_known_ats_host_is_named_only_when_no_registered_board_sits_on_another_host(
+    board: str, names_ats_host: bool
+) -> None:
+    target = replace(
+        _target(url=ATS_URL, status=PostingContentAccessStatus.NOT_YET_READ),
+        registered_board_url=board,
+    )
+
+    sent = _identity_sent(target)
+
+    assert sent["registered_board_url"] == board
+    assert ("known_publisher_domain" in sent) is names_ats_host
 
 
 def test_the_request_reports_the_failed_read_and_names_no_unconfirmed_host_as_publisher() -> None:
@@ -1334,6 +1518,109 @@ def test_a_candidate_that_is_the_already_failed_known_url_is_not_read_again() ->
     assert item.candidate_url == KNOWN_URL
     assert "render_required" in item.detail
     assert resolver.calls == []
+
+
+_BLOCKED_CAREERS_URL = "https://careers.example.test/careers/job/?gh_jid=4821"
+_EMBED_URL = "https://careers.example.test/careers/job/?ashby_jid=2f0c6a1e-5b7d-4c3e"
+
+
+@pytest.mark.parametrize(
+    ("status", "candidate"),
+    [
+        (PostingContentAccessStatus.ACCESS_BLOCKED, _EMBED_URL),
+        (
+            PostingContentAccessStatus.SESSION_REQUIRED,
+            _EMBED_URL.replace("://careers.", "://www.careers."),
+        ),
+    ],
+)
+def test_a_candidate_on_the_host_that_refused_the_known_url_is_not_read(
+    status: PostingContentAccessStatus, candidate: str
+) -> None:
+    resolver = ScriptedResolver([_readable(candidate)])
+    target = _target(url=_BLOCKED_CAREERS_URL, status=status)
+    service, _content = _service((target,), resolver)
+    payload = _response(
+        candidates=[candidate], supporting=[], observations=[_observation(candidate)]
+    )
+    provider = ScriptedSearchProvider([(payload, _record(candidate))])
+    client, _ledger = _client(provider)
+
+    [item] = service._recover_targets("workspace-assisted", (target,), client, None)
+
+    assert item.outcome is PostingRecoveryOutcome.SOURCE_FOUND_UNREADABLE
+    assert item.candidate_url == candidate
+    assert item.detail == (
+        f"The cited candidate is on careers.example.test, where the known URL was already "
+        f"read as {status.value}."
+    )
+    assert resolver.calls == []
+
+
+_REFUSED_ATS_URL = "https://boards.greenhouse.io/northwind/jobs/4821"
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    [
+        "https://boards.greenhouse.io/northwind/jobs/5930",
+        "https://boards.greenhouse.io/globex/jobs/7316",
+    ],
+)
+def test_a_candidate_on_the_shared_ats_host_that_refused_the_known_url_is_read(
+    candidate: str,
+) -> None:
+    """One tenant's refused record says nothing about the host's other records."""
+    resolver = ScriptedResolver([_readable(candidate)])
+    target = _target(url=_REFUSED_ATS_URL, status=PostingContentAccessStatus.ACCESS_BLOCKED)
+    service, _content = _service((target,), resolver)
+    payload = _response(
+        candidates=[candidate], supporting=[], observations=[_observation(candidate)]
+    )
+    provider = ScriptedSearchProvider([(payload, _record(candidate))])
+    client, _ledger = _client(provider)
+
+    [item] = service._recover_targets("workspace-assisted", (target,), client, None)
+
+    assert item.outcome is PostingRecoveryOutcome.RECOVERED
+    assert resolver.calls == [(candidate, "Example Systems", "Operations Lead")]
+
+
+def test_the_refused_known_url_on_a_shared_ats_host_is_not_read_again() -> None:
+    resolver = ScriptedResolver([])
+    target = _target(url=_REFUSED_ATS_URL, status=PostingContentAccessStatus.SESSION_REQUIRED)
+    service, _content = _service((target,), resolver)
+    payload = _response(
+        candidates=[_REFUSED_ATS_URL],
+        supporting=[],
+        observations=[_observation(_REFUSED_ATS_URL)],
+    )
+    provider = ScriptedSearchProvider([(payload, _record(PUBLISHER_URL))])
+    client, _ledger = _client(provider)
+
+    [item] = service._recover_targets("workspace-assisted", (target,), client, None)
+
+    assert item.outcome is PostingRecoveryOutcome.SOURCE_FOUND_UNREADABLE
+    assert item.detail == (
+        "The cited candidate is the known URL, already read as session_required."
+    )
+    assert resolver.calls == []
+
+
+def test_a_candidate_on_the_host_of_a_known_url_that_needed_rendering_is_read() -> None:
+    resolver = ScriptedResolver([_readable(_EMBED_URL)])
+    target = _target(url=_BLOCKED_CAREERS_URL, status=PostingContentAccessStatus.RENDER_REQUIRED)
+    service, _content = _service((target,), resolver)
+    payload = _response(
+        candidates=[_EMBED_URL], supporting=[], observations=[_observation(_EMBED_URL)]
+    )
+    provider = ScriptedSearchProvider([(payload, _record(_EMBED_URL))])
+    client, _ledger = _client(provider)
+
+    [item] = service._recover_targets("workspace-assisted", (target,), client, None)
+
+    assert item.outcome is PostingRecoveryOutcome.RECOVERED
+    assert resolver.calls == [(_EMBED_URL, "Example Systems", "Operations Lead")]
 
 
 def test_the_estimate_prices_every_hosted_tool_call_as_a_search(

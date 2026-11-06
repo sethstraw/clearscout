@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterator, Sequence
+from typing import NamedTuple
 
 from clearscout.application.tailoring.stages.context import PARTICIPATION
 from clearscout.shared.text import sentence_pieces
@@ -55,6 +56,43 @@ _COUNTS = sorted(
 # routinely written for eleven or twelve years, so no exact reading of it exists.
 WORD_SPAN = re.compile(
     rf"\b({'|'.join(_COUNTS)})[\s-]+(years?|months?|weeks?|days?|decades)\b", re.IGNORECASE
+)
+# The same units after digits, with the "6+" and "6 plus" that state a floor.
+DIGIT_SPAN = re.compile(
+    r"(?<![\w.,])(\d+(?:[.,]\d+)*)(?:\s*\+|\s+plus)?[\s-]*(years?|months?|weeks?|days?|decades)\b",
+    re.IGNORECASE,
+)
+
+# Words around a duration that frame it rather than name what it was spent on.
+DURATION_FRAME_WORDS = frozenset(
+    {
+        "about",
+        "across",
+        "after",
+        "almost",
+        "and",
+        "around",
+        "before",
+        "combined",
+        "day",
+        "decade",
+        "during",
+        "experience",
+        "had",
+        "has",
+        "have",
+        "including",
+        "month",
+        "more",
+        "nearly",
+        "plus",
+        "since",
+        "than",
+        "then",
+        "total",
+        "week",
+        "year",
+    }
 )
 
 # Words two wordings of one claim may differ in. Negations carry the claim, so "without",
@@ -228,9 +266,44 @@ def figures_in(text: str) -> list[tuple[str, frozenset[str]]]:
 
 def _word_spans(text: str) -> Iterator[tuple[str, frozenset[str]]]:
     """Yield each duration spelled in words in ``text``, with every value it states."""
+    for match in _spelled_spans(text):
+        yield match.group(0), _span_readings(match.group(1), match.group(2))
+
+
+def _spelled_spans(text: str) -> Iterator[re.Match[str]]:
+    """Yield each ``WORD_SPAN`` match that is a whole count, not the tail of a larger number."""
     for match in WORD_SPAN.finditer(text):
         if not _part_of_a_larger_number(_prefix_words(text[: match.start()])):
-            yield match.group(0), _span_readings(match.group(1), match.group(2))
+            yield match
+
+
+class Duration(NamedTuple):
+    """A duration a sentence states, where it sits, and every (value, unit) it reads as."""
+
+    raw: str
+    readings: frozenset[tuple[str, str]]
+    start: int
+
+
+def durations_in(sentence: str) -> list[Duration]:
+    """Return the durations one sentence states, digits or spelled, in reading order."""
+    found = [
+        Duration(m.group(0), _unit_readings(_number(m.group(1)), m.group(2)), m.start())
+        for m in DIGIT_SPAN.finditer(sentence)
+    ]
+    found += [
+        Duration(m.group(0), _unit_readings(str(_count(m.group(1))), m.group(2)), m.start())
+        for m in _spelled_spans(sentence)
+    ]
+    return sorted(found, key=lambda duration: duration.start)
+
+
+def _unit_readings(value: str, unit: str) -> frozenset[tuple[str, str]]:
+    """Return a count read in its unit, with a count of decades also read in years."""
+    unit = unit.casefold().rstrip("s")
+    if unit == "decade":
+        return frozenset({(value, unit), (str(int(float(value) * 10)), "year")})
+    return frozenset({(value, unit)})
 
 
 def _prefix_words(prefix: str) -> list[str]:
@@ -253,10 +326,15 @@ def _part_of_a_larger_number(before: Sequence[str]) -> bool:
 
 def _span_readings(count: str, unit: str) -> frozenset[str]:
     """Return every value a spelled span states, with a compound's value and decades as years."""
-    value = sum(NUMBER_WORDS[part] for part in re.split(r"[- ]", count.casefold()))
+    value = _count(count)
     if unit.casefold() == "decades":
         return frozenset({str(value), str(value * 10)})
     return frozenset({str(value)})
+
+
+def _count(count: str) -> int:
+    """Return the value of a count spelled in ``NUMBER_WORDS``, compounds included."""
+    return sum(NUMBER_WORDS[part] for part in re.split(r"[- ]", count.casefold()))
 
 
 def _number(raw: str) -> str:

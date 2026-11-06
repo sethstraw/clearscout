@@ -9,8 +9,16 @@ and what it is not.
 The harness is a small in-repo runner with no third-party evaluation framework.
 
 Five families are measured: `match`, `relevance_review`, `draft`, `cover`, and
-`critic`, plus the jobspec boundary task described below. Each has a live task that spends; all but `relevance_review` also have
-a scripted task that runs offline in the suite. `tasks/` is the list.
+`critic`, plus two jobspec tasks (the boundary task described below and
+requirement extraction) and three search tasks: `search_vocabulary`,
+`posting_recovery`, and `guided_campaign`. Each has a live task that spends.
+`match`, `draft`, `cover`, and `critic` also have a scripted task that runs
+offline in the suite; the others do not. `tasks/` is the list.
+
+`posting_recovery` and `guided_campaign` read the real web through hosted
+search, so their real cases are private. `--dataset <private-path>` on a
+`--live` run replaces the task's tracked synthetic fixture, and the log records
+that file's hash.
 
 `runner.py` loads a task module from `tasks/`, iterates its dataset, and writes a
 JSONL log to the gitignored `reports/eval/`. Each task names its dataset, the

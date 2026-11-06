@@ -242,10 +242,13 @@ distortion.
 
 **What the numbers showed.** It caught the distortion 7 times: 38.9%, Wilson
 95% interval 0.20 to 0.61. Each verdict either saw it or did not, so a looser
-threshold would not help. The fix samples the critic three times and fails the
-draft on any doubt. Building it showed the provider response cache was keyed on
-content alone, so three identical calls returned one answer. A test that counts
-real provider calls failed `1 == 3` against the old code.
+threshold would not help. The fix made the critic able to sample several times
+and fail the draft on any doubt. Building it showed the provider response cache
+was keyed on content alone, so three identical calls returned one answer. A
+test that counts real provider calls failed `1 == 3` against the old code. On
+the next model, one draw caught every planted defect on every draw, and three
+draws only turned a one-in-three false doubt into a sure fail, so the shipped
+default stays at one draw.
 
 **What we concluded.** Run a judge many times on one fixed input and report an
 interval. If verdicts split cleanly, sample several times and union them.

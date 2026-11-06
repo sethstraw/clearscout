@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from decimal import Decimal
@@ -144,6 +145,7 @@ def test_runner_executes_only_the_approved_count_from_the_named_split(
         "total": 1,
         "passed": 1,
         "accuracy": 1.0,
+        "accuracy_wilson95": [pytest.approx(0.2065, abs=0.001), 1.0],
         "limit": 1,
         "split": "development",
         "run": {"provider": "openai"},
@@ -604,6 +606,66 @@ def test_a_truncated_batch_call_fails_its_rows_when_the_runner_runs_as_a_module(
     assert [row["solver_output"]["metadata"]["batch"]["sample_ids"] for row in rows] == [
         ["case-1", "case-2"]
     ] * 2
+
+
+_STUB_UV = """#!/bin/sh
+case "$*" in
+  *evals.inspect.cost_estimate*) exit 1 ;;
+  *evals.inspect.runner*) printf 'runner %s\\n' "$*" ;;
+  *) exit 2 ;;
+esac
+"""
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        "posting_recovery_live_task.py",
+        "guided_campaign_live_task.py",
+        "search_vocabulary_live_task.py",
+    ],
+)
+def test_live_shell_runs_a_stage_on_a_named_private_dataset(tmp_path: Path, task: str) -> None:
+    """The shell accepts the web stages and hands ``--dataset`` to the runner."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "uv").write_text(_STUB_UV, encoding="utf-8")
+    (bin_dir / "uv").chmod(0o755)
+    environment = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    private = tmp_path / "private cases.jsonl"
+    private.write_text("", encoding="utf-8")
+
+    completed = subprocess.run(  # noqa: S603 - fixed local script with synthetic arguments
+        [
+            "/bin/bash",
+            str(REPO_ROOT / "scripts" / "eval.sh"),
+            "--live",
+            f"evals/inspect/tasks/{task}",
+            "--data-root",
+            str(tmp_path / "workspace"),
+            "--limit",
+            "2",
+            "--split",
+            "development",
+            "--provider",
+            "openai",
+            "--i-approve",
+            "0.50",
+            "--output-dir",
+            str(tmp_path / "out"),
+            "--dataset",
+            str(private),
+        ],
+        cwd=REPO_ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "cost estimate is unavailable" in completed.stderr
+    assert f"--dataset {private}" in completed.stdout
 
 
 def test_a_truncated_whole_posting_repeat_still_counts_its_requirements(
@@ -2331,3 +2393,68 @@ def test_runner_scores_the_same_dataset_snapshot_it_approved(
     runner.run_task("synthetic-task", log_dir=tmp_path / "logs", split="development")
 
     assert seen == ["approved"]
+
+
+def _logged_header(tmp_path: Path, rows: list[dict[str, Any]], **kwargs: Any) -> dict[str, Any]:
+    log_path = runner._write_log(
+        tmp_path / "logs",
+        task_name="synthetic-task",
+        dataset_path=tmp_path / "dataset.jsonl",
+        product_question="synthetic question",
+        rows=rows,
+        **kwargs,
+    )
+    header: dict[str, Any] = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+    return header
+
+
+def test_judged_header_states_wilson_interval_distinct_cases_and_spend(tmp_path: Path) -> None:
+    rows = [
+        {"id": f"case-{index % 3}", "solver_output": {"metadata": {"actual_dollars": 0.25}}}
+        for index in range(5)
+    ]
+
+    header = _logged_header(tmp_path, rows, total=5, passed=5, scope={"trials": 2})
+
+    low, high = header["accuracy_wilson95"]
+    assert low == pytest.approx(0.566, abs=0.001)
+    assert high == 1.0
+    assert header["distinct_cases"] == 3
+    assert header["usd_total"] == pytest.approx(1.25)
+
+
+def test_recorded_header_gets_spend_but_no_interval(tmp_path: Path) -> None:
+    rows = [{"id": "case-0", "solver_output": {"metadata": {"actual_dollars": 0.5}}}]
+
+    header = _logged_header(tmp_path, rows, total=1, passed=0, score_kind=runner.RECORDED)
+
+    assert "accuracy_wilson95" not in header
+    assert "distinct_cases" not in header
+    assert header["usd_total"] == pytest.approx(0.5)
+
+
+def test_header_spend_counts_a_truncated_batch_once_and_names_unpriced_rows(
+    tmp_path: Path,
+) -> None:
+    batch = {"index": 0, "size": 2, "call_dollars": 0.2, "response_ids": ["resp-2"]}
+    rows = [
+        {"id": "case-0", "solver_output": {"metadata": {"actual_dollars": 0.1}}},
+        {"id": "case-1", "solver_output": {"failure": "x", "metadata": {"batch": batch}}},
+        {"id": "case-2", "solver_output": {"failure": "x", "metadata": {"batch": batch}}},
+        {"id": "case-3", "solver_output": {"metadata": {"actual_dollars": None}}},
+    ]
+
+    header = _logged_header(tmp_path, rows, total=4, passed=1)
+
+    assert header["usd_total"] == pytest.approx(0.3)
+    assert header["usd_unpriced_rows"] == 1
+
+
+def test_header_omits_spend_and_cases_the_rows_do_not_carry(tmp_path: Path) -> None:
+    rows = [{"id": "case-0", "solver_output": {"completion": "MET"}}]
+
+    header = _logged_header(tmp_path, rows, total=1, passed=1)
+
+    assert header["accuracy_wilson95"][1] == 1.0
+    assert "usd_total" not in header
+    assert "distinct_cases" not in header

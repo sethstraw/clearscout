@@ -10332,6 +10332,10 @@
             "title": "Expires At",
             "type": "string"
           },
+          "identity_sha256": {
+            "title": "Identity Sha256",
+            "type": "string"
+          },
           "issued_at": {
             "format": "date-time",
             "title": "Issued At",
@@ -10384,6 +10388,7 @@
           "model",
           "system_prompt_sha256",
           "user_prompt_sha256",
+          "identity_sha256",
           "schema_sha256",
           "settings_sha256",
           "price_sha256",

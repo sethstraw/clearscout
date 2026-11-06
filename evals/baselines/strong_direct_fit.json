@@ -1,12 +1,13 @@
 {
   "case": "strong_direct_fit",
-  "prompt_suite": "a0b6c9a19f47",
+  "prompt_suite": "fd815f04798c",
   "schemas": "0905beebe712",
   "scores": {
     "blocking_gates_found": 1.0,
     "check.character policy": "pass",
     "check.critic": "pass",
     "check.document structure": "pass",
+    "check.duration scope": "pass",
     "check.factual review": "warn",
     "check.first person": "pass",
     "check.forbidden strings": "pass",
@@ -51,7 +52,7 @@
     "model_rule_disagreements": 0,
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
-    "request.critic": "1e824ab0e5b0",
+    "request.critic": "8a8ce1c9f667",
     "request.draft": "a2149a84deb7",
     "request.jobspec": "c2a7751a9ec4",
     "request.match": "3139ac6bb579",

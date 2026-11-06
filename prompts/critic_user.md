@@ -83,7 +83,12 @@ the program.
 Judge the boundary a listed claim crosses against the evidence and any company
 research in this request, never against the posting's requirements. A
 requirement the {{document}} leaves unanswered is a weakness, not a crossed
-boundary.
+boundary. A sentence about the role or the posting that restates its duties or
+requirements, and credits the candidate with no work, skill, tool, title,
+length of service, or result, makes no claim about the candidate: judge it
+under `human_voice`, and keep it out of `unsupported_claims`. Any part of a
+sentence that does credit the candidate is judged as a claim, and so is every
+written line of a resume.
 <!--/invariant-->
 
 <!--invariant-->

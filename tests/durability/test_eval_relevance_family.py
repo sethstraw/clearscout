@@ -438,9 +438,9 @@ def _armed_solver(
     schemas: list[type[BaseModel]] | None = None,
     plans: list[RequestPlan] | None = None,
 ) -> Any:
-    monkeypatch.setattr(relevance_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
     monkeypatch.setattr(
-        relevance_live,
+        clearscout_live,
         "build_live_client",
         lambda *args, **kwargs: _RecordingClient(seen, schemas, plans),
     )
@@ -684,9 +684,9 @@ def _batch_solver(
     arms: tuple[PromptArm, ...] | None = None,
 ) -> Any:
     """A live solver over ``samples`` whose calls reach a scripted client and a counted bill."""
-    monkeypatch.setattr(relevance_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
     monkeypatch.setattr(
-        relevance_live,
+        clearscout_live,
         "build_live_client",
         lambda *args, ledger, **kwargs: _BatchClient(plans, ledger, stops or {}),
     )
@@ -695,7 +695,7 @@ def _batch_solver(
         if billed is not None:
             billed.append(len(ledger.entries))
 
-    monkeypatch.setattr(relevance_live, "bill_sample", bill)
+    monkeypatch.setattr(clearscout_live, "bill_sample", bill)
     declared = arms if arms is not None else relevance_live.declared_arms()
     return relevance_live._RelevanceLiveSolver(
         run_metadata={"provider": "openai", **clearscout_live.arms_metadata(declared)},
@@ -1097,8 +1097,8 @@ def test_a_render_writes_what_the_paid_run_sends_without_reaching_a_provider(
     noted = _real_sample()
     noted["input"]["posting"]["note"] = NOTE
     dataset = _dataset(tmp_path / "private" / "cases.jsonl", noted)
-    monkeypatch.setattr(relevance_live, "credential_for", _refuse_provider)
-    monkeypatch.setattr(relevance_live, "build_live_client", _refuse_provider)
+    monkeypatch.setattr(clearscout_live, "credential_for", _refuse_provider)
+    monkeypatch.setattr(clearscout_live, "build_live_client", _refuse_provider)
     rendered = tmp_path / "rendered"
 
     code = relevance_live.main(
@@ -1131,9 +1131,9 @@ def test_a_render_writes_what_the_paid_run_sends_without_reaching_a_provider(
 
     plans: list[RequestPlan] = []
     schemas: list[type[BaseModel]] = []
-    monkeypatch.setattr(relevance_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
     monkeypatch.setattr(
-        relevance_live,
+        clearscout_live,
         "build_live_client",
         lambda *args, **kwargs: _RecordingClient([], schemas, plans),
     )
@@ -1160,7 +1160,7 @@ def test_a_render_writes_one_file_per_batch_naming_its_members(
     _live_environment(monkeypatch, tmp_path, durable_database_url)
     samples = [_posting(1), _posting(2, context=SECOND_CONTEXT), _posting(3)]
     dataset = _dataset(tmp_path / "private" / "cases.jsonl", *samples)
-    monkeypatch.setattr(relevance_live, "build_live_client", _refuse_provider)
+    monkeypatch.setattr(clearscout_live, "build_live_client", _refuse_provider)
     rendered = tmp_path / "rendered"
 
     code = relevance_live.main(
@@ -1196,7 +1196,7 @@ def test_a_render_of_selected_ids_writes_only_the_batches_that_run_sends(
     _live_environment(monkeypatch, tmp_path, durable_database_url)
     samples = [_posting(1), _posting(2, context=SECOND_CONTEXT), _posting(3)]
     dataset = _dataset(tmp_path / "private" / "cases.jsonl", *samples)
-    monkeypatch.setattr(relevance_live, "build_live_client", _refuse_provider)
+    monkeypatch.setattr(clearscout_live, "build_live_client", _refuse_provider)
     rendered = tmp_path / "rendered"
 
     code = relevance_live.main(

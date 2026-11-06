@@ -12,6 +12,7 @@ from clearscout.application.tailoring.stages.select import Plan
 from clearscout.shared.results import Finding, Outcome
 
 from .checks import (
+    duration_scope,
     factual_review,
     figures,
     missing_must_haves,
@@ -56,6 +57,7 @@ def check(
         provenance(draft, plan),
         must_have_coverage(draft, plan, spec, excluded),
         numbers(draft, inventory),
+        duration_scope(draft.lines(), inventory),
         ownership_verbs(draft.lines(), inventory),
         _skills_grouping(draft, inventory),
         factual_review(draft.lines(), inventory),
@@ -95,6 +97,7 @@ def check_supplied(
     return (
         cited(lines, plan, "sources cited"),
         figures(lines, inventory, "numbers traced"),
+        duration_scope(lines, inventory),
         first_person(text, guardrails),
         characters(text, guardrails, source="the replacement text"),
         forbidden(text, text, guardrails),

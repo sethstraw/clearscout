@@ -1,0 +1,244 @@
+"""Grade the titles and employer archetypes one vocabulary call proposed against the case's own.
+
+A title matches a gold label when both normalize to the same text, the rule the
+program's ``already_stated`` check uses; an archetype matches by the program's
+``same_employer_archetype``. Precision is taken over labeled proposals only; an
+unlabeled proposal is reported as a warned check, not counted against the call.
+Citation support asks whether each acceptable match cites an entry the label names,
+and recall is reported without gating.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any
+
+from clearscout.application.discovery.derived_vocabulary_rules import (
+    ProposedArchetype,
+    ProposedTitle,
+    same_employer_archetype,
+    searchable_archetypes,
+    searchable_titles,
+)
+from clearscout.application.tailoring.stages.context import citable_entries
+from clearscout.domain.search_parameters import JobSearchParameters
+from clearscout.domain.search_parameters.roles import title_excluded
+from clearscout.domain.taxonomy import normalize
+from evals.inspect.solvers.search_vocabulary_live import case_inventory, case_parameters
+
+ACCEPTABLE = "acceptable"
+UNACCEPTABLE = "unacceptable"
+REPEATS_STATED = "repeats_stated"
+EXCLUDED = "excluded"
+UNLABELED = "unlabeled"
+AXES = ("titles", "archetypes")
+
+# Labels are hand rulings that can disagree at the margin, so precision gates below 1.0.
+# The schema already forbids an invented id, leaving only
+# a real but non-supporting entry to fail citation support, so it gates higher.
+PRECISION_THRESHOLD = 0.6
+CITATION_SUPPORT_THRESHOLD = 0.8
+
+
+def _names(item: dict[str, Any]) -> list[str]:
+    return [str(item["name"]), *(str(alias) for alias in item.get("aliases", []))]
+
+
+def _title_match(left: str, right: str) -> bool:
+    return normalize(left) == normalize(right)
+
+
+def _matcher(axis: str) -> Callable[[str, str], bool]:
+    return _title_match if axis == "titles" else same_employer_archetype
+
+
+def _stated(axis: str, parameters: JobSearchParameters) -> tuple[str, ...]:
+    if axis == "titles":
+        return parameters.seniority.stated_titles
+    return tuple(item.name for item in parameters.employers.stated_archetypes)
+
+
+def _labelled(axis: str, proposal: str, items: list[dict[str, Any]]) -> dict[str, Any] | None:
+    matches = _matcher(axis)
+    return next(
+        (item for item in items if any(matches(proposal, name) for name in _names(item))), None
+    )
+
+
+def gold_labels(sample: dict[str, Any]) -> dict[str, Any]:
+    """Return a row's gold labels, refusing one its CV or parameters contradict."""
+    case = sample.get("id")
+    if not str(sample.get("why") or "").strip():
+        raise ValueError(f"sample {case!r} needs a why")
+    gold = sample.get("gold")
+    if not isinstance(gold, dict):
+        raise ValueError(f"sample {case!r} needs gold labels")
+    known = {entry.id for entry in citable_entries(case_inventory(sample))}
+    parameters = case_parameters(sample)
+    excluded = [title for title in parameters.seniority.excluded_titles if title.strip()]
+    for axis in AXES:
+        stated = _stated(axis, parameters)
+        labels = gold.get(axis)
+        if not isinstance(labels, dict) or not labels.get(ACCEPTABLE):
+            raise ValueError(f"sample {case!r} needs acceptable {axis}")
+        for item in labels[ACCEPTABLE]:
+            ids = item.get("evidence_ids")
+            if not ids or not set(ids) <= known:
+                raise ValueError(f"sample {case!r} cites an id its CV lacks: {item!r}")
+            for name in _names(item):
+                if _labelled(axis, name, labels.get(UNACCEPTABLE, [])) is not None:
+                    raise ValueError(f"sample {case!r} labels {name!r} both ways")
+                if any(_matcher(axis)(name, title) for title in stated) or (
+                    axis == "titles" and title_excluded(name, excluded)
+                ):
+                    raise ValueError(f"sample {case!r} accepts a stated or excluded {name!r}")
+        for item in labels.get(UNACCEPTABLE, []):
+            if not str(item.get("why") or "").strip():
+                raise ValueError(f"sample {case!r} rejects {item.get('name')!r} without a why")
+    return gold
+
+
+def _program_refusals(
+    sample: dict[str, Any], output: dict[str, Any], known: set[str]
+) -> dict[str, list[str]]:
+    """Return why the program's own rules would refuse each proposal, empty when kept."""
+    parameters = case_parameters(sample)
+    titles = searchable_titles(
+        [ProposedTitle.model_validate(item) for item in output.get("titles") or []],
+        parameters,
+        known,
+    )
+    archetypes = searchable_archetypes(
+        [ProposedArchetype.model_validate(item) for item in output.get("archetypes") or []],
+        parameters,
+        known,
+    )
+    return {
+        "titles": [item.refused_because for item in titles],
+        "archetypes": [item.refused_because for item in archetypes],
+    }
+
+
+def _outcome(
+    axis: str, name: str, labels: dict[str, Any], stated: tuple[str, ...], excluded: list[str]
+) -> tuple[str, dict[str, Any] | None]:
+    if any(_matcher(axis)(name, item) for item in stated):
+        return REPEATS_STATED, None
+    if axis == "titles" and title_excluded(name, excluded):
+        return EXCLUDED, None
+    if (item := _labelled(axis, name, labels[ACCEPTABLE])) is not None:
+        return ACCEPTABLE, item
+    if (item := _labelled(axis, name, labels.get(UNACCEPTABLE, []))) is not None:
+        return UNACCEPTABLE, item
+    return UNLABELED, None
+
+
+def _scored_axis(
+    axis: str,
+    proposals: list[dict[str, Any]],
+    labels: dict[str, Any],
+    sample: dict[str, Any],
+    refusals: list[str],
+) -> dict[str, Any]:
+    """Return one axis's per-proposal outcomes and counts."""
+    parameters = case_parameters(sample)
+    stated = _stated(axis, parameters)
+    excluded = [title for title in parameters.seniority.excluded_titles if title.strip()]
+    key = "title" if axis == "titles" else "name"
+    rows: list[dict[str, Any]] = []
+    recalled: set[str] = set()
+    for proposal, refused in zip(proposals, refusals, strict=True):
+        name = str(proposal.get(key) or "")
+        outcome, item = _outcome(axis, name, labels, stated, excluded)
+        row: dict[str, Any] = {
+            "name": name,
+            "evidence_ids": list(proposal.get("evidence_ids") or []),
+            "outcome": outcome,
+            "program_refused_because": refused,
+        }
+        if item is not None:
+            row["label"] = item["name"]
+        if outcome == UNACCEPTABLE and item is not None:
+            row["why"] = item["why"]
+        if outcome == ACCEPTABLE and item is not None:
+            recalled.add(str(item["name"]))
+            row["citation_supported"] = bool(set(row["evidence_ids"]) & set(item["evidence_ids"]))
+        rows.append(row)
+    return {
+        "proposals": rows,
+        "acceptable": sum(row["outcome"] == ACCEPTABLE for row in rows),
+        "unlabeled": sum(row["outcome"] == UNLABELED for row in rows),
+        "supported": sum(bool(row.get("citation_supported")) for row in rows),
+        "recalled": sorted(recalled),
+        "missed": [item["name"] for item in labels[ACCEPTABLE] if item["name"] not in recalled],
+        "program_refused": sum(bool(row["program_refused_because"]) for row in rows),
+    }
+
+
+def _ratio(numerator: int, denominator: int) -> float:
+    return numerator / denominator if denominator else 1.0
+
+
+def proposal_usefulness() -> Any:
+    """Return the scorer for the titles and archetypes one vocabulary call proposed."""
+
+    def score(sample: dict[str, Any], solver_output: dict[str, Any]) -> dict[str, Any]:
+        gold = gold_labels(sample)
+        known = {entry.id for entry in citable_entries(case_inventory(sample))}
+        refusals = _program_refusals(sample, solver_output, known)
+        axes = {
+            axis: _scored_axis(
+                axis, list(solver_output.get(axis) or []), gold[axis], sample, refusals[axis]
+            )
+            for axis in AXES
+        }
+        proposed = sum(len(axes[axis]["proposals"]) for axis in AXES)
+        acceptable = sum(axes[axis]["acceptable"] for axis in AXES)
+        supported = sum(axes[axis]["supported"] for axis in AXES)
+        gold_total = sum(len(gold[axis][ACCEPTABLE]) for axis in AXES)
+        recalled = sum(len(axes[axis]["recalled"]) for axis in AXES)
+        unlabeled = sum(axes[axis]["unlabeled"] for axis in AXES)
+        labeled = proposed - unlabeled
+        precision = acceptable / labeled if labeled else None
+        citation_support = _ratio(supported, acceptable)
+        recall = _ratio(recalled, gold_total)
+        refused = sum(axes[axis]["program_refused"] for axis in AXES)
+        failed = [
+            name
+            for name, failing in (
+                ("no_proposals", proposed == 0),
+                ("no_labeled_proposals", proposed > 0 and precision is None),
+                ("precision", precision is not None and precision < PRECISION_THRESHOLD),
+                ("citation_support", citation_support < CITATION_SUPPORT_THRESHOLD),
+            )
+            if failing
+        ]
+        shown = "n/a" if precision is None else f"{precision:.2f}"
+        return {
+            "value": not failed,
+            "checks": {
+                "failed": failed,
+                "warned": ["unlabeled_proposals"] if unlabeled else [],
+            },
+            "metadata": {
+                "precision": precision,
+                "precision_denominator": "labeled proposals",
+                "unlabeled": unlabeled,
+                "unlabeled_share": _ratio(unlabeled, proposed) if proposed else 0.0,
+                "recall": recall,
+                "citation_support": citation_support,
+                "citation_support_denominator": "acceptable matches",
+                "program_refused": refused,
+                "clusters_proposed": len(solver_output.get("capabilities") or [])
+                + len(solver_output.get("domains") or []),
+                **axes,
+            },
+            "explanation": (
+                f"precision={shown} recall={recall:.2f} unlabeled={unlabeled}/{proposed} "
+                f"citation_support={citation_support:.2f} program_refused={refused}"
+            ),
+        }
+
+    # The runner checks every row's label with this before it calls a solver.
+    score.validate_sample = gold_labels  # type: ignore[attr-defined]
+    return score

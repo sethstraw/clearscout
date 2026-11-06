@@ -1,6 +1,6 @@
 {
   "case": "posting_recovery_first_party_beats_aggregator",
-  "prompt_suite": "a53f7cf267f7",
+  "prompt_suite": "1b1fae787876",
   "schemas": "61a3cacac376",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -31,7 +31,7 @@
     "posting_recovery_refusal": "",
     "request.jobspec": "4e3cb3a74bf4",
     "request.match": "dbc3c471aae5",
-    "request.posting_recovery": "49026c214693",
+    "request.posting_recovery": "c2e3192c7c00",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

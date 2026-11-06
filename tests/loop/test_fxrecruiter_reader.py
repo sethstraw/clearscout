@@ -241,7 +241,7 @@ def test_a_pacing_deadline_retains_successes_and_resumes_pending_details_on_a_fr
         target.detail_checkpoint for target in first.deferred_targets if target.detail_checkpoint
     ]
     assert {job_id for item in checkpoints for job_id in item.pending_ids} == {"2", "3"}
-    assert {job_id for item in checkpoints for job_id, _url in item.completed} == {"1"}
+    assert {job_id for item in checkpoints for job_id, _url in item.completed} == set()
     site.empty.clear()
     site.fetcher.client.close()
     site.fetcher = site.new_fetcher()

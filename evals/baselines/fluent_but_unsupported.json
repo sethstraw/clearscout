@@ -1,11 +1,12 @@
 {
   "case": "fluent_but_unsupported",
-  "prompt_suite": "a0b6c9a19f47",
+  "prompt_suite": "fd815f04798c",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
     "check.critic": "fail",
     "check.document structure": "pass",
+    "check.duration scope": "pass",
     "check.factual review": "warn",
     "check.first person": "pass",
     "check.forbidden strings": "pass",
@@ -47,7 +48,7 @@
     "model_calls": 4,
     "model_rule_disagreements": 0,
     "ownership_inflation": 0,
-    "request.critic": "8818df760d7b",
+    "request.critic": "d10dc38bced0",
     "request.draft": "60cde7ddf8cc",
     "request.jobspec": "0e6c29be3b9f",
     "request.match": "452a23bef507",

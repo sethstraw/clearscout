@@ -18,6 +18,7 @@ from clearscout.application.tailoring.fit.lexicon import (
 from clearscout.application.tailoring.fit.structure import (
     Answer,
     Block,
+    RecordLine,
     SectionKind,
     first_saying,
     quote_line,
@@ -156,10 +157,22 @@ def read_record_families(lexicon: Taxonomy, inventory: CvInventory) -> Answer[st
             "What the record reads as",
             note="the master CV does not use enough of any family's vocabulary to place it",
         )
-    labels = tuple(
-        family.label for _, family in sorted(scored, key=lambda item: (-item[0], item[1].key))[:3]
+    counted = [family for _, family in sorted(scored, key=lambda item: (-item[0], item[1].key))[:3]]
+    labels = tuple(family.label for family in counted)
+    lines = tuple(
+        RecordLine(role.key, "title", role.title or role.organization)
+        for role in inventory.roles
+        if any(
+            _score(
+                lexicon,
+                family,
+                f"{role.title or ''} {role.organization}",
+                "\n".join(entry.full_text for entry in inventory.entries_for(role.key)),
+            )[0]
+            for family in counted
+        )
     )
-    return Answer("What the record reads as", ", ".join(labels), evidence=labels)
+    return Answer("What the record reads as", ", ".join(labels), evidence=labels, lines=lines)
 
 
 def read_record_years(inventory: CvInventory, today: date) -> Answer[int]:
@@ -180,4 +193,5 @@ def read_record_years(inventory: CvInventory, today: date) -> Answer[int]:
         "Years the record covers",
         max(0, last - first),
         evidence=(f"earliest dated role starts {first}, latest ends {last}",),
+        lines=tuple(RecordLine(role.key, "dates", role.dates) for role in dated if role.dates),
     )

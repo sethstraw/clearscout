@@ -120,6 +120,25 @@ POLL_INTERVAL_SECONDS = 2.0
 MAX_POLL_ATTEMPTS = 300
 
 
+def poll_until_terminal(
+    collect: Callable[[], BackgroundPoll],
+    sleeper: Callable[[float], None],
+    *,
+    on_pending: Callable[[], None] = lambda: None,
+) -> BackgroundPoll:
+    """Collect a dispatched response until it leaves pending, sleeping between polls.
+
+    ``on_pending`` runs after each pending poll, before the sleep.
+    """
+    for _ in range(MAX_POLL_ATTEMPTS):
+        poll = collect()
+        if poll.status != "pending":
+            return poll
+        on_pending()
+        sleeper(POLL_INTERVAL_SECONDS)
+    raise ProviderError("Background response did not reach a terminal state before polling paused.")
+
+
 class _CancelledError(Exception):
     """Stop the campaign because its task was canceled."""
 
@@ -967,17 +986,19 @@ class GuidedCampaignService:
     ) -> tuple[BackgroundPoll, bool]:
         """Poll one dispatched response to a terminal status, canceling it at most once."""
         cancelled = False
-        for _ in range(MAX_POLL_ATTEMPTS):
-            poll = self._collect_poll(
-                campaign_id, task_id, record, client, response_id, plan, schema, choice, started
-            )
-            if poll.status != "pending":
-                return poll, cancelled
+
+        def pending() -> None:
+            nonlocal cancelled
             cancelled = self._maybe_cancel(client, context, response_id, record, cancelled, funnel)
-            self.sleeper(POLL_INTERVAL_SECONDS)
-        raise ProviderError(
-            "Background response did not reach a terminal state before polling paused."
+
+        poll = poll_until_terminal(
+            lambda: self._collect_poll(
+                campaign_id, task_id, record, client, response_id, plan, schema, choice, started
+            ),
+            self.sleeper,
+            on_pending=pending,
         )
+        return poll, cancelled
 
     def _poll_and_capture(
         self,

@@ -755,7 +755,7 @@ def test_taleo_last_page_gap_keeps_the_exact_failed_body_target_and_attempt() ->
     assert body.detail_checkpoint.pending_ids == ("2",)
     assert body.detail_checkpoint.failed_attempts == (("2", 1),)
     assert not body.automatic_eligible
-    assert set(body.detail_checkpoint.listing_ids) == {"1", "2", "3"}
+    assert body.detail_checkpoint.listing_ids == ("2",)
     assert body.detail_checkpoint.listing_total == 4
     assert [request["pageNo"] for _, request, _ in site.posts] == [1, 2]
 

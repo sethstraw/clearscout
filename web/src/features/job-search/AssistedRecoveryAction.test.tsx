@@ -21,6 +21,7 @@ const manifest = {
   estimate_cents: 37,
   issued_at: "2026-08-28T18:00:00Z",
   expires_at: "2026-08-28T18:15:00Z",
+  identity_sha256: "f".repeat(64),
 } satisfies components["schemas"]["PostingRecoveryApprovalManifest"];
 
 function installHandlers(submitted: components["schemas"]["TaskCreate"][]) {

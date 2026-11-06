@@ -49,7 +49,10 @@ The critic asks the same question `critic_trials` times on one draft, once by
 default. It fails the draft on any unsupported claim any trial named, and bills
 that many calls per draft attempt it reads. An attempt that fails the
 deterministic checks never reaches the critic. Neither does a first attempt
-with strong coverage and directly cited evidence.
+with strong coverage and directly cited evidence. Above one trial, a claim's
+"raised by N of M" count groups doubts whose quotes are equal, nested, or share
+the same content words; two trials quoting overlapping halves of one line count
+as two claims.
 
 For each doubted claim, the critic names the boundary it crosses, from the
 closed set in `ClaimBoundary`. The response schema enforces the set, so free

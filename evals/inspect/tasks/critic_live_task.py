@@ -18,7 +18,6 @@ from evals.inspect.scorers.document_checks import critic_doubt_contract
 from evals.inspect.solvers.document_live import document_live_solver
 
 TASK_NAME = "critic-live"
-SCORE_KIND = "judged"
 # scripts/eval.sh reads this declaration to estimate the stage this run records.
 STAGE = "critic"
 DATASET_PATH = Path(__file__).resolve().parents[2] / "fixtures" / "critic_cases.jsonl"

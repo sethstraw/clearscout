@@ -21,22 +21,20 @@ from types import MappingProxyType
 from typing import Any
 
 from clearscout.application.config import ProviderName, Settings, Stage
-from clearscout.application.prompts import load, overriding
+from clearscout.application.prompts import load
 from clearscout.application.tailoring.stages.draft import cover_letter, draft
 from clearscout.application.tailoring.stages.verify import check_letter, critique
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.shared.costs import Ledger
 from clearscout.shared.costs.prices import table as price_table
 from evals.inspect.solvers.clearscout_live import (
-    bill_sample,
     billing_target,
-    credential_for,
+    paid_call,
     paid_stage_metadata,
     prompt_snapshot_fingerprint,
     run_settings,
     sample_provenance,
 )
-from evals.support.client import build_live_client
 from evals.support.documents import (
     DocumentContext,
     critic_document,
@@ -45,6 +43,7 @@ from evals.support.documents import (
     draft_result,
     fitted_resume,
     letter_result,
+    research_sources,
 )
 
 DRAFT_PROMPTS = ("draft_system", "draft_user")
@@ -78,30 +77,21 @@ class _DocumentLiveSolver:
                 "run preflight."
             )
         context = document_context(sample)
-        # Each sample is billed once; the run ledger keeps every entry for the report.
-        sample_ledger = Ledger(prices=self.ledger.prices)
-        client = build_live_client(
-            self.provider_name,
-            credential_for(self.provider_name),
-            ledger=sample_ledger,
+        paid = paid_call(
+            lambda client: self._measure(sample, context, client),
+            provider_name=self.provider_name,
             settings=self.settings,
+            run_ledger=self.ledger,
+            run_metadata=self.run_metadata,
+            prompt_snapshot=self.prompt_snapshot,
+            database=self.database,
+            workspace_id=self.workspace_id,
+            origin=self.origin,
         )
-        try:
-            with overriding(self.prompt_snapshot):
-                result = self._measure(sample, context, client)
-        finally:
-            self.ledger.entries.extend(sample_ledger.entries)
-            billing_failure = bill_sample(
-                self.database,
-                self.workspace_id,
-                ledger=sample_ledger,
-                provider=str(self.run_metadata["provider"]),
-                origin=self.origin,
-            )
         return {
-            **result,
+            **paid.value,
             "metadata": sample_provenance(
-                sample_ledger, self.ledger, self.run_metadata, billing_failure
+                paid.ledger, self.ledger, self.run_metadata, paid.billing_failure
             ),
         }
 
@@ -132,16 +122,23 @@ class _CoverLiveSolver(_DocumentLiveSolver):
     def _measure(
         self, sample: dict[str, Any], context: DocumentContext, client: Any
     ) -> dict[str, Any]:
-        """Write the cover letter live and check it."""
-        del sample
+        """Write the cover letter live from the sample's research and check it."""
+        research = research_sources(sample)
         letter = cover_letter(
-            client, context.inventory, context.spec, context.plan, context.guardrails
+            client,
+            context.inventory,
+            context.spec,
+            context.plan,
+            context.guardrails,
+            research=research,
+            employer=context.spec.company,
         )
         report = check_letter(
             letter=letter,
             plan=context.plan,
             inventory=context.inventory,
             guardrails=context.guardrails,
+            research=research,
         )
         return letter_result(letter, report)
 
