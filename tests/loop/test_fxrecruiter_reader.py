@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from html import escape
 from urllib.parse import urlsplit
 
@@ -9,6 +10,7 @@ import httpx
 import pytest
 
 from clearscout.application.discovery.source_reading import SourceReadOptions
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
 from clearscout.infrastructure.web_fetch.ingest import strip_tags
 from clearscout.infrastructure.web_fetch.ingest.careers import inspect_publisher_page
@@ -98,7 +100,8 @@ class _FeedSite:
             f"<h1>Data Analyst {number}</h1>"
             '<div hidden><input type="password"><h2>Account login</h2></div>'
             '<script type="application/ld+json">'
-            '{"@type":"JobPosting",/* invalid JSON */"title":"Untrusted title"}'
+            '{"@type":"JobPosting",/* board comment */"title":"Untrusted title",'
+            '"datePosted":"2026-10-01"}'
             "</script><main><h2>Related jobs</h2>"
             '<a href="/jobs/details/canada/ontario/manager/901">Related Manager</a>'
             '<a href="/jobs/details/canada/ontario/director/902">Related Director</a></main>'
@@ -176,6 +179,10 @@ def test_declared_feed_reads_owned_bodies_with_hidden_login_and_invalid_jsonld(t
     assert all(strip_tags(_BODY) in row.published_description for row in read.listings)
     assert all("Related Manager" not in row.published_description for row in read.listings)
     assert {row.employer for row in read.listings} == {"Acme"}
+    posted = [row.facts.posted_date for row in read.listings]
+    assert {
+        (date.day, date.earliest.basis, date.earliest.grade) if date else None for date in posted
+    } == {(datetime.date(2026, 10, 1), "datePosted", PostedDateGrade.BOARD_DATE)}
     evidence = inspect_publisher_page(site.url(1), site.markup(1))
     assert "publisher structured data is not valid JSON" in evidence.evidence
     assert site.origin + "/feeds/jobs-rss" in site.requested

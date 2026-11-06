@@ -113,6 +113,20 @@ def test_a_javascript_escaped_apostrophe_in_linked_data_still_reads(
     assert posting.description == expected
 
 
+def test_a_block_comment_in_linked_data_is_skipped_but_one_inside_a_string_is_kept() -> None:
+    page = (
+        '<script type="application/ld+json">/* Job posting markup */\n'
+        '{"@type": "JobPosting", /* stated by the board */ "title": "Data Analyst",'
+        ' "description": "Report on /* not a comment */ trends", "datePosted": "2026-10-01"}'
+        "</script>"
+    )
+
+    (posting,) = job_postings(page)
+
+    assert posting.date_posted == "2026-10-01"
+    assert posting.description == "Report on /* not a comment */ trends"
+
+
 def test_only_linked_data_scripts_are_read() -> None:
     assert job_postings(_page(FULL, script_type="application/json")) == ()
     assert job_postings(_page(FULL, script_type="text/javascript")) == ()

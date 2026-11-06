@@ -460,6 +460,8 @@ def _posting(node: dict[str, Any], declared: dict[str, dict[str, Any]]) -> JobPo
 _ENTITY = re.compile(r"&(?:#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});")
 # A JavaScript-style \' is not a JSON escape; an escaped backslash before it is kept.
 _JS_APOSTROPHE = re.compile(r"(?<!\\)((?:\\\\)*)\\'")
+# A string literal is matched first so a `/*` inside one is kept.
+_STRING_OR_COMMENT = re.compile(r'("(?:\\.|[^"\\])*")|/\*.*?\*/', re.DOTALL)
 
 
 def _decoded(value: Any) -> Any:
@@ -473,20 +475,27 @@ def _decoded(value: Any) -> Any:
     return value
 
 
+def _lenient_json(block: str) -> Any:
+    """Parse a block as JSON, then with JavaScript apostrophes and block comments removed."""
+    unescaped = _JS_APOSTROPHE.sub(r"\1'", block)
+    uncommented = _STRING_OR_COMMENT.sub(lambda match: match.group(1) or "", unescaped)
+    for candidate in (block, unescaped, uncommented):
+        try:
+            return json.loads(candidate)
+        except ValueError:
+            continue
+    return None
+
+
 def _linked_data_nodes(body: str) -> Iterator[dict[str, Any]]:
     # HTMLParser reads a script as CDATA, so convert_charrefs never runs on a block.
     parser = _ScriptBlocks()
     parser.feed(body)
     for block in parser.blocks:
         # One broken or empty script on a page says nothing about the others.
-        try:
-            document = json.loads(block)
-        except ValueError:
-            try:
-                document = json.loads(_JS_APOSTROPHE.sub(r"\1'", block))
-            except ValueError:
-                continue
-        yield from _nodes(_decoded(document))
+        document = _lenient_json(block)
+        if document is not None:
+            yield from _nodes(_decoded(document))
 
 
 def _microdata_nodes(body: str) -> Iterator[dict[str, Any]]:

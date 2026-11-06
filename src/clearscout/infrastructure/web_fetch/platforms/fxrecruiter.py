@@ -134,11 +134,13 @@ def _detail(fetcher: BoardTransport, row: dict[str, Any]) -> Mapping[str, Any] |
     ):
         return None
     declared = page_posting(page)
-    if declared is not None:
+    if declared is not None and strip_tags(declared["description"]):
         return declared
     if not evidence.title or not strip_tags(evidence.posting_body_markup):
         return None
+    # A declaration stating no body still states the day the job was posted.
     return {
+        "posted": declared["posted"] if declared is not None else "",
         "title": evidence.title,
         "description": evidence.posting_body_markup,
         "employer": "",

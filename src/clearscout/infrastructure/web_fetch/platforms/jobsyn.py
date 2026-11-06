@@ -7,6 +7,8 @@ import unicodedata
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode, urljoin, urlsplit
 
+from clearscout.domain.staged_facts import PostedDateGrade
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import posted_on
 from clearscout.infrastructure.web_fetch.board_mappings.page_posting import page_posting_declaration
 from clearscout.infrastructure.web_fetch.board_platform import BoardPlatform
 from clearscout.infrastructure.web_fetch.board_reads import (
@@ -31,7 +33,11 @@ _API_BASE = "https://prod-search-api.jobsyn.org/api/"
 _ENDPOINT = _API_BASE + "v1/solr/search"
 _MODULE_LIMIT = 24
 _PENDING = "jobsyn_search_page"
-_MAPPING = page_posting_declaration("jobsyn")
+# The aggregator states when it added the job; is_posted is false on every row it serves.
+JOBSYN_MAPPING = page_posting_declaration(
+    "jobsyn",
+    posted=posted_on(("row", "publisher", "date_added"), PostedDateGrade.BOARD_DATE),
+)
 
 
 def _module_address(source: str, reference: str) -> str:
@@ -222,7 +228,7 @@ def _read(
         reason=_PENDING,
         first_page=1,
         request=request,
-        mapping=_MAPPING,
+        mapping=JOBSYN_MAPPING,
         detail=lambda row: row["detail"],
         target=target,
         recovery=recovery,

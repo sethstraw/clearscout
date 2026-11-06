@@ -39,6 +39,7 @@ from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     source_listing,
     source_listings,
 )
+from clearscout.infrastructure.web_fetch.board_mappings.paylocity import PAYLOCITY_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.personio import PERSONIO_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.phenom import PHENOM_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.rippling import RIPPLING_MAPPING
@@ -46,6 +47,7 @@ from clearscout.infrastructure.web_fetch.board_mappings.schema_org import (
     declared_check,
     declared_listing,
 )
+from clearscout.infrastructure.web_fetch.board_mappings.taleobusiness import TALEOBUSINESS_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.ukg import UKG_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.workable import WORKABLE_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.workday import WORKDAY_DETAIL_MAPPING
@@ -55,6 +57,7 @@ from clearscout.infrastructure.web_fetch.ingest.job_posting_markup import (
     JobPostingMarkup,
 )
 from clearscout.infrastructure.web_fetch.listing_facts import lever_arrangement_values
+from clearscout.infrastructure.web_fetch.platforms.jobsyn import JOBSYN_MAPPING
 from clearscout.infrastructure.web_fetch.platforms.lever import lever_form_cards
 from tests.support.application_forms import (
     FORM_PLATFORMS,
@@ -1785,7 +1788,7 @@ _BOARD = PostedDateGrade.BOARD_DATE
             {"openDate": "2026-09-01T00:00:00Z"},
             "openDate",
             date(2026, 9, 1),
-            _FIRST,
+            _BOARD,
             id="clearcompany-open-fallback",
         ),
         pytest.param(
@@ -1859,6 +1862,38 @@ _BOARD = PostedDateGrade.BOARD_DATE
             date(2026, 9, 28),
             _BOARD,
             id="personio",
+        ),
+        pytest.param(
+            JOBSYN_MAPPING,
+            {
+                "row": {
+                    "publisher": {
+                        "date_added": "2026-10-01T12:34:56.789Z",
+                        "date_updated": "2026-10-09T08:00:00.000Z",
+                    }
+                },
+                "detail": {},
+            },
+            "row.publisher.date_added",
+            date(2026, 10, 1),
+            _BOARD,
+            id="jobsyn",
+        ),
+        pytest.param(
+            PAYLOCITY_MAPPING,
+            {"JobId": 7, "PublishedDate": "2026-09-17T07:05:54-05:00"},
+            "PublishedDate",
+            date(2026, 9, 17),
+            _BOARD,
+            id="paylocity",
+        ),
+        pytest.param(
+            TALEOBUSINESS_MAPPING,
+            fromstring("<item><pubDate>Wed, 21 Oct 2026 17:28:23 GMT</pubDate></item>"),
+            "pubDate",
+            date(2026, 10, 21),
+            _BOARD,
+            id="taleobusiness",
         ),
     ],
 )

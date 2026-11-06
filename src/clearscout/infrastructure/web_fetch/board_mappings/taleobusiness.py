@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated_text,
 )
 
@@ -26,4 +28,5 @@ TALEOBUSINESS_MAPPING = BoardDeclaration(
     requisition_id=(f"{{{TALEOBUSINESS_NAMESPACE}}}reqId",),
     places=(f"{{{TALEOBUSINESS_NAMESPACE}}}location",),
     description=_body,
+    posted=posted_on(("pubDate",), PostedDateGrade.BOARD_DATE),
 )

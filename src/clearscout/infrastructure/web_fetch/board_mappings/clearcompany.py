@@ -18,7 +18,8 @@ from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
 from clearscout.infrastructure.web_fetch.listing_facts import ArrangementSignal
 
 _POSTED = posted_on(("postedDate",), PostedDateGrade.FIRST_POSTED)
-_OPENED = posted_on(("openDate",), PostedDateGrade.FIRST_POSTED)
+# A requisition opens before its posting goes live, so the open date is no first-posted day.
+_OPENED = posted_on(("openDate",), PostedDateGrade.BOARD_DATE)
 
 
 def clearcompany_jobs_url(site: str, page: int, page_size: int) -> str:

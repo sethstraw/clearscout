@@ -23,7 +23,7 @@ from clearscout.application.discovery.source_reading import (
     SourceReadOptions,
 )
 from clearscout.domain import SourceReadOutcome
-from clearscout.infrastructure.web_fetch import board_adapters, boards
+from clearscout.infrastructure.web_fetch import board_adapters, board_mappings, boards
 from clearscout.infrastructure.web_fetch import platforms as platform_package
 from clearscout.infrastructure.web_fetch.board_adapters import (
     STRUCTURED_PAGE_CURSOR_REASONS,
@@ -31,6 +31,7 @@ from clearscout.infrastructure.web_fetch.board_adapters import (
     identify_board,
     identify_board_url,
 )
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import BoardDeclaration
 from clearscout.infrastructure.web_fetch.board_platform import BoardKind
 from clearscout.infrastructure.web_fetch.ingest.sitemap import SitemapLimits, discover_job_urls
 from clearscout.infrastructure.web_fetch.ingest.url import posting_readers
@@ -1120,6 +1121,40 @@ def test_every_platform_module_is_registered() -> None:
         for module in pkgutil.iter_modules(platform_package.__path__)
     }
     assert declared == {id(platform) for platform in PLATFORMS}
+
+
+# Fixtures for the last four show no date field at all.
+_UNDATED_BY_DESIGN = {
+    "comeet": "states only time_updated, an edit date",
+    "pinpoint": "states only deadline_at",
+    "himalayas": "states only expiryDate, read as the closing date",
+    "arbeitnow": "its list record states no date field",
+    "dover": "neither its list row nor its detail states a date field",
+    "getro": "its list record states no date field",
+    "recruitee": "its offer record states no date field",
+}
+
+
+def _dated_platforms() -> dict[str, bool]:
+    dated: dict[str, bool] = {}
+    for package in (board_mappings, platform_package):
+        for module in pkgutil.iter_modules(package.__path__):
+            loaded = importlib.import_module(f"{package.__name__}.{module.name}")
+            for value in vars(loaded).values():
+                if isinstance(value, BoardDeclaration):
+                    dated[value.platform] = dated.get(value.platform, False) or (
+                        value.posted is not None
+                    )
+    return dated
+
+
+def test_every_platform_declares_a_posted_date_or_says_why_it_cannot() -> None:
+    dated = _dated_platforms()
+
+    assert set(_UNDATED_BY_DESIGN) <= {platform.name for platform in PLATFORMS}
+    for platform in PLATFORMS:
+        declares = dated.get(platform.name, False)
+        assert declares != (platform.name in _UNDATED_BY_DESIGN), platform.name
 
 
 def test_every_platform_with_a_posting_api_has_a_single_posting_reader() -> None:

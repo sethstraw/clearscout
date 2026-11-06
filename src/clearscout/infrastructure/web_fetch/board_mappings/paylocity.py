@@ -10,9 +10,11 @@ import json
 import re
 from typing import Any
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -99,4 +101,6 @@ PAYLOCITY_MAPPING = BoardDeclaration(
     requisition_id=_requisition_id,
     description=(("description",), ("requirements",)),
     arrangement=_arrangement,
+    # Whether a repost moves the page's published date is unverified.
+    posted=posted_on(("PublishedDate",), PostedDateGrade.BOARD_DATE),
 )
