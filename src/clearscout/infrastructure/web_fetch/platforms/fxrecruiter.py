@@ -151,7 +151,14 @@ def _detail(fetcher: BoardTransport, row: dict[str, Any]) -> Mapping[str, Any] |
     }
 
 
-def _read(fetcher: BoardTransport, employer: str, _groups: dict[str, str], url: str) -> SourceRead:
+def _read(
+    fetcher: BoardTransport,
+    employer: str,
+    _groups: dict[str, str],
+    url: str,
+    *,
+    target: SourceContinuationTarget | None = None,
+) -> SourceRead:
     fetcher.register_host_minimum_interval(url, _MINIMUM_REQUEST_INTERVAL_SECONDS)
     feed = _feed_url(fetcher, url)
     return publisher_search_read(
@@ -163,6 +170,7 @@ def _read(fetcher: BoardTransport, employer: str, _groups: dict[str, str], url: 
         request=partial(_request, fetcher, feed, url),
         mapping=_MAPPING,
         detail=partial(_detail, fetcher),
+        target=target,
         listed_titles=True,
     )
 
@@ -170,7 +178,7 @@ def _read(fetcher: BoardTransport, employer: str, _groups: dict[str, str], url: 
 def _continue(
     fetcher: BoardTransport, employer: str, target: SourceContinuationTarget
 ) -> SourceRead:
-    return _read(fetcher, employer, {}, target.source_url)
+    return _read(fetcher, employer, {}, target.source_url, target=target)
 
 
 def _continue_detail(

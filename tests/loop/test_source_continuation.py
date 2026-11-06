@@ -6800,6 +6800,38 @@ def test_a_relisted_search_continuation_reads_no_off_target_detail_and_counts_it
     assert counts == {(2, 1)}
 
 
+def test_a_search_page_continuation_chain_reads_the_feed_and_each_detail_once(
+    durable_database: Database,
+) -> None:
+    from tests.loop.test_fxrecruiter_reader import _FeedSite
+
+    workspace_id = _workspace(durable_database)
+    site = _FeedSite()
+    _source(durable_database, workspace_id, "Acme", site.root)
+    state_target_titles(durable_database, workspace_id, "Data Analyst")
+    original = site.fetcher.client.getter
+    assert original is not None
+
+    def stop_after_root(address: str, **kwargs: Any) -> httpx.Response:
+        site.stopped = site.stopped or address == site.root
+        return original(address, **kwargs)
+
+    site.fetcher.client.getter = stop_after_root
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    site.fetcher.client.getter = original
+    site.stopped = False
+    site.requested.clear()
+
+    for _ in range(4):
+        if not worker.run_once():
+            break
+
+    feed = site.origin + "/feeds/jobs-rss"
+    reads = [site.root, feed, *(site.url(number) for number in (1, 2, 3))]
+    assert {url: site.requested.count(url) for url in reads} == dict.fromkeys(reads, 1)
+
+
 def test_a_fresh_detail_host_hold_keeps_history_and_stops_the_automatic_chain(
     durable_database: Database, monkeypatch: pytest.MonkeyPatch
 ) -> None:
