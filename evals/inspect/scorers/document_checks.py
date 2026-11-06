@@ -145,6 +145,8 @@ def verifier_result() -> Any:
             "explanation": explanation,
         }
 
+    # The live smoke refuses an output lacking this field.
+    score.required_fields = ("findings",)  # type: ignore[attr-defined]
     return score
 
 
@@ -221,6 +223,12 @@ def critic_doubt_contract() -> Any:
 
     # The runner checks every row's declarations with this before it calls a solver.
     score.validate_sample = _declared_doubt  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking any of these dotted fields.
+    score.required_fields = (  # type: ignore[attr-defined]
+        "completion",
+        "verdict",
+        "verdict.unsupported_claims",
+    )
     return score
 
 

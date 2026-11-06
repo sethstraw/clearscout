@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import importlib
 import json
 import os
@@ -17,6 +18,16 @@ import pytest
 from evals.inspect import build_calibration, runner
 from evals.inspect.labeling import bytes_sha256
 from evals.inspect.product_questions import ProductQuestion
+from evals.inspect.scorers import (
+    document_checks,
+    guided_campaign,
+    jobspec_boundary,
+    jobspec_extraction,
+    match_classification,
+    posting_recovery,
+    relevance_verdict,
+    search_vocabulary,
+)
 from evals.inspect.scorers.match_classification import (
     classification_match,
     per_requirement_scripted_contract,
@@ -2604,7 +2615,6 @@ def _raising_scorer(sample: dict[str, Any], output: dict[str, Any]) -> dict[str,
     [
         (_provider_error, None, "1", "provider error ProviderError"),
         (_priced, _raising_scorer, "1", "the scorer raised KeyError"),
-        (_no_measurements, None, "1", "the sample recorded no measurements"),
         (_priced, None, "0.001", "the smoke call cost 0.01 over the approved 0.001"),
     ],
 )
@@ -2633,6 +2643,148 @@ def test_a_failing_smoke_call_stops_the_run_after_one_call(
 
     assert calls == ["dev-1"]
     assert f"smoke: failed {reason}" in capsys.readouterr().out
+
+
+def test_an_unpaid_first_case_is_reused_and_the_smoke_runs_on_the_first_paid_case(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    calls: list[str] = []
+
+    def solve(sample: dict[str, Any]) -> dict[str, Any]:
+        calls.append(sample["id"])
+        return _no_measurements(sample) if sample["id"] == "dev-1" else _priced(sample)
+
+    task = _smoke_task(_smoke_dataset(tmp_path), solve)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    log_path = runner.run_task(
+        "t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal(1)
+    )
+
+    assert calls == ["dev-1", "dev-2", "dev-1", "dev-2"]
+    rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()[1:]]
+    assert [(row["id"], row["trial"]) for row in rows] == [
+        ("dev-1", 0),
+        ("dev-1", 1),
+        ("dev-2", 0),
+        ("dev-2", 1),
+    ]
+    assert rows[0]["solver_output"] == _no_measurements({"id": "dev-1"})
+    assert "smoke: ok case=dev-2 usd=0.01" in capsys.readouterr().out
+
+
+def test_a_selection_with_no_paid_case_fails_the_smoke(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    calls: list[str] = []
+
+    def solve(sample: dict[str, Any]) -> dict[str, Any]:
+        calls.append(sample["id"])
+        return _no_measurements(sample)
+
+    task = _smoke_task(_smoke_dataset(tmp_path), solve)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    with pytest.raises(runner.SmokeFailedError, match="no selected case made a paid call"):
+        runner.run_task("t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal(1))
+
+    assert calls == ["dev-1", "dev-2"]
+
+
+def _paid_output(**fields: Any) -> dict[str, Any]:
+    metadata = {"measurements": [_measured("critic", 9, 1)], **fields.pop("metadata", {})}
+    return {**fields, "metadata": metadata}
+
+
+_DECLARED_OUTPUTS: list[tuple[Any, dict[str, Any]]] = [
+    (
+        posting_recovery.recovered_posting,
+        _paid_output(outcome="not_found", candidates=[], picked=None),
+    ),
+    (
+        guided_campaign.campaign_attempt,
+        _paid_output(
+            status="complete",
+            search_count=1,
+            search_cap=4,
+            queries=["synthetic analyst"],
+            branches=[],
+            postings=[],
+            boards=[],
+            refused_picks=[],
+            reads=[],
+        ),
+    ),
+    (
+        document_checks.critic_doubt_contract,
+        _paid_output(completion="pass", verdict={"unsupported_claims": []}),
+    ),
+    (document_checks.verifier_result, _paid_output(findings=[])),
+    (
+        match_classification.classification_match,
+        _paid_output(completion="GAP", metadata={"entry_keys": [], "outcome_complete": True}),
+    ),
+    (
+        search_vocabulary.proposal_usefulness,
+        _paid_output(titles=[], archetypes=[], capabilities=[], domains=[]),
+    ),
+    (jobspec_extraction.requirement_extraction, _paid_output(requirements=[])),
+    (jobspec_boundary.boundary_match, _paid_output(boundary=None)),
+    (
+        relevance_verdict.recommendation_match,
+        _paid_output(completion="apply", outcome=None, axes={}, validation_failure=None),
+    ),
+]
+
+
+def _without(output: dict[str, Any], path: str) -> dict[str, Any]:
+    trimmed = copy.deepcopy(output)
+    *parents, leaf = path.split(".")
+    node = trimmed
+    for key in parents:
+        node = node[key]
+    del node[leaf]
+    return trimmed
+
+
+@pytest.mark.parametrize(
+    ("factory", "field", "output"),
+    [
+        (factory, field, output)
+        for factory, output in _DECLARED_OUTPUTS
+        for field in getattr(factory(), "required_fields", ("undeclared",))
+    ],
+)
+def test_a_smoke_output_missing_a_declared_field_fails_naming_it(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    factory: Any,
+    field: str,
+    output: dict[str, Any],
+) -> None:
+    def score(sample: dict[str, Any], solver_output: dict[str, Any]) -> dict[str, Any]:
+        return {"value": True}
+
+    cast(Any, score).required_fields = getattr(factory(), "required_fields", ())
+    task = _smoke_task(_smoke_dataset(tmp_path), lambda sample: _without(output, field), score)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    with pytest.raises(runner.SmokeFailedError, match=f"lacks the field {field}$"):
+        runner.run_task("t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal(1))
+
+
+def test_an_unpaid_smoke_output_missing_a_declared_field_fails_naming_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def score(sample: dict[str, Any], solver_output: dict[str, Any]) -> dict[str, Any]:
+        return {"value": True}
+
+    cast(Any, score).required_fields = ("verdict",)
+    task = _smoke_task(_smoke_dataset(tmp_path), _no_measurements, score)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    with pytest.raises(runner.SmokeFailedError, match="lacks the field verdict$"):
+        runner.run_task("t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal(1))
 
 
 def test_a_smoke_projection_over_the_approval_warns_and_continues(

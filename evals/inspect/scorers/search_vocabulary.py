@@ -318,4 +318,6 @@ def proposal_usefulness() -> Any:
 
     # The runner checks every row's label with this before it calls a solver.
     score.validate_sample = gold_labels  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking any of these fields.
+    score.required_fields = (*AXES, "capabilities", "domains")  # type: ignore[attr-defined]
     return score

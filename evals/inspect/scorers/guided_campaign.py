@@ -369,4 +369,16 @@ def campaign_attempt() -> Any:
 
     # The runner checks every row's label with this before it calls a solver.
     score.validate_sample = campaign_case  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking any of these; a failed pick read has no reads.
+    score.required_fields = (  # type: ignore[attr-defined]
+        "status",
+        "search_count",
+        "search_cap",
+        "queries",
+        "branches",
+        "postings",
+        "boards",
+        "refused_picks",
+        "reads",
+    )
     return score

@@ -57,4 +57,6 @@ def boundary_match() -> Any:
 
     # The runner checks every row's label with this before it calls a solver.
     score.validate_sample = expected_boundary  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking this field; a null boundary is an answer.
+    score.required_fields = ("boundary",)  # type: ignore[attr-defined]
     return score

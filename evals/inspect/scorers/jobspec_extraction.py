@@ -194,4 +194,6 @@ def requirement_extraction() -> Any:
 
     # The runner checks every row's label with this before it calls a solver.
     score.validate_sample = expected_requirements  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking this field.
+    score.required_fields = ("requirements",)  # type: ignore[attr-defined]
     return score

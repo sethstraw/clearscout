@@ -89,4 +89,11 @@ def recommendation_match() -> Any:
 
     # The runner checks every row's label with this before it calls a solver.
     score.validate_sample = RelevanceReviewLabel.from_row  # type: ignore[attr-defined]
+    # A missing validation_failure would read as an accepted answer.
+    score.required_fields = (  # type: ignore[attr-defined]
+        "completion",
+        "outcome",
+        "axes",
+        "validation_failure",
+    )
     return score

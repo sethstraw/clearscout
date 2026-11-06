@@ -101,4 +101,6 @@ def recovered_posting() -> Any:
 
     # The runner checks every row's label with this before it calls a solver.
     score.validate_sample = expected_targets  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking any of these dotted fields.
+    score.required_fields = ("outcome", "candidates", "picked")  # type: ignore[attr-defined]
     return score

@@ -141,6 +141,12 @@ def classification_match() -> Any:
 
     # The runner checks every row's accepted labels with this before it calls a solver.
     score.validate_sample = _expected_labels  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking any of these dotted fields.
+    score.required_fields = (  # type: ignore[attr-defined]
+        "completion",
+        "metadata.entry_keys",
+        "metadata.outcome_complete",
+    )
     return score
 
 

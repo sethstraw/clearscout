@@ -803,49 +803,69 @@ class SmokeFailedError(RuntimeError):
     """Raised when the one-sample smoke call shows the full run would not work."""
 
 
-class _PrimedSolver:
-    """Answer the first call with the smoke output, then delegate to the solver."""
+_SmokeKey = tuple[Any, Any]
 
-    def __init__(self, solver: Solver, first: dict[str, Any]) -> None:
+
+class _PrimedSolver:
+    """Answer each sample's first call with its smoke output, then delegate to the solver."""
+
+    def __init__(self, solver: Solver, kept: dict[_SmokeKey, dict[str, Any]]) -> None:
         self._solver = solver
-        self._first: dict[str, Any] | None = first
+        self._kept = kept
 
     def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
-        first, self._first = self._first, None
-        return first if first is not None else self._solver(sample)
+        kept = self._kept.pop((sample.get("id"), sample.get("arm")), None)
+        return kept if kept is not None else self._solver(sample)
+
+
+def _missing_field(scorer: Scorer, solver_output: dict[str, Any]) -> str | None:
+    """Return the first dotted field the scorer requires that the output lacks."""
+    for path in getattr(scorer, "required_fields", ()):
+        node: Any = solver_output
+        for key in path.split("."):
+            if not isinstance(node, dict) or key not in node:
+                return str(path)
+            node = node[key]
+    return None
 
 
 def _smoke_check(
     solver_output: dict[str, Any],
     sample: dict[str, Any],
     scorer: Scorer,
-) -> tuple[str | None, Decimal]:
-    """Return why one smoke output fails the run's preconditions, or None, and its dollars."""
+) -> tuple[str | None, Decimal, bool]:
+    """Return why one smoke output fails, or None, its dollars, and whether it was paid."""
     metadata = solver_output.get("metadata")
     metadata = metadata if isinstance(metadata, dict) else {}
     if "billing_failure" in metadata:
-        return "the provider call was not billed to a response id", Decimal(0)
+        return "the provider call was not billed to a response id", Decimal(0), True
+    if (missing := _missing_field(scorer, solver_output)) is not None:
+        return f"the solver output lacks the field {missing}", Decimal(0), True
     try:
         measurements = _row_measurements({"solver_output": solver_output})
     except ValueError as error:
-        return f"malformed measurements: {error}", Decimal(0)
+        return f"malformed measurements: {error}", Decimal(0), True
     if not measurements:
-        return "the sample recorded no measurements", Decimal(0)
+        return _score_failure(scorer, sample, solver_output), Decimal(0), False
     if any(m.dollars is None for m in measurements):
-        return "a measurement carries no dollars", Decimal(0)
+        return "a measurement carries no dollars", Decimal(0), True
     if any(
         not (m.usage.input_tokens + m.usage.cache_read_tokens + m.usage.cache_write_tokens)
         for m in measurements
     ):
-        return "a measurement carries no prompt usage", Decimal(0)
+        return "a measurement carries no prompt usage", Decimal(0), True
     dollars = sum((m.dollars or Decimal(0) for m in measurements), Decimal(0))
+    return _score_failure(scorer, sample, solver_output), dollars, True
+
+
+def _score_failure(
+    scorer: Scorer, sample: dict[str, Any], solver_output: dict[str, Any]
+) -> str | None:
     try:
         score = scorer(sample, solver_output)
     except Exception as error:  # noqa: BLE001 - any scorer fault fails the smoke
-        return f"the scorer raised {type(error).__name__}: {error}", dollars
-    if "value" not in score:
-        return "the scorer returned no value", dollars
-    return None, dollars
+        return f"the scorer raised {type(error).__name__}: {error}"
+    return None if "value" in score else "the scorer returned no value"
 
 
 def _smoke(
@@ -858,36 +878,46 @@ def _smoke(
     approved_usd: Decimal,
     receipt: _PartialReceipt | None,
 ) -> Solver:
-    """Run the first sample once and return a solver that reuses it as that sample's first row.
+    """Run samples in order until one makes a paid call, and return a solver reusing each output.
 
-    A projection over the approval only warns, since estimates are advisory; the
-    run stops when the smoke call alone spent more than was approved. A batching
-    solver or a one-call run returns unchanged.
+    An unpaid scored case is kept as its first row. A projection over the approval
+    only warns, since estimates are advisory; the run stops when the smoke call
+    alone spent more than was approved, or when no case made a paid call. A
+    batching solver or a one-call run returns unchanged.
     """
     planned = len(samples) * trials * len(arms)
     if planned <= 1 or callable(getattr(solver, "batch", None)):
         return solver
-    sample, arm = samples[0], arms[0]
+    arm = arms[0]
     where = f" log={receipt.path}" if receipt is not None else ""
-    try:
-        output = solver(_solver_input(sample, arm))
-    except Exception as error:
-        message = f"smoke: failed provider error {type(error).__name__}: {error}"
-        print(message + where)
-        raise SmokeFailedError(message) from error
-    reason, dollars = _smoke_check(output, sample, scorer)
-    if reason is None and dollars > approved_usd:
-        reason = f"the smoke call cost {dollars} over the approved {approved_usd}"
-    if reason is not None:
-        if receipt is not None:
-            receipt.append({"id": sample.get("id"), "smoke": True, "solver_output": output})
-        print(f"smoke: failed {reason}{where}")
-        raise SmokeFailedError(f"smoke: failed {reason}")
-    projected = dollars * planned
-    print(f"smoke: ok case={sample.get('id')} usd={dollars} projected={projected}")
-    if projected > approved_usd:
-        print(f"smoke: warning projected {projected} exceeds the approved {approved_usd}")
-    return _PrimedSolver(solver, output)
+    kept: dict[_SmokeKey, dict[str, Any]] = {}
+    for sample in samples:
+        try:
+            output = solver(_solver_input(sample, arm))
+        except Exception as error:
+            message = f"smoke: failed provider error {type(error).__name__}: {error}"
+            print(message + where)
+            raise SmokeFailedError(message) from error
+        reason, dollars, paid = _smoke_check(output, sample, scorer)
+        if reason is None and dollars > approved_usd:
+            reason = f"the smoke call cost {dollars} over the approved {approved_usd}"
+        if reason is not None:
+            if receipt is not None:
+                receipt.append({"id": sample.get("id"), "smoke": True, "solver_output": output})
+            print(f"smoke: failed {reason}{where}")
+            raise SmokeFailedError(f"smoke: failed {reason}")
+        kept[(sample.get("id"), arm)] = output
+        if not paid:
+            print(f"smoke: unpaid case={sample.get('id')}")
+            continue
+        projected = dollars * planned
+        print(f"smoke: ok case={sample.get('id')} usd={dollars} projected={projected}")
+        if projected > approved_usd:
+            print(f"smoke: warning projected {projected} exceeds the approved {approved_usd}")
+        return _PrimedSolver(solver, kept)
+    reason = "no selected case made a paid call"
+    print(f"smoke: failed {reason}{where}")
+    raise SmokeFailedError(f"smoke: failed {reason}")
 
 
 def _write_log(
