@@ -99,14 +99,14 @@ def drafted(kafka: str, registry: str) -> ResumeDraft:
 
 def test_the_draft_schema_rejects_an_answer_with_an_undeclared_key() -> None:
     """An answer carrying a field this schema never declared is refused, not dropped."""
-    schema = draft_schema(("b-1",), ("role-1",))
+    schema = draft_schema(skills=False)
     with pytest.raises(ValidationError):
         schema.model_validate({"summary": {"text": "x"}, "extra_field": "y"})
 
 
 @pytest.mark.parametrize("field", ["greeting", "closing", "extra_field"])
 def test_the_cover_letter_schema_rejects_a_key_it_does_not_ask_the_model_for(field) -> None:
-    schema = cover_letter_schema(("b-1",))
+    schema = cover_letter_schema()
     with pytest.raises(ValidationError):
         schema.model_validate({"paragraphs": [], field: "Dear team,"})
 
@@ -1097,13 +1097,9 @@ def test_a_cv_without_skill_headings_keeps_the_models_label(
     assert lines == [("Languages", "Python")]
 
 
-def test_a_skills_line_may_cite_only_skill_entries_and_names_no_heading() -> None:
-    schema = draft_schema(("skl-1", "b-1"), ("role-1",), ("skl-1",), labelled=False)
+def test_a_skills_line_under_cv_headings_names_no_heading() -> None:
+    schema = draft_schema(skills=True, labelled=False)
 
-    with pytest.raises(ValidationError):
-        schema.model_validate(
-            {"summary": {"text": "x"}, "skills": [{"text": "Kafka", "source_ids": ["b-1"]}]}
-        )
     with pytest.raises(ValidationError):
         schema.model_validate(
             {"summary": {"text": "x"}, "skills": [{"label": "Platforms", "text": "Kafka"}]}
@@ -1226,7 +1222,7 @@ def test_the_letter_request_shows_every_drafted_entry_without_resume_layout_inst
     assert "do not write bullets" not in task
 
 
-@pytest.mark.parametrize("schema", [cover_letter_schema(("b-1",)), draft_schema(("b-1",), ())])
+@pytest.mark.parametrize("schema", [cover_letter_schema(), draft_schema(skills=False)])
 def test_no_writing_schema_asks_the_model_for_source_types(schema) -> None:
     line = {"text": "x", "source_ids": ["b-1"], "source_types": ["candidate"]}
     answer = {"paragraphs": [line]} if "Letter" in schema.__name__ else {"summary": line}
@@ -1251,9 +1247,9 @@ def test_the_drafter_is_asked_for_an_earlier_career_line_only_when_an_earlier_ro
     answers = script({})
     resume = answers["ResumeDraft"]
 
-    def capture(schema):
+    def capture(schema, request):
         asked.append(declares(schema, "earlier_career"))
-        return resume(schema)
+        return resume(schema, request)
 
     answers["ResumeDraft"] = capture
     drafted = draft(client_factory(answers), inventory, spec(), plan, guardrails)

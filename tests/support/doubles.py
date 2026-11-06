@@ -34,6 +34,7 @@ from clearscout.infrastructure.providers.base import (
 from clearscout.infrastructure.providers.plan import RequestPlan
 from clearscout.infrastructure.web_fetch.board_adapters import DETECT_BYTES, BoardApiFetcher
 from clearscout.shared.costs import Ledger, Usage
+from tests.support.payloads import reads_request
 from tests.support.suite import SUITE_PROVIDER
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -213,7 +214,7 @@ class ScriptedProvider:
 
     def __init__(
         self,
-        script: dict[str, Callable[[type[BaseModel]], dict[str, Any]]],
+        script: dict[str, Callable[..., dict[str, Any]]],
         credentials_ok: bool = True,
         web_search_sources: Sequence[Sequence[SearchSource]] | None = None,
         background_answers: Sequence[BackgroundPoll | Sequence[BackgroundPoll] | Exception]
@@ -250,7 +251,10 @@ class ScriptedProvider:
             model=choice.model,
             response_id="resp_scripted",
         )
-        return schema.model_validate(self.script[key](schema)), record
+        respond = self.script[key]
+        # A writer's ids are in the request text, so its script reads the request too.
+        answer = respond(schema, plan) if reads_request(respond) else respond(schema)
+        return schema.model_validate(answer), record
 
     def complete_with_web_search(
         self, plan: RequestPlan, schema: type[ModelT], choice: ModelChoice

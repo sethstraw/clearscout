@@ -20,7 +20,12 @@ from pydantic import BaseModel
 from clearscout.application.config import Settings
 from clearscout.application.master_cv.cv import CvInventory, parse_cv
 from clearscout.application.tailoring.guardrails import Guardrails
-from clearscout.application.tailoring.pipeline.rewrite import fitted_and_checked
+from clearscout.application.tailoring.pipeline.progress import _Progress
+from clearscout.application.tailoring.pipeline.rewrite import (
+    Attempt,
+    _until_clean,
+    fitted_and_checked,
+)
 from clearscout.application.tailoring.stages.draft import (
     CoverLetter,
     Fitted,
@@ -45,11 +50,13 @@ from clearscout.application.tailoring.stages.verify import (
     Report,
     critic_finding,
     line_citations,
+    misquoted_evidence,
 )
 from clearscout.infrastructure.web_fetch.company_research import (
     MAX_SOURCE_CHARACTERS,
     ResearchSource,
 )
+from clearscout.shared.results import Finding
 from evals.case import CVS, resolve_evidence
 from evals.support.client import build_scripted_client
 from evals.support.jobspec import canonical_job_spec, numbered_job_spec
@@ -320,6 +327,27 @@ def fitted_resume(drafted: ResumeDraft, context: DocumentContext) -> tuple[Fitte
     )
 
 
+def redrafted_resume(
+    client: Any, context: DocumentContext, attempts: int
+) -> tuple[Fitted, Report, tuple[Attempt, ...]]:
+    """Draft through production's rewrite loop, without the critic, and return what it kept.
+
+    A failing attempt's feedback reaches the next draft call, and the loop's own stall
+    and ranking rules choose the attempt that is kept.
+    """
+
+    def produce(feedback: str, attempt: int) -> tuple[Fitted, Report]:
+        del attempt
+        drafted = draft(
+            client, context.inventory, context.spec, context.plan, context.guardrails, feedback
+        )
+        return fitted_resume(drafted, context)
+
+    return _until_clean(
+        steps=_Progress(None, total=1), label="drafting", attempts=attempts, produce=produce
+    )
+
+
 def fixed_letter(
     sample: Mapping[str, Any], context: DocumentContext, research: tuple[ResearchSource, ...]
 ) -> CoverLetter:
@@ -382,8 +410,7 @@ def verdict_payload(scripted: Mapping[str, Any]) -> dict[str, Any]:
     return CriticVerdict.model_validate(dict(scripted)).model_dump(mode="json")
 
 
-def findings(report: Report) -> list[dict[str, Any]]:
-    """Return every check the shipped verifier ran, with its verdict and detail."""
+def _finding_rows(found: Sequence[Finding]) -> list[dict[str, Any]]:
     return [
         {
             "check": finding.check,
@@ -391,17 +418,38 @@ def findings(report: Report) -> list[dict[str, Any]]:
             "detail": finding.detail,
             "redraftable": finding.redraftable,
         }
-        for finding in report.findings
+        for finding in found
     ]
 
 
-def draft_result(fitted: Fitted, report: Report) -> dict[str, Any]:
-    """Return the solver output one resume attempt produces, measured as it prints."""
-    return {
+def findings(report: Report) -> list[dict[str, Any]]:
+    """Return every check the shipped verifier ran, with its verdict and detail."""
+    return _finding_rows(report.findings)
+
+
+def draft_result(
+    fitted: Fitted, report: Report, attempts: Sequence[Attempt] = ()
+) -> dict[str, Any]:
+    """Return the solver output a resume run produces, measured as the kept attempt prints.
+
+    A redrafting run also lists every attempt's findings and which one was kept.
+    """
+    result: dict[str, Any] = {
         "completion": "pass" if report.passed else "fail",
         "findings": findings(report),
         "document": {"lines": len(fitted.printed.lines()), "characters": len(fitted.markdown)},
     }
+    if attempts:
+        result["attempts"] = [
+            {
+                "attempt": item.number,
+                "kept": item.kept,
+                "findings": _finding_rows(item.findings),
+                "feedback_digest": item.feedback_digest,
+            }
+            for item in attempts
+        ]
+    return result
 
 
 def critic_result(
@@ -410,9 +458,14 @@ def critic_result(
     check: str = CRITIC_CHECK,
     *,
     document: str,
+    inventory: CvInventory,
 ) -> dict[str, Any]:
-    """Return the solver output one critique of ``document`` produces: the verdict and draws."""
+    """Return the solver output one critique of ``document`` produces: the verdict and draws.
+
+    ``misquoted_evidence`` lists the doubts whose quote the record lacks, as production warns.
+    """
     finding = critic_finding(verdict, check, document=document)
+    misquoted = misquoted_evidence(verdict, check, inventory)
     # Corroboration is counted across draws at merge time, so a single draw has none.
     per_draw = {"unsupported_claims": {"__all__": {"corroboration"}}}
     return {
@@ -420,6 +473,7 @@ def critic_result(
         "verdict": verdict.model_dump(mode="json"),
         "draws": [draw.model_dump(mode="json", exclude=per_draw) for draw in draws],
         "finding": {"check": finding.check, "detail": finding.detail},
+        "misquoted_evidence": _finding_rows(misquoted),
     }
 
 

@@ -5,12 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
-from clearscout.application.master_cv.cv import normalize
+from clearscout.application.master_cv.cv import CvInventory, normalize
 from clearscout.application.tailoring.stages.jobspec import JobSpec
 from clearscout.shared.results import Finding, Outcome
 
 from .citations import worded
-from .critic import critic_finding, doubts_support
+from .critic import critic_finding, doubts_support, misquoted_evidence
 from .lexicon import WORD
 from .rubric import CRITIC_CHECK, CRITIC_CHECKS, SUPPORT_CHECKS
 from .verdicts import CriticVerdict
@@ -85,13 +85,14 @@ class Report:
         check: str = CRITIC_CHECK,
         draws: Sequence[CriticVerdict] = (),
         *,
-        document: str | None = None,
+        document: str,
+        inventory: CvInventory,
     ) -> Report:
-        """Return this report extended with the critic's finding on the ``document`` it read."""
+        """Return this report with the critic's findings on the ``document`` it read."""
         finding = critic_finding(verdict, check, uncitable=self.uncitable, document=document)
         return replace(
             self,
-            findings=(*self.findings, finding),
+            findings=(*self.findings, finding, *misquoted_evidence(verdict, check, inventory)),
             critic=verdict,
             critic_draws=tuple(draws),
         )

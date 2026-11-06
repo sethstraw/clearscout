@@ -74,8 +74,10 @@ def boundary_result(spec: JobSpec, boundaries: Sequence[str]) -> dict[str, Any]:
 
 
 def extraction_result(spec: JobSpec | None) -> dict[str, Any]:
-    """Return the requirements one extraction kept, or none when it read none."""
+    """Return the requirements, gates, and occupation one extraction kept, or none."""
     requirements = [] if spec is None else spec.requirements
+    gates = [] if spec is None else spec.hard_gates
+    occupation = None if spec is None else spec.core_occupation
     return {
         "completion": str(len(requirements)),
         "requirements": [
@@ -84,10 +86,28 @@ def extraction_result(spec: JobSpec | None) -> dict[str, Any]:
                 "text": item.text,
                 "quote": item.quote_or_span,
                 "importance": item.importance.value,
+                "dimension": item.dimension.value,
                 "verified": item.verified,
             }
             for item in requirements
         ],
+        "hard_gates": [
+            {
+                "kind": gate.kind,
+                "text": gate.text,
+                "quote": gate.quote_or_span,
+                "blocking": gate.blocking,
+                "verified": gate.verified,
+            }
+            for gate in gates
+        ],
+        "core_occupation": None
+        if occupation is None
+        else {
+            "text": occupation.text,
+            "quote": occupation.quote_or_span,
+            "verified": occupation.verified,
+        },
     }
 
 

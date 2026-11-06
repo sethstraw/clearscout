@@ -9,8 +9,10 @@ from pathlib import Path
 
 import pytest
 from evals.inspect.cost_estimate import MIN_SAMPLES, estimate, main
+from evals.inspect.solvers.clearscout_live import live_settings
 from sqlalchemy import select
 
+from clearscout.application.config import ProviderName, Stage
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.migration import upgrade
 from clearscout.infrastructure.persistence.models.tailoring import CostRecord, ModelCall
@@ -390,6 +392,27 @@ def test_the_command_averages_only_the_effort_the_run_sends(
 
     assert exit_code == 0
     assert expected in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("stage", [Stage.STRUCTURE, Stage.INGEST])
+def test_the_command_prices_one_call_per_import_or_screenshot(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], stage: Stage
+) -> None:
+    """A structure sample imports one CV and a vision sample reads one screenshot."""
+    choice = live_settings(ProviderName.OPENAI, stage, "", None).choice_for_stage(stage)
+    url = f"sqlite+pysqlite:///{tmp_path / 'clearscout.sqlite3'}"
+    upgrade(url)
+    effort = None if choice.effort is None else choice.effort.value
+    _seed(url, ["0.20"] * 5, stage=stage, model=choice.model, service_tier="flex", effort=effort)
+
+    exit_code = main(
+        ["--data-root", str(tmp_path), "--stage", stage, "--provider", "openai", "--limit", "3"]
+    )
+
+    stdout = capsys.readouterr().out
+    assert exit_code == 0
+    assert f"{stage} calls on {choice.model}" in stdout
+    assert "estimated cost for --limit=3 is $0.60" in stdout
 
 
 def test_the_estimate_averages_production_calls_not_earlier_eval_runs(

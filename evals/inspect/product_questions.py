@@ -17,3 +17,5 @@ class ProductQuestion(StrEnum):
     FIT_RECOMMENDATION = "fit_recommendation"
     FACTUAL_DRAFTING = "factual_drafting"
     DRAFT_CRITIQUE = "draft_critique"
+    CV_IMPORT_FIDELITY = "cv_import_fidelity"
+    SCREENSHOT_TRANSCRIPTION = "screenshot_transcription"

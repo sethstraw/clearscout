@@ -79,6 +79,12 @@ production depth, tools, dates, numbers, and outcomes. Rewording is allowed;
 new substance is not. Do not suppress a factual finding because another issue
 seems more important. Leave the list empty when all claims are supported.
 
+In each claim's `evidence_quote`, copy a short span, verbatim, of the evidence
+entry you compared the claim with: the entry the line cites, or for a line
+citing nothing the entry closest to the claim. The program checks the span
+against the candidate record. Leave `evidence_quote` empty only under
+`absent_from_record`, when no entry touches the claim's subject.
+
 Give every claim you list a `boundary` naming the one limit in the evidence the
 claim steps past. Answer with a name from this closed set and nothing else:
 
@@ -114,7 +120,9 @@ and never softens it: no claim is excused by the boundary it is given.
 Use `style_flags` for specific examples of keyword stuffing, cliches, repeated
 sentence patterns, vague advocacy, excessive jargon, hard-to-scan prose, or
 in-sentence inventories that list deliverables instead of saying what the work
-did.
+did. Every style flag quotes, in double quotes, the exact passage it is about,
+copied from the document; a flag that quotes nothing in the document names no
+defect to fix.
 Use `weaknesses` for missing or underused supported evidence relative to the
 posting. Do not call an actual evidence gap a writing weakness.
 

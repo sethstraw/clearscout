@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import re
-import tomllib
 import zipfile
 from collections.abc import Callable
 from math import ceil
 from pathlib import Path
-from typing import Any
 from xml.sax.saxutils import escape
 
 import pytest
+from evals.support.cv_formats import SHAPES, correct_extraction, cv_format, flat, within
 
 from clearscout.application.config import (
     Effort,
@@ -34,7 +32,6 @@ from clearscout.application.tailoring.stages.structure import (
     Dropped,
     ImportedCv,
     ImportedRole,
-    ImportedSection,
     Sourced,
 )
 from clearscout.shared.errors import IngestError
@@ -593,103 +590,10 @@ def test_reading_a_screenshot_with_no_model_available_says_what_to_check(
         read(path)
 
 
-CV_FORMATS = FIXTURES / "cv_formats"
-SHAPES = (
-    "europass_docx",
-    "academic_pdf",
-    "functional_md",
-    "linkedin_txt",
-    "two_column_pdf",
-    "long_md",
-)
-MARKUP = re.compile(r"^(?:#{1,6}\s+|[-*+\u2022]\s+|\d{1,3}[.)]\s+)")
-
-
-def cv_format(shape: str) -> tuple[Path, dict[str, Any]]:
-    """Return one corpus CV and the fields a faithful extraction holds."""
-    expected = tomllib.loads((CV_FORMATS / shape / "expected.toml").read_text(encoding="utf-8"))
-    return CV_FORMATS / shape / expected["source"], expected
-
-
-def _flat(text: str) -> str:
-    """Drop list and heading markup and bold markers, and collapse whitespace."""
-    return " ".join(MARKUP.sub("", text.strip()).replace("**", "").split())
-
-
-def _within(wanted: str, text: str) -> bool:
-    """Return whether ``wanted`` occurs in ``text`` as whole words."""
-    return re.search(rf"(?<!\w){re.escape(wanted)}(?!\w)", text) is not None
-
-
-def _cite(source: SourceDocument, text: str, start: int = 1) -> tuple[int, ...]:
-    """Return the lines holding ``text`` from ``start`` on, preferring an exact span."""
-    lines = [line for line in source.lines if line.number >= start]
-    wanted = _flat(text)
-    for exact in (True, False):
-        for width in range(1, 5):
-            for index in range(len(lines) - width + 1):
-                span = lines[index : index + width]
-                joined = " ".join(_flat(line.text) for line in span)
-                if joined == wanted if exact else _within(wanted, joined):
-                    return tuple(line.number for line in span)
-    raise AssertionError(f"{text!r} is in no line of {source.origin} from line {start}")
-
-
-def _correct_extraction(source: SourceDocument, expected: dict[str, Any]) -> ImportedCv:
-    """Build the extraction a faithful model returns for one corpus CV."""
-
-    def top(key: str) -> tuple[Sourced, ...]:
-        return tuple(
-            Sourced(text=text, lines=_cite(source, text)) for text in expected.get(key, [])
-        )
-
-    roles = []
-    for role in expected["roles"]:
-        organisation = Sourced(text=role["employer"], lines=_cite(source, role["employer"]))
-        cursor = anchor = organisation.lines[0]
-        fields: dict[str, Any] = {}
-        for key in ("title", "dates", "location"):
-            if key in role:
-                # A packed line can hold the dates above the title line.
-                try:
-                    lines = _cite(source, role[key], cursor)
-                except AssertionError:
-                    lines = _cite(source, role[key], anchor)
-                fields[key] = Sourced(text=role[key], lines=lines)
-                cursor = max(cursor, lines[0])
-        bullets = []
-        for text in role["bullets"]:
-            bullets.append(Sourced(text=text, lines=_cite(source, text, cursor)))
-            cursor = bullets[-1].lines[-1]
-        roles.append(ImportedRole(organisation=organisation, bullets=tuple(bullets), **fields))
-    return ImportedCv(
-        name=Sourced(text=expected["name"], lines=_cite(source, expected["name"])),
-        contact=top("contact"),
-        summary=top("summary"),
-        skills=top("skills"),
-        roles=tuple(roles),
-        education=top("education"),
-        publications=top("publications"),
-        sections=tuple(
-            ImportedSection(
-                heading=Sourced(text=section["heading"], lines=_cite(source, section["heading"])),
-                items=tuple(
-                    Sourced(text=text, lines=_cite(source, text)) for text in section["items"]
-                ),
-            )
-            for section in expected.get("sections", [])
-        ),
-        dropped=tuple(
-            Dropped(line=_cite(source, text)[0], reason="heading or page furniture")
-            for text in expected["dropped"]
-        ),
-    )
-
-
 @pytest.mark.parametrize("shape", SHAPES)
 def test_the_reader_keeps_every_field_of_each_cv_format_whole(shape: str) -> None:
     path, expected = cv_format(shape)
-    document = " ".join(_flat(line.text) for line in read(path).lines)
+    document = " ".join(flat(line.text) for line in read(path).lines)
     fields = [expected["name"]]
     for key in ("contact", "summary", "skills", "education", "publications", "dropped"):
         fields += expected.get(key, [])
@@ -698,7 +602,7 @@ def test_the_reader_keeps_every_field_of_each_cv_format_whole(shape: str) -> Non
     for role in expected["roles"]:
         fields += [role[key] for key in ("employer", "title", "dates", "location") if key in role]
         fields += role["bullets"]
-    missing = [field for field in fields if not _within(_flat(field), document)]
+    missing = [field for field in fields if not within(flat(field), document)]
     assert missing == []
 
 
@@ -706,7 +610,7 @@ def test_the_reader_keeps_every_field_of_each_cv_format_whole(shape: str) -> Non
 def test_a_correct_extraction_of_each_cv_format_passes_verify(shape: str) -> None:
     path, expected = cv_format(shape)
     source = read(path)
-    findings, _ = findings_for(source, _correct_extraction(source, expected))
+    findings, _ = findings_for(source, correct_extraction(source, expected))
     failed = {name for name, finding in findings.items() if finding.outcome is Outcome.FAIL}
     assert failed == set(expected.get("failing_checks", []))
 
@@ -715,7 +619,7 @@ def test_grants_keep_their_own_heading_instead_of_joining_the_publications() -> 
     """A grant filed under Publications is a citation the CV never made."""
     path, expected = cv_format("academic_pdf")
     source = read(path)
-    _, built = findings_for(source, _correct_extraction(source, expected))
+    _, built = findings_for(source, correct_extraction(source, expected))
     grant = "Instrument Data Commons, Example Science Foundation, Co-investigator, 2021."
     heading, _, below = built.markdown.partition("## GRANTS AND FUNDING")
     assert grant in below
@@ -726,7 +630,7 @@ def test_achievements_grouped_by_skill_survive_under_their_own_heading() -> None
     """A functional CV hangs its achievements off a skill, not off an employer."""
     path, expected = cv_format("functional_md")
     source = read(path)
-    findings, built = findings_for(source, _correct_extraction(source, expected))
+    findings, built = findings_for(source, correct_extraction(source, expected))
     assert "## Achievements by Skill" in built.markdown
     assert "Standardised the month-end checklist across 4 regional teams." in built.markdown
     assert findings["lossless"].outcome is not Outcome.FAIL
@@ -745,7 +649,7 @@ def _echoed_tokens(shape: str) -> int:
     """Return a conservative token count for the object a faithful model writes back."""
     path, expected = cv_format(shape)
     source = read(path)
-    echoed = _correct_extraction(source, expected).model_dump_json()
+    echoed = correct_extraction(source, expected).model_dump_json()
     return ceil(len(echoed) / CHARACTERS_PER_TOKEN)
 
 
@@ -809,7 +713,7 @@ def test_a_wrong_extraction_of_a_profile_export_fails_verify(
 ) -> None:
     path, expected = cv_format("linkedin_txt")
     source = read(path)
-    findings, _ = findings_for(source, damage(_correct_extraction(source, expected)))
+    findings, _ = findings_for(source, damage(correct_extraction(source, expected)))
     assert findings["lossless"].outcome is Outcome.FAIL
 
 
@@ -817,7 +721,7 @@ def test_a_reordered_citation_fails_authenticity() -> None:
     """Every word is cited and real, and the citation still names the wrong first author."""
     path, expected = cv_format("academic_pdf")
     source = read(path)
-    extracted = _correct_extraction(source, expected)
+    extracted = correct_extraction(source, expected)
     swapped = extracted.publications[0].model_copy(
         update={
             "text": expected["publications"][0].replace("Example D, Roe B.", "Roe B, Example D.")
@@ -849,7 +753,7 @@ def test_a_word_taken_out_of_a_copied_field_fails_authenticity() -> None:
     """A lowercase word is no content token, so losing one out of a degree only shows in order."""
     path, expected = cv_format("linkedin_txt")
     source = read(path)
-    extracted = _correct_extraction(source, expected)
+    extracted = correct_extraction(source, expected)
     shortened = extracted.education[0].model_copy(
         update={"text": expected["education"][0].replace(" of Science", " Science")}
     )

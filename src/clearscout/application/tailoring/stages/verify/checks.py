@@ -36,9 +36,35 @@ from .lexicon import (
 )
 
 
-def provenance(draft: ResumeDraft, plan: Plan) -> Finding:
-    """Require every drafted line to cite at least one selected piece of evidence."""
-    return cited(draft.lines(), plan, "sources cited")
+def provenance(draft: ResumeDraft, plan: Plan, drafted: ResumeDraft | None = None) -> Finding:
+    """Require every drafted line to cite selected evidence, under a role the plan offered.
+
+    A skills line may cite skill entries only. ``drafted`` is the model's draft
+    before fitting, which silently drops a role the plan never offered.
+    """
+    finding = cited(draft.lines(), plan, "sources cited")
+    if finding.outcome is Outcome.FAIL:
+        return finding
+    roles = (drafted or draft).roles
+    invented = sorted({role.role_key for role in roles} - set(plan.recent_roles))
+    if invented:
+        return Finding(
+            finding.check,
+            Outcome.FAIL,
+            f"wrote role(s) the evidence does not offer: {', '.join(invented)}; "
+            "use only the role_key values shown",
+        )
+    skill_ids = set(plan.skill_ids)
+    borrowed = sorted(
+        {entry_id for skill in draft.skills for entry_id in skill.source_ids} - skill_ids
+    )
+    if borrowed:
+        return Finding(
+            finding.check,
+            Outcome.FAIL,
+            f"skills line(s) cite non-skill evidence: {', '.join(borrowed)}",
+        )
+    return finding
 
 
 def _must_haves(spec: JobSpec, plan: Plan) -> set[str]:

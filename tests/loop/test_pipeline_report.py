@@ -47,6 +47,7 @@ REQUIREMENT = "Operate streaming ingestion at production scale"
 # The bullet runs past the pointer length, so the report quotes its opening words.
 POINTER = "Cut nightly batch latency from four hours to ..."
 EXAMPLE_ASK = "Operate streaming ingestion, such as Kafka or Kinesis"
+DRAFT = f"## Experience\n\n- {BULLET}\n"
 
 
 def _inventory() -> CvInventory:
@@ -93,7 +94,11 @@ def test_critic_prose_quotes_the_entry_and_requirement_an_id_names(check: str) -
     verification = Report(findings=(), coverage=KeywordCoverage(present=(), missing=()))
 
     report = rendered_report(
-        verification=verification.with_critic(verdict, check), spec=_spec(), inventory=_inventory()
+        verification=verification.with_critic(
+            verdict, check, document=DRAFT, inventory=_inventory()
+        ),
+        spec=_spec(),
+        inventory=_inventory(),
     )
     critic = report_section(report, "Critic")
     checks = report_section(report, "Checks")
@@ -123,7 +128,9 @@ def test_a_critic_read_with_a_weakness_warns_and_lists_it_in_the_readiness_block
     verification = Report(findings=(), coverage=KeywordCoverage(present=(), missing=()))
 
     report = rendered_report(
-        verification=verification.with_critic(verdict), spec=_spec(), inventory=_inventory()
+        verification=verification.with_critic(verdict, document=DRAFT, inventory=_inventory()),
+        spec=_spec(),
+        inventory=_inventory(),
     )
     readiness = report_section(report, "Application readiness")
 
@@ -152,6 +159,8 @@ def test_an_unread_resume_keeps_the_letter_critic_scores_out_of_its_section() ->
             alignment=4, preservation=5, specificity=4, readability=4, ats_clarity=4, human_voice=4
         ),
         LETTER_CRITIC,
+        document=DRAFT,
+        inventory=_inventory(),
     )
     merged = Report(findings=letter.findings, coverage=KeywordCoverage(present=(), missing=()))
 

@@ -9,6 +9,7 @@ not have is refused by the schema.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,7 @@ from clearscout.application.discovery.derived_vocabulary_rules import (
 )
 from clearscout.application.discovery.posting_identity import posting_identity_keys, posting_url_key
 from clearscout.application.discovery.proposals import (
+    CarriedRejections,
     SearchArchetypeProposalService,
     SearchClusterProposalService,
     SearchTitleProposalService,
@@ -111,6 +113,7 @@ from clearscout.infrastructure.persistence.models import (
 from clearscout.infrastructure.providers.base import (
     json_schema,
 )
+from clearscout.infrastructure.providers.client import Client
 from clearscout.infrastructure.web_fetch.policy import fetch_refusal
 from clearscout.shared.costs import ServiceTier
 from tests.support.artifacts import artifact_service, runtime_storage
@@ -1062,14 +1065,8 @@ def test_a_synthesized_title_is_refused_exactly_as_screening_refuses_it(
 
 
 def test_a_title_may_cite_only_entries_the_record_actually_has(master_cv: Path) -> None:
-    """The vocabulary is closed by the schema and closed again on the way back.
-
-    A constrained decoder cannot emit an identifier outside the set, so the
-    second pass is for the provider that somehow does.
-    """
+    """The schema leaves evidence ids open, so screening keeps only the record's."""
     ids = _entry_ids(master_cv)
-    schema = json_schema(response_schema(tuple(ids)))
-    assert _cited_vocabulary(schema, "ConstrainedSearchTitle")["enum"] == ids
 
     decided = searchable_titles(
         [ProposedTitle(title="Analytics Engineer", reason="Why.", evidence_ids=[ids[0], "b-nope"])],
@@ -1173,41 +1170,12 @@ def test_the_prompt_names_every_track_a_title_may_be_given() -> None:
 
 def test_a_track_crosses_as_a_nullable_enum_both_vendors_accept() -> None:
     """Optional is emulated with null, and Anthropic rejects `allOf` beside a `$ref`."""
-    schema = json_schema(response_schema(("entry-1",)))
+    schema = json_schema(response_schema())
 
     lane = schema["$defs"]["ConstrainedSearchTitle"]["properties"]["lane"]
     assert lane["anyOf"] == [{"$ref": "#/$defs/Lane"}, {"type": "null"}]
     assert schema["$defs"]["Lane"]["enum"] == list(LANES)
     assert "allOf" not in json.dumps(schema)
-
-
-def _cited_vocabulary(schema: dict[str, Any], model: str) -> dict[str, Any]:
-    """Return one constrained model's evidence vocabulary, following a shared reference."""
-    items: dict[str, Any] = schema["$defs"][model]["properties"]["evidence_ids"]["items"]
-    reference = items.get("$ref")
-    if reference is None:
-        return items
-    shared: dict[str, Any] = schema["$defs"][reference.rsplit("/", 1)[1]]
-    return shared
-
-
-def test_the_record_vocabulary_is_emitted_once_however_many_fields_cite_it() -> None:
-    """Two citing fields share one entry vocabulary rather than each inlining it.
-
-    A long record makes the entry vocabulary the term that approaches OpenAI's
-    1000-value and 120,000-character ceilings, so the second citing field has to
-    reference the first one's vocabulary rather than inline its own copy.
-    """
-    schema = json_schema(response_schema(("entry-1", "entry-2")))
-
-    title_ids = schema["$defs"]["ConstrainedSearchTitle"]["properties"]["evidence_ids"]["items"]
-    archetype_ids = schema["$defs"]["ConstrainedEmployerArchetype"]["properties"]["evidence_ids"][
-        "items"
-    ]
-    assert "$ref" in title_ids
-    assert title_ids == archetype_ids
-    assert _cited_vocabulary(schema, "ConstrainedSearchTitle")["enum"] == ["entry-1", "entry-2"]
-    assert json.dumps(schema).count('"entry-1"') == 1
 
 
 def test_a_kind_of_employer_the_search_proposed_waits_for_a_ruling(
@@ -1267,10 +1235,8 @@ def test_vocabulary_schema_refuses_an_employer_kind_without_cv_evidence(
 
 
 def test_a_kind_may_cite_only_entries_the_record_actually_has(master_cv: Path) -> None:
-    """The vocabulary is closed by the schema and closed again on the way back."""
+    """The schema leaves evidence ids open, so screening keeps only the record's."""
     ids = _entry_ids(master_cv)
-    schema = json_schema(response_schema(tuple(ids)))
-    assert _cited_vocabulary(schema, "ConstrainedEmployerArchetype")["enum"] == ids
 
     decided = searchable_archetypes(
         [
@@ -1695,7 +1661,7 @@ def test_vocabulary_suggestions_use_one_text_call_and_no_retrieval(
 
 
 @pytest.mark.parametrize("field", ["titles", "archetypes", "capabilities", "domains"])
-@pytest.mark.parametrize("citations", [None, [], ["invented"]])
+@pytest.mark.parametrize("citations", [None, []])
 def test_vocabulary_schema_refuses_ungrounded_items(
     field: str, citations: list[str] | None
 ) -> None:
@@ -1709,20 +1675,36 @@ def test_vocabulary_schema_refuses_ungrounded_items(
     if citations is None:
         item.pop("evidence_ids")
     with pytest.raises(SchemaError):
-        response_schema(("exp.synthetic",)).model_validate({field: [item]})
+        response_schema().model_validate({field: [item]})
 
 
 def test_vocabulary_schema_refuses_all_model_urls() -> None:
     """A vocabulary run proposes no postings or leads, so a model-written URL is refused."""
-    schema = response_schema(("exp.synthetic",))
+    schema = response_schema()
     for extra_field in ("postings", "leads"):
         with pytest.raises(PydanticValidationError):
             schema.model_validate({"titles": [], extra_field: [{"url": "https://evil.example/x"}]})
 
 
-def test_vocabulary_requires_a_citable_record() -> None:
+def test_vocabulary_requires_a_citable_record(
+    master_cv: Path, client_factory: Callable[[dict[str, Any]], Client]
+) -> None:
+    empty = parse_cv(master_cv).model_copy(update={"entries": ()})
     with pytest.raises(ValidationError, match="citable CV"):
-        response_schema(())
+        SearchVocabularyService.ask(
+            client_factory({}),
+            JobSearchParameters(),
+            (),
+            empty,
+            response_schema(),
+            CarriedRejections(titles=(), archetypes=(), clusters=()),
+            "",
+            1,
+            1,
+            1,
+            1,
+            frozenset(),
+        )
 
 
 def test_durable_vocabulary_task_uses_its_cap_without_web_or_candidate_review(

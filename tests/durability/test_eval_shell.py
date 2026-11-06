@@ -170,7 +170,14 @@ def test_live_shell_refuses_a_stage_the_caller_tries_to_choose(tmp_path: Path) -
 
 
 @pytest.mark.parametrize(
-    "task", ["draft_live_task.py", "cover_live_task.py", "critic_live_task.py"]
+    "task",
+    [
+        "draft_live_task.py",
+        "cover_live_task.py",
+        "critic_live_task.py",
+        "structure_live_task.py",
+        "vision_live_task.py",
+    ],
 )
 def test_live_shell_estimates_the_stage_the_task_file_declares(tmp_path: Path, task: str) -> None:
     """The estimate and the run name one stage, because both come from the task file."""

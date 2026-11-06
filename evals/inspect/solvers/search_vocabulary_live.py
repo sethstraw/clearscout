@@ -20,7 +20,6 @@ from clearscout.application.discovery.search_vocabulary import (
     response_schema,
 )
 from clearscout.application.master_cv.cv import CvInventory, parse_cv
-from clearscout.application.tailoring.stages.context import citable_entries
 from clearscout.domain.search_parameters import (
     MAX_ARCHETYPES,
     MAX_CLUSTERS,
@@ -69,13 +68,12 @@ def propose(client: Client, sample: dict[str, Any]) -> ProposedSearch:
     proposals, or registered boards, and its inbox holds every axis's full capacity.
     """
     inventory = case_inventory(sample)
-    entry_ids = tuple(entry.id for entry in citable_entries(inventory))
     return SearchVocabularyService.ask(
         client,
         case_parameters(sample),
         (),
         inventory,
-        response_schema(entry_ids),
+        response_schema(),
         CarriedRejections(titles=(), archetypes=(), clusters=()),
         "",
         MAX_TITLES,

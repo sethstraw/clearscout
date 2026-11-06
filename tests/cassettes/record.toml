@@ -6,6 +6,9 @@
 
 cv = "master_cv.md"
 pages = 2
+# Send every passing draft to the critic, so the recording carries its request.
+critic_coverage_floor = 1.0
+critic_transferable_ceiling = 0.0
 
 [rules]
 work_authorization = "Authorized to work in Canada without sponsorship | Remote within Canada"

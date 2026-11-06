@@ -1,6 +1,6 @@
 """Canned model responses for schema-bound and independent transport tests.
 
-``script`` derives evidence identifiers from the request schema so policy tests
+``script`` derives evidence identifiers from the request so policy tests
 cannot cite values the request withheld. ``independent_script`` deliberately
 does not: its fixed response is the full-pipeline oracle that catches a schema
 and response changing together.
@@ -8,15 +8,23 @@ and response changing together.
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable
 from typing import Any
 
 from pydantic import BaseModel
 
-from tests.support.schema import declares, literals
+from clearscout.infrastructure.providers.plan import RequestPlan
+from tests.support.schema import declares, literals, offered
 
 Schema = type[BaseModel] | dict[str, Any]
-Payload = Callable[[Any], dict[str, Any]]
+Payload = Callable[..., dict[str, Any]]
+
+
+def reads_request(respond: Payload) -> bool:
+    """Return whether a scripted response takes the request as well as the schema."""
+    parameters = inspect.signature(respond).parameters.values()
+    return sum(1 for parameter in parameters if parameter.default is parameter.empty) == 2
 
 
 def script(sources: dict[str, Any]) -> dict[str, Payload]:
@@ -71,8 +79,8 @@ def script(sources: dict[str, Any]) -> dict[str, Payload]:
             matches[-1]["entry_ids"] = list(matches[-1]["entry_ids"]) + papers
         return {"matches": matches}
 
-    def resume(schema: Schema) -> dict[str, Any]:
-        entry_ids = literals(schema, "source_ids")
+    def resume(schema: Schema, request: RequestPlan | str) -> dict[str, Any]:
+        entry_ids = offered(request, "source_ids")
         sources["draft_ids"] = entry_ids
         first = entry_ids[0]
         bullets = [entry_id for entry_id in entry_ids if entry_id.startswith("b-")]
@@ -112,7 +120,7 @@ def script(sources: dict[str, Any]) -> dict[str, Payload]:
                         if _FIXED_BULLET_ROLES.get(entry_id, role_key) == role_key
                     ],
                 }
-                for role_key in literals(schema, "role_key")
+                for role_key in offered(request, "role_key")
             ],
             # A plan with no earlier role leaves the field out of the schema.
             **(
@@ -143,8 +151,8 @@ def script(sources: dict[str, Any]) -> dict[str, Payload]:
             "guidance": "Reads well.",
         }
 
-    def letter(schema: Schema) -> dict[str, Any]:
-        first = literals(schema, "source_ids")[0]
+    def letter(schema: Schema, request: RequestPlan | str) -> dict[str, Any]:
+        first = offered(request, "source_ids")[0]
         return {"paragraphs": [{"text": "The record fits this posting.", "source_ids": [first]}]}
 
     return {

@@ -7,6 +7,8 @@ marked ``whole`` must be quoted entire. A quote the posting does not contain fai
 row outright, and so does any recall or precision miss, an importance disagreement on a
 matched requirement, or a quote word that no requirement text citing it carries.
 Responsibilities the extraction reads out of duty lists are not counted against precision.
+A case that labels its gates also fails on a labelled gate missed or read with another
+kind or blocking, a gate quote the posting lacks, or an unlabelled gate that blocks.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from typing import Any
 from clearscout.application.tailoring.elicit.vocabulary import FUNCTION_WORDS
 from clearscout.application.tailoring.stages.jobspec import Importance
 from clearscout.application.tailoring.stages.spans import normalize
+from clearscout.domain.requirements import GATE_KINDS
 
 _WORD = re.compile(r"[a-z0-9+#]+")
 # The importance field carries these, so a requirement text may drop them.
@@ -45,11 +48,36 @@ FALSE_POSITIVE = "false_positive"
 BOILERPLATE = "boilerplate"
 NOT_IN_POSTING = "not_in_posting"
 RESPONSIBILITY = "responsibility"
+KIND_MISMATCH = "kind_mismatch"
+BLOCKING_MISMATCH = "blocking_mismatch"
+UNLABELED_GATE = "unlabeled"
+
+
+def expected_gates(sample: dict[str, Any]) -> list[dict[str, Any]] | None:
+    """Return a row's labelled gates, or None when it labels none, refusing a bad label."""
+    case = sample.get("id")
+    gates = sample.get("gates")
+    if gates is None:
+        return None
+    if not isinstance(gates, list):
+        raise ValueError(f"sample {case!r} needs a gates list")
+    posting = normalize(str(sample.get("input") or ""))
+    for gate in gates:
+        if (
+            not isinstance(gate, dict)
+            or gate.get("kind") not in GATE_KINDS
+            or not isinstance(gate.get("blocking"), bool)
+        ):
+            raise ValueError(f"sample {case!r} has a gate without a kind and blocking: {gate!r}")
+        if not gate.get("span") or normalize(str(gate["span"])) not in posting:
+            raise ValueError(f"sample {case!r} labels a gate its posting lacks: {gate!r}")
+    return gates
 
 
 def expected_requirements(sample: dict[str, Any]) -> list[dict[str, Any]]:
     """Return a row's expected requirements, refusing a label the posting cannot support."""
     case = sample.get("id")
+    expected_gates(sample)
     if not str(sample.get("why") or "").strip():
         raise ValueError(f"sample {case!r} needs a why")
     expected = sample.get("expected")
@@ -134,6 +162,55 @@ def _extracted_outcome(
     return FALSE_POSITIVE, []
 
 
+def _gate_outcome(found: list[dict[str, Any]], label: dict[str, Any]) -> str:
+    if not found:
+        return MISSED
+    if sorted({str(gate.get("kind")) for gate in found}) != [label["kind"]]:
+        return KIND_MISMATCH
+    if sorted({bool(gate.get("blocking")) for gate in found}) != [label["blocking"]]:
+        return BLOCKING_MISMATCH
+    return MATCHED
+
+
+def _scored_gates(
+    extracted: list[dict[str, Any]], labels: list[dict[str, Any]], posting: str
+) -> dict[str, Any]:
+    """Return each gate's outcome, and whether every labelled gate agreed on kind and blocking."""
+    matched_by: dict[int, list[dict[str, Any]]] = {}
+    extracted_rows = []
+    for gate in extracted:
+        quote = normalize(str(gate.get("quote") or gate.get("text") or ""))
+        hits = [index for index, label in enumerate(labels) if quote and _matches(quote, label)]
+        if not quote or quote not in posting:
+            outcome = NOT_IN_POSTING
+        elif hits:
+            outcome = MATCHED
+            best = max(hits, key=lambda index: _share(quote, labels[index]))
+            matched_by.setdefault(best, []).append(gate)
+        else:
+            outcome = UNLABELED_GATE
+        extracted_rows.append({**gate, "outcome": outcome})
+    expected_rows = [
+        {**label, "outcome": _gate_outcome(matched_by.get(index, []), label)}
+        for index, label in enumerate(labels)
+    ]
+    # An unlabelled gate is a reading the labels did not foresee.
+    # One that blocks can skip a posting, so it fails the row.
+    unlabelled_blocking = sum(
+        row["outcome"] == UNLABELED_GATE and bool(row.get("blocking")) for row in extracted_rows
+    )
+    not_in_posting = sum(row["outcome"] == NOT_IN_POSTING for row in extracted_rows)
+    agreed = sum(row["outcome"] == MATCHED for row in expected_rows)
+    return {
+        "passed": agreed == len(labels) and not not_in_posting and not unlabelled_blocking,
+        "agreed": agreed,
+        "not_in_posting": not_in_posting,
+        "unlabelled_blocking": unlabelled_blocking,
+        "expected": expected_rows,
+        "extracted": extracted_rows,
+    }
+
+
 def requirement_extraction() -> Any:
     """Return the scorer for the requirements one extraction read out of its posting."""
 
@@ -172,7 +249,7 @@ def requirement_extraction() -> Any:
         not_in_posting = outcomes.count(NOT_IN_POSTING)
         fidelity = _text_fidelity(extracted)
         passed = not_in_posting == 0 and precision == 1.0 and recall == 1.0 and not fidelity
-        return {
+        result: dict[str, Any] = {
             "value": passed and importance_agreement == 1.0,
             "requirements": {"total": len(expected), "passed": agreed},
             "metadata": {
@@ -191,9 +268,18 @@ def requirement_extraction() -> Any:
                 f"text_fidelity_misses={len(fidelity)}"
             ),
         }
+        if (labels := expected_gates(sample)) is not None:
+            gates = _scored_gates(list(solver_output.get("hard_gates") or []), labels, posting)
+            result["value"] = result["value"] and gates["passed"]
+            result["metadata"]["gates"] = gates
+            result["explanation"] += (
+                f" gates={gates['agreed']}/{len(labels)} "
+                f"unlabelled_blocking={gates['unlabelled_blocking']}"
+            )
+        return result
 
     # The runner checks every row's label with this before it calls a solver.
     score.validate_sample = expected_requirements  # type: ignore[attr-defined]
-    # The live smoke refuses an output lacking this field.
-    score.required_fields = ("requirements",)  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking any of these fields.
+    score.required_fields = ("requirements", "hard_gates")  # type: ignore[attr-defined]
     return score

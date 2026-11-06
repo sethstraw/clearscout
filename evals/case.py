@@ -125,9 +125,10 @@ class ScriptedCoverLetter(Frozen):
 
 
 class ScriptedDoubt(Frozen):
-    """One claim a scripted critic doubts, and the boundary it says the claim crosses."""
+    """One claim a scripted critic doubts, the record span it compared, and the boundary."""
 
     claim: str
+    evidence_quote: str = ""
     boundary: ClaimBoundary
 
 

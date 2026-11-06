@@ -24,7 +24,7 @@ from clearscout.shared.costs import Ledger
 
 
 class VisionTranscript(BaseModel):
-    """Verbatim posting text read out of one or more images."""
+    """Verbatim document text read out of one or more images."""
 
     model_config = ConfigDict(extra="forbid")
 

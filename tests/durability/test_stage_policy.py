@@ -26,7 +26,7 @@ SHIPPED = {
     Stage.INGEST: (Tier.EXTRACTION, 8000),
     Stage.STRUCTURE: (Tier.DRAFTING, 18000),
     Stage.JOBSPEC: (Tier.EXTRACTION, 16000),
-    Stage.MATCH: (Tier.EXTRACTION, 8000),
+    Stage.MATCH: (Tier.EXTRACTION, 16000),
     Stage.DRAFT: (Tier.DRAFTING, 12000),
     Stage.COVER: (Tier.DRAFTING, 8000),
     Stage.CRITIC: (Tier.DRAFTING, 12000),
@@ -105,14 +105,16 @@ def test_only_the_match_stage_states_its_own_effort(provider: ProviderName) -> N
     ]
 
 
-def test_only_relevance_review_ships_a_verbosity_and_it_is_low() -> None:
-    settings = Settings()
+def test_only_jobspec_and_relevance_review_ship_a_verbosity_and_it_is_low() -> None:
+    """Every other stage keeps the vendor default verbosity."""
+    settings = Settings(provider=ProviderName.OPENAI)
 
+    assert settings.choice_for_stage(Stage.JOBSPEC).verbosity is Verbosity.LOW
     assert {
         stage: settings.policy_for(stage).verbosity
         for stage in Stage
         if settings.policy_for(stage).verbosity is not None
-    } == {Stage.RELEVANCE_REVIEW: Verbosity.LOW}
+    } == {Stage.JOBSPEC: Verbosity.LOW, Stage.RELEVANCE_REVIEW: Verbosity.LOW}
 
 
 def test_a_stage_takes_its_controls_from_its_own_setting() -> None:

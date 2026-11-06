@@ -1,1 +1,1 @@
-Transcribe the job posting in these images as Markdown.
+Transcribe the document in these images as Markdown.

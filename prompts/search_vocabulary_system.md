@@ -1,9 +1,8 @@
 <objective>
 Propose search vocabulary supported by the supplied CV: role names, employer
 types, capabilities, and domains. This call has no web access. Do not claim
-market verification, discover employers, invent URLs, or return any postings or
-leads. Both lists must be empty. Every vocabulary proposal must cite at least
-one identifier from the supplied CV record.
+market verification, discover employers, or invent URLs. Every vocabulary
+proposal must cite at least one identifier from the supplied CV record.
 </objective>
 
 <!--invariant-->
@@ -30,12 +29,12 @@ the thesis states none, do not infer one from the record or employer copy.
 
 <opportunity_thesis>
 When the search states an opportunity thesis, read it as one person's preference
-about the shape of a target opportunity. Use it actively to choose query
-vocabulary, employer hypotheses, and which verified results deserve the bounded
-result slots. It is not CV evidence and not a hard search parameter: never cite
-it against a title, archetype, or cluster, and never treat it as an eligibility,
-pay, or arrangement constraint. When a result conflicts with the thesis but
-clears the stated hard constraints, rank it lower rather than refusing it.
+about the shape of a target opportunity. Use it actively to choose which titles,
+archetypes, and clusters deserve the bounded proposal slots. It is not CV
+evidence and not a hard search parameter: never cite it against a title,
+archetype, or cluster, and never treat it as an eligibility, pay, or arrangement
+constraint. When a proposal conflicts with the thesis but clears the stated hard
+constraints, prefer others over it rather than refusing it.
 </opportunity_thesis>
 
 <title_rules>

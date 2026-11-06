@@ -106,9 +106,13 @@ def cited(
     *,
     additional_ids: tuple[str, ...] = (),
     allow_company: bool = False,
+    offered: Collection[str] | None = None,
 ) -> Finding:
-    """Require every line to cite evidence from a known and typed source."""
-    allowed = set(plan.all_ids()) | set(additional_ids)
+    """Require every line to cite evidence from a known and typed source.
+
+    offered narrows the plan's ids to those the writer's prompt showed.
+    """
+    allowed = set(plan.all_ids() if offered is None else offered) | set(additional_ids)
     uncited = _uncited_lines(lines)
     if uncited:
         return Finding(

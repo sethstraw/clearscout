@@ -18,7 +18,9 @@ from clearscout.application.config import (
     Effort,
     ImageDetail,
     ModelChoice,
+    ProviderName,
     Settings,
+    Stage,
     Verbosity,
 )
 from clearscout.application.discovery.relevance_review import review_plan
@@ -653,14 +655,22 @@ def test_openai_states_the_detail_and_verbosity_the_stage_chose() -> None:
 
 
 def test_openai_asks_a_relevance_review_batch_for_low_verbosity() -> None:
-    from clearscout.application.config import ProviderName, Stage
-
     client = FakeOpenAI()
     provider = OpenAIProvider(api_key="x", client=cast(Any, client))
     settings = Settings(provider=ProviderName.OPENAI)
     plan = review_plan(settings, synthetic_inventory(), "Remote only.", "DISCOVERY p1")
 
     provider.complete(plan, Answer, settings.choice_for_stage(Stage.RELEVANCE_REVIEW))
+
+    assert client.kwargs["text"]["verbosity"] == "low"
+
+
+def test_the_jobspec_request_asks_openai_for_low_verbosity() -> None:
+    client = FakeOpenAI()
+    provider = OpenAIProvider(api_key="x", client=cast(Any, client))
+    choice = Settings(provider=ProviderName.OPENAI).choice_for_stage(Stage.JOBSPEC)
+
+    provider.complete(plan_for(stage=Stage.JOBSPEC), Answer, choice)
 
     assert client.kwargs["text"]["verbosity"] == "low"
 

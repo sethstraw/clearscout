@@ -186,10 +186,10 @@ DEFAULT_STAGES: dict[Stage, StageSetting] = {
         tier=Tier.EXTRACTION, max_tokens=8000, image_detail=ImageDetail.HIGH
     ),
     Stage.STRUCTURE: StageSetting(tier=Tier.DRAFTING, max_tokens=18000),
-    Stage.JOBSPEC: StageSetting(tier=Tier.EXTRACTION, max_tokens=16000),
+    Stage.JOBSPEC: StageSetting(tier=Tier.EXTRACTION, max_tokens=16000, verbosity=Verbosity.LOW),
     # At low effort the model can answer without reasoning and understate a fit whose
     # qualifier the entry implies rather than names.
-    Stage.MATCH: StageSetting(tier=Tier.EXTRACTION, max_tokens=8000, effort=Effort.MEDIUM),
+    Stage.MATCH: StageSetting(tier=Tier.EXTRACTION, max_tokens=16000, effort=Effort.MEDIUM),
     Stage.DRAFT: StageSetting(tier=Tier.DRAFTING, max_tokens=12000),
     Stage.COVER: StageSetting(tier=Tier.DRAFTING, max_tokens=8000),
     Stage.CRITIC: StageSetting(tier=Tier.DRAFTING, max_tokens=12000),

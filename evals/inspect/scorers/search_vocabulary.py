@@ -7,7 +7,9 @@ unlabeled proposal is reported as a warned check, not counted against the call.
 Citation support asks whether each acceptable match cites an entry the label names,
 and recall is reported without gating. A case may name claims the record does not
 support; a reason or ``because`` stating one fails the call. Proposals citing only
-role context, summary, or skill entries are counted, never failed.
+role context, summary, or skill entries are counted, never failed. Clusters have no
+labels: each is ruled on by ``searchable_clusters``, and one citing an id the CV
+lacks, or left citing none, fails the call.
 """
 
 from __future__ import annotations
@@ -18,14 +20,16 @@ from typing import Any
 
 from clearscout.application.discovery.derived_vocabulary_rules import (
     ProposedArchetype,
+    ProposedCluster,
     ProposedTitle,
     same_employer_archetype,
     searchable_archetypes,
+    searchable_clusters,
     searchable_titles,
 )
 from clearscout.application.tailoring.stages.context import citable_entries
 from clearscout.domain.identity import normalize_text
-from clearscout.domain.search_parameters import JobSearchParameters
+from clearscout.domain.search_parameters import ClusterKind, JobSearchParameters
 from clearscout.domain.search_parameters.roles import title_excluded
 from clearscout.domain.taxonomy import normalize
 from evals.inspect.solvers.search_vocabulary_live import case_inventory, case_parameters
@@ -36,6 +40,8 @@ REPEATS_STATED = "repeats_stated"
 EXCLUDED = "excluded"
 UNLABELED = "unlabeled"
 AXES = ("titles", "archetypes")
+# Clusters carry no gold labels, so they are ruled on by the program and kept out of precision.
+CLUSTER_AXES = {"capabilities": ClusterKind.CAPABILITY, "domains": ClusterKind.DOMAIN}
 # Entry kinds a proposal is counted for when it cites nothing else.
 CONTEXT_KINDS = frozenset({"role_context", "summary", "skill"})
 _WORD = re.compile(r"[a-z0-9]+")
@@ -174,9 +180,50 @@ def _program_refusals(
         parameters,
         known,
     )
-    return {
+    refusals = {
         "titles": [item.refused_because for item in titles],
         "archetypes": [item.refused_because for item in archetypes],
+    }
+    for axis, kind in CLUSTER_AXES.items():
+        clusters = searchable_clusters(
+            [ProposedCluster.model_validate(item) for item in output.get(axis) or []],
+            parameters,
+            kind,
+            known,
+        )
+        refusals[axis] = [item.refused_because for item in clusters]
+    return refusals
+
+
+def _scored_clusters(
+    output: dict[str, Any], refusals: dict[str, list[str]], known: set[str]
+) -> dict[str, Any]:
+    """Return each proposed cluster with the program's ruling and any id the CV lacks."""
+    rows = []
+    for axis, kind in CLUSTER_AXES.items():
+        for proposal, refused in zip(output.get(axis) or [], refusals[axis], strict=True):
+            cited = [str(entry_id) for entry_id in proposal.get("evidence_ids") or []]
+            rows.append(
+                {
+                    "kind": kind.value,
+                    "name": str(proposal.get("name") or ""),
+                    "evidence_ids": cited,
+                    "unknown_evidence_ids": [
+                        entry_id for entry_id in cited if entry_id not in known
+                    ],
+                    "program_refused_because": refused,
+                }
+            )
+    # The program keeps a cluster whose other ids are real, so an unknown id is caught here.
+    invalid = [
+        row["name"]
+        for row in rows
+        if row["unknown_evidence_ids"] or row["program_refused_because"] == "missing_evidence"
+    ]
+    return {
+        "proposals": rows,
+        "program_refused": sum(bool(row["program_refused_because"]) for row in rows),
+        "invalid_evidence": invalid,
     }
 
 
@@ -275,6 +322,7 @@ def proposal_usefulness() -> Any:
         recall = _ratio(recalled, gold_total)
         refused = sum(axes[axis]["program_refused"] for axis in AXES)
         overclaimed = sum(axes[axis]["unsupported_claims"] for axis in AXES)
+        clusters = _scored_clusters(solver_output, refusals, known)
         failed = [
             name
             for name, failing in (
@@ -283,6 +331,7 @@ def proposal_usefulness() -> Any:
                 ("precision", precision is not None and precision < PRECISION_THRESHOLD),
                 ("citation_support", citation_support < CITATION_SUPPORT_THRESHOLD),
                 ("unsupported_claim", overclaimed > 0),
+                ("cluster_evidence", bool(clusters["invalid_evidence"])),
             )
             if failing
         ]
@@ -306,8 +355,8 @@ def proposal_usefulness() -> Any:
                 "context_only_citations": sum(
                     axes[axis]["context_only_citations"] for axis in AXES
                 ),
-                "clusters_proposed": len(solver_output.get("capabilities") or [])
-                + len(solver_output.get("domains") or []),
+                "clusters_proposed": len(clusters["proposals"]),
+                "clusters": clusters,
                 **axes,
             },
             "explanation": (

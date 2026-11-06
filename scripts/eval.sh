@@ -222,7 +222,7 @@ live_run() {
   # The task file owns its stage, so the estimate and the run cannot disagree.
   stage="$(sed -n 's/^STAGE = "\([a-z_]*\)"$/\1/p' "$task_file" | head -1)"
   case "$stage" in
-    match|relevance_review|jobspec|draft|cover|critic|posting_recovery|guided_campaign|search_vocabulary) ;;
+    match|relevance_review|jobspec|draft|cover|critic|posting_recovery|guided_campaign|search_vocabulary|structure|ingest) ;;
     "")
       printf 'Refused: %s declares no STAGE.\n' "$task_file" >&2
       exit 64

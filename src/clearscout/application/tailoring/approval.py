@@ -441,8 +441,9 @@ def applied(
         spec=spec,
         guardrails=guardrails,
         excluded=excluded,
+        drafted=result.draft,
     )
-    critiqued = _with_critic(checked, result, verification, markdown)
+    critiqued = _with_critic(checked, result, verification, markdown, inventory)
     return replace(result, verification=critiqued), document
 
 
@@ -451,6 +452,7 @@ def _with_critic(
     result: Applied,
     verification: verify_stage.Report,
     markdown: str,
+    inventory: CvInventory,
 ) -> verify_stage.Report:
     """Carry the critic's verdict forward only where it still describes the text.
 
@@ -470,7 +472,10 @@ def _with_critic(
         )
         return checked.without_critic(next(skipped, "No critique was asked for this draft."))
     return checked.with_critic(
-        verification.critic, draws=verification.critic_draws, document=markdown
+        verification.critic,
+        draws=verification.critic_draws,
+        document=markdown,
+        inventory=inventory,
     )
 
 

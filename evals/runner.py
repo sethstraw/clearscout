@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, NoReturn, TypeVar
 
 from pydantic import BaseModel
-from tests.support.schema import declares, literals
+from tests.support.schema import declares, literals, offered
 
 from clearscout.application import prompts
 from clearscout.application.config import DEFAULT_PROVIDER, ModelChoice, Settings, Stage
@@ -88,7 +88,7 @@ from clearscout.application.tailoring.stages import match as match_stage
 from clearscout.application.tailoring.stages import select as select_stage
 from clearscout.application.tailoring.stages import structure as structure_stage
 from clearscout.application.tailoring.stages import verify as verify_stage
-from clearscout.application.tailoring.stages.context import citable_entries, record_block
+from clearscout.application.tailoring.stages.context import record_block
 from clearscout.application.tailoring.stages.draft import CoverLetter, ResumeDraft
 from clearscout.application.tailoring.stages.jobspec import JobSpecExtraction
 from clearscout.application.tailoring.stages.match import response_schema as match_schema
@@ -153,7 +153,9 @@ STAGES = (
 
 # Read back out of the schema that was sent, so a result can state what the
 # model was actually allowed to say.
-VOCABULARY_FIELD = {"match": "entry_ids", "draft": "source_ids", "cover": "source_ids"}
+VOCABULARY_FIELD = {"match": "entry_ids"}
+# Writing schemas leave ids open; these stages offer theirs in the task text.
+OFFERED_IN_REQUEST = frozenset({"draft", "cover"})
 
 # What the recorded stamp is hashed over. `check_stages_are_fingerprinted`
 # refuses a run reaching a stage missing from it.
@@ -253,7 +255,9 @@ class ScriptedProvider:
                 payload_digest=plan.payload_digest(),
             )
         )
-        if field := VOCABULARY_FIELD.get(stage):
+        if stage in OFFERED_IN_REQUEST:
+            self.vocabularies[stage] = tuple(offered(plan, "source_ids"))
+        elif field := VOCABULARY_FIELD.get(stage):
             self.vocabularies[stage] = tuple(literals(schema, field))
         self.skill_labels = declares(schema, "label")
         payload = self._payload(stage)
@@ -427,7 +431,11 @@ class ScriptedProvider:
             "ats_clarity": scripted.ats_clarity,
             "human_voice": scripted.human_voice,
             "unsupported_claims": [
-                {"claim": doubt.claim, "boundary": doubt.boundary}
+                {
+                    "claim": doubt.claim,
+                    "evidence_quote": doubt.evidence_quote,
+                    "boundary": doubt.boundary,
+                }
                 for doubt in scripted.unsupported_claims
             ],
             "style_flags": list(scripted.style_flags),
@@ -881,8 +889,7 @@ def _search_vocabulary(run: CaseRun, client: Client, case: Case, inventory: CvIn
     scripted = case.search_vocabulary
     if scripted is None:
         return
-    entry_ids = tuple(entry.id for entry in citable_entries(inventory))
-    schema = search_vocabulary_schema(entry_ids)
+    schema = search_vocabulary_schema()
     parameters = JobSearchParameters(
         seniority=Seniority(excluded_titles=list(scripted.excluded_titles))
     )
@@ -1116,7 +1123,7 @@ def stage_schemas() -> dict[str, type[BaseModel]]:
             )
         ),
         "vision": VisionTranscript,
-        "search_vocabulary": search_vocabulary_schema(("entry-1",)),
+        "search_vocabulary": search_vocabulary_schema(),
         "posting_recovery": posting_recovery_schema(POSTING_RECOVERY_IDENTITY_ID),
         "guided_campaign": campaign_response_schema(("branch-1",)),
     }

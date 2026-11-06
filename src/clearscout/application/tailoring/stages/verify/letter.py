@@ -141,7 +141,14 @@ def check_letter(
     lines = tuple(letter.paragraphs)
     research_ids = (*research_source_ids, *(source.id for source in research))
     findings = (
-        cited(lines, plan, "letter provenance", additional_ids=research_ids, allow_company=True),
+        cited(
+            lines,
+            plan,
+            "letter provenance",
+            additional_ids=research_ids,
+            allow_company=True,
+            offered=plan.drafted_ids(),
+        ),
         figures(lines, inventory, "letter numbers", research=research),
         _letter_completeness(body, inventory),
         _claim_ownership(lines),

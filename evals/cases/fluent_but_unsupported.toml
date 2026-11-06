@@ -154,6 +154,7 @@ guidance = "Three claims are not in the evidence they cite."
 
 [[responses.critic.unsupported_claims]]
 claim = "primary on-call rotation: the cited entry is about Terraform modules"
+evidence_quote = "Wrote the Terraform modules that provision every environment"
 boundary = "adjacent"
 
 [[responses.critic.unsupported_claims]]

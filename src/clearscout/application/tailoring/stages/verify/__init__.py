@@ -6,7 +6,13 @@ the Markdown clearscout produced; page count is a renderer's question.
 """
 
 from .citations import id_texts, line_citations, worded
-from .critic import critic_finding, critic_system_prompt, critique, doubted_span
+from .critic import (
+    critic_finding,
+    critic_system_prompt,
+    critique,
+    doubted_span,
+    misquoted_evidence,
+)
 from .letter import check_letter
 from .lexicon import FUNCTION_WORDS, NUMBER, WORD, bare_word
 from .report import KeywordCoverage, Report, keyword_coverage
@@ -37,5 +43,6 @@ __all__ = [
     "id_texts",
     "keyword_coverage",
     "line_citations",
+    "misquoted_evidence",
     "worded",
 ]

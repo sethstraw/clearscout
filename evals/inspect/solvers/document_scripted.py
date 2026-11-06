@@ -84,6 +84,8 @@ def critic_scripted_solver() -> Any:
             document=fixed.document,
             research=fixed.research,
         )
-        return critic_result(returned, draws, fixed.check, document=fixed.markdown)
+        return critic_result(
+            returned, draws, fixed.check, document=fixed.markdown, inventory=context.inventory
+        )
 
     return solve

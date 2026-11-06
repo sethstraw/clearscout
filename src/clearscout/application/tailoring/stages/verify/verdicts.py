@@ -13,11 +13,12 @@ from .rubric import SCORED_AXES
 
 
 class DoubtedClaim(BaseModel):
-    """One statement the critic does not find supported, and the boundary it crosses."""
+    """One unsupported statement, the evidence span it was compared with, and the boundary."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     claim: str
+    evidence_quote: str
     boundary: ClaimBoundary
     # Merged from the sampled draws and kept out of the schema the provider is sent.
     corroboration: Annotated[int, SkipJsonSchema()] = 0

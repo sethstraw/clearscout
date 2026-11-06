@@ -1,0 +1,70 @@
+{
+  "relevance_review": {
+    "parameters": {
+      "locations": [
+        {
+          "key": "ca",
+          "country": "Canada",
+          "arrangement": {"remote": "preferred", "on_site": "refused"}
+        }
+      ],
+      "seniority": {
+        "target_titles": [
+          {"title": "Clinical Data Product Owner", "lane": "specialist"},
+          {"title": "Reference Data Product Manager", "lane": "specialist"}
+        ],
+        "excluded_titles": ["Sales Engineer"]
+      },
+      "opportunity_thesis": "Product ownership of clinical reference data and terminology services.",
+      "excluded_conditions": [["on site five days a week", "the person works remotely"]]
+    },
+    "postings": [
+      {
+        "id": "cassette-rr-product-owner",
+        "employer": "Northwind",
+        "title": "Clinical Data Product Owner",
+        "location": "Remote, Canada",
+        "body": "Northwind builds reference data services for clinical trial teams.\n\nYou will own the roadmap for our terminology and master data products, run backlog and sprint planning for a squad of six engineers, and define canonical records and entity resolution rules with data stewards.\n\nWhat you bring: two or more years as a product owner for data products, working knowledge of clinical terminologies such as MedDRA, and experience with data governance workflows.\n\nThis role is remote within Canada."
+      },
+      {
+        "id": "cassette-rr-frontend",
+        "employer": "Globex",
+        "title": "Senior Frontend Engineer",
+        "location": "Toronto, Ontario, Canada",
+        "body": "Globex is hiring a senior frontend engineer to build our customer dashboard in React and TypeScript.\n\nYou will own component architecture, accessibility, and performance budgets for the web application, and pair with designers on the design system.\n\nWhat you bring: five or more years of professional React development and deep CSS knowledge.\n\nThis role is on site in our Toronto office five days a week."
+      }
+    ]
+  },
+  "search_vocabulary": {
+    "cv": "platform_engineer.md",
+    "parameters": {
+      "locations": [{"key": "ca", "country": "Canada", "arrangement": {"remote": "preferred"}}],
+      "seniority": {"excluded_titles": ["Data Analyst"]}
+    }
+  },
+  "posting_recovery": {
+    "id": "cassette-recovery",
+    "input": {
+      "employer": "Initech",
+      "title": "Clinical Data Product Owner",
+      "known_url": "https://boards.greenhouse.io/initech/jobs/4100009",
+      "known_url_read_outcome": "render_required"
+    }
+  },
+  "guided_campaign": {
+    "id": "cassette-campaign",
+    "input": {
+      "attempt_position": 1,
+      "parameters": {
+        "locations": [
+          {"key": "ca", "country": "Canada", "arrangement": {"remote": "preferred"}}
+        ],
+        "seniority": {
+          "target_titles": [{"title": "Clinical Data Product Owner", "lane": "specialist"}],
+          "excluded_titles": ["Sales Engineer"]
+        }
+      },
+      "archetypes": []
+    }
+  }
+}

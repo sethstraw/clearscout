@@ -16,7 +16,11 @@ from clearscout.application.master_cv.cv import CvInventory, EntryKind
 from clearscout.application.prompts import data_block
 from clearscout.application.tailoring.fit.lexicon import HEADING_WORDS
 from clearscout.application.tailoring.guardrails import Guardrails
-from clearscout.application.tailoring.stages.context import entry_line, record_block
+from clearscout.application.tailoring.stages.context import (
+    citable_entries,
+    entry_line,
+    record_block,
+)
 from clearscout.application.tailoring.stages.draft import (
     CoverLetter,
     DraftedLine,
@@ -29,6 +33,7 @@ from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec,
 from clearscout.application.tailoring.stages.match import EvidenceMap
 from clearscout.application.tailoring.stages.select import Plan, build_plan
 from clearscout.application.tailoring.stages.verify import (
+    CRITIC_CHECK,
     LETTER_CRITIC,
     CriticVerdict,
     DoubtedClaim,
@@ -40,6 +45,7 @@ from clearscout.application.tailoring.stages.verify import (
     id_texts,
     keyword_coverage,
     line_citations,
+    misquoted_evidence,
 )
 from clearscout.domain import ClaimBoundary, ResearchKind
 from clearscout.infrastructure.providers.base import json_schema
@@ -104,8 +110,12 @@ EMPTY_RESUME = ResumeDraft(summary=DraftedLine(text=""))
 def simple_draft(inventory, text: str, source_ids: tuple[str, ...]) -> ResumeDraft:
     return ResumeDraft(
         summary=DraftedLine(text=text, source_ids=source_ids),
-        skills=(DraftedSkill(label="Platforms", text="Python", source_ids=source_ids),),
+        skills=(DraftedSkill(label="Platforms", text="Python", source_ids=_skill_ids(inventory)),),
     )
+
+
+def _skill_ids(inventory: CvInventory) -> tuple[str, ...]:
+    return tuple(entry.id for entry in inventory.entries if entry.kind is EntryKind.SKILL)[:1]
 
 
 def evidence_record(inventory: CvInventory, text: str) -> tuple[CvInventory, str]:
@@ -805,7 +815,7 @@ def test_very_low_alignment_triggers_the_bounded_rewrite_loop() -> None:
         ats_clarity=4,
         human_voice=4,
     )
-    assert critic_finding(verdict).outcome is Outcome.FAIL
+    assert critic_finding(verdict, document=CRITIQUED).outcome is Outcome.FAIL
 
 
 def test_sendable_but_unexceptional_quality_is_a_warning() -> None:
@@ -817,7 +827,7 @@ def test_sendable_but_unexceptional_quality_is_a_warning() -> None:
         ats_clarity=4,
         human_voice=3,
     )
-    assert critic_finding(verdict).outcome is Outcome.WARN
+    assert critic_finding(verdict, document=CRITIQUED).outcome is Outcome.WARN
 
 
 @pytest.mark.parametrize("check", ["critic", "letter critic"])
@@ -836,11 +846,11 @@ def test_weak_prose_is_reported_without_a_rewrite_but_an_unsupported_claim_still
     unsupported = weak.model_copy(update={"unsupported_claims": [_doubt()]})
     unfaithful = weak.model_copy(update={"preservation": 3})
 
-    finding = critic_finding(weak, check)
+    finding = critic_finding(weak, check, document=CRITIQUED)
     assert (finding.outcome, finding.redraftable) == (Outcome.WARN, False)
     assert "readability 2/5" in finding.detail
-    assert critic_finding(unsupported, check).outcome is Outcome.FAIL
-    assert critic_finding(unfaithful, check).outcome is Outcome.FAIL
+    assert critic_finding(unsupported, check, document=CRITIQUED).outcome is Outcome.FAIL
+    assert critic_finding(unfaithful, check, document=CRITIQUED).outcome is Outcome.FAIL
 
 
 def test_strong_quality_passes_and_exposes_a_mean() -> None:
@@ -852,7 +862,7 @@ def test_strong_quality_passes_and_exposes_a_mean() -> None:
         ats_clarity=4,
         human_voice=4,
     )
-    assert critic_finding(verdict).outcome is Outcome.PASS
+    assert critic_finding(verdict, document=CRITIQUED).outcome is Outcome.PASS
     assert verdict.quality_average == 4.2
 
 
@@ -861,7 +871,12 @@ def _doubt(
     boundary: ClaimBoundary = ClaimBoundary.TEAM_CONTRIBUTION,
     corroboration: int = 0,
 ) -> DoubtedClaim:
-    return DoubtedClaim(claim=claim, boundary=boundary, corroboration=corroboration)
+    return DoubtedClaim(
+        claim=claim,
+        evidence_quote="Contributed to the platform team",
+        boundary=boundary,
+        corroboration=corroboration,
+    )
 
 
 def _verdict(**overrides: Any) -> CriticVerdict:
@@ -899,7 +914,7 @@ def test_the_critic_may_answer_with_these_eleven_boundaries_and_nothing_else() -
     assert [boundary.value for boundary in ClaimBoundary] == (
         schema["$defs"]["ClaimBoundary"]["enum"]
     )
-    assert schema["$defs"]["DoubtedClaim"]["required"] == ["claim", "boundary"]
+    assert schema["$defs"]["DoubtedClaim"]["required"] == ["claim", "evidence_quote", "boundary"]
     with pytest.raises(ValidationError):
         DoubtedClaim.model_validate({"claim": "Led the platform team.", "boundary": "overreach"})
 
@@ -910,7 +925,7 @@ def test_a_doubted_claim_fails_the_draft_whatever_boundary_it_crosses(
 ) -> None:
     """The boundary describes an existing failure and never excuses one."""
     verdict = _verdict(unsupported_claims=[_doubt(boundary=boundary)])
-    result = critic_finding(verdict)
+    result = critic_finding(verdict, document=CRITIQUED)
 
     assert result.outcome is Outcome.FAIL
     assert "Led the platform team." in result.detail
@@ -923,7 +938,7 @@ def test_an_unsupported_claim_does_not_hide_a_failing_alignment_score_from_the_r
         alignment=2, unsupported_claims=[_doubt()], guidance="Lead with the streaming work."
     )
 
-    result = critic_finding(verdict)
+    result = critic_finding(verdict, document=CRITIQUED)
 
     assert result.outcome is Outcome.FAIL
     assert result.detail.startswith("unsupported claims: Led the platform team.")
@@ -935,7 +950,7 @@ def test_a_warning_only_score_stays_out_of_the_detail_an_unsupported_claim_fails
     """Weak prose alone never blocks a draft, so the redraft is not sent after it."""
     verdict = _verdict(readability=2, unsupported_claims=[_doubt()], guidance="Tighten it.")
 
-    assert critic_finding(verdict).detail == (
+    assert critic_finding(verdict, document=CRITIQUED).detail == (
         "unsupported claims: Led the platform team. [team_contribution]"
     )
 
@@ -943,12 +958,12 @@ def test_a_warning_only_score_stays_out_of_the_detail_an_unsupported_claim_fails
 @pytest.mark.parametrize("check", ["critic", "letter critic"])
 def test_a_style_flag_on_a_passing_read_warns_without_asking_for_a_rewrite(check: str) -> None:
     """Scores at the floor do not hide a flag the critic raised about how the draft reads."""
-    verdict = _verdict(style_flags=["Three bullets open with Spearheaded."])
+    verdict = _verdict(style_flags=['Two bullets open with "Spearheaded".'])
 
-    finding = critic_finding(verdict, check)
+    finding = critic_finding(verdict, check, document=CRITIQUED)
 
     assert (finding.outcome, finding.redraftable) == (Outcome.WARN, False)
-    assert finding.advisories == ("Three bullets open with Spearheaded.",)
+    assert finding.advisories == ('Two bullets open with "Spearheaded".',)
     assert finding.detail.startswith("alignment 4/5")
     assert finding.detail.endswith("quality mean 4.0/5; 1 style flag, listed first")
 
@@ -977,7 +992,7 @@ def test_a_style_flag_quoting_the_document_warns(flag: str) -> None:
     "flag",
     [
         "Three bullets open with Spearheaded.",
-        'Bullets repeat "Spearheaded" phrasing.',
+        'Bullets repeat "Orchestrated" phrasing.',
         'The summary says "Led the data platform rebuild" twice.',
     ],
 )
@@ -991,6 +1006,107 @@ def test_a_style_flag_that_locates_nothing_in_the_document_passes_and_stays_list
     assert finding.advisories == (flag,)
 
 
+QUOTED_FORMS = {
+    "straight double": '"{}"',
+    "curly double": "“{}”",
+    "straight single": "'{}'",
+    "curly single": "‘{}’",
+    "backtick": "`{}`",
+}
+APOSTROPHE_DOCUMENT = f"{CRITIQUED}- Rebuilt the team's ingestion layer\n"
+
+
+@pytest.mark.parametrize(
+    ("form", "passage", "located"),
+    [
+        *((form, "spearheaded the schema registry", True) for form in QUOTED_FORMS),
+        *((form, "led the data platform", False) for form in QUOTED_FORMS),
+        *((form, "rebuilt the team's ingestion", True) for form in QUOTED_FORMS),
+        *((form, "rebuilt the team's platform", False) for form in QUOTED_FORMS),
+        *((form, "Spearheaded", True) for form in QUOTED_FORMS),
+        *((form, "Orchestrated", False) for form in QUOTED_FORMS),
+        *((form, "schema registry", True) for form in QUOTED_FORMS),
+        *((form, "data lake", False) for form in QUOTED_FORMS),
+    ],
+)
+def test_a_style_flag_is_located_by_any_quotation_form_it_writes(
+    form: str, passage: str, located: bool
+) -> None:
+    """A quote of one or more words, apostrophes included, locates the passage it names."""
+    flag = f"Bullets repeat {QUOTED_FORMS[form].format(passage)} phrasing."
+    if form == "curly single":
+        flag = flag.replace("team's", "team’s")
+
+    finding = critic_finding(_verdict(style_flags=[flag]), document=APOSTROPHE_DOCUMENT)
+
+    assert finding.outcome is (Outcome.WARN if located else Outcome.PASS)
+
+
+def _quoting(evidence_quote: str, boundary: ClaimBoundary = ClaimBoundary.TEAM_CONTRIBUTION):
+    return _verdict(
+        unsupported_claims=[
+            DoubtedClaim(
+                claim="Led the platform team.", evidence_quote=evidence_quote, boundary=boundary
+            )
+        ]
+    )
+
+
+def _quoted_entry(inventory: CvInventory) -> str:
+    return next(
+        entry.full_text for entry in citable_entries(inventory) if len(entry.full_text) > 40
+    )
+
+
+def test_a_doubt_quoting_its_evidence_verbatim_adds_no_quote_finding(
+    inventory: CvInventory,
+) -> None:
+    words = _quoted_entry(inventory).split()
+    quoted = f"{' '.join(words[:3]).upper()} ... {' '.join(words[-2:])}"
+
+    assert misquoted_evidence(_quoting(quoted), CRITIC_CHECK, inventory) == ()
+
+
+def test_a_doubt_whose_evidence_quote_the_record_lacks_is_named_in_a_warning(
+    inventory: CvInventory,
+) -> None:
+    verdict = _quoting("Owned the Initech billing rewrite end to end")
+
+    (warning,) = misquoted_evidence(verdict, CRITIC_CHECK, inventory)
+
+    assert (warning.outcome, warning.redraftable) == (Outcome.WARN, False)
+    assert "Led the platform team." in warning.detail
+    assert "Owned the Initech billing rewrite end to end" in warning.detail
+
+
+@pytest.mark.parametrize(
+    ("boundary", "warned"),
+    [(ClaimBoundary.ABSENT_FROM_RECORD, False), (ClaimBoundary.TEAM_CONTRIBUTION, True)],
+)
+def test_an_empty_evidence_quote_is_allowed_only_where_the_record_is_silent(
+    inventory: CvInventory, boundary: ClaimBoundary, warned: bool
+) -> None:
+    assert bool(misquoted_evidence(_quoting("", boundary), CRITIC_CHECK, inventory)) is warned
+
+
+def test_a_report_carries_the_critic_quote_warning_beside_the_critic_finding(
+    inventory: CvInventory,
+) -> None:
+    report = Report(findings=(), coverage=KeywordCoverage(present=(), missing=()))
+
+    critiqued = report.with_critic(
+        _quoting("Owned the Initech billing rewrite"),
+        LETTER_CRITIC,
+        document=CRITIQUED,
+        inventory=inventory,
+    )
+
+    assert [item.check for item in critiqued.findings] == [
+        LETTER_CRITIC,
+        f"{LETTER_CRITIC} evidence quote",
+    ]
+
+
 def test_a_weakness_warns_whether_or_not_it_quotes_the_document() -> None:
     verdict = _verdict(weaknesses=["The Kafka latency outcome (b-a4aa0046) is not used."])
 
@@ -1000,7 +1116,7 @@ def test_a_weakness_warns_whether_or_not_it_quotes_the_document() -> None:
 def test_a_style_flag_on_a_below_floor_warning_is_named_in_its_detail() -> None:
     verdict = _verdict(readability=2, style_flags=["Three bullets open with Spearheaded.", "x"])
 
-    finding = critic_finding(verdict)
+    finding = critic_finding(verdict, document=CRITIQUED)
 
     assert finding.outcome is Outcome.WARN
     assert finding.advisories[:2] == ("Three bullets open with Spearheaded.", "x")
@@ -1008,7 +1124,7 @@ def test_a_style_flag_on_a_below_floor_warning_is_named_in_its_detail() -> None:
 
 
 def test_a_passing_read_without_style_flags_names_no_style_cause() -> None:
-    finding = critic_finding(_verdict())
+    finding = critic_finding(_verdict(), document=CRITIQUED)
 
     assert finding.outcome is Outcome.PASS
     assert "style flag" not in finding.detail
@@ -1020,7 +1136,7 @@ def test_a_weakness_on_a_passing_read_warns_and_rides_along_with_guidance(check:
         weaknesses=["The Acme migration has no outcome."], guidance="Name what the migration cut."
     )
 
-    finding = critic_finding(verdict, check)
+    finding = critic_finding(verdict, check, document=CRITIQUED)
 
     assert (finding.outcome, finding.redraftable) == (Outcome.WARN, False)
     assert finding.detail.endswith("quality mean 4.0/5; 1 weakness listed")
@@ -1035,13 +1151,13 @@ def test_guidance_a_failing_detail_already_quotes_is_not_repeated_as_an_advisory
         readability=2, weaknesses=["The summary repeats the headline."], guidance="Tighten it."
     )
 
-    finding = critic_finding(verdict)
+    finding = critic_finding(verdict, document=CRITIQUED)
 
     assert finding.detail.endswith("Tighten it.")
     assert finding.advisories == ("The summary repeats the headline.",)
 
 
-def test_advisories_stay_out_of_the_redraft_feedback() -> None:
+def test_advisories_stay_out_of_the_redraft_feedback(inventory: CvInventory) -> None:
     """The redraft request is sent the failure details alone, so its bytes do not move."""
     verdict = _verdict(
         unsupported_claims=[_doubt()],
@@ -1051,7 +1167,7 @@ def test_advisories_stay_out_of_the_redraft_feedback() -> None:
     )
     report = Report(findings=(), coverage=KeywordCoverage(present=(), missing=()))
 
-    critiqued = report.with_critic(verdict)
+    critiqued = report.with_critic(verdict, document=CRITIQUED, inventory=inventory)
 
     assert finding(critiqued, "critic").advisories == (
         "Stacked adjectives in the summary.",
@@ -1063,12 +1179,16 @@ def test_advisories_stay_out_of_the_redraft_feedback() -> None:
     )
 
 
-def test_a_reader_sees_advisories_with_each_id_replaced_by_its_words() -> None:
+def test_a_reader_sees_advisories_with_each_id_replaced_by_its_words(
+    inventory: CvInventory,
+) -> None:
     verdict = _verdict(weaknesses=["[b-1a2b3c4d] is buried under r04."])
     report = Report(findings=(), coverage=KeywordCoverage(present=(), missing=()))
     known = {"b-1a2b3c4d": "Ran the Initech payments cutover", "r04": "Own payment systems"}
 
-    shown = report.with_critic(verdict, LETTER_CRITIC).for_reader(known)
+    shown = report.with_critic(
+        verdict, LETTER_CRITIC, document=CRITIQUED, inventory=inventory
+    ).for_reader(known)
 
     assert finding(shown, LETTER_CRITIC).advisories == (
         '"Ran the Initech payments cutover" is buried under "Own payment systems".',
@@ -1155,7 +1275,7 @@ def test_two_boundaries_drawn_once_each_break_to_the_earliest_doubting_trial(
         _doubt(boundary=ClaimBoundary.TEAM_CONTRIBUTION, corroboration=2),
         spend.model_copy(update={"corroboration": 1}),
     ]
-    assert critic_finding(verdict).outcome is Outcome.FAIL
+    assert critic_finding(verdict, document=CRITIQUED).outcome is Outcome.FAIL
 
 
 def test_three_wordings_of_one_sentence_reach_the_redraft_as_one_doubt(
@@ -1174,7 +1294,7 @@ def test_three_wordings_of_one_sentence_reach_the_redraft_as_one_doubt(
 
     verdict = _merged(inventory, settings, guardrails, tmp_path / "critic-cache", answers)
 
-    detail = critic_finding(verdict).detail
+    detail = critic_finding(verdict, document=CRITIQUED).detail
     assert len(verdict.unsupported_claims) == 1
     assert detail.count("Owned the") == 1
 
@@ -1328,7 +1448,9 @@ def test_one_draw_reading_the_record_as_silent_decides_the_merged_boundary(
     assert verdict.unsupported_claims == [
         _doubt(boundary=ClaimBoundary.ABSENT_FROM_RECORD, corroboration=3)
     ]
-    assert ClaimBoundary.ABSENT_FROM_RECORD.value in critic_finding(verdict).detail
+    assert (
+        ClaimBoundary.ABSENT_FROM_RECORD.value in critic_finding(verdict, document=CRITIQUED).detail
+    )
 
 
 def test_one_draw_reading_a_line_as_miscited_does_not_decide_the_merged_boundary(
@@ -1348,7 +1470,7 @@ def test_one_draw_reading_a_line_as_miscited_does_not_decide_the_merged_boundary
     verdict = _merged(inventory, settings, guardrails, tmp_path / "critic-cache", answers)
 
     assert verdict.unsupported_claims == [_doubt(boundary=ClaimBoundary.ADJACENT, corroboration=3)]
-    assert ClaimBoundary.MISCITED.value not in critic_finding(verdict).detail
+    assert ClaimBoundary.MISCITED.value not in critic_finding(verdict, document=CRITIQUED).detail
 
 
 def test_two_claims_differing_only_in_a_figure_both_reach_the_redraft(
@@ -1369,7 +1491,7 @@ def test_two_claims_differing_only_in_a_figure_both_reach_the_redraft(
 
     verdict = _merged(inventory, settings, guardrails, tmp_path / "critic-cache", answers)
 
-    detail = critic_finding(verdict).detail
+    detail = critic_finding(verdict, document=CRITIQUED).detail
     assert verdict.unsupported_claims == [
         thirty.model_copy(update={"corroboration": 1}),
         forty.model_copy(update={"corroboration": 1}),
@@ -1409,7 +1531,7 @@ def test_two_claims_differing_only_in_a_content_word_both_reach_the_redraft(
 
     verdict = _merged(inventory, settings, guardrails, tmp_path / "critic-cache", answers)
 
-    detail = critic_finding(verdict).detail
+    detail = critic_finding(verdict, document=CRITIQUED).detail
     assert verdict.unsupported_claims == [
         doubt.model_copy(update={"corroboration": 1}) for doubt in doubts
     ]
@@ -1459,7 +1581,7 @@ def test_every_critic_trial_is_asked_again_rather_than_served_from_the_cache(
     assert [call[1].draws for call in provider.calls] == [3, 3, 3]
     assert len(draws) == 3
     assert verdict.unsupported_claims == [_doubt(corroboration=1)]
-    assert critic_finding(verdict).outcome is Outcome.FAIL
+    assert critic_finding(verdict, document=CRITIQUED).outcome is Outcome.FAIL
     assert again == verdict
 
 
@@ -1943,7 +2065,7 @@ def test_a_failing_preservation_score_carries_the_guidance_of_the_trial_that_gav
 
     verdict = _merged(inventory, settings, guardrails, tmp_path / "critic-cache", answers)
 
-    finding = critic_finding(verdict)
+    finding = critic_finding(verdict, document=CRITIQUED)
     assert finding.outcome is Outcome.FAIL
     assert finding.detail == f"content preservation 2/5: {doubt}"
 
@@ -1961,7 +2083,10 @@ def test_a_failing_alignment_score_carries_the_guidance_of_the_draw_that_scored_
 
     verdict = _merged(inventory, settings, guardrails, tmp_path / "critic-cache", answers)
 
-    assert critic_finding(verdict).detail == f"quality below 3/5: alignment 2/5. {lowest}"
+    assert (
+        critic_finding(verdict, document=CRITIQUED).detail
+        == f"quality below 3/5: alignment 2/5. {lowest}"
+    )
 
 
 def test_letter_redraft_feedback_marks_guidance_evidence_the_letter_may_not_cite(
@@ -1977,7 +2102,9 @@ def test_letter_redraft_feedback_marks_guidance_evidence_the_letter_may_not_cite
     )
 
     report = letter_with(inventory, settings, "The record fits this posting.")
-    feedback = report.with_critic(verdict, LETTER_CRITIC).feedback()
+    feedback = report.with_critic(
+        verdict, LETTER_CRITIC, document=CRITIQUED, inventory=inventory
+    ).feedback()
 
     assert (
         f"Cite {outside} (not citable in this document), {copied} (not citable in this document)"
@@ -1993,7 +2120,7 @@ def test_a_letter_advisory_marks_evidence_the_letter_may_not_cite(
     verdict = _verdict(weaknesses=[f"{outside} would answer the platform ask."])
 
     report = letter_with(inventory, settings, "The record fits this posting.")
-    critiqued = report.with_critic(verdict, LETTER_CRITIC)
+    critiqued = report.with_critic(verdict, LETTER_CRITIC, document=CRITIQUED, inventory=inventory)
 
     assert finding(critiqued, LETTER_CRITIC).advisories == (
         f"{outside} (not citable in this document) would answer the platform ask.",
@@ -2029,7 +2156,7 @@ def test_one_harsh_draw_decides_preservation_but_not_the_quality_axes(
         "ats_clarity": 3,
         "human_voice": 4,
     }
-    assert critic_finding(verdict).detail.startswith("content preservation 2/5")
+    assert critic_finding(verdict, document=CRITIQUED).detail.startswith("content preservation 2/5")
 
 
 def test_the_minimum_statistic_grades_every_quality_axis_on_the_harshest_draw(
@@ -2053,7 +2180,7 @@ def test_the_minimum_statistic_grades_every_quality_axis_on_the_harshest_draw(
         "ats_clarity": 1,
         "human_voice": 4,
     }
-    assert critic_finding(verdict).outcome is Outcome.FAIL
+    assert critic_finding(verdict, document=CRITIQUED).outcome is Outcome.FAIL
 
 
 def test_every_sampled_draw_comes_back_beside_the_merged_verdict(
@@ -2094,7 +2221,7 @@ def test_the_provider_is_never_asked_how_many_draws_raised_a_doubt() -> None:
     schema = json_schema(CriticVerdict)
 
     assert "corroboration" not in json.dumps(schema)
-    assert schema["$defs"]["DoubtedClaim"]["required"] == ["claim", "boundary"]
+    assert schema["$defs"]["DoubtedClaim"]["required"] == ["claim", "evidence_quote", "boundary"]
 
 
 def test_the_review_document_shows_every_draw_behind_the_merged_scores() -> None:

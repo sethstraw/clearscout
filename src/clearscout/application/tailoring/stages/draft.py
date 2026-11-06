@@ -13,7 +13,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from functools import cached_property
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
@@ -201,12 +201,7 @@ class CoverLetter(BaseModel):
 
 
 def _require_evidence(entry_ids: tuple[str, ...]) -> tuple[str, ...]:
-    """Return the drafting vocabulary, refusing to build a schema over nothing.
-
-    An empty tuple would reach ``Literal[()]``, which fails deep inside pydantic
-    with a bare AssertionError, and that assertion disappears under ``python -O``
-    and produces a silently broken schema instead.
-    """
+    """Return the drafting vocabulary, refusing to write from no evidence at all."""
     if not entry_ids:
         raise BudgetError(
             "Nothing in the master CV matched this posting well enough to write from.\n"
@@ -361,10 +356,14 @@ def _grouped_skills(
     grouped: dict[tuple[str, str], tuple[list[str], list[str]]] = {}
     for skill in skills:
         cited = [entries[entry_id] for entry_id in skill["source_ids"] if entry_id in entries]
+        # An id that is no skill entry stays cited, so verification sends the line back.
+        foreign = [entry_id for entry_id in skill["source_ids"] if entry_id not in entries]
         first = skill_heading(cited[0]) if cited else ADDITIONAL_SKILLS_HEADING
         for item, listing in skill_placements(skill["text"], cited):
             heading, sub_label = _placement(listing, first)
-            _file_item(grouped.setdefault((heading, sub_label), ([], [])), item, heading, cited)
+            line = grouped.setdefault((heading, sub_label), ([], []))
+            _file_item(line, item, heading, cited)
+            line[1].extend(entry_id for entry_id in foreign if entry_id not in line[1])
     return [
         {
             "label": heading,
@@ -393,47 +392,35 @@ def _file_item(
     ids += [entry.id for entry in cited if entry.id not in ids and skill_heading(entry) == heading]
 
 
-def draft_schema(
-    entry_ids: tuple[str, ...],
-    role_keys: tuple[str, ...],
-    skill_ids: tuple[str, ...] = (),
-    *,
-    labelled: bool = True,
-    earlier: bool = True,
-) -> type[BaseModel]:
-    """Close the drafting schema over the identifiers selection actually chose.
+def draft_schema(*, skills: bool, labelled: bool = True, earlier: bool = True) -> type[BaseModel]:
+    """Build the drafting schema for one shape of resume, identical across runs of that shape.
 
-    Narrower than the matching schema on purpose: the drafter may only cite what
-    survived selection, so an unselected bullet cannot creep back in through a
-    citation. A skills line cites skill entries only, and writes a label only when
-    the CV's skills carry no heading for the program to supply. An earlier-career
-    line is asked for only when ``earlier`` roles exist to print it under.
+    Ids and role keys stay open; the program holds them to the plan after the call. A
+    skills line writes a label only when the CV's skills carry no heading for the program
+    to supply, and an earlier-career line is asked for only when ``earlier`` roles exist.
     """
-    entry_literal = Literal[entry_ids]  # type: ignore[valid-type]
-    role_literal: Any = Literal[role_keys] if role_keys else str
     line = create_model(
         "ConstrainedLine",
         __config__=ConfigDict(extra="forbid"),
         text=(str, ...),
-        source_ids=(list[entry_literal], Field(default_factory=list)),
+        source_ids=(list[str], Field(default_factory=list)),
     )
-    skills: dict[str, Any] = {}
-    if skill_ids:
-        skill_literal = Literal[skill_ids]  # type: ignore[valid-type]
+    skill_fields: dict[str, Any] = {}
+    if skills:
         label: dict[str, Any] = {"label": (str, ...)} if labelled else {}
         skill = create_model(
             "ConstrainedSkill",
             __config__=ConfigDict(extra="forbid"),
             **label,
             text=(str, ...),
-            source_ids=(list[skill_literal], Field(default_factory=list)),
+            source_ids=(list[str], Field(default_factory=list)),
         )
-        skills["skills"] = (list[skill], Field(default_factory=list))  # type: ignore[valid-type]
+        skill_fields["skills"] = (list[skill], Field(default_factory=list))  # type: ignore[valid-type]
     optional_line: Any = line | None
     role = create_model(
         "ConstrainedRole",
         __config__=ConfigDict(extra="forbid"),
-        role_key=(role_literal, ...),
+        role_key=(str, ...),
         context=(optional_line, None),
         bullets=(list[line], Field(default_factory=list)),  # type: ignore[valid-type]
     )
@@ -442,7 +429,7 @@ def draft_schema(
         "ConstrainedResumeDraft",
         __config__=ConfigDict(extra="forbid"),
         summary=(line, ...),
-        **skills,
+        **skill_fields,
         roles=(list[role], Field(default_factory=list)),  # type: ignore[valid-type]
         **earlier_career,
     )
@@ -525,14 +512,12 @@ def draft(
     active_disputes: str | None = None,
 ) -> ResumeDraft:
     """Write the derivative's prose from selected evidence only."""
-    entry_ids = _require_evidence(plan.all_ids())
+    _require_evidence(plan.all_ids())
     skill_entries = {entry_id: inventory.by_id(entry_id) for entry_id in plan.skill_ids}
     headed = skills_are_headed(skill_entries.values())
     # Limit this check to recent roles, which rewriting can change.
     schema = draft_schema(
-        entry_ids,
-        plan.recent_roles,
-        plan.skill_ids,
+        skills=bool(plan.skill_ids),
         labelled=not headed,
         earlier=bool(plan.earlier_roles),
     )
@@ -584,14 +569,13 @@ def cover_letter_system_prompt(guardrails: Guardrails) -> str:
     )
 
 
-def cover_letter_schema(allowed_ids: tuple[str, ...]) -> type[BaseModel]:
-    """Build a letter schema closed over the evidence this run selected."""
-    entry_literal = Literal[allowed_ids]  # type: ignore[valid-type]
+def cover_letter_schema() -> type[BaseModel]:
+    """Build the letter schema; the program holds its ids to the evidence shown after the call."""
     line = create_model(
         "ConstrainedLetterLine",
         __config__=ConfigDict(extra="forbid"),
         text=(str, ...),
-        source_ids=(list[entry_literal], Field(default_factory=list)),
+        source_ids=(list[str], Field(default_factory=list)),
     )
     return create_model(
         "ConstrainedCoverLetter",
@@ -620,8 +604,8 @@ def cover_letter(
     the spec's model-read company, and the closing and letterhead copy the master CV. A
     ``previous`` attempt is sent back for the model to edit rather than replace.
     """
-    allowed_ids = (*_require_evidence(plan.drafted_ids()), *(item.id for item in research))
-    schema = cover_letter_schema(allowed_ids)
+    _require_evidence(plan.drafted_ids())
+    schema = cover_letter_schema()
     policy = client.settings.policy_for(Stage.COVER)
     request = RequestPlan(
         stage=Stage.COVER,

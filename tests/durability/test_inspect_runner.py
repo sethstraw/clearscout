@@ -19,6 +19,7 @@ from evals.inspect import build_calibration, runner
 from evals.inspect.labeling import bytes_sha256
 from evals.inspect.product_questions import ProductQuestion
 from evals.inspect.scorers import (
+    cv_import,
     document_checks,
     guided_campaign,
     jobspec_boundary,
@@ -27,6 +28,7 @@ from evals.inspect.scorers import (
     posting_recovery,
     relevance_verdict,
     search_vocabulary,
+    vision_transcript,
 )
 from evals.inspect.scorers.match_classification import (
     classification_match,
@@ -2721,6 +2723,12 @@ _DECLARED_OUTPUTS: list[tuple[Any, dict[str, Any]]] = [
     ),
     (document_checks.verifier_result, _paid_output(findings=[])),
     (
+        lambda: document_checks.verifier_result(redrafting=True),
+        _paid_output(findings=[], attempts=[]),
+    ),
+    (cv_import.import_fidelity, _paid_output(findings=[], extracted={}, dropped=[])),
+    (vision_transcript.token_recall, _paid_output(transcript=[], line_count=0)),
+    (
         match_classification.classification_match,
         _paid_output(completion="GAP", metadata={"entry_keys": [], "outcome_complete": True}),
     ),
@@ -2728,7 +2736,7 @@ _DECLARED_OUTPUTS: list[tuple[Any, dict[str, Any]]] = [
         search_vocabulary.proposal_usefulness,
         _paid_output(titles=[], archetypes=[], capabilities=[], domains=[]),
     ),
-    (jobspec_extraction.requirement_extraction, _paid_output(requirements=[])),
+    (jobspec_extraction.requirement_extraction, _paid_output(requirements=[], hard_gates=[])),
     (jobspec_boundary.boundary_match, _paid_output(boundary=None)),
     (
         relevance_verdict.recommendation_match,

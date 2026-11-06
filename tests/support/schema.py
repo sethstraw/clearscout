@@ -1,16 +1,19 @@
-"""Read a closed vocabulary back out of a generated schema.
+"""Read the identifiers a request offers: a closed schema's enum, or a writer's task text.
 
-If a field ever stopped being closed over the real identifiers there would be no
-enumeration here to find. Either the pydantic model or the JSON Schema dict is
-accepted, because the scripted provider sees the class while a fake HTTP server
+If a closed field ever stopped being closed over the real identifiers there would
+be no enumeration here to find. Either the pydantic model or the JSON Schema dict
+is accepted, because the scripted provider sees the class while a fake HTTP server
 sees only what went over the wire.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pydantic import BaseModel
+
+from clearscout.infrastructure.providers.plan import RequestPlan
 
 
 def literals(schema: type[BaseModel] | dict[str, Any], field: str) -> list[str]:
@@ -55,6 +58,25 @@ def literals(schema: type[BaseModel] | dict[str, Any], field: str) -> list[str]:
 
     walk(document)
     return list(dict.fromkeys(found))
+
+
+_EVIDENCE_ID = re.compile(
+    r"^\[([^\]\s]+)\] (?!\((?:must_have|nice_to_have|responsibility),)", re.MULTILINE
+)
+_RESEARCH_ID = re.compile(r"^Source ID: (\S+)$", re.MULTILINE)
+_ROLE_KEY = re.compile(r"^### role_key: (\S+)$", re.MULTILINE)
+
+
+def offered(plan: RequestPlan | str, field: str) -> list[str]:
+    """Return the ids a writing request's task text offers for ``field``, in prompt order.
+
+    Writing schemas leave ids open, so a scripted writer reads them where the model
+    does. Role keys under the earlier-roles heading are summarised, never drafted.
+    """
+    text = plan if isinstance(plan, str) else plan.task.text
+    if field == "role_key":
+        return _ROLE_KEY.findall(text.split("\n## Earlier roles.", 1)[0])
+    return list(dict.fromkeys([*_EVIDENCE_ID.findall(text), *_RESEARCH_ID.findall(text)]))
 
 
 def declares(schema: type[BaseModel] | dict[str, Any], field: str) -> bool:
@@ -107,11 +129,11 @@ def production_schemas() -> dict[str, type[BaseModel]]:
         "critic": CriticVerdict,
         "vision": VisionTranscript,
         "match": match_schema(entries, ("requirement-1",)),
-        "draft_headed_skills": draft_schema(entries, ("role-1",), entries, labelled=False),
-        "draft_unheaded_skills": draft_schema(entries, ("role-1",), entries, labelled=True),
-        "cover_letter": cover_letter_schema(entries),
+        "draft_headed_skills": draft_schema(skills=True, labelled=False),
+        "draft_unheaded_skills": draft_schema(skills=True, labelled=True),
+        "cover_letter": cover_letter_schema(),
         "structure": structure_schema(source),
-        "search_vocabulary": search_schema(entries),
+        "search_vocabulary": search_schema(),
         "posting_recovery": recovery_schema("pending-1"),
         "relevance_review": relevance_review_schema(entries, conditions=("A listed condition",)),
         "relevance_review_unconditioned": relevance_review_schema(entries, conditions=()),

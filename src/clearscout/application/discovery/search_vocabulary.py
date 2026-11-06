@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 from sqlalchemy.orm import Session
@@ -119,15 +119,12 @@ class _PreparedCompletion:
     correlation_id: str | None
 
 
-def response_schema(entry_ids: tuple[str, ...]) -> type[BaseModel]:
-    """Build a vocabulary response schema closed over the identifiers this CV produced.
+def response_schema() -> type[BaseModel]:
+    """Build the vocabulary response schema, identical for every CV record.
 
-    A proposal may cite only entries that exist, so a citation to something
-    absent cannot be expressed.
+    Screening keeps only evidence ids the record has and refuses a proposal left citing none.
     """
-    if not entry_ids:
-        raise ValidationError("Search vocabulary requires citable CV entries.")
-    evidence: Any = list[Literal[entry_ids]]  # type: ignore[valid-type]
+    evidence: Any = list[str]
     title_model = create_model(
         "ConstrainedSearchTitle",
         __config__=ConfigDict(extra="forbid"),
@@ -405,7 +402,6 @@ class SearchVocabularyService:
         provider_name = (
             self.provider.name.value if self.provider is not None else settings.provider.value
         )
-        entry_ids = tuple(entry.id for entry in citable_entries(inventory))
         carried = carried_rejections(
             self.database,
             workspace_id,
@@ -442,7 +438,7 @@ class SearchVocabularyService:
                 MAX_CLUSTERS,
                 extra_filter={"kind": ClusterKind.DOMAIN.value},
             )
-        schema = response_schema(entry_ids)
+        schema = response_schema()
         service_tier = settings.unattended_tier()
         provider = self.provider or provider_for(
             settings.provider,
@@ -503,6 +499,8 @@ class SearchVocabularyService:
         registered_source_roots: frozenset[str],
     ) -> ProposedSearch:
         """Make one vocabulary call about the CV record."""
+        if not citable_entries(inventory):
+            raise ValidationError("Search vocabulary requires citable CV entries.")
         stated_preferences = search_summary(parameters, allowed)
         stated = stated_preferences
         rejection_block = carried_rejections_block(carried)

@@ -1,0 +1,2 @@
+{"expect": {"min_lines": 8, "min_recall": 0.95}, "id": "vision-cv-academic", "input": {"reader": "cv", "source": "cv:academic_pdf"}, "split": "development", "why": "A rendered CV screenshot must come back through sources.read as at least 8 lines keeping nearly every source word."}
+{"expect": {"min_recall": 0.95}, "id": "vision-posting", "input": {"reader": "posting", "source": "posting:vision_reachable"}, "split": "development", "why": "A rendered posting screenshot must come back through from_image keeping nearly every source word."}

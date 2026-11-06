@@ -2,7 +2,7 @@
 
 It exists so the end-to-end replay test does not depend on somebody having paid
 for a cassette. The content is canned, so it proves nothing about model quality.
-Payload functions may inspect the request schema for anti-fabrication tests, or
+Payload functions may inspect the request schema or task text for anti-fabrication tests, or
 ignore it for an independent response oracle.
 """
 
@@ -14,7 +14,9 @@ from typing import Any
 
 import httpx2
 
-Payload = Callable[[dict[str, Any]], dict[str, Any]]
+from tests.support.payloads import reads_request
+
+Payload = Callable[..., dict[str, Any]]
 
 
 def _enum(node: dict[str, Any], resolve: Callable[[Any], Any]) -> list[Any]:
@@ -95,7 +97,9 @@ class FakeProviderAPI:
         key = next((candidate for candidate in self.payloads if candidate in name), None)
         if key is None:
             raise AssertionError(f"No canned payload for schema {name!r}")
-        content = json.dumps(self.payloads[key](schema))
+        respond = self.payloads[key]
+        answer = respond(schema, self._task(body)) if reads_request(respond) else respond(schema)
+        content = json.dumps(answer)
         envelope = self._envelope(content, body.get("service_tier"))
         if body.get("stream"):
             return httpx2.Response(
@@ -119,6 +123,12 @@ class FakeProviderAPI:
             fmt = body.get("text", {}).get("format", {})
         schema = fmt.get("schema", {})
         return {**schema, "title": schema.get("title") or fmt.get("name") or ""}
+
+    def _task(self, body: dict[str, Any]) -> str:
+        """Return the task text, the last text block of the user message."""
+        turns = body.get("messages") or body.get("input") or []
+        user = next(turn for turn in turns if turn.get("role") == "user")
+        return str([block for block in user["content"] if "text" in block][-1]["text"])
 
     def _envelope(self, content: str, service_tier: object = None) -> dict[str, Any]:
         """Wrap the content in the vendor's own response shape.

@@ -246,6 +246,18 @@ def test_the_critic_prompt_says_the_index_carries_each_cited_entrys_text() -> No
     assert "for who did the work, how much of it, and how far it got" in text
 
 
+def test_the_critic_prompt_asks_every_style_flag_to_quote_its_passage() -> None:
+    """The program warns only on a flag whose quote it finds in the document."""
+    text = flat("critic_system")
+    assert "Every style flag quotes, in double quotes, the exact passage it is about" in text
+
+
+def test_the_critic_prompt_asks_each_doubt_to_quote_the_evidence_it_was_compared_with() -> None:
+    text = flat("critic_system")
+    assert "`evidence_quote`" in text
+    assert "Leave `evidence_quote` empty only under `absent_from_record`" in text
+
+
 def test_the_critic_prompt_keeps_preservation_independent_from_quality() -> None:
     text = flat("critic_system")
     assert "Score each axis independently" in text
@@ -754,6 +766,20 @@ def test_the_vocabulary_prompt_states_the_term_bound_a_cluster_is_held_to(
     assert "at most 7 of them" in text
 
 
+def test_the_vocabulary_prompt_names_no_list_or_web_result_its_call_lacks() -> None:
+    """The response has only the four proposal lists, and the call has no web access."""
+    text = f"{flat('search_vocabulary_system')} {flat('search_vocabulary_user')}"
+    assert set(search_vocabulary.response_schema().model_fields) == {
+        "titles",
+        "archetypes",
+        "capabilities",
+        "domains",
+    }
+    assert "This call has no web access" in text
+    for stale in ("Both lists", "postings or leads", "verified results", "result slots"):
+        assert stale not in text, f"the vocabulary prompt still says {stale!r}"
+
+
 def test_no_prompt_asks_for_work_the_program_already_performs() -> None:
     """Substitutions and counts the code owns must not also be asked for.
 
@@ -1120,7 +1146,7 @@ def test_a_shared_vocabulary_docstring_is_prompt_text_too() -> None:
     from clearscout.application.discovery.search_vocabulary import response_schema
     from clearscout.infrastructure.providers.base import json_schema
 
-    described = _descriptions(json_schema(response_schema(("entry-1",))))
+    described = _descriptions(json_schema(response_schema()))
 
     assert "Which of two tracks a title belongs to." in described, (
         "Lane's docstring is sent as its schema description; restore it verbatim"

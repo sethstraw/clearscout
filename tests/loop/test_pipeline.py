@@ -29,7 +29,7 @@ from clearscout.infrastructure.web_fetch.company_research import ResearchSource
 from clearscout.shared.results import Finding, Outcome
 from tests.support.doubles import ScriptedPrompter, ScriptedProvider
 from tests.support.payloads import script
-from tests.support.schema import literals
+from tests.support.schema import offered as offered_in
 from tests.support.suite import (
     FIXTURES,
     POSTING,
@@ -339,9 +339,11 @@ def test_what_the_resume_trims_is_neither_the_letters_evidence_nor_the_critics(
     citable: dict[str, list[str]] = {}
     for writer in ("ResumeDraft", "CoverLetter"):
 
-        def capture(schema: Any, writer: str = writer, answer: Any = answers[writer]) -> Any:
-            citable[writer] = literals(schema, "source_ids")
-            return answer(schema)
+        def capture(
+            schema: Any, request: Any, writer: str = writer, answer: Any = answers[writer]
+        ) -> Any:
+            citable[writer] = offered_in(request, "source_ids")
+            return answer(schema, request)
 
         answers[writer] = capture
 
@@ -361,9 +363,9 @@ def test_what_the_resume_trims_is_neither_the_letters_evidence_nor_the_critics(
     letter = [entry_id for entry_id in citable["CoverLetter"] if entry_id in citable["ResumeDraft"]]
 
     assert off_page, "--trim 2 took nothing off the page"
-    assert offered == printed
-    # Education and publications print verbatim; the letter drafter never sees them.
-    assert letter == [entry_id for entry_id in printed if entry_id not in copied]
+    # Education and publications print verbatim; neither drafter sees them.
+    assert set(offered) - copied == set(printed)
+    assert set(letter) == set(printed)
 
 
 def test_trimming_removes_items_in_drop_order(
@@ -465,6 +467,53 @@ def test_a_fabricated_figure_is_caught_before_the_critic_runs(
     )
     assert not report.passed
     assert "numbers traced" in report.feedback()
+
+
+def test_bullets_drafted_under_a_mistyped_role_key_fail_verification(
+    master_cv: Path, tmp_path: Path
+) -> None:
+    """Fitting drops a role the plan never offered, so the check must see the draft itself."""
+    from clearscout.application.master_cv.cv import parse_cv
+    from clearscout.application.tailoring.pipeline.rewrite import fitted_and_checked
+    from clearscout.application.tailoring.stages.draft import (
+        DraftedLine,
+        DraftedRole,
+        ResumeDraft,
+    )
+    from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
+    from clearscout.application.tailoring.stages.select import Plan
+
+    inventory = parse_cv(master_cv)
+    settings = settings_for(master_cv, tmp_path)
+    spec = JobSpec(
+        title="Staff Data Platform Engineer",
+        company="Globex",
+        seniority=None,
+        location=None,
+        requirements=(Requirement(id="r01", text="Kafka", importance=Importance.MUST_HAVE),),
+        keywords=("Kafka",),
+        hard_gates=(),
+        origin="test",
+    )
+    bullet = next(e for e in inventory.entries if e.kind is EntryKind.BULLET)
+    role = bullet.role_key or ""
+    plan = Plan(recent_roles=(role,), role_bullets={role: (bullet.id,)})
+    line = DraftedLine(text="Rebuilt the ingestion service.", source_ids=(bullet.id,))
+    drafted = ResumeDraft(
+        summary=line, roles=(DraftedRole(role_key=f"{role}-typo", bullets=(line,)),)
+    )
+
+    _, report = fitted_and_checked(
+        drafted,
+        inventory=inventory,
+        spec=spec,
+        plan=plan,
+        guardrails=Guardrails(),
+        settings=settings,
+    )
+
+    assert not report.passed
+    assert f"{role}-typo" in report.feedback()
 
 
 def test_a_posting_that_matches_nothing_is_refused_rather_than_half_written(
@@ -769,9 +818,11 @@ def test_each_critic_is_told_the_entries_its_writer_could_cite(
     citable: dict[str, list[str]] = {}
     for writer in ("ResumeDraft", "CoverLetter"):
 
-        def capture(schema: Any, writer: str = writer, answer: Any = answers[writer]) -> Any:
-            citable[writer] = literals(schema, "source_ids")
-            return answer(schema)
+        def capture(
+            schema: Any, request: Any, writer: str = writer, answer: Any = answers[writer]
+        ) -> Any:
+            citable[writer] = offered_in(request, "source_ids")
+            return answer(schema, request)
 
         answers[writer] = capture
 
@@ -792,11 +843,14 @@ def test_each_critic_is_told_the_entries_its_writer_could_cite(
     letter_request = next(
         plan.task.text for name, plan in scripted["provider"].calls if "CoverLetter" in name
     )
-    assert offered["resume"] == citable["ResumeDraft"]
+    # Education and publications print verbatim, so the critic sees them and the drafter does not.
+    shown = set(citable["ResumeDraft"])
+    assert shown <= set(offered["resume"])
+    assert all(entry_id.startswith(("edu-", "pub-")) for entry_id in set(offered["resume"]) - shown)
     # The letter may also cite company research, which the critic reads in its own block.
     extra = [source for source in citable["CoverLetter"] if f"Source ID: {source}" in research]
     assert extra
-    assert offered["cover letter"] == [s for s in citable["CoverLetter"] if s not in extra]
+    assert set(offered["cover letter"]) == {s for s in citable["CoverLetter"] if s not in extra}
     assert all(f"[{entry_id}]" in letter_request for entry_id in offered["cover letter"])
 
 
@@ -1291,8 +1345,10 @@ def letters(*texts: str) -> Any:
     """
     remaining = list(texts)
 
-    def build(schema: Any) -> dict[str, Any]:
-        first = literals(schema, "source_ids")[0]
+    def build(schema: Any, request: Any) -> dict[str, Any]:
+        # The summary states the career span a letter sentence may restate.
+        ids = offered_in(request, "source_ids")
+        first = next((entry_id for entry_id in ids if entry_id.startswith("sum-")), ids[0])
         text = remaining.pop(0) if len(remaining) > 1 else remaining[0]
         return {
             "paragraphs": [
@@ -1578,12 +1634,12 @@ def test_missing_bullet_feedback_repairs_the_next_draft(master_cv, tmp_path, scr
     compliant = provider.script["ResumeDraft"]
     attempts = 0
 
-    def omit_then_repair(schema):
+    def omit_then_repair(schema, request):
         nonlocal attempts
         attempts += 1
-        payload = compliant(schema)
+        payload = compliant(schema, request)
         if attempts == 1:
-            first = literals(schema, "source_ids")[0]
+            first = offered_in(request, "source_ids")[0]
             payload["summary"]["source_ids"] = [first]
             payload["roles"] = []
         return payload
@@ -1609,8 +1665,8 @@ def test_a_letter_retry_edits_the_previous_attempt_rather_than_replacing_it(
     kept = "I rebuilt ingestion for the data platform."
     first = [f"{kept} Project Halyard shaped the platform.", "The record fits this posting."]
 
-    def edit(schema: Any) -> dict[str, Any]:
-        cited = literals(schema, "source_ids")[0]
+    def edit(schema: Any, request: Any) -> dict[str, Any]:
+        cited = offered_in(request, "source_ids")[0]
         requests = letter_requests(scripted)
         if len(requests) == 1:
             return {"paragraphs": [{"text": text, "source_ids": [cited]} for text in first]}
@@ -1650,7 +1706,13 @@ def unsupported_by_critic(scripted: dict[str, Any], document: str, claim: str) -
         verdict: dict[str, Any] = approving(schema)
         asked = next(plan for name, plan in reversed(provider.calls) if "CriticVerdict" in name)
         if f"tailored {document}" in asked.task.text:
-            verdict["unsupported_claims"] = [{"claim": claim, "boundary": "adjacent"}]
+            verdict["unsupported_claims"] = [
+                {
+                    "claim": claim,
+                    "evidence_quote": "Rebuilt the ingestion tier on Kafka",
+                    "boundary": "adjacent",
+                }
+            ]
         return verdict
 
     provider.script["CriticVerdict"] = critic
@@ -1723,10 +1785,10 @@ def test_a_resume_the_critic_judged_unsupported_outranks_an_earlier_uncritiqued_
     compliant = provider.script["ResumeDraft"]
     drafted = 0
 
-    def forbidden_then_compliant(schema: Any) -> dict[str, Any]:
+    def forbidden_then_compliant(schema: Any, request: Any) -> dict[str, Any]:
         nonlocal drafted
         drafted += 1
-        payload: dict[str, Any] = compliant(schema)
+        payload: dict[str, Any] = compliant(schema, request)
         if drafted == 1:
             payload["summary"]["text"] += " Project Halyard shaped the platform."
         return payload
@@ -1768,9 +1830,9 @@ def test_ignored_must_have_feedback_retains_a_failed_billed_package(
     provider = scripted["provider"]
     compliant = provider.script["ResumeDraft"]
 
-    def ignore_feedback(schema):
-        payload = compliant(schema)
-        payload["summary"]["source_ids"] = [literals(schema, "source_ids")[0]]
+    def ignore_feedback(schema, request):
+        payload = compliant(schema, request)
+        payload["summary"]["source_ids"] = [offered_in(request, "source_ids")[0]]
         payload["roles"] = []
         return payload
 
@@ -1912,6 +1974,40 @@ def test_the_vision_transcript_rejects_an_answer_with_an_undeclared_key() -> Non
         VisionTranscript.model_validate({"text": "posting text", "extra_field": "x"})
 
 
+@pytest.mark.parametrize("document", ["cv", "posting"])
+def test_the_vision_prompt_asks_for_whatever_document_the_images_hold(
+    document: str, tmp_path: Path
+) -> None:
+    """CV screenshots and posting screenshots share one reader and one prompt."""
+    from clearscout.application.config import Settings
+    from clearscout.application.master_cv import sources
+    from clearscout.application.tailoring.pipeline.models import VisionTranscript
+    from clearscout.application.tailoring.pipeline.service import vision_reader
+    from clearscout.infrastructure.providers.cache import ResponseCache
+    from clearscout.infrastructure.providers.client import Client
+    from clearscout.infrastructure.web_fetch.ingest.image import from_image
+    from clearscout.shared.costs import Ledger
+    from tests.support.imported_cv import MESSY_CV
+
+    provider = ScriptedProvider({"VisionTranscript": lambda schema: {"text": MESSY_CV}})
+    path = tmp_path / "shot.png"
+    path.write_bytes(b"\x89PNG\r\n")
+    with ResponseCache(enabled=False) as cache:
+        reader = vision_reader(
+            Client(provider=provider, settings=Settings(), cache=cache, ledger=Ledger())
+        )
+        if document == "cv":
+            sources.read(path, vision=reader)
+        else:
+            from_image(path, vision=reader)
+
+    ((_, plan),) = provider.calls
+    schema_text = json.dumps(VisionTranscript.model_json_schema())
+    prompt = f"{plan.instructions.text} {plan.task.text} {schema_text}".lower()
+    assert "transcribe" in prompt
+    assert "posting" not in prompt
+
+
 def test_retained_posting_export_names_publisher_and_effective_settings(
     master_cv, tmp_path, scripted
 ):
@@ -1934,8 +2030,8 @@ def test_each_letter_paragraph_keeps_its_citations_in_the_review_and_the_report(
     answered: list[dict[str, Any]] = []
     drafted = scripted["provider"].script["CoverLetter"]
 
-    def recording(schema: Any) -> dict[str, Any]:
-        payload: dict[str, Any] = drafted(schema)
+    def recording(schema: Any, request: Any) -> dict[str, Any]:
+        payload: dict[str, Any] = drafted(schema, request)
         answered.append(payload)
         return payload
 
@@ -1962,12 +2058,12 @@ def failing_the_first_draft(provider: ScriptedProvider) -> None:
     compliant = provider.script["ResumeDraft"]
     drafts = 0
 
-    def omit_then_repair(schema: Any) -> dict[str, Any]:
+    def omit_then_repair(schema: Any, request: Any) -> dict[str, Any]:
         nonlocal drafts
         drafts += 1
-        payload: dict[str, Any] = compliant(schema)
+        payload: dict[str, Any] = compliant(schema, request)
         if drafts == 1:
-            payload["summary"]["source_ids"] = [literals(schema, "source_ids")[0]]
+            payload["summary"]["source_ids"] = [offered_in(request, "source_ids")[0]]
             payload["roles"] = []
         return payload
 
@@ -1991,10 +2087,10 @@ def test_a_required_phrase_the_first_draft_drops_is_named_in_the_redraft(
     compliant = provider.script["ResumeDraft"]
     drafts = 0
 
-    def drop_then_restore(schema: Any) -> dict[str, Any]:
+    def drop_then_restore(schema: Any, request: Any) -> dict[str, Any]:
         nonlocal drafts
         drafts += 1
-        payload: dict[str, Any] = compliant(schema)
+        payload: dict[str, Any] = compliant(schema, request)
         return _without(payload, "schema registry") if drafts == 1 else payload
 
     provider.script["ResumeDraft"] = drop_then_restore

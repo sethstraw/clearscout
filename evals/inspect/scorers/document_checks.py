@@ -126,8 +126,29 @@ def verifier_contract() -> Any:
     return score
 
 
-def verifier_result() -> Any:
-    """Return the scorer for a live attempt, which passes when the shipped gate is clear."""
+def _attempt_summary(attempt: dict[str, Any]) -> dict[str, Any]:
+    failed = _by_outcome(attempt, Outcome.FAIL)
+    return {"attempt": attempt.get("attempt"), "passed": not failed, "failed_checks": failed}
+
+
+def _attempts(solver_output: dict[str, Any]) -> dict[str, Any]:
+    """Return how attempt one and the kept attempt of a redrafting run scored, or nothing."""
+    attempts = solver_output.get("attempts")
+    if not isinstance(attempts, list) or not attempts:
+        return {}
+    kept = next((item for item in attempts if item.get("kept")), attempts[-1])
+    return {
+        "attempts_used": len(attempts),
+        "attempt_one": _attempt_summary(attempts[0]),
+        "final": _attempt_summary(kept),
+    }
+
+
+def verifier_result(*, redrafting: bool = False) -> Any:
+    """Return the scorer for a live run, which passes when the kept attempt clears the gate.
+
+    A redrafting run also reports how attempt one scored beside the kept one.
+    """
 
     def score(sample: dict[str, Any], solver_output: dict[str, Any]) -> dict[str, Any]:
         del sample
@@ -138,15 +159,23 @@ def verifier_result() -> Any:
             if failed
             else "every shipped check passed"
         )
+        metadata = _attempts(solver_output)
+        if metadata:
+            explanation += (
+                f"; attempt 1 {'passed' if metadata['attempt_one']['passed'] else 'failed'}, "
+                f"kept attempt {metadata['final']['attempt']} of {metadata['attempts_used']}"
+            )
         return {
             **_score(failed, warned, solver_output),
             "value": not failed,
-            "metadata": {},
+            "metadata": metadata,
             "explanation": explanation,
         }
 
-    # The live smoke refuses an output lacking this field.
-    score.required_fields = ("findings",)  # type: ignore[attr-defined]
+    # The live smoke refuses an output lacking any of these fields.
+    score.required_fields = (  # type: ignore[attr-defined]
+        ("findings", "attempts") if redrafting else ("findings",)
+    )
     return score
 
 
@@ -168,6 +197,16 @@ def _verdict_summary(solver_output: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _misquoted(solver_output: dict[str, Any]) -> list[str]:
+    """Return the shipped warning for each doubt whose evidence quote the record lacks."""
+    rows = solver_output.get("misquoted_evidence") or []
+    return [str(row.get("detail", "")) for row in rows if isinstance(row, dict)]
+
+
+def _misquote_note(misquoted: list[str]) -> str:
+    return f"; {len(misquoted)} misquoted doubt(s): {' | '.join(misquoted)}" if misquoted else ""
+
+
 def critic_contract() -> Any:
     """Return the scorer for a canned verdict whose shipped outcome the sample declares."""
 
@@ -178,11 +217,15 @@ def critic_contract() -> Any:
             raise ValueError("a scripted critic sample must declare expect.critic_outcome")
         observed = _verdict_outcome(solver_output)
         summary = _verdict_summary(solver_output)
+        misquoted = _misquoted(solver_output)
         return {
-            "value": observed == expected,
+            "value": observed == expected and not misquoted,
             "critic": {"outcome": observed, **summary},
-            "metadata": {"expected_critic_outcome": expected},
-            "explanation": f"expected {expected}, got {observed}; {summary['finding_detail']}",
+            "metadata": {"expected_critic_outcome": expected, "misquoted_doubts": len(misquoted)},
+            "explanation": (
+                f"expected {expected}, got {observed}; {summary['finding_detail']}"
+                f"{_misquote_note(misquoted)}"
+            ),
         }
 
     return score
@@ -206,18 +249,21 @@ def critic_doubt_contract() -> Any:
         claims = summary["verdict"].get("unsupported_claims") or []
         doubted = any(planted is None or _catches(claim, planted) for claim in claims)
         boundaries = [str(claim.get("boundary", "")) for claim in claims]
+        misquoted = _misquoted(solver_output)
         return {
-            "value": doubted == declared,
+            "value": doubted == declared and not misquoted,
             "critic": {"outcome": outcome, **summary},
             "metadata": {
                 "expected_unsupported_claim": declared,
                 "observed_boundaries": boundaries,
                 "expected_critic_outcome": expected_outcome,
                 "outcome_matches": outcome == expected_outcome,
+                "misquoted_doubts": len(misquoted),
             },
             "explanation": (
                 f"expected doubt={declared}, got doubt={doubted}"
                 f"{' via ' + ', '.join(boundaries) if boundaries else ''}"
+                f"{_misquote_note(misquoted)}"
             ),
         }
 

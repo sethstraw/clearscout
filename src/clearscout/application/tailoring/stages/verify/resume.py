@@ -44,21 +44,23 @@ def check(
     spec: JobSpec,
     guardrails: Guardrails,
     excluded: frozenset[str] = frozenset(),
+    drafted: ResumeDraft | None = None,
 ) -> Report:
     """Run every programmatic check and return the findings and keyword coverage.
 
     ``excluded`` names what fitting dropped: a line resting only on those entries,
-    and a dropped publication, answers nothing.
+    and a dropped publication, answers nothing. ``drafted`` is the draft before
+    fitting, so a role key fitting dropped still fails provenance.
     """
     coverage = keyword_coverage(markdown, spec)
     # Copied master-CV text is an input defect, not a rewrite failure.
     written = "\n".join(line.text for line in draft.lines())
     # Copied and trimmed entries were never the drafter's to restore.
     shown = set(plan.drafted_ids()) - excluded
-    drafted = {entry.id: entry.full_text for entry in inventory.entries if entry.id in shown}
+    shown_text = {entry.id: entry.full_text for entry in inventory.entries if entry.id in shown}
     recorded = [entry.full_text for entry in inventory.entries if entry.id not in shown]
     findings = (
-        provenance(draft, plan),
+        provenance(draft, plan, drafted),
         must_have_coverage(draft, plan, spec, excluded),
         numbers(draft, inventory),
         duration_scope(draft.lines(), inventory),
@@ -71,7 +73,7 @@ def check(
         characters(written, guardrails, source="the drafted text"),
         characters_in_source(markdown, written, guardrails),
         forbidden(markdown, written, guardrails),
-        required(markdown, guardrails, drafted=drafted, recorded=recorded),
+        required(markdown, guardrails, drafted=shown_text, recorded=recorded),
         protected(markdown, guardrails),
         coverage_finding(coverage),
     )

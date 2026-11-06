@@ -15,7 +15,7 @@ letter, so a critic result belongs to the critic rather than to a fresh draft.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -43,6 +43,7 @@ from evals.support.documents import (
     draft_result,
     fitted_resume,
     letter_result,
+    redrafted_resume,
     research_sources,
 )
 
@@ -104,13 +105,20 @@ class _DocumentLiveSolver:
 
 @dataclass(frozen=True)
 class _DraftLiveSolver(_DocumentLiveSolver):
-    """Write attempt one live, then fit it and score what prints through ``verify.check``."""
+    """Write the resume live, then fit it and score what prints through ``verify.check``.
+
+    With more than one attempt, a failing draft is rewritten through production's loop.
+    """
+
+    attempts: int = 1
 
     def _measure(
         self, sample: dict[str, Any], context: DocumentContext, client: Any
     ) -> dict[str, Any]:
-        """Draft the resume live and check the first attempt."""
+        """Draft the resume live and check the attempt production would keep."""
         del sample
+        if self.attempts > 1:
+            return draft_result(*redrafted_resume(client, context, self.attempts))
         result = draft(client, context.inventory, context.spec, context.plan, context.guardrails)
         return draft_result(*fitted_resume(result, context))
 
@@ -164,7 +172,9 @@ class _CriticLiveSolver(_DocumentLiveSolver):
             document=fixed.document,
             research=fixed.research,
         )
-        return critic_result(verdict, draws, fixed.check, document=fixed.markdown)
+        return critic_result(
+            verdict, draws, fixed.check, document=fixed.markdown, inventory=context.inventory
+        )
 
 
 # Each document family, keyed by the stage its task module declares. The shell
@@ -176,16 +186,23 @@ FAMILIES: dict[Stage, tuple[type[_DocumentLiveSolver], Sequence[str], str]] = {
 }
 
 
-def document_live_solver(stage: Stage, dataset: Path) -> _DocumentLiveSolver:
+def document_live_solver(
+    stage: Stage, dataset: Path, *, draft_attempts: int = 1
+) -> _DocumentLiveSolver:
     """Return the prepared solver that runs one document family's stage live."""
     if stage not in FAMILIES:
         raise RuntimeError(f"Live evaluation refused: no document family runs the {stage} stage.")
+    if draft_attempts != 1 and stage is not Stage.DRAFT:
+        raise RuntimeError(f"Live evaluation refused: the {stage} stage does not redraft.")
     kind, prompt_names, origin = FAMILIES[stage]
     run_metadata = paid_stage_metadata(stage, prompt_names, dataset)
+    if draft_attempts != 1:
+        # A second attempt is a second paid call, so the bound run names how many it allows.
+        run_metadata["draft_attempts"] = draft_attempts
     provider_name = ProviderName(run_metadata["provider"])
     settings = run_settings(provider_name, stage)
     database, workspace_id = billing_target()
-    return kind(
+    solver = kind(
         run_metadata=run_metadata,
         stage=stage,
         prompt_names=tuple(prompt_names),
@@ -197,3 +214,6 @@ def document_live_solver(stage: Stage, dataset: Path) -> _DocumentLiveSolver:
         workspace_id=workspace_id,
         origin=origin,
     )
+    if isinstance(solver, _DraftLiveSolver) and draft_attempts != 1:
+        return replace(solver, attempts=draft_attempts)
+    return solver

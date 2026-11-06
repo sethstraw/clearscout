@@ -235,6 +235,7 @@ def fitted_and_checked(
         spec=spec,
         guardrails=guardrails,
         excluded=fitted.excluded,
+        drafted=fitted.draft,
     )
     return fitted, verification
 
@@ -262,7 +263,9 @@ def critiqued(
         posting_hint=posting_hint,
         active_disputes=active_disputes,
     )
-    return verification.with_critic(verdict, draws=draws, document=fitted.markdown)
+    return verification.with_critic(
+        verdict, draws=draws, document=fitted.markdown, inventory=inventory
+    )
 
 
 @dataclass(frozen=True)
@@ -338,7 +341,7 @@ def _render_cover_letter(
             research=research,
         )
         critiqued = verification.with_critic(
-            verdict, verify_stage.LETTER_CRITIC, draws, document=rendered
+            verdict, verify_stage.LETTER_CRITIC, draws, document=rendered, inventory=inventory
         )
         return letter, critiqued
 

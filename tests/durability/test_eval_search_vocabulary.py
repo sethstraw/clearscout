@@ -22,6 +22,7 @@ from evals.support.scripted_provider import ScriptedProvider as EvalScriptedProv
 from clearscout.application.config import Stage
 from clearscout.application.discovery.derived_vocabulary_rules import (
     ProposedArchetype,
+    ProposedCluster,
     ProposedTitle,
 )
 from clearscout.application.discovery.search_vocabulary import (
@@ -54,10 +55,25 @@ def _archetype(name: str, *ids: str) -> ProposedArchetype:
     return ProposedArchetype(name=name, because="The record shows it.", evidence_ids=list(ids))
 
 
+def _cluster(name: str, *ids: str) -> ProposedCluster:
+    return ProposedCluster(
+        name=name, terms=[name], because="The record shows it.", evidence_ids=list(ids)
+    )
+
+
 def _score(
-    case_id: str, titles: list[ProposedTitle], archetypes: list[ProposedArchetype]
+    case_id: str,
+    titles: list[ProposedTitle],
+    archetypes: list[ProposedArchetype],
+    capabilities: list[ProposedCluster] | None = None,
+    domains: list[ProposedCluster] | None = None,
 ) -> dict[str, Any]:
-    proposed = ProposedSearch(titles=titles, archetypes=archetypes)
+    proposed = ProposedSearch(
+        titles=titles,
+        archetypes=archetypes,
+        capabilities=capabilities or [],
+        domains=domains or [],
+    )
     score: dict[str, Any] = proposal_usefulness()(_case(case_id), proposal_result(proposed))
     return score
 
@@ -106,6 +122,51 @@ def test_grounded_acceptable_proposals_pass() -> None:
     assert score["metadata"]["citation_support"] == 1.0
     assert score["metadata"]["program_refused"] == 0
     assert 0 < score["metadata"]["recall"] < 1.0
+
+
+def test_grounded_clusters_pass_and_are_ruled_on_by_the_program() -> None:
+    score = _score(
+        "excluded-titles",
+        GOOD_TITLES,
+        GOOD_ARCHETYPES,
+        capabilities=[_cluster("Streaming ingestion", "b-b279601d")],
+        domains=[_cluster("Healthcare data", "ctx-d88634a9")],
+    )
+    assert score["value"] is True
+    clusters = score["metadata"]["clusters"]
+    assert [(row["kind"], row["program_refused_because"]) for row in clusters["proposals"]] == [
+        ("capability", ""),
+        ("domain", ""),
+    ]
+    assert score["metadata"]["clusters_proposed"] == 2
+
+
+@pytest.mark.parametrize(
+    "ids", [("b-invented",), ("b-b279601d", "b-invented")], ids=["only", "beside-a-real-one"]
+)
+def test_a_cluster_citing_an_id_the_cv_lacks_fails_by_name(ids: tuple[str, ...]) -> None:
+    score = _score(
+        "excluded-titles",
+        GOOD_TITLES,
+        GOOD_ARCHETYPES,
+        capabilities=[_cluster("Streaming ingestion", *ids)],
+    )
+    assert score["value"] is False
+    assert score["checks"]["failed"] == ["cluster_evidence"]
+    (row,) = score["metadata"]["clusters"]["proposals"]
+    assert row["unknown_evidence_ids"] == ["b-invented"]
+
+
+def test_a_duplicate_cluster_is_reported_refused_without_failing() -> None:
+    score = _score(
+        "excluded-titles",
+        GOOD_TITLES,
+        GOOD_ARCHETYPES,
+        domains=[_cluster("Healthcare data", "ctx-d88634a9")] * 2,
+    )
+    assert score["value"] is True
+    assert score["metadata"]["clusters"]["program_refused"] == 1
+    assert score["metadata"]["clusters"]["proposals"][1]["program_refused_because"] == "duplicate"
 
 
 def test_an_off_level_title_counts_against_precision() -> None:

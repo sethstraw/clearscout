@@ -80,7 +80,7 @@ def _header(log: Path) -> dict[str, Any]:
 @pytest.mark.parametrize(
     ("task", "dataset", "total"),
     [
-        ("draft_scripted_task.py", "draft_cases.jsonl", 12),
+        ("draft_scripted_task.py", "draft_cases.jsonl", 14),
         ("cover_scripted_task.py", "cover_cases.jsonl", 14),
         ("critic_scripted_task.py", "critic_cases.jsonl", 33),
     ],
@@ -167,7 +167,7 @@ def test_the_draft_log_names_which_checks_failed_and_how_often(tmp_path: Path) -
         "duration scope": 1,
         "first person": 1,
         "must-have coverage": 1,
-        "numbers traced": 2,
+        "numbers traced": 3,
         "sources cited": 1,
     }
 
@@ -533,6 +533,38 @@ def test_a_planted_claim_states_no_figure_the_cited_evidence_lacks() -> None:
         assert not re.search(r"\d", case["metadata"]["planted"]["line"])
 
 
+def _doubting(sample: dict[str, Any], quote: str, boundary: str) -> dict[str, Any]:
+    """Return the sample with its canned verdict doubting one claim under ``quote``."""
+    doubted = copy.deepcopy(sample)
+    doubted["metadata"]["scripted_verdict"]["unsupported_claims"] = [
+        {"claim": "Modeled the reporting warehouse", "boundary": boundary, "evidence_quote": quote}
+    ]
+    return doubted
+
+
+@pytest.mark.parametrize(
+    ("quote", "boundary", "misquoted"),
+    [
+        ("Led the Mars colony relocation program", "adjacent", 1),
+        ("", "adjacent", 1),
+        ("", "absent_from_record", 0),
+        ("Modeled the clinical reporting warehouse", "adjacent", 0),
+    ],
+)
+def test_a_critic_row_counts_a_doubt_whose_quote_the_record_does_not_hold(
+    quote: str, boundary: str, misquoted: int
+) -> None:
+    """A quote the CV lacks fails the row, unless the doubt says the record is silent."""
+    sample = _doubting(_case("critic_cases.jsonl", "adequate_quality"), quote, boundary)
+
+    for scorer in (critic_contract(), critic_doubt_contract()):
+        scored = scorer(sample, critic_scripted_solver()(sample))
+
+        assert scored["metadata"]["misquoted_doubts"] == misquoted
+        if misquoted:
+            assert scored["value"] is False
+
+
 def test_a_live_critic_row_without_a_verdict_is_refused() -> None:
     """A missing verdict is the one thing this family cannot score."""
     with pytest.raises(ValueError, match="no verdict"):
@@ -588,6 +620,7 @@ def test_the_solver_never_sees_the_checks_its_sample_declares() -> None:
     ("task", "stage"),
     [
         ("draft_live_task.py", Stage.DRAFT),
+        ("draft_redraft_live_task.py", Stage.DRAFT),
         ("cover_live_task.py", Stage.COVER),
         ("critic_live_task.py", Stage.CRITIC),
         ("match_live_task.py", Stage.MATCH),
@@ -742,7 +775,11 @@ def test_a_live_critic_row_keeps_what_each_draw_doubted_flagged_and_advised(
         {
             **scores,
             "unsupported_claims": [
-                {"claim": "Led a team of twelve analysts.", "boundary": "team_contribution"}
+                {
+                    "claim": "Led a team of twelve analysts.",
+                    "evidence_quote": "Worked on platform architecture within a team",
+                    "boundary": "team_contribution",
+                }
             ],
             "style_flags": ["stacked adjectives"],
             "weaknesses": ["The summary repeats the headline."],
@@ -772,6 +809,123 @@ def test_a_live_critic_row_keeps_what_each_draw_doubted_flagged_and_advised(
 
     assert output["draws"] == answers
     assert output["verdict"]["unsupported_claims"][0]["corroboration"] == 1
+
+
+def _scripted_draft_payload(sample: dict[str, Any], scripted: dict[str, Any]) -> dict[str, Any]:
+    """Render a canned resume as the drafting schema receives it for this sample's plan."""
+    from evals.support.documents import drafted_payload
+
+    from clearscout.application.tailoring.stages.draft import skills_are_headed
+
+    context = document_context(sample)
+    entries = [context.inventory.by_id(entry_id) for entry_id in context.plan.skill_ids]
+    return drafted_payload(scripted, context, labelled=not skills_are_headed(entries))
+
+
+def _redraft_solver(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    database_url: str,
+    answers: list[dict[str, Any]],
+) -> tuple[Any, Any]:
+    """Return a two-attempt live draft solver whose provider answers ``answers`` in order."""
+    from evals.inspect.tasks import draft_redraft_live_task
+    from evals.support import client as eval_client
+
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
+    from tests.support.doubles import ScriptedProvider
+
+    database = Database(database_url)
+    try:
+        with database.session() as session:
+            session.add(Workspace(slug="ws", name="Workspace"))
+    finally:
+        database.dispose()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "14")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
+    calls = iter(answers)
+    provider = ScriptedProvider(script={"ResumeDraft": lambda _schema: next(calls)})
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "test-key")
+    monkeypatch.setattr(eval_client, "provider_for", lambda provider_name, key: provider)
+    return draft_redraft_live_task.solver(), provider
+
+
+def test_a_redrafting_live_run_rewrites_a_failed_attempt_through_the_production_loop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, durable_database_url: str
+) -> None:
+    """Attempt one's failing checks reach attempt two as feedback; the kept attempt scores."""
+    sample = _case("draft_cases.jsonl", "production_sized_invented_figure")
+    clean = _case("draft_cases.jsonl", "production_sized_clean")["metadata"]["scripted_draft"]
+    answers = [
+        _scripted_draft_payload(sample, sample["metadata"]["scripted_draft"]),
+        _scripted_draft_payload(sample, clean),
+    ]
+    solver, provider = _redraft_solver(tmp_path, monkeypatch, durable_database_url, answers)
+
+    try:
+        output = solver(sample)
+    finally:
+        solver.database.dispose()
+
+    assert solver.run_metadata["draft_attempts"] == 2
+    assert [call[0] for call in provider.calls] == ["ConstrainedResumeDraft"] * 2
+    assert "1,900" in provider.calls[1][1].task.text
+    assert [(item["attempt"], item["kept"]) for item in output["attempts"]] == [
+        (1, False),
+        (2, True),
+    ]
+    score = verifier_result(redrafting=True)(sample, output)
+    assert score["value"] is True
+    assert score["metadata"]["attempt_one"] == {
+        "attempt": 1,
+        "passed": False,
+        "failed_checks": ["numbers traced"],
+    }
+    assert score["metadata"]["final"] == {"attempt": 2, "passed": True, "failed_checks": []}
+
+
+def test_a_redrafting_live_run_stops_after_a_clean_first_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, durable_database_url: str
+) -> None:
+    sample = _case("draft_cases.jsonl", "production_sized_clean")
+    answers = [_scripted_draft_payload(sample, sample["metadata"]["scripted_draft"])]
+    solver, provider = _redraft_solver(tmp_path, monkeypatch, durable_database_url, answers)
+
+    try:
+        output = solver(sample)
+    finally:
+        solver.database.dispose()
+
+    assert len(provider.calls) == 1
+    score = verifier_result(redrafting=True)(sample, output)
+    assert score["value"] is True
+    assert score["metadata"]["attempts_used"] == 1
+    assert score["metadata"]["attempt_one"]["passed"] is True
+
+
+def test_only_the_draft_family_takes_a_second_attempt() -> None:
+    with pytest.raises(RuntimeError, match="does not redraft"):
+        document_live.document_live_solver(
+            Stage.COVER, FIXTURES / "cover_cases.jsonl", draft_attempts=2
+        )
+
+
+def test_the_redraft_scorer_requires_the_attempts_its_smoke_reads() -> None:
+    assert verifier_result(redrafting=True).required_fields == ("findings", "attempts")
+    assert verifier_result().required_fields == ("findings",)
+
+
+def test_the_production_sized_draft_cases_carry_ten_requirements_and_keywords() -> None:
+    for case_id in ("production_sized_clean", "production_sized_invented_figure"):
+        spec = _case("draft_cases.jsonl", case_id)["job_spec"]
+        musts = [item for item in spec["requirements"] if item["importance"] == "must_have"]
+        assert len(spec["requirements"]) >= 10, case_id
+        assert len(musts) >= 8, case_id
+        assert spec["keywords"], case_id
 
 
 def test_a_live_letter_critique_is_asked_as_the_product_asks_about_a_letter(
