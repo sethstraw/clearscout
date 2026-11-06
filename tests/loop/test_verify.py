@@ -2370,6 +2370,9 @@ SOURCE_TALK = [
     ),
     "Adatum, as its posting notes, runs ingestion for 40 carriers.",
     "Adatum's posting stresses schema compatibility.",
+    "Adatum's Data Engineer posting places schema work ahead of dashboards.",
+    "The Senior Data Engineer listing stresses schema compatibility.",
+    "The posting also identifies clearance as a must.",
     "The team named in the job description runs ingestion for 40 carriers.",
     *ROLE_DEMANDS,
     *SUPPLY_TALK,
@@ -2418,6 +2421,9 @@ def test_a_letter_sentence_about_the_posting_or_research_is_sent_back(
         "I wrote the data sources provided to analysts each morning.",
         "Details were provided to auditors within a day of each request.",
         "No information was given to nurses before the alert went live.",
+        "The real estate listing shows live availability to renters.",
+        "The quarterly listing review places each vendor in a tier.",
+        "My team identifies drift in each nightly load.",
     ],
 )
 def test_a_letter_sentence_about_the_employer_or_the_work_is_not_source_talk(

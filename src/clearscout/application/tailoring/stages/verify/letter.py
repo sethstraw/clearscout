@@ -78,6 +78,8 @@ _SERIES = re.compile(rf"\b(?:{_TERM}(?:,| and| or) +){{2,}}(?:and |or )?{_TERM}"
 # so research counts only when attributed ("as the research notes") or as "company research".
 _DOCUMENT_NOUN = (
     r"(?:(?:the|this|that|its|their|your|[A-Z][\w&-]*['\u2019]s)\s+)"
+    # A job title before the noun counts only when capitalized: "the Data Engineer posting".
+    r"(?-i:(?:[A-Z][\w&/+-]*\s+){0,3})"
     r"(?:(?:job|role|position)\s+(?:posting|description|listing|ad(?:vert(?:isement)?)?)"
     r"|posting|listing)"
 )
@@ -89,7 +91,7 @@ _SOURCE_VERB = (
     r"(?:emphasi[sz]es|notes|says|states|mentions|describes|highlights|stresses|lists"
     r"|asks(?:\s+for)?|calls\s+for|seeks|requires|wants|looks\s+for|focuses\s+on"
     r"|centers\s+on|points\s+to|names|signals|suggests|indicates|outlines|specifies"
-    r"|underscores|references|frames|puts|places|shows)\b"
+    r"|underscores|identifies|references|frames|puts|places|shows)\b"
 )
 _ROLE_DEMAND = (
     r"^\W*(?:This|The)\s+(?:role|position|opening)\s+(?:also\s+)?"
