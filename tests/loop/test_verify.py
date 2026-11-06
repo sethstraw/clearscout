@@ -953,6 +953,50 @@ def test_a_style_flag_on_a_passing_read_warns_without_asking_for_a_rewrite(check
     assert finding.detail.endswith("quality mean 4.0/5; 1 style flag, listed first")
 
 
+CRITIQUED = (
+    "## Summary\n\nSpearheaded the ingestion rebuild on Kafka.\n\n"
+    "- Spearheaded the schema registry design and its compatibility rules\n"
+)
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        'Bullets repeat "Spearheaded the schema registry" phrasing.',
+        "Bullets repeat 'spearheaded the schema registry' phrasing.",
+        'The summary reads "Spearheaded the ingestion ... on Kafka" twice.',
+    ],
+)
+def test_a_style_flag_quoting_the_document_warns(flag: str) -> None:
+    finding = critic_finding(_verdict(style_flags=[flag]), document=CRITIQUED)
+
+    assert (finding.outcome, finding.redraftable) == (Outcome.WARN, False)
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "Three bullets open with Spearheaded.",
+        'Bullets repeat "Spearheaded" phrasing.',
+        'The summary says "Led the data platform rebuild" twice.',
+    ],
+)
+def test_a_style_flag_that_locates_nothing_in_the_document_passes_and_stays_listed(
+    flag: str,
+) -> None:
+    """A flag with no quoted span of the critiqued text has named no defect to fix."""
+    finding = critic_finding(_verdict(style_flags=[flag]), document=CRITIQUED)
+
+    assert finding.outcome is Outcome.PASS
+    assert finding.advisories == (flag,)
+
+
+def test_a_weakness_warns_whether_or_not_it_quotes_the_document() -> None:
+    verdict = _verdict(weaknesses=["The Kafka latency outcome (b-a4aa0046) is not used."])
+
+    assert critic_finding(verdict, document=CRITIQUED).outcome is Outcome.WARN
+
+
 def test_a_style_flag_on_a_below_floor_warning_is_named_in_its_detail() -> None:
     verdict = _verdict(readability=2, style_flags=["Three bullets open with Spearheaded.", "x"])
 

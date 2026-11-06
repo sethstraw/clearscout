@@ -35,6 +35,11 @@ TEAMTAILOR_BOARD = re.compile(
 # A career site Teamtailor serves on the employer's own domain links Teamtailor's
 # own site and publishes its feed on the page's host.
 TEAMTAILOR_SITE = re.compile(HOST_START + r"www\.teamtailor\.com" + HOST_END, re.IGNORECASE)
+# The same site loads its career-site bundle in the head, so it is found when the
+# footer link falls past the bytes read for identification.
+TEAMTAILOR_ASSETS = re.compile(
+    HOST_START + r"[a-z0-9-]+\.teamtailor-cdn\.com/assets/careersite-", re.IGNORECASE
+)
 
 TEAMTAILOR_PAGE = 100
 
@@ -65,7 +70,7 @@ def _read(fetcher: BoardTransport, employer: str, groups: dict[str, str], url: s
 
 PLATFORM = BoardPlatform(
     name="teamtailor",
-    board_patterns=(TEAMTAILOR_BOARD, TEAMTAILOR_SITE),
+    board_patterns=(TEAMTAILOR_BOARD, TEAMTAILOR_SITE, TEAMTAILOR_ASSETS),
     adapter=_read,
     job_patterns=(TEAMTAILOR_JOB,),
     source_roots=(

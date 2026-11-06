@@ -430,8 +430,9 @@ def applied(
     document = draft_stage.Document(
         result.draft, inventory, result.plan, settings, guardrails, excluded
     )
+    markdown = document.markdown()
     checked = verify_stage.check(
-        markdown=document.markdown(),
+        markdown=markdown,
         draft=document.printed(),
         # The original plan: rejecting a role's lines does not withdraw that role's
         # evidence from what a citation may name.
@@ -441,11 +442,15 @@ def applied(
         guardrails=guardrails,
         excluded=excluded,
     )
-    return replace(result, verification=_with_critic(checked, result, verification)), document
+    critiqued = _with_critic(checked, result, verification, markdown)
+    return replace(result, verification=critiqued), document
 
 
 def _with_critic(
-    checked: verify_stage.Report, result: Applied, verification: verify_stage.Report
+    checked: verify_stage.Report,
+    result: Applied,
+    verification: verify_stage.Report,
+    markdown: str,
 ) -> verify_stage.Report:
     """Carry the critic's verdict forward only where it still describes the text.
 
@@ -464,7 +469,9 @@ def _with_critic(
             if finding.check == verify_stage.CRITIC_CHECK
         )
         return checked.without_critic(next(skipped, "No critique was asked for this draft."))
-    return checked.with_critic(verification.critic, draws=verification.critic_draws)
+    return checked.with_critic(
+        verification.critic, draws=verification.critic_draws, document=markdown
+    )
 
 
 def _without(plan: Plan, dropped: tuple[str, ...]) -> Plan:

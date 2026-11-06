@@ -42,6 +42,8 @@ MINIMUM_PRESERVATION = 4
 MINIMUM_QUALITY = 3
 
 _QUOTED = re.compile('["\u201c]([^"\u201c\u201d]+)["\u201d]')
+_SINGLE_QUOTED = re.compile(r"(?<![A-Za-z])'([^']{6,})'(?![A-Za-z])")
+_ELLIPSIS = re.compile("\\.\\.\\.|\u2026")
 
 
 def doubts_support(verdict: CriticVerdict) -> bool:
@@ -242,17 +244,22 @@ def _merged_doubt(group: Sequence[DoubtedClaim]) -> DoubtedClaim:
 
 
 def critic_finding(
-    verdict: CriticVerdict, check: str = CRITIC_CHECK, *, uncitable: Collection[str] = ()
+    verdict: CriticVerdict,
+    check: str = CRITIC_CHECK,
+    *,
+    uncitable: Collection[str] = (),
+    document: str | None = None,
 ) -> Finding:
     """Convert the critic's verdict into a finding with explicit quality floors.
 
     Preservation is the non-negotiable gate, and very weak alignment or specificity
     triggers a rewrite. Very weak prose, merely adequate quality, and a style flag
-    are warnings. Style flags, weaknesses, and guidance the detail does not already
-    quote ride along as advisories.
+    are warnings; given the critiqued ``document``, only a flag quoting it warns.
+    Style flags, weaknesses, and guidance the detail does not already quote ride
+    along as advisories.
     """
     guidance = marked_uncitable(verdict.guidance, uncitable)
-    finding = _critic_verdict_finding(verdict, check, guidance)
+    finding = _critic_verdict_finding(verdict, check, guidance, document)
     noted = [*verdict.style_flags, *verdict.weaknesses]
     advisories = tuple(marked_uncitable(text, uncitable) for text in noted)
     if guidance and guidance not in finding.detail:
@@ -260,7 +267,30 @@ def critic_finding(
     return replace(finding, advisories=advisories)
 
 
-def _critic_verdict_finding(verdict: CriticVerdict, check: str, guidance: str) -> Finding:
+def _locates(flag: str, folded_document: str) -> bool:
+    """Return whether a flag quotes three or more words the document holds verbatim."""
+    for quoted in (*_QUOTED.findall(flag), *_SINGLE_QUOTED.findall(flag)):
+        fragments = [part for part in map(normalize_text, _ELLIPSIS.split(quoted)) if part]
+        if sum(len(part.split()) for part in fragments) < QUOTED_CLAIM_WORDS:
+            continue
+        if all(f" {part} " in f" {folded_document} " for part in fragments):
+            return True
+    return False
+
+
+def _noted(verdict: CriticVerdict, document: str | None) -> bool:
+    """Whether a passing verdict lists a weakness, or a style flag that quotes the document."""
+    if verdict.weaknesses:
+        return True
+    if document is None:
+        return bool(verdict.style_flags)
+    folded = normalize_text(document)
+    return any(_locates(flag, folded) for flag in verdict.style_flags)
+
+
+def _critic_verdict_finding(
+    verdict: CriticVerdict, check: str, guidance: str, document: str | None = None
+) -> Finding:
     """Return the critic's outcome and the detail a redraft is sent when it fails."""
     if verdict.unsupported_claims:
         detail = "unsupported claims: " + "; ".join(
@@ -299,7 +329,7 @@ def _critic_verdict_finding(verdict: CriticVerdict, check: str, guidance: str) -
     if verdict.weaknesses:
         count = len(verdict.weaknesses)
         detail += f"; {count} weakness{'' if count == 1 else 'es'} listed"
-    noted = bool(verdict.style_flags or verdict.weaknesses)
+    noted = _noted(verdict, document)
     return Finding(
         check,
         Outcome.PASS if strong and not noted else Outcome.WARN,

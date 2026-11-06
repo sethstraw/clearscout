@@ -164,7 +164,7 @@ class _CriticLiveSolver(_DocumentLiveSolver):
             document=fixed.document,
             research=fixed.research,
         )
-        return critic_result(verdict, draws, fixed.check)
+        return critic_result(verdict, draws, fixed.check, document=fixed.markdown)
 
 
 # Each document family, keyed by the stage its task module declares. The shell

@@ -834,6 +834,33 @@ def test_the_recorded_critic_finding_names_evidence_and_requirements_by_their_wo
     assert f"Lead with [{entry.id}] to answer r01." in kept.detail
 
 
+@pytest.mark.parametrize(
+    ("flag", "outcome"),
+    [
+        ("Several bullets open the same way.", "pass"),
+        ('The heading "Staff Systems Engineer" repeats in the summary.', "warn"),
+    ],
+)
+def test_the_resume_critic_warns_on_a_style_flag_only_when_it_quotes_the_page(
+    master_cv: Path, tmp_path: Path, scripted: dict[str, Any], flag: str, outcome: str
+) -> None:
+    provider = scripted["provider"]
+    leaning_on_transferable(provider.script)
+    approving = provider.script["CriticVerdict"]
+
+    def critic(schema: Any) -> dict[str, Any]:
+        verdict: dict[str, Any] = approving(schema)
+        verdict["style_flags"] = [flag]
+        return verdict
+
+    provider.script["CriticVerdict"] = critic
+    result = go(master_cv, tmp_path)
+
+    assert "Staff Systems Engineer" in written_run(result).document.read_text("utf-8")
+    kept = next(item for item in result.verification.findings if item.check == "critic")
+    assert (kept.outcome.value, kept.advisories[0]) == (outcome, flag)
+
+
 def test_quiet_runs_stay_quiet(master_cv: Path, tmp_path: Path, scripted: dict[str, Any]) -> None:
     """Narration is opt-in. Without --verbose the stage lines are the whole story."""
     watching = Watching()

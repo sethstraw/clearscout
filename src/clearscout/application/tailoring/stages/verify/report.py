@@ -84,9 +84,11 @@ class Report:
         verdict: CriticVerdict,
         check: str = CRITIC_CHECK,
         draws: Sequence[CriticVerdict] = (),
+        *,
+        document: str | None = None,
     ) -> Report:
-        """Return this report extended with the critic's finding under ``check``."""
-        finding = critic_finding(verdict, check, uncitable=self.uncitable)
+        """Return this report extended with the critic's finding on the ``document`` it read."""
+        finding = critic_finding(verdict, check, uncitable=self.uncitable, document=document)
         return replace(
             self,
             findings=(*self.findings, finding),

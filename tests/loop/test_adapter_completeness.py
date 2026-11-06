@@ -932,6 +932,10 @@ BOARD_ADDRESSES = (
     ),
     ("teamtailor", "https://acme.teamtailor.com"),
     ("teamtailor", '<a href="https://www.teamtailor.com/en?utm_source=career_site">'),
+    (
+        "teamtailor",
+        '<script src="https://assets-aws.teamtailor-cdn.com/assets/careersite-0a1b2c3d.js">',
+    ),
     ("personio", "https://acme.jobs.personio.com"),
     (
         "comeet",

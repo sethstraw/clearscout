@@ -405,10 +405,14 @@ def draft_result(fitted: Fitted, report: Report) -> dict[str, Any]:
 
 
 def critic_result(
-    verdict: CriticVerdict, draws: Sequence[CriticVerdict], check: str = CRITIC_CHECK
+    verdict: CriticVerdict,
+    draws: Sequence[CriticVerdict],
+    check: str = CRITIC_CHECK,
+    *,
+    document: str,
 ) -> dict[str, Any]:
-    """Return the solver output one critique produces: the merged verdict and every draw."""
-    finding = critic_finding(verdict, check)
+    """Return the solver output one critique of ``document`` produces: the verdict and draws."""
+    finding = critic_finding(verdict, check, document=document)
     # Corroboration is counted across draws at merge time, so a single draw has none.
     per_draw = {"unsupported_claims": {"__all__": {"corroboration"}}}
     return {

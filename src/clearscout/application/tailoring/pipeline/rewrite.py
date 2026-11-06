@@ -262,7 +262,7 @@ def critiqued(
         posting_hint=posting_hint,
         active_disputes=active_disputes,
     )
-    return verification.with_critic(verdict, draws=draws)
+    return verification.with_critic(verdict, draws=draws, document=fitted.markdown)
 
 
 @dataclass(frozen=True)
@@ -323,9 +323,10 @@ def _render_cover_letter(
         if not verification.passed:
             return letter, verification
         steps.within("letter checks passed, asking the critic")
+        rendered = letter.rendered()
         verdict, draws = verify_stage.critique(
             client,
-            markdown=letter.rendered(),
+            markdown=rendered,
             citations=verify_stage.line_citations(letter.paragraphs, inventory, "Paragraph"),
             inventory=inventory,
             offered=plan.drafted_ids(),
@@ -336,7 +337,10 @@ def _render_cover_letter(
             document="cover letter",
             research=research,
         )
-        return letter, verification.with_critic(verdict, verify_stage.LETTER_CRITIC, draws)
+        critiqued = verification.with_critic(
+            verdict, verify_stage.LETTER_CRITIC, draws, document=rendered
+        )
+        return letter, critiqued
 
     letter, report, attempts = _until_clean(
         steps=steps,

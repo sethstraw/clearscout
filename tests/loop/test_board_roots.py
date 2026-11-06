@@ -949,6 +949,23 @@ def test_a_board_link_after_a_partner_posting_remains_recognized() -> None:
     assert "CX_2" in found[1].group(0)
 
 
+def test_a_teamtailor_site_on_its_own_domain_is_found_past_the_identification_read() -> None:
+    head = (
+        '<link rel="alternate" type="application/rss+xml" href="https://careers.acme.test/jobs.rss">'
+        '<script src="https://assets-aws.teamtailor-cdn.com/assets/careersite-e4fb0512.js"></script>'
+    )
+    filler = "<li>Opening</li>" * (board_adapters.DETECT_BYTES // 16 + 1)
+    footer = '<a href="https://www.teamtailor.com/?utm_campaign=poweredby">Teamtailor</a>'
+    page = head + filler + footer
+
+    class LongCareerSite(board_adapters.BoardApiFetcher):
+        def get_text(self, url: str, *, max_bytes: int = board_adapters.DETECT_BYTES) -> str:
+            return url + "\n" + page[:max_bytes]
+
+    resolution = LongCareerSite().resolve("https://careers.acme.test/jobs")
+    assert resolution.platform == "teamtailor"
+
+
 def test_partner_posting_links_do_not_replace_publisher_declared_openings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
