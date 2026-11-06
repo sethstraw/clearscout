@@ -157,6 +157,21 @@ def test_a_cluster_citing_an_id_the_cv_lacks_fails_by_name(ids: tuple[str, ...])
     assert row["unknown_evidence_ids"] == ["b-invented"]
 
 
+@pytest.mark.parametrize("axis", ["titles", "archetypes"])
+def test_a_title_or_archetype_citing_an_id_the_cv_lacks_fails_by_name(axis: str) -> None:
+    titles = [*GOOD_TITLES, _title("Staff Data Engineer", "b-invented")]
+    archetypes = [*GOOD_ARCHETYPES, _archetype("Logistics technology companies", "b-invented")]
+    score = _score(
+        "excluded-titles",
+        titles if axis == "titles" else GOOD_TITLES,
+        archetypes if axis == "archetypes" else GOOD_ARCHETYPES,
+    )
+    assert score["value"] is False
+    assert "unknown_evidence" in score["checks"]["failed"]
+    row = score["metadata"][axis]["proposals"][-1]
+    assert row["unknown_evidence_ids"] == ["b-invented"]
+
+
 def test_a_duplicate_cluster_is_reported_refused_without_failing() -> None:
     score = _score(
         "excluded-titles",

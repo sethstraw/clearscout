@@ -192,7 +192,8 @@ DEFAULT_STAGES: dict[Stage, StageSetting] = {
     Stage.MATCH: StageSetting(tier=Tier.EXTRACTION, max_tokens=16000, effort=Effort.MEDIUM),
     Stage.DRAFT: StageSetting(tier=Tier.DRAFTING, max_tokens=12000),
     Stage.COVER: StageSetting(tier=Tier.DRAFTING, max_tokens=8000),
-    Stage.CRITIC: StageSetting(tier=Tier.DRAFTING, max_tokens=12000),
+    # The critic checks quoted claims against cited entries, which needs little reasoning.
+    Stage.CRITIC: StageSetting(tier=Tier.DRAFTING, max_tokens=12000, effort=Effort.LOW),
     # The capped campaign search plan stays below this response limit.
     Stage.GUIDED_CAMPAIGN: StageSetting(tier=Tier.EXTRACTION, max_tokens=6000),
     # The capped vocabulary proposal stays below this response limit.

@@ -51,8 +51,8 @@ _JOINERS = frozenset({"-", "\u2013"})
 _CLAIM_PREFIXES = frozenset({"co", "self"})
 
 # Labels are hand rulings that can disagree at the margin, so precision gates below 1.0.
-# The schema already forbids an invented id, leaving only
-# a real but non-supporting entry to fail citation support, so it gates higher.
+# An invented id fails on its own check, leaving only a real but non-supporting
+# entry to fail citation support, so it gates higher.
 PRECISION_THRESHOLD = 0.6
 CITATION_SUPPORT_THRESHOLD = 0.8
 
@@ -268,6 +268,8 @@ def _scored_axis(
         }
         if claim := _unsupported_claim(str(proposal.get(reason_key) or ""), claims):
             row["unsupported_claim"] = claim
+        if unknown := [entry_id for entry_id in row["evidence_ids"] if entry_id not in kinds]:
+            row["unknown_evidence_ids"] = unknown
         if row["evidence_ids"] and all(
             kinds.get(entry_id) in CONTEXT_KINDS for entry_id in row["evidence_ids"]
         ):
@@ -290,6 +292,7 @@ def _scored_axis(
         "program_refused": sum(bool(row["program_refused_because"]) for row in rows),
         "unsupported_claims": sum("unsupported_claim" in row for row in rows),
         "context_only_citations": sum("context_only_citation" in row for row in rows),
+        "unknown_evidence": sum("unknown_evidence_ids" in row for row in rows),
     }
 
 
@@ -332,6 +335,7 @@ def proposal_usefulness() -> Any:
                 ("citation_support", citation_support < CITATION_SUPPORT_THRESHOLD),
                 ("unsupported_claim", overclaimed > 0),
                 ("cluster_evidence", bool(clusters["invalid_evidence"])),
+                ("unknown_evidence", any(axes[axis]["unknown_evidence"] for axis in AXES)),
             )
             if failing
         ]

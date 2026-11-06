@@ -95,13 +95,15 @@ def test_only_the_stage_that_sends_images_states_a_detail_level() -> None:
 
 
 @pytest.mark.parametrize("provider", list(ProviderName))
-def test_only_the_match_stage_states_its_own_effort(provider: ProviderName) -> None:
-    """Match reasons at medium on either provider; every other stage takes its tier's effort."""
+def test_only_match_and_critic_state_their_own_effort(provider: ProviderName) -> None:
+    """Match runs at medium and the critic at low on either provider; the rest take their tier's."""
     settings = Settings(provider=provider)
 
     assert settings.choice_for_stage(Stage.MATCH).effort is Effort.MEDIUM
+    assert settings.choice_for_stage(Stage.CRITIC).effort is Effort.LOW
     assert [stage for stage in Stage if settings.policy_for(stage).effort is not None] == [
-        Stage.MATCH
+        Stage.MATCH,
+        Stage.CRITIC,
     ]
 
 

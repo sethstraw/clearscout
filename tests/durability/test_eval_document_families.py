@@ -655,7 +655,7 @@ def test_a_live_document_run_refuses_a_stage_no_family_owns() -> None:
     ("variable", "value", "field", "shipped"),
     [
         ("CLEARSCOUT_EVAL_LIVE_MODEL", "gpt-6-luna", "model", "gpt-6.1-sol"),
-        ("CLEARSCOUT_EVAL_LIVE_EFFORT", "low", "effort", "medium"),
+        ("CLEARSCOUT_EVAL_LIVE_EFFORT", "high", "effort", "low"),
     ],
 )
 def test_a_live_document_run_sends_the_choice_the_run_names_to_its_stage_only(

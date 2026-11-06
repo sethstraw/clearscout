@@ -234,7 +234,7 @@ def test_the_command_pays_for_every_critic_trial(
         stage="critic",
         model="gpt-6.1-sol",
         service_tier="flex",
-        effort="medium",
+        effort="low",
     )
 
     exit_code = main(
