@@ -7,7 +7,7 @@ Paid stage experiments run outside `scripts/eval.sh` have their own section at
 the end. [FINDINGS.md](FINDINGS.md) is the narrative: what these runs found and
 what changed because of them.
 
-These are defect-discovery numbers on 4 to 19 cases. They show which cases a
+These are defect-discovery numbers on 3 to 30 cases. They show which cases a
 model got wrong under one prompt suite, not an accuracy a reader can carry to
 real postings. `inspect/METHODOLOGY.md` explains what each family measures and
 what it cannot.
@@ -368,6 +368,7 @@ the outcome is what the shipped floors assign the critic's merged verdict.
 | 2026-11-06 | isolation          | gpt-6.1-sol   | medium / flex     | 1 x 5  | 5 fail                   | 0.040966 | 01b3b875bf8d | -        |
 | 2026-11-06 | letter shapes      | gpt-6.1-sol   | medium / flex     | 4 x 3  | 12 fail                  | 0.067603 | a45be004ae75 | -        |
 | 2026-11-06 | context line       | gpt-6.1-sol   | medium / flex     | 3 x 3  | 5 pass, 4 warn           | 0.046254 | a45be004ae75 | 0224f50d |
+| 2026-11-06 | 30 cases           | gpt-6.1-sol   | medium / flex     | 30 x 3 | 82/90; outcome 81/90     | 0.468946 | a45be004ae75 | d3713a99 |
 
 The two 2026-09-21 rows are the same six cases run twice to measure spread.
 
@@ -432,6 +433,14 @@ wording ("..., working with analysts and clinicians on definitions.") and runs
 the two clean resume cases and `adequate_quality` three times each. No trial
 flagged the line. Both clean cases passed 2 of 3; each third trial flagged a
 summary phrase instead. Outcome agreement was 6 of 9, and no trial drew a doubt.
+
+The 30-case row follows a rewrite of that summary phrase, five new clean twins
+of planted cases, and a rule that a listed weakness warns as a style flag does.
+No clean draw drew a doubt. Eight draws missed a planted claim: a widened scope
+and a design described as shipped (3 of 3 each) and a blanket letter fit (2 of
+3). Of 24 clean draws, 15 passed; the tenure twin warned 3 of 3 because its
+summary sentence sits under one employer and so does imply that tenure, and the
+letter's company paragraph warned 3 of 3 as before.
 
 ## Draft and cover letter
 
@@ -549,6 +558,7 @@ labeled proposals only; unlabeled proposals are reported as coverage.
 | date       | model       | effort / tier | cases x trials | passed | unlabeled | cost     | prompt       | dataset  |
 | ---------- | ----------- | ------------- | -------------- | ------ | --------- | -------- | ------------ | -------- |
 | 2026-11-06 | gpt-6.1-sol | low / flex    | 4 x 1          | 4/4    | 23/34     | 0.048295 | 96e419874e91 | ced126de |
+| 2026-11-06 | gpt-6.1-sol | low / flex    | 13 x 2         | 22/26  | 180/236   | 0.235394 | 96e419874e91 | 60dd24b7 |
 
 The run first scored 1 of 4, with unlabeled proposals counted against
 precision. No proposal was unacceptable, excluded, or a repeat of a stated
@@ -557,6 +567,12 @@ offline over labeled proposals only, all four pass at precision 1.0, but 23 of
 34 proposals fall outside the label set, and the domain-switch case passes on
 a single labeled proposal. The labels are too thin for this to measure
 usefulness yet.
+
+The 13-case row adds nine cases, including a sparse record and an excluded
+industry. Three of the four misses proposed only titles the labels do not name
+(two domain-switch draws and a utilities career change); the fourth cited a
+context line that does not support a principal-level title. Labels were not
+widened after this run, so 180 of 236 proposals remain unlabeled.
 
 ## Web stages
 
@@ -570,6 +586,7 @@ a real parameter set, kept in a private dataset passed with `--dataset`.
 | 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4     | 0/4 recovered the expected posting    | 0.118034 | 7428e1976831 |
 | 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4     | 0/4; preflight settles 2 at no cost   | 0.147007 | dc85127c61db |
 | 2026-11-06 | guided_campaign  | gpt-6.1-sol | low / flex    | 1     | every check held; 4 searches, 3 picks | 0.076204 | 814417e97572 |
+| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 3 x 5 | 15/15; 10 settled by preflight        | 0.100680 | dc85127c61db |
 
 Recovery missed every case. Two targets sit behind an employer careers page
 that refuses ClearScout's reads; the model twice returned that same blocked
@@ -586,6 +603,15 @@ expected open Ashby posting as the holder for both blocked Inovalon rows. The
 model still missed all four. For the blocked rows it returned the careers page
 with Ashby job ids of requisitions archived in September. The aggregator copy
 found nothing, and the AbCellera answer was again refused for an uncited link.
+
+The third recovery row runs production preflight inside the eval and sends the
+model an opaque identity id rather than the case name. Recovery now maps a
+careers-page job id to the registered board's open record, refuses an id the
+board no longer lists, and accepts an uncited answer the board stores. The
+aggregator case was dropped, since the product never sends a row that already
+has readable text. Preflight held both Inovalon cases by the expected board
+URL in all ten trials at no cost; the AbCellera case, the only one that reached
+the model, returned the newer requisition in 5 of 5.
 The campaign case is the live workspace's parameter set:
 both branches were credited, no query named an excluded term, and two of its
 three picks were postings the workspace had not seen.

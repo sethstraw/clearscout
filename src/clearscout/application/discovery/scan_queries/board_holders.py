@@ -164,6 +164,18 @@ def registered_employer_boards(
     )
 
 
+def registered_board_records(
+    session: Session, workspace_id: str, boards: dict[str, str], pending_id: str
+) -> list[BoardRecord]:
+    """Return what these boards already supplied, other than the pending row itself."""
+    if not boards:
+        return []
+    return [
+        *_tracked_records(session, workspace_id, boards),
+        *_staged_records(session, workspace_id, list(boards), pending_id, count_dismissed=True),
+    ]
+
+
 def registered_board_holder(
     session: Session, workspace_id: str, pending_id: str, *, count_dismissed: bool = False
 ) -> BoardHolder | None:

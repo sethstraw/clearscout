@@ -41,8 +41,12 @@ from clearscout.domain.records import (
 from clearscout.infrastructure.web_fetch.board_platform import host_match
 from clearscout.infrastructure.web_fetch.boards import board_identity, without_apply_suffix
 from clearscout.infrastructure.web_fetch.ingest import JDText
-from clearscout.infrastructure.web_fetch.platforms.ashby import ASHBY
-from clearscout.infrastructure.web_fetch.platforms.greenhouse import GREENHOUSE, GREENHOUSE_EMBED
+from clearscout.infrastructure.web_fetch.platforms.ashby import ASHBY, ASHBY_HOSTED_JID
+from clearscout.infrastructure.web_fetch.platforms.greenhouse import (
+    GREENHOUSE,
+    GREENHOUSE_EMBED,
+    GREENHOUSE_HOSTED_JID,
+)
 from clearscout.infrastructure.web_fetch.platforms.icims import ICIMS_CLASSIC_JOB
 from clearscout.infrastructure.web_fetch.platforms.lever import LEVER
 from clearscout.infrastructure.web_fetch.platforms.workday import WORKDAY, workday_posting_path
@@ -602,6 +606,37 @@ def board_holder(
         return None
     # A tracked posting at the same address outranks a pending row beside it.
     return min(held, key=lambda record: record.holder.entity_type != "job_posting").holder
+
+
+def hosted_board_job(url: str) -> tuple[str, str] | None:
+    """Return the ATS and requisition a careers page names through `ashby_jid` or `gh_jid`."""
+    if _requisition(url) is not None:
+        return None
+    for platform, board, pattern in (
+        ("greenhouse", "gh", GREENHOUSE_HOSTED_JID),
+        ("ashby", "ab", ASHBY_HOSTED_JID),
+    ):
+        if found := pattern.search(url):
+            return platform, f"{board}-{found['job'].lower()[:DIGEST_LENGTH]}"
+    return None
+
+
+def posting_job_key(url: str) -> str | None:
+    """Return the ATS requisition an ATS address or a careers-page job id names, or None."""
+    hosted = hosted_board_job(url)
+    return _requisition(url) if hosted is None else hosted[1]
+
+
+def open_record_for_job(requisition: str, records: Iterable[BoardRecord]) -> BoardRecord | None:
+    """Return the open board record whose own address names this ATS requisition."""
+    return next(
+        (
+            record
+            for record in records
+            if not record.closed and posting_job_key(record.holder.url) == requisition
+        ),
+        None,
+    )
 
 
 def _requisition(url: str) -> str | None:

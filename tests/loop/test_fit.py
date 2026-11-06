@@ -41,7 +41,7 @@ from tests.support.posting_bodies import (
 )
 from tests.support.reports import rendered_report, report_section
 
-RULES_SECTION = "Read from the text by rule"
+RULES_SECTION = "Read from the posting and record by rule"
 
 TODAY = date(2026, 6, 1)
 
@@ -1944,7 +1944,8 @@ def test_the_report_says_what_the_section_is_and_prints_every_abstention(
     """
     reading = reading_of(BOILERPLATE_ONLY, inventory)
     section = report_section(rendered_report(reading=reading, spec=spec_for()), RULES_SECTION)
-    assert "Derived from the posting text by rules, not by a model" in section
+    assert "Derived from the posting and the master CV by rules, not by a model" in section
+    assert "| Question | Answer | Source |" in section
     assert "not a score" in section
     assert "not a prediction" in section
     assert section.count("not stated") >= reading.abstentions

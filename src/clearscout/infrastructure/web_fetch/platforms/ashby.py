@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from clearscout.infrastructure.web_fetch.board_platform import BoardTransport
 
 ASHBY = re.compile(r"jobs\.ashbyhq\.com/(?P<org>[^/]+)/(?P<job>[0-9a-f-]{36})")
+# An employer careers page hosting the Ashby embed names the job in this query parameter.
+ASHBY_HOSTED_JID = re.compile(r"[?&]ashby_jid=(?P<job>[0-9a-f-]{36})", re.IGNORECASE)
 # An Ashby org may name a space, which its address percent-encodes.
 ASHBY_BOARD = re.compile(r"jobs\.ashbyhq\.com/" + hosted_org(r"[A-Za-z0-9._%-]"))
 

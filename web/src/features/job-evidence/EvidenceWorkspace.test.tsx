@@ -178,4 +178,28 @@ describe("EvidenceWorkspace", () => {
     expect(within(answered).getByText("Ran synthetic migrations for four teams")).toBeTruthy();
     expect(within(answered).queryByText(/No posting span cites this requirement/)).toBeNull();
   });
+
+  it("names the reading a record or posting line supports instead of its locator", () => {
+    renderWorkspace(
+      [
+        row("years-1", {
+          locator: "cv:role-synthetic-co-dates",
+          source_kind: "candidate",
+          text: "2018 - 2021",
+        }),
+        row("family-1", {
+          locator: "cv:role-synthetic-co-title",
+          source_kind: "candidate",
+          text: "Synthetic Product Lead",
+        }),
+        row("place-1", { locator: "posting:reading-place_fit-1", text: "Remote in Canada" }),
+      ],
+      [],
+    );
+
+    expect(screen.getByText("Years the record covers, from a CV role's dates")).toBeTruthy();
+    expect(screen.getByText("What the record reads as, from a CV role's title")).toBeTruthy();
+    expect(screen.getByText("Posting text read for place fit")).toBeTruthy();
+    expect(screen.queryByText(/cv:role-|posting:reading-/)).toBeNull();
+  });
 });

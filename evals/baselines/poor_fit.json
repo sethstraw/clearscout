@@ -33,7 +33,7 @@
     "model_rule_disagreements": 1,
     "must_have_accuracy": 1.0,
     "request.jobspec": "ff04f8eda404",
-    "request.match": "b6a6e7277621",
+    "request.match": "21f3106c4a3e",
     "requirement_precision": 1.0,
     "requirement_recall": 1.0,
     "stage_failure": "",

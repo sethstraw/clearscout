@@ -23,9 +23,16 @@ from clearscout.application.discovery.content_resolution import (
     validate_resolved_posting_content,
 )
 from clearscout.application.discovery.paid_task import billed_run
-from clearscout.application.discovery.posting_identity import posting_host
+from clearscout.application.discovery.posting_identity import (
+    hosted_board_job,
+    open_record_for_job,
+    posting_host,
+    posting_job_key,
+    posting_url_key,
+)
 from clearscout.application.discovery.scan_queries import (
     registered_board_holder,
+    registered_board_records,
     registered_employer_boards,
 )
 from clearscout.application.failures import ConflictError, ValidationError
@@ -58,6 +65,7 @@ from clearscout.infrastructure.web_fetch.board_platform import host_match
 from clearscout.infrastructure.web_fetch.boards import (
     BOARD_PATTERNS,
     JOB_URL_PATTERNS,
+    board_identity,
     single_tenant_board,
 )
 from clearscout.shared.costs import CallManifest, ModelPrice, Usage, cents
@@ -184,6 +192,8 @@ class RecoveryCandidate:
     # The known URL whose last read failed, or a page on a host that refused that read;
     # reading it repeats the failure.
     already_failed: bool = False
+    # A careers-page ATS job id the employer's registered board does not list as open.
+    stale_job: bool = False
 
 
 class CancellationContext(Protocol):
@@ -239,7 +249,9 @@ class AssistedContentResolutionService:
                 f"Assisted posting recovery accepts at most {MAX_ASSISTED_RECOVERY_ITEMS} items."
             )
         with self.database.session() as session:
-            targets = _with_registered_boards(session, workspace_id, preflight.targets)
+            targets = _with_registered_boards(
+                session, workspace_id, preflight.targets, with_records=False
+            )
             on_board = [
                 f"{target.id} is held by {holder.entity_type.replace('_', ' ')} "
                 f"{holder.entity_id} at {holder.url}"
@@ -371,7 +383,12 @@ class AssistedContentResolutionService:
             outcome, detail = _DECIDED_WITHOUT_READING[decision]
             if decision is PostingRecoveryDecision.NOT_FOUND and not search.searched_sources:
                 detail = "Hosted search returned no sources and opened no pages."
-            if candidate is not None and candidate.already_failed:
+            if candidate is not None and candidate.stale_job:
+                detail = (
+                    f"The cited candidate {candidate.url} names a job id the employer's "
+                    "registered board does not list as open."
+                )
+            elif candidate is not None and candidate.already_failed:
                 place = (
                     "is the known URL,"
                     if _url_key(candidate.url) == _url_key(target.url)
@@ -431,7 +448,7 @@ def _with_assisted_observations(
     resolved: ResolvedPostingContent,
     observations: tuple[PostingRecoveryObservation, ...],
 ) -> ResolvedPostingContent:
-    """Retain the cited observations alongside the deterministic result."""
+    """Retain the observations, cited or held by a registered board, beside the read."""
     identity_evidence = dict(resolved.identity_evidence or {})
     identity_evidence["assisted_observations"] = [
         observation.model_dump(mode="json") for observation in observations
@@ -643,7 +660,7 @@ def validated_recovery_candidates(
     known_read = known_url_read_outcome(target)
     host_refused = known_read in _HOST_REFUSALS and not _shared_ats_host(target.url)
     return _cited_candidates(
-        target.url,
+        target,
         response,
         _captured_source_urls(manifest),
         known_failed=known_read is not None,
@@ -659,21 +676,70 @@ def _shared_ats_host(url: str) -> bool:
 
 
 def _with_registered_boards(
-    session: Session, workspace_id: str, targets: tuple[PostingResolutionTarget, ...]
+    session: Session,
+    workspace_id: str,
+    targets: tuple[PostingResolutionTarget, ...],
+    *,
+    with_records: bool = True,
 ) -> tuple[PostingResolutionTarget, ...]:
-    return tuple(
-        replace(
-            target,
-            registered_board_url=_registered_board_url(session, workspace_id, target.employer),
+    bound = []
+    for target in targets:
+        boards = registered_employer_boards(session, workspace_id, target.employer)
+        urls = tuple(boards.values())
+        bound.append(
+            replace(
+                target,
+                registered_board_url=urls[0] if len(urls) == 1 else "",
+                registered_boards=urls,
+                board_records=tuple(
+                    registered_board_records(session, workspace_id, boards, target.id)
+                )
+                if with_records
+                else (),
+            )
         )
-        for target in targets
+    return tuple(bound)
+
+
+def _board_job(target: PostingResolutionTarget, url: str) -> str | None:
+    """Return the requisition a careers-page job id names on a registered board of its ATS."""
+    job = hosted_board_job(url)
+    if job is None:
+        return None
+    platforms = {
+        identity[0]
+        for board in target.registered_boards
+        if (identity := board_identity(board)) is not None
+    }
+    return job[1] if job[0] in platforms else None
+
+
+def _board_address(target: PostingResolutionTarget, url: str) -> str | None:
+    """Return the open record a registered board stores for this address, or None."""
+    requisition = _board_job(target, url)
+    if requisition is not None and (
+        record := open_record_for_job(requisition, target.board_records)
+    ):
+        return record.holder.url
+    key = posting_url_key(url)
+    return next(
+        (
+            record.holder.url
+            for record in target.board_records
+            if not record.closed and posting_url_key(record.holder.url) == key
+        ),
+        None,
     )
 
 
-def _registered_board_url(session: Session, workspace_id: str, employer: str) -> str:
-    """Return the employer's job board address when the workspace registers exactly one."""
-    urls = list(registered_employer_boards(session, workspace_id, employer).values())
-    return urls[0] if len(urls) == 1 else ""
+def _stale_job(target: PostingResolutionTarget, url: str) -> bool:
+    """Return whether a careers-page job id names another job the board does not list as open."""
+    requisition = _board_job(target, url)
+    return (
+        requisition is not None
+        and requisition != posting_job_key(target.url)
+        and _board_address(target, url) is None
+    )
 
 
 class RecoveryResponseRefusedError(ValidationError):
@@ -729,6 +795,7 @@ def recovery_decision(
         for candidate in candidates
         if candidate.observation.authority in READABLE_SOURCE_AUTHORITIES
         and not candidate.already_failed
+        and not candidate.stale_job
     ]
     if len(readable) > 1:
         return PostingRecoveryDecision.AMBIGUOUS, None
@@ -779,26 +846,43 @@ def _validate_search_record(manifest: CallManifest) -> None:
 
 
 def _cited_candidates(
-    known_url: str,
+    target: PostingResolutionTarget,
     response: PostingRecoveryResponse,
     captured_urls: set[str],
     *,
     known_failed: bool,
     failed_host: str | None,
 ) -> list[RecoveryCandidate]:
-    known = _url_key(known_url)
+    known = _url_key(target.url)
     _validate_supporting_urls(response, known, captured_urls)
-    observations = _observations_by_url(response, known, captured_urls)
+    # A record the employer's registered board stores cites itself, and the program reads it.
+    addresses = (
+        *(str(url) for url in response.candidate_urls),
+        *(str(observation.url) for observation in response.observations),
+    )
+    stored = {
+        _url_key(url): address
+        for url in addresses
+        if (address := _board_address(target, url)) is not None
+    }
+    cited = captured_urls | stored.keys()
+    observations = _observations_by_url(response, known, cited)
     accepted: dict[str, RecoveryCandidate] = {}
     for candidate_url in response.candidate_urls:
         candidate = str(candidate_url)
         key = _url_key(candidate)
-        _require_cited_candidate(key, known, captured_urls)
+        _require_cited_candidate(key, known, cited)
         observation = observations.get(key)
         if observation is None or observation.identity not in {"exact", "plausible"}:
             continue
-        failed = (known_failed and key == known) or posting_host(candidate) == failed_host
-        accepted.setdefault(key, RecoveryCandidate(candidate, observation, already_failed=failed))
+        if _stale_job(target, candidate):
+            accepted.setdefault(key, RecoveryCandidate(candidate, observation, stale_job=True))
+            continue
+        url = stored.get(key, candidate)
+        failed = (known_failed and _url_key(url) == known) or posting_host(url) == failed_host
+        accepted.setdefault(
+            _url_key(url), RecoveryCandidate(url, observation, already_failed=failed)
+        )
     return list(accepted.values())
 
 

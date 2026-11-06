@@ -893,14 +893,16 @@ def test_a_passing_read_without_style_flags_names_no_style_cause() -> None:
     assert "style flag" not in finding.detail
 
 
-def test_weaknesses_and_guidance_ride_along_on_a_passing_read() -> None:
+@pytest.mark.parametrize("check", ["critic", "letter critic"])
+def test_a_weakness_on_a_passing_read_warns_and_rides_along_with_guidance(check: str) -> None:
     verdict = _verdict(
         weaknesses=["The Acme migration has no outcome."], guidance="Name what the migration cut."
     )
 
-    finding = critic_finding(verdict)
+    finding = critic_finding(verdict, check)
 
-    assert finding.outcome is Outcome.PASS
+    assert (finding.outcome, finding.redraftable) == (Outcome.WARN, False)
+    assert finding.detail.endswith("quality mean 4.0/5; 1 weakness listed")
     assert finding.advisories == (
         "The Acme migration has no outcome.",
         "Name what the migration cut.",

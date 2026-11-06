@@ -8,7 +8,7 @@ Riverbend, Ohio | morgan.sample@example.com | 555-0142 | example.com/in/morgansa
 
 Morgan Sample builds data platforms for regulated industries. Across twelve years the work moved from reporting pipelines to platform architecture.
 
-Recent work centers on streaming ingestion, schema governance, and the tooling that keeps both honest.
+Recent work centers on streaming ingestion, schema governance, and data quality rules routed to the teams that own each column.
 
 ---
 

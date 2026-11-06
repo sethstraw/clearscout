@@ -2,7 +2,8 @@
 
 A case passes when the outcome is candidate_ready and the picked candidate is an expected
 URL under the program's exact URL key, or, for a case that names hosts, sits on one of them.
-A case expecting neither passes only when no candidate survived validation.
+A case expecting neither passes only when no candidate survived validation. A case
+production preflight settles on its registered board is scored by the held record's URL.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ URL_HIT = "url"
 HOST_HIT = "host"
 NO_HIT = "none"
 CITED_NOT_PICKED = "expected_cited_not_picked"
+PREFLIGHT_HELD = "preflight_held"
 
 
 def expected_targets(sample: dict[str, Any]) -> dict[str, list[str]]:
@@ -70,11 +72,14 @@ def recovered_posting() -> Any:
         if wants_none:
             passed = not candidates and outcome == "not_found"
         else:
-            # Production reads only a candidate_ready pick; other outcomes read nothing.
+            # Production reads only a candidate_ready pick or the board record preflight held.
             hit = matched == URL_HIT or (matched == HOST_HIT and not url_only)
-            passed = outcome == "candidate_ready" and hit
+            passed = outcome in {"candidate_ready", PREFLIGHT_HELD} and hit
         failed = [] if passed else [f"miss:{outcome}" if not wants_none else "unexpected_candidate"]
         warned = [HOST_HIT + "_only"] if passed and matched == HOST_HIT else []
+        if outcome == PREFLIGHT_HELD:
+            # Held rows test board matching, not the prompt, so the header counts them apart.
+            warned.append(PREFLIGHT_HELD)
         if not passed and not wants_none and _matched(candidates, expected) == URL_HIT:
             warned.append(CITED_NOT_PICKED)
         return {

@@ -33,6 +33,7 @@ from clearscout.application.discovery.content_resolution import (
     pending_discovery_readiness,
 )
 from clearscout.application.discovery.hints import PendingDiscoveryHintsService
+from clearscout.application.discovery.posting_identity import BoardHolder, BoardRecord
 from clearscout.application.failures import ConflictError, ValidationError
 from clearscout.application.prompts import render
 from clearscout.application.tasks import TaskQueueService
@@ -1637,3 +1638,208 @@ def test_the_estimate_prices_every_hosted_tool_call_as_a_search(
     approval = service.preflight("workspace-assisted", [target.id], settings, now=NOW)
 
     assert approval.estimate_cents == 400
+
+
+_GLOBEX_ASHBY = "https://jobs.ashbyhq.com/globex"
+_GLOBEX_GREENHOUSE = "https://job-boards.greenhouse.io/globex"
+_ASHBY_JOB = "7d3b2c1a-4e5f-4a6b-8c9d-0e1f2a3b4c5d"
+_ASHBY_RECORD = f"{_GLOBEX_ASHBY}/{_ASHBY_JOB}"
+_GREENHOUSE_RECORD = f"{_GLOBEX_GREENHOUSE}/jobs/8005904003"
+
+
+def _board_target(
+    board: str, *records: str, closed: tuple[str, ...] = ()
+) -> PostingResolutionTarget:
+    """A target whose employer registers ``board``, which stores these records."""
+    return replace(
+        _target(),
+        registered_board_url=board,
+        registered_boards=(board,),
+        board_records=tuple(
+            BoardRecord(
+                BoardHolder("job_posting", f"job-{position}", url),
+                "source-globex",
+                "Operations Lead",
+                (),
+                frozenset(),
+                closed=url in closed,
+            )
+            for position, url in enumerate((*records, *closed))
+        ),
+    )
+
+
+def _recover_cited(
+    target: PostingResolutionTarget, candidate: str, *, cited: bool = True
+) -> tuple[AssistedPostingRecoveryItem, ScriptedResolver]:
+    resolver = ScriptedResolver([_readable(url) for url in (_ASHBY_RECORD, _GREENHOUSE_RECORD)])
+    service, _content = _service((target,), resolver)
+    payload = _response(
+        candidates=[candidate], supporting=[], observations=[_observation(candidate)]
+    )
+    record = _record(candidate) if cited else _record(PUBLISHER_URL)
+    client, _ledger = _client(ScriptedSearchProvider([(payload, record)]))
+    [item] = service._recover_targets("workspace-assisted", (target,), client, None)
+    return item, resolver
+
+
+@pytest.mark.parametrize(
+    ("board", "candidate", "record"),
+    [
+        (
+            _GLOBEX_ASHBY,
+            f"https://careers.globex.example/careers/job/?ashby_jid={_ASHBY_JOB}",
+            _ASHBY_RECORD,
+        ),
+        (
+            _GLOBEX_GREENHOUSE,
+            "https://careers.globex.example/careers/job/?gh_jid=8005904003",
+            _GREENHOUSE_RECORD,
+        ),
+    ],
+)
+def test_a_careers_page_job_id_is_read_at_the_registered_boards_open_record(
+    board: str, candidate: str, record: str
+) -> None:
+    item, resolver = _recover_cited(_board_target(board, record), candidate)
+
+    assert item.candidate_url == record
+    assert [call[0] for call in resolver.calls] == [record]
+
+
+@pytest.mark.parametrize(
+    ("board", "candidate", "record"),
+    [
+        (
+            _GLOBEX_ASHBY,
+            "https://careers.globex.example/careers/job/"
+            "?ashby_jid=11111111-2222-4333-8444-555555555555",
+            _ASHBY_RECORD,
+        ),
+        (
+            _GLOBEX_GREENHOUSE,
+            "https://careers.globex.example/careers/job/?gh_jid=8002983003",
+            _GREENHOUSE_RECORD,
+        ),
+    ],
+)
+def test_a_careers_page_job_id_the_board_does_not_list_as_open_is_refused_stale(
+    board: str, candidate: str, record: str
+) -> None:
+    item, resolver = _recover_cited(_board_target(board, record), candidate)
+
+    assert item.outcome is PostingRecoveryOutcome.SOURCE_FOUND_UNREADABLE
+    assert item.candidate_url == candidate
+    assert "does not list as open" in item.detail
+    assert resolver.calls == []
+
+
+def test_an_uncited_candidate_the_registered_board_stores_is_read_without_a_citation() -> None:
+    target = _board_target(_GLOBEX_ASHBY, _ASHBY_RECORD)
+
+    item, resolver = _recover_cited(target, _ASHBY_RECORD, cited=False)
+
+    assert item.outcome is PostingRecoveryOutcome.RECOVERED
+    assert [call[0] for call in resolver.calls] == [_ASHBY_RECORD]
+
+
+def test_an_uncited_candidate_the_registered_board_does_not_store_stays_refused() -> None:
+    target = _board_target(_GLOBEX_ASHBY, _ASHBY_RECORD)
+    other = f"{_GLOBEX_ASHBY}/11111111-2222-4333-8444-555555555555"
+
+    item, resolver = _recover_cited(target, other, cited=False)
+
+    assert item.outcome is PostingRecoveryOutcome.RESPONSE_REFUSED
+    assert "uncited observation" in item.detail
+    assert resolver.calls == []
+
+
+_CAREERS_RECORD = "https://careers.globex.example/open-roles/job?gh_jid=8005904003"
+
+
+@pytest.mark.parametrize("cited", [True, False])
+def test_a_board_record_stored_at_a_careers_page_job_id_is_read_there(cited: bool) -> None:
+    target = _board_target(_GLOBEX_GREENHOUSE, _CAREERS_RECORD)
+
+    item, resolver = _recover_cited(target, _CAREERS_RECORD, cited=cited)
+
+    assert item.candidate_url == _CAREERS_RECORD
+    assert [call[0] for call in resolver.calls] == [_CAREERS_RECORD]
+
+
+def test_another_careers_address_for_that_job_id_is_read_at_the_stored_record() -> None:
+    target = _board_target(_GLOBEX_GREENHOUSE, _CAREERS_RECORD)
+    candidate = "https://careers.globex.example/careers/job/?gh_jid=8005904003"
+
+    item, resolver = _recover_cited(target, candidate)
+
+    assert item.candidate_url == _CAREERS_RECORD
+    assert [call[0] for call in resolver.calls] == [_CAREERS_RECORD]
+
+
+def test_a_careers_page_job_id_naming_the_rows_own_requisition_is_not_called_stale() -> None:
+    own = "https://careers.globex.example/careers/job/?gh_jid=8005904003"
+    target = replace(_board_target(_GLOBEX_GREENHOUSE), url=_GREENHOUSE_RECORD)
+
+    item, resolver = _recover_cited(target, own)
+
+    assert "does not list as open" not in item.detail
+    assert [call[0] for call in resolver.calls] == [own]
+
+
+def test_a_careers_page_job_id_naming_a_closed_board_record_is_refused_stale() -> None:
+    target = _board_target(_GLOBEX_GREENHOUSE, closed=(_GREENHOUSE_RECORD,))
+    candidate = "https://careers.globex.example/careers/job/?gh_jid=8005904003"
+
+    item, resolver = _recover_cited(target, candidate)
+
+    assert item.outcome is PostingRecoveryOutcome.SOURCE_FOUND_UNREADABLE
+    assert "does not list as open" in item.detail
+    assert resolver.calls == []
+
+
+def test_an_uncited_candidate_at_a_closed_board_record_stays_refused() -> None:
+    target = _board_target(_GLOBEX_ASHBY, closed=(_ASHBY_RECORD,))
+
+    item, resolver = _recover_cited(target, _ASHBY_RECORD, cited=False)
+
+    assert item.outcome is PostingRecoveryOutcome.RESPONSE_REFUSED
+    assert resolver.calls == []
+
+
+def test_an_uncited_candidate_a_registered_board_tracks_in_the_database_is_read(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = scan_workspace(durable_database, slug="assisted-board-stored")
+    board = employer_board(durable_database, workspace_id, "Northwind")
+    stored = "https://northwind.example.test/careers/analytics-lead"
+    tracked_board_posting(durable_database, workspace_id, board, title="Analytics Lead", url=stored)
+    pending_id = seed_unread_row(
+        durable_database, workspace_id, employer="Northwind", title="Operations Lead", url=KNOWN_URL
+    )
+    resolver = ScriptedResolver([_readable(stored)])
+    payload = _response(
+        pending_id, candidates=[stored], supporting=[], observations=[_observation(stored)]
+    )
+    provider = ScriptedSearchProvider([(payload, _record(PUBLISHER_URL))])
+    service = AssistedContentResolutionService(
+        durable_database,
+        PostingContentResolutionService(
+            durable_database, resolver, storage=runtime_storage(durable_database, tmp_path)
+        ),
+        provider=provider,
+    )
+    settings = Settings(provider=ProviderName.OPENAI)
+    approval = service.preflight(workspace_id, [pending_id], settings, now=NOW)
+    task = TaskQueueService(durable_database).enqueue(
+        workspace_id=workspace_id,
+        task_type="posting.recover_batch",
+        payload={"approval": approval.model_dump(mode="json")},
+        idempotency_key=f"recover-{pending_id}",
+    )
+
+    [item] = service.recover(workspace_id, approval, settings, task_id=task.id, now=NOW).items
+
+    assert item.outcome is PostingRecoveryOutcome.RECOVERED
+    assert item.candidate_url == stored
+    assert [call[0] for call in resolver.calls] == [stored]

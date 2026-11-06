@@ -9,10 +9,12 @@ from clearscout.application.contracts import (
     RULE_REFUSAL_PROMPT_FINGERPRINT,
     EvaluationCommit,
     ReportRequirementInput,
+    ScoreEvidenceInput,
 )
 from clearscout.application.job_search.evaluation_requirements import (
     merge_hard_gates_into_requirements,
 )
+from clearscout.domain import EvidenceSourceKind
 from clearscout.shared.results import table_cell
 
 
@@ -48,6 +50,7 @@ def render_fit_report(
         hard_gates=report.hard_gates,
         requirements=report.requirements,
     ).rows
+    sources = {item.key: item for item in proposal.score_evidence}
     gate_rows = [item for item in requirements if item.is_hard_gate]
     plain_rows = [item for item in requirements if not item.is_hard_gate]
     sections = [
@@ -77,6 +80,7 @@ def render_fit_report(
             "Hard gates",
             gate_rows,
             evidence_ids,
+            sources,
             none=(
                 "Not read: a rule refused this posting before its requirements were extracted."
                 if report.prompt_fingerprint == RULE_REFUSAL_PROMPT_FINGERPRINT
@@ -85,9 +89,9 @@ def render_fit_report(
         ),
         _gaps(proposal, evidence_ids),
         _unestablished(gate_rows, plain_rows),
-        _reading(proposal, evidence_ids),
+        _reading(proposal, evidence_ids, sources),
         _disagreements(proposal, evidence_ids),
-        _requirement_table("Requirement map", plain_rows, evidence_ids),
+        _requirement_table("Requirement map", plain_rows, evidence_ids, sources),
         _coverage(proposal),
         _changed(proposal),
         _checks(proposal),
@@ -103,22 +107,31 @@ def _requirement_table(
     title: str,
     requirements: list[ReportRequirementInput],
     evidence_ids: dict[str, str],
+    sources: dict[str, ScoreEvidenceInput],
     *,
     none: str = "The posting states none.",
 ) -> str:
     if not requirements:
         return f"## {title}\n\n{none}"
+    rows = []
+    for item in requirements:
+        posting = [key for key in item.evidence_keys if _is_posting(key, sources)]
+        answers = [key for key in item.evidence_keys if key not in posting]
+        rows.append(
+            f"| {table_cell(item.requirement_id)} | {table_cell(item.importance)} | "
+            f"{table_cell(item.text)} | {item.span_status.value} "
+            f"| {_refs(answers, evidence_ids)} | {_refs(posting, evidence_ids)} |"
+        )
     return _table(
         title,
         (),
-        ("ID", "Importance", "Requirement", "Source", "Answered by"),
-        [
-            f"| {table_cell(item.requirement_id)} | {table_cell(item.importance)} | "
-            f"{table_cell(item.text)} | {item.span_status.value} "
-            f"| {_refs(item.evidence_keys, evidence_ids)} |"
-            for item in requirements
-        ],
+        ("ID", "Importance", "Requirement", "Source", "Answered by", "Posting text"),
+        rows,
     )
+
+
+def _is_posting(key: str, sources: dict[str, ScoreEvidenceInput]) -> bool:
+    return key in sources and sources[key].source_kind is EvidenceSourceKind.POSTING
 
 
 def _gaps(proposal: EvaluationCommit, evidence_ids: dict[str, str]) -> str:
@@ -158,22 +171,28 @@ def _unestablished(
     )
 
 
-def _reading(proposal: EvaluationCommit, evidence_ids: dict[str, str]) -> str:
+def _reading(
+    proposal: EvaluationCommit,
+    evidence_ids: dict[str, str],
+    sources: dict[str, ScoreEvidenceInput],
+) -> str:
     rows = []
     for item in proposal.fit_report.reading:
         answer = item.answer if item.answer is not None else "not stated"
         state = "conflict" if item.conflict else ("supported" if item.answer else "not stated")
         source = (
-            _refs(item.evidence_keys, evidence_ids) if item.evidence_keys else table_cell(item.note)
+            "; ".join(_quoted(key, evidence_ids, sources) for key in item.evidence_keys)
+            if item.evidence_keys
+            else table_cell(item.note)
         )
         rows.append(f"| {table_cell(item.question)} | {table_cell(answer)} | {state} | {source} |")
     return _table(
-        "Read from the text by rule",
+        "Read from the posting and record by rule",
         (
             "These findings are deterministic readings, not scores. Missing and conflicting",
             "answers remain explicit.",
         ),
-        ("Question", "Answer", "State", "Read from"),
+        ("Question", "Answer", "State", "Source"),
         rows,
     )
 
@@ -292,6 +311,12 @@ def _costs(proposal: EvaluationCommit) -> str:
             for item in costs
         ],
     )
+
+
+def _quoted(key: str, evidence_ids: dict[str, str], sources: dict[str, ScoreEvidenceInput]) -> str:
+    origin = "posting" if _is_posting(key, sources) else "record"
+    text = sources[key].text if key in sources else ""
+    return table_cell(f"{evidence_ids[key]} ({origin}): {text}")
 
 
 def _refs(keys: list[str], evidence_ids: dict[str, str]) -> str:

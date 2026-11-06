@@ -402,23 +402,23 @@ def _example_notes(spec: JobSpec, evidence: EvidenceMap) -> str:
 
 
 def _derived(reading: Reading, spec: JobSpec) -> str:
-    """Return what the rules read out of the posting, and where they disagree.
+    """Return what the rules read out of the posting and record, and where they disagree.
 
     Its own section, since every other section came from a model.
     """
     total = len(reading.answers())
     lines = [
-        "## Read from the text by rule",
+        "## Read from the posting and record by rule",
         "",
-        "Derived from the posting text by rules, not by a model. It is not a score, not a",
-        "grade, and not a prediction about an application: it reports what the text states",
-        "and what it does not.",
+        "Derived from the posting and the master CV by rules, not by a model.",
+        "It is not a score, not a grade, and not a prediction about an application: it",
+        "reports what the text states and what it does not.",
         "",
         f"{reading.abstentions} of {total} questions were not answered by this posting.",
         '"not stated" is the finding, not a failure to produce one, and those rows are the',
         "ones worth a minute of your own reading.",
         "",
-        "| Question | Answer | Read from |",
+        "| Question | Answer | Source |",
         "| --- | --- | --- |",
     ]
     lines += [

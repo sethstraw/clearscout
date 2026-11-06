@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from clearscout.application.discovery.content_resolution.results import ResolvedPostingContent
+from clearscout.application.discovery.posting_identity import BoardRecord
 from clearscout.domain import PostingContentAccessStatus
 from clearscout.domain.records import PostingReadIntent
 
@@ -42,6 +43,9 @@ class PostingResolutionTarget:
     expected_title: str
     # Blank unless the workspace registers exactly one job board for the employer.
     registered_board_url: str = ""
+    # Every enabled board the workspace registers for the employer, and what they supplied.
+    registered_boards: tuple[str, ...] = ()
+    board_records: tuple[BoardRecord, ...] = ()
 
 
 @dataclass(frozen=True)

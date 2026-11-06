@@ -80,7 +80,7 @@ def _header(log: Path) -> dict[str, Any]:
     [
         ("draft_scripted_task.py", "draft_cases.jsonl", 8),
         ("cover_scripted_task.py", "cover_cases.jsonl", 5),
-        ("critic_scripted_task.py", "critic_cases.jsonl", 25),
+        ("critic_scripted_task.py", "critic_cases.jsonl", 30),
     ],
 )
 def test_a_scripted_document_task_runs_offline_and_every_case_scores_as_declared(
@@ -186,7 +186,7 @@ def test_the_critic_log_counts_the_outcomes_the_shipped_floors_assigned(tmp_path
     """The critic family reports a distribution to read, not an invented pass rate."""
     log = runner.run_task(str(TASKS / "critic_scripted_task.py"), log_dir=tmp_path / "logs")
 
-    assert _header(log)["critic_outcomes"] == {"fail": 19, "warn": 3, "pass": 3}
+    assert _header(log)["critic_outcomes"] == {"fail": 19, "warn": 3, "pass": 8}
 
 
 def test_a_planted_uncited_line_fails_provenance_and_its_untraceable_span() -> None:

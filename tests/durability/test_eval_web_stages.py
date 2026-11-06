@@ -80,7 +80,7 @@ def _observation(url: str, authority: str = "publisher_body") -> dict[str, str]:
 
 def _answer(identity: str, *candidates: str, authority: str = "publisher_body") -> dict[str, Any]:
     return {
-        "identity_id": identity,
+        "identity_id": web_stage_live.recovery_identity(identity),
         "candidate_urls": list(candidates),
         "supporting_urls": [],
         "observations": [_observation(url, authority) for url in candidates],
@@ -169,6 +169,100 @@ def test_the_cited_expected_url_is_a_url_hit(monkeypatch: pytest.MonkeyPatch) ->
     sent = provider.calls[0][1].task.text
     assert '"known_publisher_domain":"boards.greenhouse.io"' in sent
     assert '"known_url_read_outcome":"render_required"' in sent
+
+
+GLOBEX_BOARD = "https://jobs.ashbyhq.com/globex"
+GLOBEX_OPEN = f"{GLOBEX_BOARD}/00000000-0000-4000-8000-000000000011"
+GLOBEX_CLOSED = f"{GLOBEX_BOARD}/00000000-0000-4000-8000-000000000010"
+
+
+def _board_case(*records: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": "pr-board-held",
+        "split": "development",
+        "input": {
+            "employer": "Globex",
+            "title": "Data Platform Engineer",
+            "known_url": "https://listings.example.com/view/data-platform-4410",
+            "known_url_read_outcome": None,
+            "registered_board_url": GLOBEX_BOARD,
+            "board_records": list(records),
+        },
+        "expect": {"urls": [GLOBEX_OPEN], "hosts": []},
+        "why": "The employer's registered board holds the open posting.",
+    }
+
+
+def test_a_case_preflight_holds_is_scored_by_its_holder_without_a_paid_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _recovery_provider([])
+    sample = _board_case(
+        {"url": GLOBEX_CLOSED, "title": "Data Platform Engineer", "closed": True},
+        {"url": GLOBEX_OPEN, "title": "Data Platform Engineer"},
+    )
+
+    output = _recovery_solver(monkeypatch, provider)({"id": sample["id"], "input": sample["input"]})
+    score = recovered_posting()(sample, output)
+
+    assert score["value"] is True
+    assert score["metadata"]["outcome"] == "preflight_held"
+    assert score["checks"]["warned"] == ["preflight_held"]
+    assert score["metadata"]["matched"] == "url"
+    assert score["metadata"]["hosted_searches"] == 0
+    assert output["metadata"]["actual_dollars"] == 0
+    assert provider.calls == []
+
+
+def test_a_case_preflight_cannot_settle_goes_to_the_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _recovery_provider([(_answer("pr-board-held", GLOBEX_OPEN), [GLOBEX_OPEN])])
+    sample = _board_case({"url": GLOBEX_CLOSED, "title": "Data Platform Engineer", "closed": True})
+
+    output = _recovery_solver(monkeypatch, provider)({"id": sample["id"], "input": sample["input"]})
+
+    assert output["outcome"] != "preflight_held"
+    assert len(provider.calls) == 1
+
+
+def test_the_model_never_sees_the_case_id_that_names_the_answer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _recovery_provider([(_answer("pr-board-held", GLOBEX_OPEN), [GLOBEX_OPEN])])
+    sample = _board_case({"url": GLOBEX_CLOSED, "title": "Data Platform Engineer", "closed": True})
+
+    _recovery_solver(monkeypatch, provider)({"id": sample["id"], "input": sample["input"]})
+
+    assert "pr-board-held" not in repr(provider.calls[0])
+
+
+# Another title on the board, so preflight leaves the case to the model.
+_OTHER_ROLE = {"url": GLOBEX_OPEN, "title": "Analytics Engineer"}
+_GLOBEX_JID = (
+    "https://careers.globex.example/careers/job/?ashby_jid=00000000-0000-4000-8000-000000000011"
+)
+
+
+@pytest.mark.parametrize(
+    ("answer", "cited"),
+    [
+        (_GLOBEX_JID, [_GLOBEX_JID]),
+        (GLOBEX_OPEN, ["https://listings.example.com/view/other"]),
+    ],
+)
+def test_a_careers_job_id_or_uncited_stored_record_scores_the_board_url(
+    monkeypatch: pytest.MonkeyPatch, answer: str, cited: list[str]
+) -> None:
+    provider = _recovery_provider([(_answer("pr-board-held", answer), cited)])
+    sample = _board_case(_OTHER_ROLE)
+
+    output = _recovery_solver(monkeypatch, provider)({"id": sample["id"], "input": sample["input"]})
+    score = recovered_posting()(sample, output)
+
+    assert output["picked"] == GLOBEX_OPEN
+    assert score["value"] is True
+    assert score["metadata"]["matched"] == "url"
 
 
 def test_a_case_naming_the_employers_board_sends_it_as_production_would(

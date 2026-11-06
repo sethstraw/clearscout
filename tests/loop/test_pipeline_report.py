@@ -109,8 +109,8 @@ def test_critic_prose_quotes_the_entry_and_requirement_an_id_names(check: str) -
             assert known not in section
 
 
-def test_a_passing_critic_read_lists_its_advisories_under_it_in_the_readiness_block() -> None:
-    """A read that clears every floor still says what the critic would change."""
+def test_a_critic_read_with_a_weakness_warns_and_lists_it_in_the_readiness_block() -> None:
+    """A read that clears every floor but names a weakness warns and says what to change."""
     verdict = CriticVerdict(
         alignment=4,
         preservation=5,
@@ -127,7 +127,8 @@ def test_a_passing_critic_read_lists_its_advisories_under_it_in_the_readiness_bl
     )
     readiness = report_section(report, "Application readiness")
 
-    assert "- PASS critic: alignment 4/5" in readiness
+    assert "- WARN critic: alignment 4/5" in readiness
+    assert "1 weakness listed" in readiness
     assert f'\n  - "{POINTER}" is buried under "{REQUIREMENT}".' in readiness
 
 

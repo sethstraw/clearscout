@@ -80,7 +80,7 @@ def test_the_task_declares_the_stage_and_product_question() -> None:
 
 def test_every_case_validates_and_cites_only_ids_its_cv_has() -> None:
     samples = _samples()
-    assert 4 <= len(samples) <= 6
+    assert len(samples) >= 12
     for sample in samples:
         gold = gold_labels(sample)
         known = {entry.id for entry in citable_entries(case_inventory(sample))}

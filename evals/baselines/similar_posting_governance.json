@@ -32,7 +32,7 @@
     "model_rule_disagreements": 0,
     "must_have_accuracy": 1.0,
     "request.jobspec": "62cbfe0c8bd7",
-    "request.match": "8eb19fe0f43a",
+    "request.match": "c5e76f839a0e",
     "selection_distinct": 2,
     "stage_failure": "",
     "structured_output": "valid",

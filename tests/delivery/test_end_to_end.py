@@ -70,7 +70,7 @@ def assert_a_whole_run_happened(result: Any, master_cv: Path) -> None:
 
     # A section a reader could mistake for a model's judgment, or for a score,
     # would be worse than not having it.
-    assert "## Read from the text by rule" in report
+    assert "## Read from the posting and record by rule" in report
     assert "not by a model" in report
     assert "not a score" in report
     assert result.reading is not None

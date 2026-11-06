@@ -52,6 +52,7 @@ from clearscout.domain.records import PostingReadIntent
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
     AuditEvent,
+    JobPosting,
     PendingDiscovery,
     PostingUrl,
     Source,
@@ -952,6 +953,47 @@ def test_one_tracked_job_at_two_board_addresses_is_still_the_one_holder(
             "holder_url": board_url,
         }
     ]
+
+
+def test_refresh_names_the_open_twin_beside_a_closed_earlier_posting(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    workspace_id = scan_workspace(durable_database, slug="board-closed-twin")
+    board = board_source(
+        durable_database, workspace_id, "Globex", "https://jobs.ashbyhq.com/globex"
+    )
+    closed_id = tracked_board_posting(
+        durable_database,
+        workspace_id,
+        board,
+        title="Operations Lead",
+        url="https://jobs.ashbyhq.com/globex/00000000-0000-4000-8000-000000000001",
+    )
+    with durable_database.session() as session:
+        session.execute(
+            update(JobPosting).where(JobPosting.id == closed_id).values(archived_at=utc_now())
+        )
+    open_url = f"https://jobs.ashbyhq.com/globex/{_ASHBY_JOB}"
+    open_id = tracked_board_posting(
+        durable_database, workspace_id, board, title="Operations Lead", url=open_url
+    )
+    pending_id = seed_unread_row(
+        durable_database, workspace_id, employer="Globex", title="Operations Lead", url=_DEAD_URL
+    )
+
+    result, _resolver = _refresh_for_real(durable_database, tmp_path, workspace_id, pending_id)
+
+    assert result["tracked_on_registered_board_holders"] == [
+        {
+            "pending_discovery_id": pending_id,
+            "holder_type": "job_posting",
+            "holder_id": open_id,
+            "holder_url": open_url,
+        }
+    ]
+    note = _row(durable_database, pending_id).content_note
+    assert open_id in note
+    assert closed_id not in note
 
 
 def test_refresh_refuses_a_board_posting_that_states_another_place(

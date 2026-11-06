@@ -296,11 +296,15 @@ def _critic_verdict_finding(verdict: CriticVerdict, check: str, guidance: str) -
     )
     if verdict.style_flags:
         detail += f"; {_style_flag_count(verdict)}"
+    if verdict.weaknesses:
+        count = len(verdict.weaknesses)
+        detail += f"; {count} weakness{'' if count == 1 else 'es'} listed"
+    noted = bool(verdict.style_flags or verdict.weaknesses)
     return Finding(
         check,
-        Outcome.PASS if strong and not verdict.style_flags else Outcome.WARN,
+        Outcome.PASS if strong and not noted else Outcome.WARN,
         detail,
-        redraftable=not verdict.style_flags,
+        redraftable=not noted,
     )
 
 

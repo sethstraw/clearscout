@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import time
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,11 +43,16 @@ from clearscout.application.discovery.guided_campaign_runner import (
     matched_queries,
     poll_until_terminal,
 )
+from clearscout.application.discovery.posting_identity import (
+    BoardHolder,
+    BoardRecord,
+    board_holder,
+)
 from clearscout.application.discovery.search_parameter_summary import search_summary
 from clearscout.application.prompts import data_block, load
 from clearscout.application.tailoring.stages.context import record_block
 from clearscout.domain import PostingContentAccessStatus
-from clearscout.domain.identity import url_host
+from clearscout.domain.identity import requisition_key, url_host
 from clearscout.domain.search_parameters import EmployerArchetype, JobSearchParameters
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.providers.base import BackgroundPoll, BackgroundWebSearchProvider
@@ -71,15 +77,22 @@ RECOVERY_BILLING_ORIGIN = "eval.posting_recovery_live"
 CAMPAIGN_BILLING_ORIGIN = "eval.guided_campaign_live"
 PROVIDER_FAILED = "provider_failed"
 RESPONSE_REFUSED = "response_refused"
+PREFLIGHT_HELD = "preflight_held"
 _FINGERPRINT = "0" * 64
+
+
+def recovery_identity(case_id: str) -> str:
+    """Return the opaque identity id the model sees for a case; case ids name the answer."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"clearscout-eval:{case_id}"))
 
 
 def recovery_target(sample: dict[str, Any]) -> PostingResolutionTarget:
     """Return the pending identity one recovery case describes, as preflight would present it."""
     case = sample["input"]
     read = case.get("known_url_read_outcome") or PostingContentAccessStatus.NOT_YET_READ.value
+    board = str(case.get("registered_board_url") or "")
     return PostingResolutionTarget(
-        id=str(sample["id"]),
+        id=recovery_identity(str(sample["id"])),
         employer=str(case["employer"]),
         title=str(case["title"]),
         url=str(case["known_url"]),
@@ -88,7 +101,49 @@ def recovery_target(sample: dict[str, Any]) -> PostingResolutionTarget:
         current_content_id=None,
         expected_employer=str(case["employer"]),
         expected_title=str(case["title"]),
-        registered_board_url=str(case.get("registered_board_url") or ""),
+        registered_board_url=board,
+        registered_boards=(board,) if board else (),
+        board_records=tuple(_board_records(case)) if board else (),
+    )
+
+
+def _board_records(case: dict[str, Any]) -> list[BoardRecord]:
+    """Return the records a case says its registered board stores."""
+    board = str(case.get("registered_board_url") or "")
+    employer = str(case["employer"])
+    return [
+        BoardRecord(
+            holder=BoardHolder(row.get("kind", "job_posting"), f"board-{index}", row["url"]),
+            source_id=board,
+            title=str(row["title"]),
+            places=tuple(row.get("places") or ()),
+            requisitions=frozenset(
+                requisition_key(employer, str(value)) for value in row.get("requisitions", ())
+            ),
+            closed=bool(row.get("closed", False)),
+        )
+        for index, row in enumerate(case.get("board_records") or [])
+    ]
+
+
+def preflight_holder(sample: dict[str, Any]) -> BoardHolder | None:
+    """Return the registered-board record production preflight finds holding this case.
+
+    A case lists its registered board's stored records under ``board_records``; each
+    goes through the same title, place, requisition and open-record match preflight uses.
+    """
+    case = sample["input"]
+    board = str(case.get("registered_board_url") or "")
+    rows = case.get("board_records") or []
+    if not board or not rows:
+        return None
+    employer = str(case["employer"])
+    requisition = str(case.get("requisition") or "")
+    return board_holder(
+        str(case["title"]),
+        tuple(case.get("places") or ()),
+        frozenset({requisition_key(employer, requisition)} if requisition else ()),
+        _board_records(case),
     )
 
 
@@ -153,6 +208,17 @@ class _PostingRecoveryLiveSolver:
     def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
         snapshot = _unchanged(RECOVERY_PROMPTS, self.prompt_snapshot)
         target = recovery_target(sample)
+        holder = preflight_holder(sample)
+        if holder is not None:
+            unbilled = Ledger(prices=self.ledger.prices)
+            return {
+                "completion": PREFLIGHT_HELD,
+                "outcome": PREFLIGHT_HELD,
+                "candidates": [],
+                "picked": holder.url,
+                "hosted_searches": 0,
+                "metadata": sample_provenance(unbilled, self.ledger, self.run_metadata),
+            }
         paid = paid_call(
             lambda client: recover(client, target),
             provider_name=self.provider_name,

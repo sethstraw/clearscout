@@ -289,6 +289,19 @@ function RequirementCard({
   );
 }
 
+/** Name what a quote is, preferring the reading it supports over a raw locator. */
+function evidenceOrigin(item: Evidence): string {
+  if (/^cv:role-.+-dates$/.test(item.locator)) {
+    return "Years the record covers, from a CV role's dates";
+  }
+  if (/^cv:role-.+-title$/.test(item.locator)) {
+    return "What the record reads as, from a CV role's title";
+  }
+  const reading = /^posting:reading-(?<name>.+)-\d+$/.exec(item.locator)?.groups?.name;
+  if (reading) return `Posting text read for ${reading.replaceAll("_", " ")}`;
+  return item.locator || item.master_cv_entry_id || sourceLabel(item.source_kind);
+}
+
 function EvidenceQuote({
   item,
   jobId,
@@ -309,7 +322,7 @@ function EvidenceQuote({
     <blockquote className={`evidence-quote${selected ? " evidence-quote--selected" : ""}`}>
       <ClampedText>{item.text}</ClampedText>
       <footer>
-        <span>{item.locator || item.master_cv_entry_id || sourceLabel(item.source_kind)}</span>
+        <span>{evidenceOrigin(item)}</span>
         {postingLink ? (
           <Link className="evidence-link" to={postingLink}>
             View exact span

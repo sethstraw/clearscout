@@ -2,6 +2,7 @@
 
 from clearscout.application.discovery.scan_queries.board_holders import (
     registered_board_holder,
+    registered_board_records,
     registered_employer_boards,
 )
 from clearscout.application.discovery.scan_queries.history import (
@@ -40,6 +41,7 @@ __all__ = [
     "kept_scan_id_statement",
     "refusal_text",
     "registered_board_holder",
+    "registered_board_records",
     "registered_employer_boards",
     "require_workspace_in",
 ]
