@@ -18,6 +18,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from evals.inspect.runner import usage_line, usage_rollup
 from evals.semantic import StageMeasurement
 
 # The run identity keys that name what a log scored; a live solver records both.
@@ -65,6 +66,7 @@ class _Run:
     identity: dict[str, str] = field(default_factory=dict)
     columns: dict[str, _Tally] = field(default_factory=dict)
     cases: dict[tuple[str, str], _Tally] = field(default_factory=dict)
+    rows: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _measurements(row: dict[str, Any]) -> list[StageMeasurement]:
@@ -97,6 +99,7 @@ def _read(log_path: Path, label: str) -> _Run:
         sample_id = record.get("id")
         if not sample_id:
             continue
+        run.rows.append(record)
         arm = record.get("arm")
         column = label if arm is None else f"{label} {arm}"
         run.columns.setdefault(column, _Tally()).add(record)
@@ -149,6 +152,9 @@ def diff(baseline_path: str, candidate_path: str) -> str:
                 f"| {column} | {tally.passed}/{tally.trials} | {tally.input_tokens} "
                 f"| {tally.output_tokens} | {tally.reasoning_tokens} | {_dollars(tally)} |"
             )
+    for run in runs:
+        if (rollup := usage_rollup(run.rows)) is not None:
+            lines.append(f"{run.label} {usage_line(rollup)}")
     lines += [
         "",
         f"Trials are independent draws; across {len(cases)} cases "

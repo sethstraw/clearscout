@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
-from clearscout.application.discovery.source_continuation.family import current_scan_family_ids
+from clearscout.application.discovery.source_continuation.family import (
+    current_scan_family_ids,
+    select_frontier_rows,
+)
 from clearscout.application.discovery.source_lifecycle import source_read_address
 from clearscout.application.discovery.source_reading import (
     SourceDetailCheckpoint,
@@ -140,9 +142,7 @@ def retain_phenom_read(
         if stored is not None:
             stored.detail_checkpoint = checkpoint.as_json()
     rows = session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(SourceScanFrontierItem.continuation_id == continuation.id)
+        select_frontier_rows().where(SourceScanFrontierItem.continuation_id == continuation.id)
     )
     membership = {
         item
@@ -172,9 +172,7 @@ def phenom_listing_coverage(
     root = normalize_fetch_url(root_url)
     family = current_scan_family_ids(session, continuation)
     rows = session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(SourceScanFrontierItem.continuation_id == continuation.id)
+        select_frontier_rows().where(SourceScanFrontierItem.continuation_id == continuation.id)
     )
     checkpoints = [
         checkpoint

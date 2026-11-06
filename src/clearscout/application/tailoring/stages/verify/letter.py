@@ -73,6 +73,52 @@ _ITEM_WORD = rf"(?!(?:{'|'.join(sorted(CLAIM_VERBS | {'and', 'or'}))})\b)[\w-]+"
 _TERM = rf"{_ITEM_WORD}(?: {_ITEM_WORD}){{0,2}}"
 _SERIES = re.compile(rf"\b(?:{_TERM}(?:,| and| or) +){{2,}}(?:and |or )?{_TERM}", re.IGNORECASE)
 
+# A sentence about the posting or research the letter was written from, a role that "calls
+# for" something, or what was supplied. "Its research centers on" is the employer's own work,
+# so research counts only when attributed ("as the research notes") or as "company research".
+_DOCUMENT_NOUN = (
+    r"(?:(?:the|this|that|its|their|your|[A-Z][\w&-]*['\u2019]s)\s+)"
+    r"(?:(?:job|role|position)\s+(?:posting|description|listing|ad(?:vert(?:isement)?)?)"
+    r"|posting|listing)"
+)
+_RESEARCH_NOUN = r"(?:the|this|that)\s+(?:company\s+)?research"
+_SOURCE_SUBJECT = rf"(?:{_DOCUMENT_NOUN}|(?:the|this|that)\s+company\s+research)"
+_SOURCE_NOUN = rf"(?:{_DOCUMENT_NOUN}|{_RESEARCH_NOUN})"
+_SOURCE_VERB = (
+    r"(?:(?:also|further|clearly|explicitly|specifically|repeatedly)\s+)?"
+    r"(?:emphasi[sz]es|notes|says|states|mentions|describes|highlights|stresses|lists"
+    r"|asks(?:\s+for)?|calls\s+for|seeks|requires|wants|looks\s+for|focuses\s+on"
+    r"|centers\s+on|points\s+to|names|signals|suggests|indicates|outlines|specifies"
+    r"|underscores|references|frames|puts|places|shows)\b"
+)
+_ROLE_DEMAND = (
+    r"^\W*(?:This|The)\s+(?:role|position|opening)\s+(?:also\s+)?"
+    r"(?:calls\s+for|asks(?:\s+for)?|requires|seeks|is\s+looking\s+for|looks\s+for"
+    r"|wants|demands|expects|emphasi[sz]es|stresses|highlights|prioriti[sz]es)\b"
+)
+# What was supplied counts only when missing, scarce, or speaking: "No research was provided",
+# "was not supplied", "Beyond the details supplied", "The information provided says". A noun
+# provided "to" or "by" someone is the candidate's or employer's own work.
+_INPUT_NOUN = r"(?:(?:company\s+)?research|information|details|sources?|materials?|context)"
+_HANDED = r"(?:supplied|provided|given)\b"
+_HANDED_OVER = rf"{_HANDED}(?!\s+(?:to|by)\b)"
+_SUPPLIED = (
+    rf"\b(?:no|little|limited|scant)\s+{_INPUT_NOUN}\s+"
+    rf"(?:(?:was|were|has\s+been|have\s+been)\s+)?{_HANDED_OVER}"
+    rf"|\b{_INPUT_NOUN}\s+(?:[\w-]+\s+){{0,3}}?(?:was|were|is|are|has|have)"
+    rf"(?:\s+not|n['\u2019]t)\s+(?:been\s+)?{_HANDED_OVER}"
+    rf"|\bbeyond\s+(?:the\s+{_INPUT_NOUN}\s+|what\s+(?:was|were)\s+){_HANDED_OVER}"
+    rf"|\b(?:the|this|that)\s+{_INPUT_NOUN}\s+{_HANDED}\s+{_SOURCE_VERB}"
+)
+_SOURCE_TALK = re.compile(
+    rf"\b{_SOURCE_SUBJECT}\s+{_SOURCE_VERB}"
+    rf"|\bas\s+{_RESEARCH_NOUN}\s+{_SOURCE_VERB}"
+    rf"|\b(?:according\s+to|per)\s+{_SOURCE_NOUN}"
+    r"|\b(?:named|described|listed|stated|mentioned|outlined|noted)\s+in\s+"
+    rf"{_SOURCE_NOUN}|{_ROLE_DEMAND}|{_SUPPLIED}",
+    re.IGNORECASE,
+)
+
 
 def check_letter(
     *,
@@ -97,6 +143,7 @@ def check_letter(
         figures(lines, inventory, "letter numbers", research=research),
         _letter_completeness(body, inventory),
         _claim_ownership(lines),
+        _source_talk(lines),
         ownership_verbs(
             [line for line in lines if SourceType.CANDIDATE in line.source_types],
             inventory,
@@ -136,6 +183,26 @@ def _claim_ownership(lines: Sequence[DraftedLine]) -> Finding:
     return Finding(
         "claim ownership", Outcome.PASS, "No explicit candidate claim uses company evidence"
     )
+
+
+def _source_talk(lines: Sequence[DraftedLine]) -> Finding:
+    """Send back sentences about the posting or research rather than about the employer."""
+    offenders = [
+        sentence
+        for line in lines
+        for sentence in sentence_pieces(line.text.strip())
+        if _SOURCE_TALK.search(sentence)
+    ]
+    if offenders:
+        return Finding(
+            "letter source talk",
+            Outcome.FAIL,
+            f"{len(offenders)} sentence(s) talk about the posting or research instead of the "
+            "employer; make the role, the employer, its product, or whom it serves the "
+            "subject, and "
+            f"never say what was or was not supplied: {quoted(offenders)}",
+        )
+    return Finding("letter source talk", Outcome.PASS, "no sentence talks about its sources")
 
 
 def _letter_completeness(body: str, inventory: CvInventory) -> Finding:

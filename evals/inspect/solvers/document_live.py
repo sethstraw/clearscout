@@ -140,7 +140,8 @@ class _CoverLiveSolver(_DocumentLiveSolver):
             guardrails=context.guardrails,
             research=research,
         )
-        return letter_result(letter, report)
+        # Live receipts are refused inside the repository, so the body stays private.
+        return letter_result(letter, report, keep_text=True)
 
 
 @dataclass(frozen=True)

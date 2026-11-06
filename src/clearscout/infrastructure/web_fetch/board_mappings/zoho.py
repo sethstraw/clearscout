@@ -7,9 +7,11 @@ import json
 import re
 from typing import Any
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -72,4 +74,6 @@ ZOHO_MAPPING = BoardDeclaration(
     requisition_id=("id",),
     employment_types=("Job_Type",),
     arrangement=_arrangement,
+    # Date_Opened is the opening's date in Zoho, which a recruiter can reset.
+    posted=posted_on(("Date_Opened",), PostedDateGrade.BOARD_DATE),
 )

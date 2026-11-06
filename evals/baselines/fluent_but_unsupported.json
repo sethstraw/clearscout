@@ -1,6 +1,6 @@
 {
   "case": "fluent_but_unsupported",
-  "prompt_suite": "fd815f04798c",
+  "prompt_suite": "3d6a0735b129",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
@@ -48,7 +48,7 @@
     "model_calls": 4,
     "model_rule_disagreements": 0,
     "ownership_inflation": 0,
-    "request.critic": "5db112174d08",
+    "request.critic": "b9484946647a",
     "request.draft": "55d67382411a",
     "request.jobspec": "0e6c29be3b9f",
     "request.match": "f1b27fde2e74",

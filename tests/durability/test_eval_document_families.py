@@ -31,11 +31,13 @@ from evals.inspect.solvers.document_scripted import (
     critic_scripted_solver,
     draft_scripted_solver,
 )
-from evals.support.documents import DocumentSampleError, document_context
+from evals.support.documents import DocumentSampleError, document_context, letter_result
 
 from clearscout.application.config import ProviderName, Settings, Stage
 from clearscout.application.prompts import load
 from clearscout.application.tailoring.runs import settings_hash
+from clearscout.application.tailoring.stages.draft import CoverLetter, DraftedLine
+from clearscout.application.tailoring.stages.verify.report import KeywordCoverage, Report
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.shared.errors import ConfigError
 
@@ -78,9 +80,9 @@ def _header(log: Path) -> dict[str, Any]:
 @pytest.mark.parametrize(
     ("task", "dataset", "total"),
     [
-        ("draft_scripted_task.py", "draft_cases.jsonl", 8),
-        ("cover_scripted_task.py", "cover_cases.jsonl", 5),
-        ("critic_scripted_task.py", "critic_cases.jsonl", 30),
+        ("draft_scripted_task.py", "draft_cases.jsonl", 12),
+        ("cover_scripted_task.py", "cover_cases.jsonl", 14),
+        ("critic_scripted_task.py", "critic_cases.jsonl", 31),
     ],
 )
 def test_a_scripted_document_task_runs_offline_and_every_case_scores_as_declared(
@@ -170,7 +172,11 @@ def test_the_log_counts_warned_checks_the_pass_mark_leaves_out(tmp_path: Path) -
 
     header = _header(log)
     assert header["passed"] == header["total"]
-    assert header["warned_checks"] == {"factual review": 5, "letter echo": 1}
+    assert header["warned_checks"] == {
+        "factual review": 14,
+        "letter closing": 1,
+        "letter echo": 2,
+    }
 
 
 def test_an_ownership_claim_the_evidence_does_not_carry_is_warned_and_counted(
@@ -179,14 +185,14 @@ def test_an_ownership_claim_the_evidence_does_not_carry_is_warned_and_counted(
     """The one support check a resume case plants without failing the attempt."""
     log = runner.run_task(str(TASKS / "draft_scripted_task.py"), log_dir=tmp_path / "logs")
 
-    assert _header(log)["warned_checks"]["ownership verbs"] == 1
+    assert _header(log)["warned_checks"]["ownership verbs"] == 2
 
 
 def test_the_critic_log_counts_the_outcomes_the_shipped_floors_assigned(tmp_path: Path) -> None:
     """The critic family reports a distribution to read, not an invented pass rate."""
     log = runner.run_task(str(TASKS / "critic_scripted_task.py"), log_dir=tmp_path / "logs")
 
-    assert _header(log)["critic_outcomes"] == {"fail": 19, "warn": 3, "pass": 8}
+    assert _header(log)["critic_outcomes"] == {"fail": 20, "warn": 3, "pass": 8}
 
 
 def test_a_planted_uncited_line_fails_provenance_and_its_untraceable_span() -> None:
@@ -348,6 +354,82 @@ def test_a_boundary_the_case_accepts_catches_its_planted_line() -> None:
     assert critic_doubt_contract()(sample, output)["value"] is True
 
 
+@pytest.mark.parametrize(
+    ("sample_id", "boundary", "claim"),
+    [
+        (
+            "planted_scope_widening",
+            "team_contribution",
+            "“Took the platform team's registry cutover from plan to release”"
+            " credits the candidate with the team's cutover.",
+        ),
+        (
+            "boundary_designed_as_shipped",
+            "absent_from_record",
+            "“rolled it out to every producer team” is not in the record.",
+        ),
+        (
+            "planted_letter_blanket_fit",
+            "miscited",
+            "“I have done each of these duties” rests on an entry that does not"
+            " carry the warehouse or the modules.",
+        ),
+        (
+            "clean_tenure_from_summary",
+            "formal_title_or_tenure",
+            "“Across twelve years the work moved from reporting pipelines to platform"
+            " architecture” sits under one employer and claims twelve years there.",
+        ),
+    ],
+)
+def test_a_planted_line_is_caught_under_the_boundary_its_cited_evidence_reaches(
+    sample_id: str, boundary: str, claim: str
+) -> None:
+    """Each case's label follows what its cited entries carry, not the defect it was built for."""
+    sample = _case("critic_cases.jsonl", sample_id)
+    doubt = {"boundary": boundary, "claim": claim}
+
+    scored = critic_doubt_contract()(
+        sample, {"completion": "fail", "verdict": {"unsupported_claims": [doubt]}}
+    )
+
+    assert scored["value"] is True
+
+
+@pytest.mark.parametrize(
+    ("claim", "caught"),
+    [
+        (
+            "“operating the streaming ingestion core and its feeds ... and I have done"
+            " each of these duties.” Rebuilding a tier is not operating the core.",
+            True,
+        ),
+        (
+            "“operating the streaming ingestion core … owned its on-call"
+            " rotation” is not in the record.",
+            False,
+        ),
+        (
+            "“I have done each of these duties ... operating the streaming ingestion"
+            " core and its feeds” reorders the letter.",
+            False,
+        ),
+    ],
+)
+def test_a_quotation_elided_inside_the_planted_line_catches_it_only_when_every_part_is_there(
+    claim: str, caught: bool
+) -> None:
+    """A critic shortens a long quote with an ellipsis, so each kept part must be the line's."""
+    sample = _case("critic_cases.jsonl", "planted_letter_blanket_fit")
+    doubt = {"boundary": "adjacent", "claim": claim}
+
+    scored = critic_doubt_contract()(
+        sample, {"completion": "fail", "verdict": {"unsupported_claims": [doubt]}}
+    )
+
+    assert scored["value"] is caught
+
+
 def test_a_doubt_quoting_one_term_of_the_planted_line_does_not_catch_it() -> None:
     """A lone tool name recurs in lines nobody doubted, so it does not locate the claim."""
     sample = _case("critic_cases.jsonl", "planted_absent_from_record")
@@ -375,6 +457,26 @@ def test_a_critic_that_doubts_a_clean_document_fails_its_row() -> None:
     assert sample["expect"]["unsupported_claim"] is False
     assert flooded["value"] is False
     assert flooded["metadata"]["observed_boundaries"] == ["miscited"]
+
+
+def test_a_career_span_kept_in_the_summary_is_a_clean_row_a_tenure_doubt_fails() -> None:
+    """The placement rule reaches lines under a role, so a span in the summary stays clean."""
+    sample = _case("critic_cases.jsonl", "clean_tenure_in_summary")
+    draft = sample["metadata"]["scripted_draft"]
+    doubt = {
+        "boundary": "formal_title_or_tenure",
+        "claim": "“Across twelve years the work moved from reporting pipelines to platform"
+        " architecture” claims twelve years.",
+    }
+
+    scored = critic_doubt_contract()(
+        sample, {"completion": "fail", "verdict": {"unsupported_claims": [doubt]}}
+    )
+
+    assert "twelve years" in draft["summary"]["text"]
+    assert not any("years" in b["text"] for role in draft["roles"] for b in role["bullets"])
+    assert sample["expect"] == {"critic_outcome": "pass", "unsupported_claim": False}
+    assert scored["value"] is False
 
 
 @pytest.mark.parametrize(
@@ -793,3 +895,19 @@ def test_a_live_document_run_binds_its_stage_prompts_and_dataset_bytes(
         assert "selection_manifest_sha256" not in metadata
     finally:
         solver.database.dispose()
+
+
+@pytest.mark.parametrize("keep_text", [True, False])
+def test_a_letter_result_carries_the_body_only_when_the_run_keeps_it(keep_text: bool) -> None:
+    """Live receipts sit in a private directory and keep the letter; scripted logs do not."""
+    letter = CoverLetter(
+        greeting="Dear hiring team,",
+        paragraphs=(DraftedLine(text="Adatum serves regional carriers."),),
+        closing="Sincerely,",
+    )
+    report = Report(findings=(), coverage=KeywordCoverage(present=(), missing=()))
+
+    document = letter_result(letter, report, keep_text=keep_text)["document"]
+
+    assert document["words"] == len(letter.rendered().split())
+    assert document.get("text") == (letter.rendered() if keep_text else None)

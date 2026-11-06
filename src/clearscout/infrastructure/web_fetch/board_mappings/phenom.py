@@ -6,9 +6,11 @@ import re
 from typing import Any
 from urllib.parse import quote, urljoin, urlsplit
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -61,4 +63,6 @@ PHENOM_MAPPING = BoardDeclaration(
     url=_url,
     requisition_id=_requisition_id,
     places=_places,
+    # postedDate moves forward when a posting is reposted.
+    posted=posted_on(("postedDate",), PostedDateGrade.BOARD_DATE),
 )

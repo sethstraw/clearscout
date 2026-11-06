@@ -45,6 +45,7 @@ from clearscout.application.discovery.source_continuation import (
     recent_root_posting_reads,
 )
 from clearscout.application.discovery.source_continuation import handler as continuation_handler
+from clearscout.application.discovery.source_continuation.family import select_frontier_rows
 from clearscout.application.discovery.source_continuation.frontier_carry import (
     carried_frontier_item,
 )
@@ -14094,3 +14095,52 @@ def test_a_whole_continuation_load_reads_a_shared_membership_apart_from_its_rows
     assert {row.listing_membership_sha256 for row in _rows(durable_database, continuation_id)} == (
         _membership_digests(durable_database)
     )
+
+
+def test_selected_frontier_rows_read_their_shared_membership_once(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    root = "https://jobs.jobvite.com/acme/jobs"
+    source_id = _source(durable_database, workspace_id, "Acme", root)
+    scan_id = _scan_row(durable_database, source_id, day=0)
+    ids = ("d1", "d2", "d3")
+    continuation_id = _seed_continuation(
+        durable_database,
+        workspace_id,
+        scan_id,
+        [
+            {
+                "url": f"https://jobs.jobvite.com/acme/job/{each}",
+                "source_url": root,
+                "status": "completed",
+                "deferred_reason": POSTING_DETAIL_COMPLETED,
+                "detail_checkpoint": _jobvite_checkpoint(
+                    f"https://jobs.jobvite.com/acme/job/{each}", *ids, pending=False
+                ),
+            }
+            for each in ids
+        ],
+    )
+    membership_reads: list[str] = []
+
+    def record(_conn: object, _cursor: object, statement: str, *_args: object) -> None:
+        if statement.startswith("SELECT") and "source_listing_memberships" in statement:
+            membership_reads.append(statement)
+
+    event.listen(durable_database.engine, "before_cursor_execute", record)
+    try:
+        with durable_database.exclusive_session() as session:
+            rows = session.scalars(
+                select_frontier_rows().where(
+                    SourceScanFrontierItem.continuation_id == continuation_id
+                )
+            ).all()
+            checkpoints = [row.detail_checkpoint for row in rows]
+    finally:
+        event.remove(durable_database.engine, "before_cursor_execute", record)
+
+    assert len(membership_reads) == 1
+    assert "source_scan_frontier_items" not in membership_reads[0]
+    assert len(checkpoints) == len(ids)
+    assert all(each is not None and each["listing_ids"] == list(ids) for each in checkpoints)

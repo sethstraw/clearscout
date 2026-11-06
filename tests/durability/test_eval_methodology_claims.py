@@ -23,9 +23,11 @@ from evals.inspect.solvers.document_scripted import (
     draft_scripted_solver,
 )
 from evals.runner import EvalError
+from evals.support.documents import research_sources
 from evals.support.inventory import synthetic_inventory
 
 from clearscout.application.tailoring.stages.verify import SUPPORT_CHECKS
+from clearscout.shared.results import Outcome
 
 FIXTURES = Path(__file__).resolve().parents[2] / "evals" / "fixtures"
 BASELINES = Path(__file__).resolve().parents[2] / "evals" / "baselines"
@@ -46,6 +48,8 @@ PLANTED_CHECKS = {
     "letter numbers": "invented_letter_figure",
     "letter length": "overlong_letter",
     "letter echo": "echoed_evidence",
+    "letter closing": "closing_on_what_work_taught",
+    "letter source talk": "posting_as_subject",
 }
 
 # A shipped check no case plants a defect for, and the input that is missing.
@@ -95,12 +99,9 @@ UNPLANTED_CHECKS = {
         "here would notice this check going silent."
     ),
     "claim ownership": (
-        "No draft or cover case supplies company research, which is the only input "
-        "that makes this check fire at all."
-    ),
-    "letter closing": (
-        "No cover case closes on what the work shows about the candidate, so nothing "
-        "here would notice this check going silent."
+        "Every cover case supplies the posting as company research, but no case writes "
+        "a first-person sentence into a paragraph citing it, so nothing here would "
+        "notice this check going silent."
     ),
 }
 
@@ -201,6 +202,13 @@ def test_claim_ownership_is_a_support_check_no_document_case_reaches() -> None:
     """METHODOLOGY names this the gap worth stating, so both halves are asserted."""
     assert "claim ownership" in SUPPORT_CHECKS
     assert "claim ownership" not in PLANTED_CHECKS
+    for case in cases("cover_cases.jsonl"):
+        assert research_sources(case)[0].id == "company.posting", case["id"]
+        outcomes = {
+            finding["check"]: finding["outcome"]
+            for finding in cover_scripted_solver()(case)["findings"]
+        }
+        assert outcomes["claim ownership"] == Outcome.PASS.value, case["id"]
 
 
 def test_factual_review_is_a_standing_warning_on_every_resume_case() -> None:

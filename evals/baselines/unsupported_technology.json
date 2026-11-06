@@ -1,6 +1,6 @@
 {
   "case": "unsupported_technology",
-  "prompt_suite": "fd815f04798c",
+  "prompt_suite": "3d6a0735b129",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
@@ -51,7 +51,7 @@
     "model_rule_disagreements": 0,
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
-    "request.critic": "9feb50ad6359",
+    "request.critic": "15ab0ff0d274",
     "request.draft": "4cd0a6b6ce31",
     "request.jobspec": "0b92e9213416",
     "request.match": "a2290305c60d",

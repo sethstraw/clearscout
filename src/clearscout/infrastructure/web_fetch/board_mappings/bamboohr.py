@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Path,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -87,4 +89,5 @@ BAMBOOHR_MAPPING = BoardDeclaration(
     description=(("opening", "description"),),
     arrangement=_arrangement,
     compensation=_compensation,
+    posted=posted_on(("opening", "datePosted"), PostedDateGrade.FIRST_POSTED),
 )

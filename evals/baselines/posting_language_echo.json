@@ -1,6 +1,6 @@
 {
   "case": "posting_language_echo",
-  "prompt_suite": "fd815f04798c",
+  "prompt_suite": "3d6a0735b129",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
@@ -49,7 +49,7 @@
     "model_rule_disagreements": 0,
     "ownership_inflation": 0,
     "posting_language_echoed": 4,
-    "request.critic": "84546bcd8b82",
+    "request.critic": "08671e680083",
     "request.draft": "24e4ffb147f9",
     "request.jobspec": "0b00eb4d782a",
     "request.match": "b8fe04825bd8",

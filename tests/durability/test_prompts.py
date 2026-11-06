@@ -151,6 +151,15 @@ def test_the_letter_prompt_binds_the_letter_to_this_one_role() -> None:
     assert "Prefer a source whose Kind is not `posting`, such as a careers or about page" in text
     assert "and cite that source; otherwise take the theme from the posting." in text
     assert "Benefits, perks, and values statements are not a theme." in text
+    assert (
+        "Keep to the one theme the candidate paragraphs' work bears on most, in one or two "
+        "sentences, rather than covering a source point by point or in its order." in text
+    )
+    assert (
+        "The paragraph's subject is the role, the employer, its product, or whom it serves; "
+        "never name the posting, job description, or research as a source, or say what was "
+        "or was not supplied." in text
+    )
     assert "End with one candidate paragraph" in text
     assert "lets the specifics of that work carry why it bears on work of this kind" in text
     assert "equips" not in text

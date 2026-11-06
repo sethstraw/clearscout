@@ -1,6 +1,6 @@
 {
   "case": "search_vocabulary_reachable",
-  "prompt_suite": "5ebc55b28c57",
+  "prompt_suite": "18c824164af2",
   "schemas": "80dd5769ea4f",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -29,7 +29,7 @@
     "model_rule_disagreements": 0,
     "request.jobspec": "4e3cb3a74bf4",
     "request.match": "6da6f750cb45",
-    "request.search_vocabulary": "2e2c2b89f47d",
+    "request.search_vocabulary": "541030fac860",
     "search_vocabulary_titles_accepted": 1,
     "search_vocabulary_titles_refused": 1,
     "stage_failure": "",

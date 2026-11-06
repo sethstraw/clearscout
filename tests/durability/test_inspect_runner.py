@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
+import socket
 import subprocess
 import sys
 from decimal import Decimal
@@ -35,6 +37,7 @@ from clearscout.application.tailoring.stages.match import (
 )
 from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
 from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.providers import base as provider_base
 from clearscout.infrastructure.providers.base import (
     CallRecord,
     Finish,
@@ -2458,3 +2461,371 @@ def test_header_omits_spend_and_cases_the_rows_do_not_carry(tmp_path: Path) -> N
     assert header["accuracy_wilson95"][1] == 1.0
     assert "usd_total" not in header
     assert "distinct_cases" not in header
+
+
+def _measured(stage: str, uncached: int, cached: int, *, ms: int = 1000) -> dict[str, Any]:
+    return {
+        "stage": stage,
+        "model": "synthetic-model",
+        "usage": {
+            "input_tokens": uncached,
+            "output_tokens": 10,
+            "cache_read_tokens": cached,
+            "cache_write_tokens": 5,
+            "reasoning_tokens": 4,
+        },
+        "dollars": "0.01",
+        "milliseconds": ms,
+        "searches": 1,
+    }
+
+
+def _usage_row(trial: int, passed: bool, *measurements: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": "case-0",
+        "trial": trial,
+        "score": {"value": passed},
+        "solver_output": {"metadata": {"measurements": list(measurements), "actual_dollars": 0.01}},
+    }
+
+
+def test_header_rolls_up_usage_with_cache_share_per_trial(tmp_path: Path) -> None:
+    rows = [
+        _usage_row(0, True, _measured("critic", 100, 0, ms=1000)),
+        _usage_row(1, False, _measured("critic", 25, 75, ms=3000)),
+    ]
+
+    usage = _logged_header(tmp_path, rows, total=2, passed=1)["usage"]
+
+    assert usage["calls"] == 2
+    assert usage["input_tokens_uncached"] == 125
+    assert usage["cache_read_tokens"] == 75
+    assert usage["cache_write_tokens"] == 10
+    assert usage["prompt_tokens"] == 210
+    assert usage["cache_share"] == pytest.approx(75 / 210)
+    assert usage["output_tokens"] == 20
+    assert usage["reasoning_tokens"] == 8
+    assert usage["searches"] == 2
+    assert usage["milliseconds_mean"] == 2000
+    assert usage["milliseconds_p95"] == 3000
+    assert usage["usd_total"] == pytest.approx(0.02)
+    assert usage["usd_per_sample"] == pytest.approx(0.02)
+    assert usage["usd_per_passed_sample"] == pytest.approx(0.02)
+    assert usage["cache_share_by_trial"] == {"0": 0.0, "1": pytest.approx(75 / 105)}
+    assert "by_stage" not in usage
+
+
+def test_usage_rollup_leaves_per_pass_cost_empty_when_nothing_passed(tmp_path: Path) -> None:
+    rows = [_usage_row(0, False, _measured("critic", 0, 0))]
+
+    usage = _logged_header(tmp_path, rows, total=1, passed=0)["usage"]
+
+    assert usage["usd_per_passed_sample"] is None
+    assert usage["cache_share"] == 0.0
+    assert "cache_share_by_trial" not in usage
+
+
+def test_usage_rollup_breaks_a_multi_stage_run_down_by_stage(tmp_path: Path) -> None:
+    rows = [_usage_row(0, True, _measured("draft", 40, 60), _measured("critic", 10, 0))]
+
+    usage = _logged_header(tmp_path, rows, total=1, passed=1)["usage"]
+
+    assert usage["calls"] == 2
+    assert usage["by_stage"]["draft"]["cache_share"] == pytest.approx(60 / 105)
+    assert usage["by_stage"]["critic"]["prompt_tokens"] == 15
+
+
+def test_usage_line_summarizes_a_rollup() -> None:
+    rows = [_usage_row(0, True, _measured("critic", 2000, 6000, ms=9100))]
+    rollup = runner.usage_rollup(rows)
+    assert rollup is not None
+
+    assert runner.usage_line(rollup) == (
+        "usage: calls=1 prompt=8k cache=75% out=10 reasoning=4 searches=1 "
+        "p95=9.1s usd=0.010 per_pass=0.0100"
+    )
+
+
+def _smoke_task(dataset: Path, solve: Any, score: Any = None) -> FakeTaskModule:
+    return FakeTaskModule(
+        TASK_NAME="critic-live",
+        DATASET_PATH=dataset,
+        PRODUCT_QUESTION=ProductQuestion.DRAFT_CRITIQUE,
+        solver=lambda: solve,
+        scorer=lambda: score or (lambda sample, output: {"value": True}),
+    )
+
+
+def _smoke_dataset(tmp_path: Path) -> Path:
+    dataset = tmp_path / "critic.jsonl"
+    _write_dataset(dataset, [{"id": "dev-1"}, {"id": "dev-2"}])
+    return dataset
+
+
+def _priced(sample: dict[str, Any]) -> dict[str, Any]:
+    return {"completion": sample["id"], "metadata": {"measurements": [_measured("critic", 9, 1)]}}
+
+
+def test_a_passing_smoke_call_is_reused_as_the_first_trial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    calls: list[str] = []
+
+    def solve(sample: dict[str, Any]) -> dict[str, Any]:
+        calls.append(sample["id"])
+        return _priced(sample)
+
+    task = _smoke_task(_smoke_dataset(tmp_path), solve)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    log_path = runner.run_task(
+        "t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal(1)
+    )
+
+    assert calls == ["dev-1", "dev-1", "dev-2", "dev-2"]
+    assert len(log_path.read_text(encoding="utf-8").splitlines()) == 5
+    assert "smoke: ok case=dev-1 usd=0.01 projected=0.04" in capsys.readouterr().out
+
+
+def _no_measurements(sample: dict[str, Any]) -> dict[str, Any]:
+    return {"completion": "x", "metadata": {"measurements": []}}
+
+
+def _provider_error(sample: dict[str, Any]) -> dict[str, Any]:
+    raise ProviderError("synthetic outage")
+
+
+def _raising_scorer(sample: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    raise KeyError("draws")
+
+
+@pytest.mark.parametrize(
+    ("solve", "score", "approved", "reason"),
+    [
+        (_provider_error, None, "1", "provider error ProviderError"),
+        (_priced, _raising_scorer, "1", "the scorer raised KeyError"),
+        (_no_measurements, None, "1", "the sample recorded no measurements"),
+        (_priced, None, "0.001", "the smoke call cost 0.01 over the approved 0.001"),
+    ],
+)
+def test_a_failing_smoke_call_stops_the_run_after_one_call(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    solve: Any,
+    score: Any,
+    approved: str,
+    reason: str,
+) -> None:
+    calls: list[str] = []
+
+    def counted(sample: dict[str, Any]) -> dict[str, Any]:
+        calls.append(sample["id"])
+        return cast(dict[str, Any], solve(sample))
+
+    task = _smoke_task(_smoke_dataset(tmp_path), counted, score)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    with pytest.raises(runner.SmokeFailedError):
+        runner.run_task(
+            "t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal(approved)
+        )
+
+    assert calls == ["dev-1"]
+    assert f"smoke: failed {reason}" in capsys.readouterr().out
+
+
+def test_a_smoke_projection_over_the_approval_warns_and_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    task = _smoke_task(_smoke_dataset(tmp_path), _priced)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    log_path = runner.run_task(
+        "t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal("0.02")
+    )
+
+    assert len(log_path.read_text(encoding="utf-8").splitlines()) == 5
+    assert "smoke: warning projected 0.04 exceeds the approved 0.02" in capsys.readouterr().out
+
+
+def test_a_malformed_label_stops_a_smoked_run_before_the_smoke_call(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+
+    def solve(sample: dict[str, Any]) -> dict[str, Any]:
+        calls.append(sample["id"])
+        return _priced(sample)
+
+    def score(sample: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+        return {"value": True}
+
+    def validate(sample: dict[str, Any]) -> None:
+        if sample["id"] == "dev-2":
+            raise ValueError("malformed synthetic label")
+
+    cast(Any, score).validate_sample = validate
+    task = _smoke_task(_smoke_dataset(tmp_path), solve, score)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    with pytest.raises(ValueError, match="malformed synthetic label"):
+        runner.run_task("t", log_dir=tmp_path / "logs", trials=2, smoke_approved_usd=Decimal(1))
+
+    assert calls == []
+
+
+def test_a_smoke_call_whose_prompt_was_all_cache_writes_has_prompt_usage(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def written(sample: dict[str, Any]) -> dict[str, Any]:
+        return {"completion": "x", "metadata": {"measurements": [_measured("critic", 0, 0)]}}
+
+    task = _smoke_task(_smoke_dataset(tmp_path), written)
+    monkeypatch.setattr(runner, "_load_task_module", lambda reference: task)
+
+    runner.run_task("t", log_dir=tmp_path / "logs", smoke_approved_usd=Decimal(1))
+
+    assert "smoke: ok case=dev-1" in capsys.readouterr().out
+
+
+_SCRIPTED_TASK = "evals.inspect.tasks.match_scripted_task"
+
+
+def _read_log(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def _write_records(path: Path, records: list[dict[str, Any]]) -> None:
+    path.write_text("".join(json.dumps(record) + "\n" for record in records), encoding="utf-8")
+
+
+def _offline_task(scorer: Any) -> FakeTaskModule:
+    """Wrap the scripted task so its solver and every provider call fail if reached."""
+    real = importlib.import_module(_SCRIPTED_TASK)
+
+    def no_solver() -> Any:
+        raise AssertionError("rescore built a solver")
+
+    return FakeTaskModule(
+        TASK_NAME=real.TASK_NAME,
+        DATASET_PATH=real.DATASET_PATH,
+        PRODUCT_QUESTION=real.PRODUCT_QUESTION,
+        solver=no_solver,
+        scorer=scorer,
+    )
+
+
+def _forbid_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("rescore reached the network or a provider")
+
+    monkeypatch.setattr(provider_base, "provider_for", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+
+
+def test_rescoring_an_unchanged_scorer_keeps_every_verdict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A rescore with the same scorer reproduces the run's header and verdicts offline."""
+    log_path = runner.run_task(_SCRIPTED_TASK, log_dir=tmp_path / "logs")
+    original = _read_log(log_path)
+    real = importlib.import_module(_SCRIPTED_TASK)
+    monkeypatch.setattr(runner, "_load_task_module", lambda _ref: _offline_task(real.scorer))
+    _forbid_network(monkeypatch)
+    capsys.readouterr()
+
+    rescored_path = runner.rescore_log(_SCRIPTED_TASK, log_path)
+
+    assert rescored_path == log_path.with_suffix(".rescored.jsonl")
+    rescored = _read_log(rescored_path)
+    header = rescored[0]
+    for key in ("task", "total", "passed", "accuracy", "accuracy_wilson95", "score_kind"):
+        assert header[key] == original[0][key]
+    assert header["rescored_from"] == {
+        "path": str(log_path),
+        "sha256": bytes_sha256(log_path.read_bytes()),
+    }
+    assert header["rescore_fingerprint"]["dataset_sha256"] == bytes_sha256(
+        real.DATASET_PATH.read_bytes()
+    )
+    assert [row["score"]["value"] for row in rescored[1:]] == [
+        row["score"]["value"] for row in original[1:]
+    ]
+    assert _read_log(log_path) == original
+    out = capsys.readouterr().out
+    assert f"task=match-scripted total={header['total']}" in out
+    assert "rescore: changed=0 " in out
+
+
+def test_a_changed_scorer_flips_a_verdict_and_the_header_counts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Failing one sample under a new scorer lowers the rescored pass count by one."""
+    log_path = runner.run_task(_SCRIPTED_TASK, log_dir=tmp_path / "logs")
+    original = _read_log(log_path)
+    real_scorer = importlib.import_module(_SCRIPTED_TASK).scorer()
+    flipped = str(next(row["id"] for row in original[1:] if row["score"]["value"]))
+
+    def stricter(sample: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+        score = dict(real_scorer(sample, output))
+        if sample["id"] == flipped:
+            score["value"] = False
+        return score
+
+    monkeypatch.setattr(runner, "_load_task_module", lambda _ref: _offline_task(lambda: stricter))
+    _forbid_network(monkeypatch)
+    output = tmp_path / "out" / "rescored.jsonl"
+    output.parent.mkdir()
+
+    runner.rescore_log(_SCRIPTED_TASK, log_path, output=output)
+
+    rescored = _read_log(output)
+    assert rescored[0]["passed"] == original[0]["passed"] - 1
+    assert rescored[0]["accuracy"] < original[0]["accuracy"]
+    assert next(row for row in rescored[1:] if row["id"] == flipped)["score"]["value"] is False
+    assert "rescore: changed=1 " in capsys.readouterr().out
+
+
+def test_rescore_refuses_a_stored_id_the_dataset_no_longer_has(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A receipt row whose sample left the dataset stops the rescore by name."""
+    log_path = runner.run_task(_SCRIPTED_TASK, log_dir=tmp_path / "logs")
+    records = _read_log(log_path)
+    records[1]["id"] = "retired-sample"
+    _write_records(log_path, records)
+    real = importlib.import_module(_SCRIPTED_TASK)
+    monkeypatch.setattr(runner, "_load_task_module", lambda _ref: _offline_task(real.scorer))
+
+    with pytest.raises(ValueError, match="retired-sample"):
+        runner.rescore_log(_SCRIPTED_TASK, log_path)
+    assert not log_path.with_suffix(".rescored.jsonl").exists()
+
+
+def test_rescore_refuses_a_changed_dataset_unless_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dataset whose bytes moved since the run needs an explicit allowance, which is recorded."""
+    log_path = runner.run_task(_SCRIPTED_TASK, log_dir=tmp_path / "logs")
+    records = _read_log(log_path)
+    records[0]["run"] = {"dataset_sha256": "0" * 64}
+    _write_records(log_path, records)
+    real = importlib.import_module(_SCRIPTED_TASK)
+    monkeypatch.setattr(runner, "_load_task_module", lambda _ref: _offline_task(real.scorer))
+
+    with pytest.raises(ValueError, match="dataset"):
+        runner.rescore_log(_SCRIPTED_TASK, log_path)
+    rescored_path = runner.rescore_log(_SCRIPTED_TASK, log_path, allow_dataset_change=True)
+
+    header = _read_log(rescored_path)[0]
+    assert header["dataset_change_allowed"] is True
+    assert header["run"] == {"dataset_sha256": "0" * 64}
+
+
+def test_rescore_refuses_to_overwrite_its_input(tmp_path: Path) -> None:
+    """The rescored receipt can never replace the log it was read from."""
+    log_path = runner.run_task(_SCRIPTED_TASK, log_dir=tmp_path / "logs")
+
+    with pytest.raises(ValueError, match="overwrite"):
+        runner.rescore_log(_SCRIPTED_TASK, log_path, output=log_path)

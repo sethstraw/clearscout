@@ -243,8 +243,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-@tanstack/query-core 5.105.2 - MIT
-https://www.npmjs.com/package/@tanstack/query-core/v/5.105.2
+@tanstack/query-core 5.106.1 - MIT
+https://www.npmjs.com/package/@tanstack/query-core/v/5.106.1
 
 --- LICENSE ---
 MIT License
@@ -270,8 +270,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-@tanstack/react-query 5.105.2 - MIT
-https://www.npmjs.com/package/@tanstack/react-query/v/5.105.2
+@tanstack/react-query 5.106.1 - MIT
+https://www.npmjs.com/package/@tanstack/react-query/v/5.106.1
 
 --- LICENSE ---
 MIT License

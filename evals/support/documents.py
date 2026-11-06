@@ -419,10 +419,19 @@ def critic_result(
     }
 
 
-def letter_result(letter: CoverLetter, report: Report) -> dict[str, Any]:
-    """Return the solver output one cover-letter attempt produces."""
+def letter_result(
+    letter: CoverLetter, report: Report, *, keep_text: bool = False
+) -> dict[str, Any]:
+    """Return the solver output one cover-letter attempt produces, with its body when kept."""
+    rendered = letter.rendered()
+    document: dict[str, Any] = {
+        "paragraphs": len(letter.paragraphs),
+        "words": len(rendered.split()),
+    }
+    if keep_text:
+        document["text"] = rendered
     return {
         "completion": "pass" if report.passed else "fail",
         "findings": findings(report),
-        "document": {"paragraphs": len(letter.paragraphs), "words": len(letter.rendered().split())},
+        "document": document,
     }

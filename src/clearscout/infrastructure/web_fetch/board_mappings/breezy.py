@@ -6,9 +6,11 @@ from collections.abc import Mapping
 from typing import Any
 
 from clearscout.domain.countries import territory_name
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -89,4 +91,5 @@ BREEZY_MAPPING = BoardDeclaration(
     compensation=("row", "salary"),
     arrangement=_arrangement,
     description=_DESCRIPTION,
+    posted=posted_on(("row", "published_date"), PostedDateGrade.FIRST_POSTED),
 )

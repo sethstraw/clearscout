@@ -24,11 +24,13 @@ from __future__ import annotations
 import argparse
 import importlib
 import importlib.util
+import inspect
 import json
 import os
 import sys
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -193,11 +195,7 @@ def _score_rows(
     total = 0
     repeats = trials * len(arms)
     samples = _iter_samples(dataset_content, limit=limit, split=split, ids=ids)
-    # A malformed expected label stops the run here, before any solver call is billed.
-    validate_sample = getattr(scorer, "validate_sample", None)
-    if callable(validate_sample):
-        for sample in samples:
-            validate_sample(sample)
+    _validate_samples(scorer, samples)
     batch = getattr(solver, "batch", None)
     outcomes = (
         _batched_outcomes(batch, samples, repeats, arms)
@@ -235,6 +233,14 @@ def _score_rows(
             passed += 1
         rows.append({**identity, "score": score, "solver_output": solver_output})
     return rows, total, passed
+
+
+def _validate_samples(scorer: Scorer, samples: Iterable[dict[str, Any]]) -> None:
+    """Refuse a malformed expected label before any solver call is billed."""
+    validate_sample = getattr(scorer, "validate_sample", None)
+    if callable(validate_sample):
+        for sample in samples:
+            validate_sample(sample)
 
 
 def _single_outcomes(
@@ -656,6 +662,194 @@ def _usd_total(rows: list[dict[str, Any]]) -> tuple[float | None, int]:
     return (sum(spent) if spent else None), unpriced
 
 
+def _row_measurements(row: dict[str, Any]) -> list[StageMeasurement]:
+    solver_output = row.get("solver_output")
+    metadata = solver_output.get("metadata") if isinstance(solver_output, dict) else None
+    entries = metadata.get("measurements") if isinstance(metadata, dict) else None
+    if not isinstance(entries, list):
+        return []
+    return [StageMeasurement.model_validate(entry) for entry in entries]
+
+
+def _cache_share(cache_read: int, prompt: int) -> float | None:
+    return cache_read / prompt if prompt else None
+
+
+def _token_totals(measurements: Sequence[StageMeasurement]) -> dict[str, Any]:
+    """Sum the token, search, and latency counts of some provider calls."""
+    uncached = sum(m.usage.input_tokens for m in measurements)
+    cache_read = sum(m.usage.cache_read_tokens for m in measurements)
+    cache_write = sum(m.usage.cache_write_tokens for m in measurements)
+    # Provider input_tokens excludes both cache reads and writes, so the prompt is all three.
+    prompt = uncached + cache_read + cache_write
+    # A call the solver could not time, such as a truncated one, reports 0 ms.
+    latencies = sorted(m.milliseconds for m in measurements if m.milliseconds)
+    p95 = latencies[max(0, -(-len(latencies) * 95 // 100) - 1)] if latencies else None
+    return {
+        "calls": len(measurements),
+        "input_tokens_uncached": uncached,
+        "cache_read_tokens": cache_read,
+        "cache_write_tokens": cache_write,
+        "prompt_tokens": prompt,
+        "cache_share": _cache_share(cache_read, prompt),
+        "output_tokens": sum(m.usage.output_tokens for m in measurements),
+        "reasoning_tokens": sum(m.usage.reasoning_tokens for m in measurements),
+        "searches": sum(m.searches for m in measurements),
+        "milliseconds_mean": sum(latencies) / len(latencies) if latencies else None,
+        "milliseconds_p95": p95,
+    }
+
+
+def usage_rollup(rows: Sequence[dict[str, Any]]) -> dict[str, Any] | None:
+    """Return the run's provider usage summed from every row's measurements, or None.
+
+    ``by_stage`` appears when calls span several stages and ``cache_share_by_trial``
+    when the run repeated its samples.
+    """
+    per_row = [(row, _row_measurements(row)) for row in rows]
+    measurements = [m for _row, found in per_row for m in found]
+    if not measurements:
+        return None
+    rollup = _token_totals(measurements)
+    usd_total, _unpriced = _usd_total(list(rows))
+    passed = sum(
+        1 for row in rows if isinstance(row.get("score"), dict) and bool(row["score"].get("value"))
+    )
+    rollup["usd_total"] = usd_total
+    # Trials and arms repeat a sample, so the divisor is distinct sample ids.
+    samples = len({str(row["id"]) for row in rows if "id" in row}) or len(rows)
+    rollup["usd_per_sample"] = usd_total / samples if usd_total is not None else None
+    rollup["usd_per_passed_sample"] = (
+        usd_total / passed if usd_total is not None and passed else None
+    )
+    stages = sorted({m.stage for m in measurements})
+    if len(stages) > 1:
+        rollup["by_stage"] = {
+            stage: _token_totals([m for m in measurements if m.stage == stage]) for stage in stages
+        }
+    trials: dict[int, list[StageMeasurement]] = {}
+    for row, found in per_row:
+        trials.setdefault(int(row.get("trial", 0)), []).extend(found)
+    if len(trials) > 1:
+        rollup["cache_share_by_trial"] = {
+            str(trial): _token_totals(found)["cache_share"]
+            for trial, found in sorted(trials.items())
+        }
+    return rollup
+
+
+def _thousands(count: int) -> str:
+    return f"{count / 1000:.0f}k" if count >= 1000 else str(count)
+
+
+def usage_line(rollup: dict[str, Any]) -> str:
+    """Return the one-line console summary of a usage rollup."""
+    share = rollup["cache_share"]
+    p95 = rollup["milliseconds_p95"]
+    usd = rollup["usd_total"]
+    per_pass = rollup["usd_per_passed_sample"]
+    return (
+        f"usage: calls={rollup['calls']} prompt={_thousands(rollup['prompt_tokens'])} "
+        f"cache={'-' if share is None else f'{share:.0%}'} "
+        f"out={_thousands(rollup['output_tokens'])} "
+        f"reasoning={_thousands(rollup['reasoning_tokens'])} searches={rollup['searches']} "
+        f"p95={'-' if p95 is None else f'{p95 / 1000:.1f}s'} "
+        f"usd={'-' if usd is None else f'{usd:.3f}'} "
+        f"per_pass={'-' if per_pass is None else f'{per_pass:.4f}'}"
+    )
+
+
+class SmokeFailedError(RuntimeError):
+    """Raised when the one-sample smoke call shows the full run would not work."""
+
+
+class _PrimedSolver:
+    """Answer the first call with the smoke output, then delegate to the solver."""
+
+    def __init__(self, solver: Solver, first: dict[str, Any]) -> None:
+        self._solver = solver
+        self._first: dict[str, Any] | None = first
+
+    def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
+        first, self._first = self._first, None
+        return first if first is not None else self._solver(sample)
+
+
+def _smoke_check(
+    solver_output: dict[str, Any],
+    sample: dict[str, Any],
+    scorer: Scorer,
+) -> tuple[str | None, Decimal]:
+    """Return why one smoke output fails the run's preconditions, or None, and its dollars."""
+    metadata = solver_output.get("metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
+    if "billing_failure" in metadata:
+        return "the provider call was not billed to a response id", Decimal(0)
+    try:
+        measurements = _row_measurements({"solver_output": solver_output})
+    except ValueError as error:
+        return f"malformed measurements: {error}", Decimal(0)
+    if not measurements:
+        return "the sample recorded no measurements", Decimal(0)
+    if any(m.dollars is None for m in measurements):
+        return "a measurement carries no dollars", Decimal(0)
+    if any(
+        not (m.usage.input_tokens + m.usage.cache_read_tokens + m.usage.cache_write_tokens)
+        for m in measurements
+    ):
+        return "a measurement carries no prompt usage", Decimal(0)
+    dollars = sum((m.dollars or Decimal(0) for m in measurements), Decimal(0))
+    try:
+        score = scorer(sample, solver_output)
+    except Exception as error:  # noqa: BLE001 - any scorer fault fails the smoke
+        return f"the scorer raised {type(error).__name__}: {error}", dollars
+    if "value" not in score:
+        return "the scorer returned no value", dollars
+    return None, dollars
+
+
+def _smoke(
+    solver: Solver,
+    scorer: Scorer,
+    samples: Sequence[dict[str, Any]],
+    *,
+    arms: Sequence[str | None],
+    trials: int,
+    approved_usd: Decimal,
+    receipt: _PartialReceipt | None,
+) -> Solver:
+    """Run the first sample once and return a solver that reuses it as that sample's first row.
+
+    A projection over the approval only warns, since estimates are advisory; the
+    run stops when the smoke call alone spent more than was approved. A batching
+    solver or a one-call run returns unchanged.
+    """
+    planned = len(samples) * trials * len(arms)
+    if planned <= 1 or callable(getattr(solver, "batch", None)):
+        return solver
+    sample, arm = samples[0], arms[0]
+    where = f" log={receipt.path}" if receipt is not None else ""
+    try:
+        output = solver(_solver_input(sample, arm))
+    except Exception as error:
+        message = f"smoke: failed provider error {type(error).__name__}: {error}"
+        print(message + where)
+        raise SmokeFailedError(message) from error
+    reason, dollars = _smoke_check(output, sample, scorer)
+    if reason is None and dollars > approved_usd:
+        reason = f"the smoke call cost {dollars} over the approved {approved_usd}"
+    if reason is not None:
+        if receipt is not None:
+            receipt.append({"id": sample.get("id"), "smoke": True, "solver_output": output})
+        print(f"smoke: failed {reason}{where}")
+        raise SmokeFailedError(f"smoke: failed {reason}")
+    projected = dollars * planned
+    print(f"smoke: ok case={sample.get('id')} usd={dollars} projected={projected}")
+    if projected > approved_usd:
+        print(f"smoke: warning projected {projected} exceeds the approved {approved_usd}")
+    return _PrimedSolver(solver, output)
+
+
 def _write_log(
     log_dir: Path,
     *,
@@ -671,6 +865,7 @@ def _write_log(
     summary: dict[str, Any] | None = None,
     log_path: Path | None = None,
     score_kind: str = JUDGED,
+    provenance: dict[str, Any] | None = None,
 ) -> Path:
     log_dir.mkdir(parents=True, exist_ok=True)
     if log_path is None:
@@ -704,6 +899,8 @@ def _write_log(
             header["usd_total"] = usd_total
         if unpriced_rows:
             header["usd_unpriced_rows"] = unpriced_rows
+        if (usage := usage_rollup(rows)) is not None:
+            header["usage"] = usage
         if requirement_counts is not None:
             # One sample can carry several requirement outcomes; report both.
             requirement_total, requirement_passed = requirement_counts
@@ -715,6 +912,8 @@ def _write_log(
             header.update(scope)
         if run_metadata:
             header["run"] = run_metadata
+        if provenance:
+            header.update(provenance)
         handle.write(json.dumps(header) + "\n")
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -775,8 +974,13 @@ def run_task(
     ids: Sequence[str] | None = None,
     trials: int = 1,
     arms: int = 1,
+    smoke_approved_usd: Decimal | None = None,
 ) -> Path:
     """Run one task and return the log file path.
+
+    ``smoke_approved_usd`` first runs one sample once against that approval and
+    stops the run if it fails; a passing smoke row is reused, not paid twice.
+    Batching solvers and single-row runs skip it.
 
     ``limit`` takes the first matching samples and ``ids`` names them instead;
     a run passes one or the other. ``trials`` repeats every selected sample
@@ -852,6 +1056,18 @@ def run_task(
         else None
     )
     try:
+        if smoke_approved_usd is not None:
+            smoke_samples = _iter_samples(dataset_content, limit=limit, split=split, ids=ids)
+            _validate_samples(scorer, smoke_samples)
+            solver = _smoke(
+                solver,
+                scorer,
+                smoke_samples,
+                arms=arm_names,
+                trials=trials,
+                approved_usd=smoke_approved_usd,
+                receipt=receipt,
+            )
         rows, total, passed = _score_rows(
             dataset_content,
             solver,
@@ -897,17 +1113,142 @@ def run_task(
         if receipt is not None:
             receipt.close()
             receipt.path.unlink()
+    _print_result(task_name, log_path, rows, total, passed, summary, score_kind)
+    return log_path
+
+
+_SCOPE_KEYS = ("limit", "ids", "split", "trials", "arms")
+
+
+def _source_sha256(target: Any) -> str | None:
+    """Hash the file that defines a task module or scorer, or None when it has none."""
+    if not (inspect.ismodule(target) or inspect.isroutine(target) or isinstance(target, type)):
+        target = type(target)
+    try:
+        source = inspect.getsourcefile(target)
+    except TypeError:
+        return None
+    return bytes_sha256(Path(source).read_bytes()) if source else None
+
+
+def rescore_log(
+    task_reference: str,
+    log_path: Path,
+    *,
+    output: Path | None = None,
+    allow_dataset_change: bool = False,
+) -> Path:
+    """Re-apply the task's current scorer to a finished log's stored outputs; return the new log.
+
+    No solver is built, so nothing reaches a provider. A row whose model spent its
+    output budget keeps its stored score, since the scorer never judged it.
+    """
+    output = output if output is not None else log_path.with_suffix(".rescored.jsonl")
+    if output.resolve() == log_path.resolve():
+        raise ValueError(f"rescore refused: the output would overwrite its input: {log_path}")
+    raw = log_path.read_bytes()
+    records = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
+    if not records or "status" in records[0] or "total" not in records[0]:
+        raise ValueError(f"rescore refused: {log_path} is not a finished evaluation log")
+    header, stored = records[0], records[1:]
+    if any("score" not in row or "solver_output" not in row for row in stored):
+        raise ValueError(f"rescore refused: {log_path} has a row without a score and output")
+    module = _load_task_module(task_reference)
+    for symbol in ("TASK_NAME", "DATASET_PATH", "PRODUCT_QUESTION", "scorer"):
+        if not hasattr(module, symbol):
+            raise AttributeError(f"Task module {task_reference!r} is missing symbol {symbol!r}")
+    # A live --dataset run recorded its private file here, and its run block hashes that file.
+    recorded_dataset = Path(str(header.get("dataset", "")))
+    dataset = recorded_dataset if recorded_dataset.is_file() else module.DATASET_PATH
+    if dataset is None or not Path(dataset).is_file():
+        raise FileNotFoundError(f"rescore refused: no dataset at {dataset}")
+    dataset = Path(dataset)
+    content = dataset.read_bytes()
+    dataset_sha256 = bytes_sha256(content)
+    run_metadata = header.get("run") or {}
+    approved = run_metadata.get("dataset_sha256")
+    changed_dataset = approved is not None and approved != dataset_sha256
+    if changed_dataset and not allow_dataset_change:
+        raise ValueError(
+            "rescore refused: the dataset bytes differ from the run's dataset_sha256; "
+            "pass --allow-dataset-change to proceed"
+        )
+    samples = {
+        str(sample["id"]): sample for sample in _iter_samples(content, split=header.get("split"))
+    }
+    missing = sorted({str(row["id"]) for row in stored} - samples.keys())
+    if missing:
+        raise ValueError(f"rescore refused: the dataset has no sample for: {', '.join(missing)}")
+    scorer: Scorer = module.scorer()
+    _validate_samples(scorer, samples.values())
+    rows: list[dict[str, Any]] = []
+    changed = 0
+    for row in stored:
+        solver_output = row["solver_output"]
+        if solver_output.get("failure") == OUTPUT_BUDGET_EXHAUSTED:
+            score = row["score"]
+        else:
+            score = scorer(samples[str(row["id"])], solver_output)
+        changed += bool(score.get("value")) != bool(row["score"].get("value"))
+        rows.append({**row, "score": score})
+    total = len(rows)
+    passed = sum(1 for row in rows if bool(row["score"].get("value")))
+    score_kind = str(getattr(module, "SCORE_KIND", JUDGED))
+    provenance: dict[str, Any] = {
+        "rescored_from": {"path": str(log_path), "sha256": bytes_sha256(raw)},
+        "rescore_fingerprint": {
+            "task_sha256": _source_sha256(module),
+            "scorer_sha256": _source_sha256(scorer),
+            "dataset_sha256": dataset_sha256,
+        },
+    }
+    if changed_dataset:
+        provenance["dataset_change_allowed"] = True
+    summary = _summary(rows)
+    task_name = str(header["task"])
+    _write_log(
+        output.parent,
+        task_name=task_name,
+        dataset_path=dataset,
+        product_question=ProductQuestion(module.PRODUCT_QUESTION).value,
+        rows=rows,
+        total=total,
+        passed=passed,
+        scope={key: header[key] for key in _SCOPE_KEYS if key in header},
+        run_metadata=run_metadata,
+        requirement_counts=_requirement_counts(rows),
+        summary=summary,
+        log_path=output,
+        score_kind=score_kind,
+        provenance=provenance,
+    )
+    _print_result(task_name, output, rows, total, passed, summary, score_kind)
+    print(f"rescore: changed={changed} of {total} from={log_path}")
+    return output
+
+
+def _print_result(
+    task_name: str,
+    log_path: Path,
+    rows: list[dict[str, Any]],
+    total: int,
+    passed: int,
+    summary: dict[str, Any],
+    score_kind: str,
+) -> None:
+    """Print the console summary of one finished run."""
     if score_kind == JUDGED:
         accuracy = passed / total if total else 0.0
         print(f"task={task_name} total={total} accuracy={accuracy:.3f} log={log_path}")
     else:
         print(f"task={task_name} total={total} log={log_path}")
+    if (usage := usage_rollup(rows)) is not None:
+        print(usage_line(usage))
     for label, counts in summary.items():
         if isinstance(counts, int):
             print(f"{label}: {counts}")
             continue
         print(f"{label}: " + ", ".join(f"{name} x{count}" for name, count in counts.items()))
-    return log_path
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -937,8 +1278,34 @@ def main(argv: list[str] | None = None) -> int:
         default=1,
         help="Number of prompt versions the solver declared; trials repeat per arm.",
     )
+    parser.add_argument(
+        "--smoke",
+        type=Decimal,
+        metavar="APPROVED_USD",
+        help="Run one sample once first and stop unless it passes within this approval.",
+    )
+    parser.add_argument(
+        "--rescore",
+        type=Path,
+        metavar="LOG",
+        help="Rescore this finished log's stored outputs with the current scorer, offline.",
+    )
+    parser.add_argument("--output", type=Path, help="Rescored log path (default LOG.rescored).")
+    parser.add_argument(
+        "--allow-dataset-change",
+        action="store_true",
+        help="Rescore even though the dataset bytes differ from the run's.",
+    )
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     try:
+        if args.rescore is not None:
+            rescore_log(
+                args.task,
+                args.rescore,
+                output=args.output,
+                allow_dataset_change=args.allow_dataset_change,
+            )
+            return 0
         run_task(
             args.task,
             log_dir=args.log_dir,
@@ -948,6 +1315,7 @@ def main(argv: list[str] | None = None) -> int:
             ids=args.ids,
             trials=args.trials,
             arms=args.arms,
+            smoke_approved_usd=args.smoke,
         )
     except (
         FileNotFoundError,

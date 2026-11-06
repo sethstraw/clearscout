@@ -186,6 +186,123 @@ def test_a_repeat_of_a_stated_title_is_scored_and_refused() -> None:
     assert score["value"] is False
 
 
+def test_a_reason_that_inflates_a_specialty_into_leadership_fails_by_name() -> None:
+    grounded = _archetype("AI model developers", "b-eaaf8318")
+    inflated = ProposedArchetype(
+        name="AI model developers",
+        because="Led AI evaluation for model-drafted documentation.",
+        evidence_ids=["b-eaaf8318"],
+    )
+    titles = [_title("AI Evaluation Specialist", "b-eaaf8318")]
+    assert _score("specialty-inflation", titles, [grounded])["value"] is True
+    score = _score("specialty-inflation", titles, [inflated])
+    assert score["value"] is False
+    assert score["checks"]["failed"] == ["unsupported_claim"]
+    (row,) = score["metadata"]["archetypes"]["proposals"]
+    assert row["unsupported_claim"].startswith("The record built one evaluation set")
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "Leads AI evaluation for documentation releases.",
+        "Headed up evaluation of model-drafted pages.",
+        "Directed model evaluation for the product team.",
+    ],
+)
+def test_a_title_reason_claiming_evaluation_leadership_fails_by_name(reason: str) -> None:
+    inflated = ProposedTitle(title="AI Evaluation Lead", reason=reason, evidence_ids=["b-eaaf8318"])
+    archetypes = [_archetype("AI model developers", "b-eaaf8318")]
+    for case_id in ("specialty-inflation", "domain-switch"):
+        score = _score(case_id, [inflated], archetypes)
+        assert score["checks"]["failed"] == ["unsupported_claim"], case_id
+        (row,) = score["metadata"]["titles"]["proposals"]
+        assert row["outcome"] == "acceptable"
+        assert row["unsupported_claim"].startswith("The record built one evaluation set")
+
+
+@pytest.mark.parametrize(
+    "because",
+    [
+        "Leading AI labs review model-drafted documentation before release.",
+        "Companies leading the AI tooling market need documentation evaluation.",
+        "Developer tools companies leading the LLM tooling space.",
+        "AI labs where the head of AI evaluation needs release checks on drafted pages.",
+    ],
+)
+def test_a_because_describing_the_employer_is_not_a_claim(because: str) -> None:
+    archetype = ProposedArchetype(
+        name="AI model developers", because=because, evidence_ids=["b-eaaf8318"]
+    )
+    for case_id in ("specialty-inflation", "domain-switch"):
+        score = _score(case_id, [_title("AI Evaluation Lead", "b-eaaf8318")], [archetype])
+        assert score["value"] is True, case_id
+        assert score["metadata"]["unsupported_claims"] == 0, case_id
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "A role leading evaluation of model output, built on the record's evaluation set.",
+        "Moves toward the evaluation leadership the thesis asks for.",
+        "Built the documentation evaluation set; a step toward leading evaluation for AI products.",
+    ],
+)
+def test_a_title_reason_describing_the_target_role_is_not_a_claim(reason: str) -> None:
+    title = ProposedTitle(title="AI Evaluation Lead", reason=reason, evidence_ids=["b-eaaf8318"])
+    archetypes = [_archetype("AI model developers", "b-eaaf8318")]
+    for case_id in ("specialty-inflation", "domain-switch"):
+        score = _score(case_id, [title], archetypes)
+        assert score["value"] is True, case_id
+        assert score["metadata"]["unsupported_claims"] == 0, case_id
+
+
+@pytest.mark.parametrize(
+    "claim", [{"terms": ["led ai"]}, {"terms": "led ai", "why": "No AI function was led."}]
+)
+def test_an_unsupported_claim_label_without_a_term_list_or_a_why_is_refused(
+    claim: dict[str, Any],
+) -> None:
+    sample = _case("specialty-inflation")
+    broken = {**sample, "gold": {**sample["gold"], "unsupported_claims": [claim]}}
+    with pytest.raises(ValueError, match="unsupported claim without terms or a why"):
+        gold_labels(broken)
+
+
+def test_proposals_citing_no_delivered_work_are_counted_without_failing() -> None:
+    score = _score(
+        "context-line-level",
+        [
+            _title("Rail Reliability Engineer", "ctx-4bb19615", "skl-37311ed5"),
+            _title("Condition Monitoring Engineer", "ctx-4bb19615", "b-593bd0a9"),
+        ],
+        [_archetype("Rail operators", "ctx-4bb19615")],
+    )
+    assert score["value"] is True
+    assert score["metadata"]["context_only_citations"] == 2
+    flagged = {
+        row["name"]
+        for axis in ("titles", "archetypes")
+        for row in score["metadata"][axis]["proposals"]
+        if row.get("context_only_citation")
+    }
+    assert flagged == {"Rail Reliability Engineer", "Rail operators"}
+
+
+def test_a_colleague_level_title_counts_against_precision() -> None:
+    score = _score(
+        "context-line-level",
+        [
+            _title("Rail Reliability Engineer", "b-1f7be7d0"),
+            _title("Senior Safety Engineer", "ctx-4bb19615"),
+        ],
+        [],
+    )
+    assert _outcomes(score)["Senior Safety Engineer"] == "unacceptable"
+    assert score["metadata"]["precision"] == 0.5
+    assert score["checks"]["failed"] == ["precision"]
+
+
 def _empty_answer(schema: object) -> dict[str, Any]:
     return {"titles": [], "archetypes": [], "capabilities": [], "domains": []}
 

@@ -25,7 +25,7 @@ than from a list kept by hand.
 | Dependency | Version    | Use                                       | Review decision                                                                                                                                                              |
 | ---------- | ---------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | certifi    | 2026.10.23 | Python runtime CA bundle                  | MPL-2.0 files are consumed unmodified; retain upstream license and notices.                                                                                                  |
-| pypdfium2  | 5.14.0     | Python runtime PDF ingestion              | Metadata names BSD-3-Clause, Apache-2.0, and bundled dependency licenses; upstream distribution supplies the applicable notices. Preserve them when redistributing binaries. |
+| pypdfium2  | 5.15.0     | Python runtime PDF ingestion              | Metadata names BSD-3-Clause, Apache-2.0, and bundled dependency licenses; upstream distribution supplies the applicable notices. Preserve them when redistributing binaries. |
 | tld        | 0.13.2     | Transitive URL/date extraction dependency | The expression offers MPL-1.1 as an alternative to GPL/LGPL; this project selects the MPL alternative and does not modify package files.                                     |
 
 ## Bundled packages with no notice file

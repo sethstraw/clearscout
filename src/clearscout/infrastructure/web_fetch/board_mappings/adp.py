@@ -7,10 +7,12 @@ from decimal import Decimal
 from typing import Any
 
 from clearscout.domain.countries import territory_name
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     plain_description,
+    posted_on,
     stated,
     stated_text,
 )
@@ -144,4 +146,5 @@ ADP_MAPPING = BoardDeclaration(
     description=(("detail", "requisitionDescription"),),
     employment_types=("detail", "workLevelCode", "shortName"),
     compensation=_compensation,
+    posted=posted_on(("detail", "postDate"), PostedDateGrade.FIRST_POSTED),
 )

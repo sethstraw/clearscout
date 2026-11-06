@@ -5,15 +5,20 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
+from clearscout.domain.staged_facts import PostedDateGrade, PublisherPostedDate
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     pay_period,
     pay_range,
+    posted_on,
     stated,
     stated_text,
 )
 from clearscout.infrastructure.web_fetch.listing_facts import ArrangementSignal
+
+_POSTED = posted_on(("postedDate",), PostedDateGrade.FIRST_POSTED)
+_OPENED = posted_on(("openDate",), PostedDateGrade.FIRST_POSTED)
 
 
 def clearcompany_jobs_url(site: str, page: int, page_size: int) -> str:
@@ -82,6 +87,11 @@ def _compensation(posting: Posting) -> str | None:
     )
 
 
+def _posted(posting: Posting) -> PublisherPostedDate | None:
+    """Return the stated posting date, or the opening date when the job states none."""
+    return _POSTED(posting) or _OPENED(posting)
+
+
 CLEARCOMPANY_MAPPING = BoardDeclaration(
     platform="clearcompany",
     title=_title,
@@ -91,4 +101,5 @@ CLEARCOMPANY_MAPPING = BoardDeclaration(
     arrangement=_arrangement,
     compensation=_compensation,
     description=(("description",),),
+    posted=_posted,
 )

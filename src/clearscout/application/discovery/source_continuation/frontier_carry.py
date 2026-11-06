@@ -6,8 +6,9 @@ from collections.abc import Mapping
 from datetime import date, datetime
 
 from sqlalchemy import delete, null, or_, select, update
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
+from clearscout.application.discovery.source_continuation.family import select_frontier_rows
 from clearscout.application.discovery.source_continuation.limits import (
     CARRIED_ORIGIN,
     HELD_UNTIL_REEMITTED,
@@ -97,9 +98,7 @@ def _restart_reused_frontier(
 ) -> None:
     """Keep completed posting reads and live pending rows, retry failed rows once, drop the rest."""
     rows = session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(SourceScanFrontierItem.continuation_id == continuation_id)
+        select_frontier_rows().where(SourceScanFrontierItem.continuation_id == continuation_id)
     ).all()
     for row in rows:
         if failed_publisher_search_detail(row):
@@ -137,9 +136,7 @@ def reopen_stale_completed_postings(
     """Return this continuation's posting reads completed before the cutoff to pending."""
     root, _ = source_read_address(source.url, source.resolved_url)
     for row in session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(
+        select_frontier_rows().where(
             SourceScanFrontierItem.continuation_id == continuation_id,
             SourceScanFrontierItem.status == "completed",
             SourceScanFrontierItem.deferred_reason.in_((POSTING_DETAIL_COMPLETED, "")),
@@ -213,9 +210,7 @@ def _carried_prior_rows(
 ) -> list[SourceScanFrontierItem]:
     """Return prior frontier rows still pending or eligible for one carry-forward retry."""
     rows = session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(
+        select_frontier_rows().where(
             SourceScanFrontierItem.continuation_id == prior_continuation_id,
             SourceScanFrontierItem.status.in_(("pending", "failed")),
         )

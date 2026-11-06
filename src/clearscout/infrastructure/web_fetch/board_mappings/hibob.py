@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     pay_period,
+    posted_on,
     salary_compensation,
     stated,
     stated_text,
@@ -74,4 +76,5 @@ HIBOB_MAPPING = BoardDeclaration(
     compensation=_compensation,
     arrangement=_arrangement,
     description=_DESCRIPTION,
+    posted=posted_on(("publishedAt",), PostedDateGrade.FIRST_POSTED),
 )

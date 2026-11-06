@@ -11,8 +11,6 @@ rather than as a notice obligation.
 
 | Ecosystem | Package | Version | Usage | License | Review category | Project |
 | --- | --- | --- | --- | --- | --- | --- |
-| npm | @asamuzakjp/css-color | 7.1.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@asamuzakjp/css-color/v/7.1.3) |
-| npm | @asamuzakjp/dom-selector | 10.0.5 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@asamuzakjp/dom-selector/v/10.0.5) |
 | npm | @babel/code-frame | 7.29.7 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@babel/code-frame/v/7.29.7) |
 | npm | @babel/compat-data | 7.29.7 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@babel/compat-data/v/7.29.7) |
 | npm | @babel/core | 7.29.7 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@babel/core/v/7.29.7) |
@@ -30,15 +28,8 @@ rather than as a notice obligation.
 | npm | @babel/template | 7.29.7 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@babel/template/v/7.29.7) |
 | npm | @babel/traverse | 7.29.8 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@babel/traverse/v/7.29.8) |
 | npm | @babel/types | 7.29.8 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@babel/types/v/7.29.8) |
-| npm | @bramus/specificity | 2.4.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@bramus/specificity/v/2.4.2) |
 | npm | @cacheable/memory | 2.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@cacheable/memory/v/2.2.0) |
 | npm | @cacheable/utils | 2.5.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@cacheable/utils/v/2.5.0) |
-| npm | @csstools/color-helpers | 6.1.2 | web build/test tooling | MIT-0 | development only, not distributed | [upstream](https://www.npmjs.com/package/@csstools/color-helpers/v/6.1.2) |
-| npm | @csstools/css-calc | 3.4.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@csstools/css-calc/v/3.4.3) |
-| npm | @csstools/css-color-parser | 4.2.6 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@csstools/css-color-parser/v/4.2.6) |
-| npm | @csstools/css-parser-algorithms | 4.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@csstools/css-parser-algorithms/v/4.0.2) |
-| npm | @csstools/css-syntax-patches-for-csstree | 1.1.15 | web build/test tooling | MIT-0 | development only, not distributed | [upstream](https://www.npmjs.com/package/@csstools/css-syntax-patches-for-csstree/v/1.1.15) |
-| npm | @csstools/css-tokenizer | 4.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@csstools/css-tokenizer/v/4.0.2) |
 | npm | @emnapi/core | 1.11.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@emnapi/core/v/1.11.2) |
 | npm | @emnapi/runtime | 1.11.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@emnapi/runtime/v/1.11.2) |
 | npm | @emnapi/wasi-threads | 1.2.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@emnapi/wasi-threads/v/1.2.2) |
@@ -140,9 +131,9 @@ rather than as a notice obligation.
 | npm | @rolldown/pluginutils | 1.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@rolldown/pluginutils/v/1.0.1) |
 | npm | @standard-schema/spec | 1.1.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@standard-schema/spec/v/1.1.0) |
 | npm | @standard-schema/utils | 0.3.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@standard-schema/utils/v/0.3.0) |
-| npm | @tanstack/eslint-plugin-query | 5.105.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@tanstack/eslint-plugin-query/v/5.105.2) |
-| npm | @tanstack/query-core | 5.105.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@tanstack/query-core/v/5.105.2) |
-| npm | @tanstack/react-query | 5.105.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@tanstack/react-query/v/5.105.2) |
+| npm | @tanstack/eslint-plugin-query | 5.106.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@tanstack/eslint-plugin-query/v/5.106.1) |
+| npm | @tanstack/query-core | 5.106.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@tanstack/query-core/v/5.106.1) |
+| npm | @tanstack/react-query | 5.106.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/@tanstack/react-query/v/5.106.1) |
 | npm | @testing-library/dom | 10.4.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@testing-library/dom/v/10.4.1) |
 | npm | @testing-library/react | 16.3.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@testing-library/react/v/16.3.3) |
 | npm | @tybys/wasm-util | 0.10.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/@tybys/wasm-util/v/0.10.3) |
@@ -218,8 +209,8 @@ rather than as a notice obligation.
 | npm | balanced-match | 1.0.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/balanced-match/v/1.0.2) |
 | npm | balanced-match | 4.0.4 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/balanced-match/v/4.0.4) |
 | npm | baseline-browser-mapping | 2.11.12 | web build/test tooling | Apache-2.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/baseline-browser-mapping/v/2.11.12) |
+| npm | bcp-47 | 2.1.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/bcp-47/v/2.1.2) |
 | npm | bcp-47-match | 2.0.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/bcp-47-match/v/2.0.3) |
-| npm | bidi-js | 1.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/bidi-js/v/1.1.0) |
 | npm | boolbase | 1.0.0 | bundled web runtime | ISC | permissive | [upstream](https://www.npmjs.com/package/boolbase/v/1.0.0) |
 | npm | brace-expansion | 1.1.21 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/brace-expansion/v/1.1.21) |
 | npm | brace-expansion | 5.0.12 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/brace-expansion/v/5.0.12) |
@@ -247,7 +238,6 @@ rather than as a notice obligation.
 | npm | cookie | 2.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/cookie/v/2.0.1) |
 | npm | cross-spawn | 7.0.6 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/cross-spawn/v/7.0.6) |
 | npm | css-selector-parser | 3.3.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/css-selector-parser/v/3.3.0) |
-| npm | css-tree | 3.2.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/css-tree/v/3.2.1) |
 | npm | csstype | 3.2.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/csstype/v/3.2.3) |
 | npm | d3-array | 3.2.4 | bundled web runtime | ISC | permissive | [upstream](https://www.npmjs.com/package/d3-array/v/3.2.4) |
 | npm | d3-color | 3.1.0 | bundled web runtime | ISC | permissive | [upstream](https://www.npmjs.com/package/d3-color/v/3.1.0) |
@@ -283,7 +273,7 @@ rather than as a notice obligation.
 | npm | emoji-regex | 10.6.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/emoji-regex/v/10.6.0) |
 | npm | emoji-regex | 9.2.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/emoji-regex/v/9.2.2) |
 | npm | entities | 6.0.1 | bundled web runtime | BSD-2-Clause | permissive | [upstream](https://www.npmjs.com/package/entities/v/6.0.1) |
-| npm | entities | 8.0.0 | web build/test tooling | BSD-2-Clause | development only, not distributed | [upstream](https://www.npmjs.com/package/entities/v/8.0.0) |
+| npm | entities | 9.0.0 | web build/test tooling | BSD-2-Clause | development only, not distributed | [upstream](https://www.npmjs.com/package/entities/v/9.0.0) |
 | npm | es-abstract | 1.24.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/es-abstract/v/1.24.2) |
 | npm | es-abstract-get | 1.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/es-abstract-get/v/1.0.0) |
 | npm | es-define-property | 1.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/es-define-property/v/1.0.1) |
@@ -419,7 +409,7 @@ rather than as a notice obligation.
 | npm | js-levenshtein | 1.1.6 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/js-levenshtein/v/1.1.6) |
 | npm | js-tokens | 4.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/js-tokens/v/4.0.0) |
 | npm | js-yaml | 4.3.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/js-yaml/v/4.3.2) |
-| npm | jsdom | 30.1.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/jsdom/v/30.1.3) |
+| npm | jsdom | 31.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/jsdom/v/31.0.0) |
 | npm | jsesc | 3.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/jsesc/v/3.1.0) |
 | npm | json-schema-traverse | 0.4.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/json-schema-traverse/v/0.4.1) |
 | npm | json-schema-traverse | 1.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/json-schema-traverse/v/1.0.0) |
@@ -466,7 +456,6 @@ rather than as a notice obligation.
 | npm | mdast-util-to-hast | 13.2.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/mdast-util-to-hast/v/13.2.1) |
 | npm | mdast-util-to-markdown | 2.1.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/mdast-util-to-markdown/v/2.1.2) |
 | npm | mdast-util-to-string | 4.0.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/mdast-util-to-string/v/4.0.0) |
-| npm | mdn-data | 2.27.1 | web build/test tooling | CC0-1.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/mdn-data/v/2.27.1) |
 | npm | micromark | 4.0.2 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/micromark/v/4.0.2) |
 | npm | micromark-core-commonmark | 2.0.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/micromark-core-commonmark/v/2.0.3) |
 | npm | micromark-extension-gfm | 3.0.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/micromark-extension-gfm/v/3.0.0) |
@@ -498,7 +487,7 @@ rather than as a notice obligation.
 | npm | minimatch | 11.0.3 | web build/test tooling | BlueOak-1.0.0 | development only, not distributed | [upstream](https://www.npmjs.com/package/minimatch/v/11.0.3) |
 | npm | minimatch | 3.1.5 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/minimatch/v/3.1.5) |
 | npm | ms | 2.1.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/ms/v/2.1.3) |
-| npm | msw | 3.0.3 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/msw/v/3.0.3) |
+| npm | msw | 3.0.4 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/msw/v/3.0.4) |
 | npm | mute-stream | 3.0.0 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/mute-stream/v/3.0.0) |
 | npm | nanoid | 3.3.20 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/nanoid/v/3.3.20) |
 | npm | natural-compare | 1.4.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/natural-compare/v/1.4.0) |
@@ -523,7 +512,8 @@ rather than as a notice obligation.
 | npm | parse-json | 8.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/parse-json/v/8.3.0) |
 | npm | parse-numeric-range | 1.3.0 | bundled web runtime | ISC | permissive | [upstream](https://www.npmjs.com/package/parse-numeric-range/v/1.3.0) |
 | npm | parse5 | 7.3.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/parse5/v/7.3.0) |
-| npm | parse5 | 8.0.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/parse5/v/8.0.1) |
+| npm | parse5 | 8.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/parse5/v/8.1.0) |
+| npm | parse5-parser-stream | 8.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/parse5-parser-stream/v/8.1.0) |
 | npm | path-exists | 4.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/path-exists/v/4.0.0) |
 | npm | path-key | 3.1.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/path-key/v/3.1.1) |
 | npm | picocolors | 1.1.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/picocolors/v/1.1.1) |
@@ -578,7 +568,7 @@ rather than as a notice obligation.
 | npm | saxes | 6.0.0 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/saxes/v/6.0.0) |
 | npm | scheduler | 0.28.0 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/scheduler/v/0.28.0) |
 | npm | semver | 6.3.1 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/semver/v/6.3.1) |
-| npm | semver | 7.8.5 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/semver/v/7.8.5) |
+| npm | semver | 7.8.6 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/semver/v/7.8.6) |
 | npm | set-cookie-parser | 2.7.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/set-cookie-parser/v/2.7.3) |
 | npm | set-cookie-parser | 3.1.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/set-cookie-parser/v/3.1.2) |
 | npm | set-function-length | 1.2.2 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/set-function-length/v/1.2.2) |
@@ -652,14 +642,14 @@ rather than as a notice obligation.
 | npm | vfile-location | 5.0.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/vfile-location/v/5.0.3) |
 | npm | vfile-message | 4.0.3 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/vfile-message/v/4.0.3) |
 | npm | victory-vendor | 37.3.6 | bundled web runtime | MIT AND ISC | permissive | [upstream](https://www.npmjs.com/package/victory-vendor/v/37.3.6) |
-| npm | vite | 8.3.5 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/vite/v/8.3.5) |
+| npm | vite | 8.3.6 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/vite/v/8.3.6) |
 | npm | vitest | 5.1.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/vitest/v/5.1.0) |
 | npm | w3c-xmlserializer | 6.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/w3c-xmlserializer/v/6.0.0) |
 | npm | walk-up-path | 4.0.0 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/walk-up-path/v/4.0.0) |
 | npm | web-namespaces | 2.0.1 | bundled web runtime | MIT | permissive | [upstream](https://www.npmjs.com/package/web-namespaces/v/2.0.1) |
 | npm | webidl-conversions | 8.0.1 | web build/test tooling | BSD-2-Clause | development only, not distributed | [upstream](https://www.npmjs.com/package/webidl-conversions/v/8.0.1) |
 | npm | whatwg-mimetype | 5.0.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/whatwg-mimetype/v/5.0.0) |
-| npm | whatwg-url | 17.2.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/whatwg-url/v/17.2.0) |
+| npm | whatwg-url | 17.3.0 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/whatwg-url/v/17.3.0) |
 | npm | which | 2.0.2 | web build/test tooling | ISC | development only, not distributed | [upstream](https://www.npmjs.com/package/which/v/2.0.2) |
 | npm | which-boxed-primitive | 1.1.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/which-boxed-primitive/v/1.1.1) |
 | npm | which-builtin-type | 1.2.1 | web build/test tooling | MIT | development only, not distributed | [upstream](https://www.npmjs.com/package/which-builtin-type/v/1.2.1) |
@@ -684,9 +674,9 @@ rather than as a notice obligation.
 | python | alembic | 1.20.1 | distributed Python runtime | MIT | permissive | [upstream](https://alembic.sqlalchemy.org) |
 | python | annotated-doc | 0.0.5 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/fastapi/annotated-doc) |
 | python | annotated-types | 0.8.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/annotated-types/annotated-types) |
-| python | anthropic | 2.4.0 | distributed Python runtime | Apache Software License | permissive | [upstream](https://github.com/anthropics/anthropic-sdk-python) |
+| python | anthropic | 2.6.0 | distributed Python runtime | Apache Software License | permissive | [upstream](https://github.com/anthropics/anthropic-sdk-python) |
 | python | anyio | 4.16.0 | distributed Python runtime | MIT | permissive | [upstream](https://anyio.readthedocs.io/en/stable/versionhistory.html) |
-| python | ast_serialize | 0.12.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/mypyc/ast_serialize) |
+| python | ast_serialize | 0.13.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/mypyc/ast_serialize) |
 | python | babel | 2.18.0 | distributed Python runtime | BSD License | permissive | [upstream](https://babel.pocoo.org/) |
 | python | boolean.py | 5.0 | Python development tooling | BSD-2-Clause | development only, not distributed | [upstream](https://github.com/bastikr/boolean.py) |
 | python | CacheControl | 0.14.4 | Python development tooling | Apache-2.0 | development only, not distributed | [upstream](https://pypi.org/project/CacheControl/) |
@@ -694,109 +684,108 @@ rather than as a notice obligation.
 | python | cffi | 2.1.1 | platform-conditional runtime | MIT-0 | permissive | [upstream](https://cffi.readthedocs.io/en/latest/whatsnew.html) |
 | python | charset-normalizer | 3.5.2 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md) |
 | python | cleanco | 2.3 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/psolin/cleanco) |
-| python | click | 8.4.2 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pallets/click/) |
+| python | click | 8.5.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pallets/click/) |
 | python | colorama | 0.4.6 | platform-conditional runtime | BSD License | permissive | [upstream](https://github.com/tartley/colorama) |
-| python | complexipy | 8.0.1 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/rohaquinlop/complexipy) |
+| python | complexipy | 8.3.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/rohaquinlop/complexipy) |
 | python | courlan | 1.4.0 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/adbar/courlan) |
-| python | coverage | 7.15.3 | Python development tooling | Apache-2.0 | development only, not distributed | [upstream](https://github.com/coveragepy/coveragepy) |
+| python | coverage | 7.17.2 | Python development tooling | Apache-2.0 | development only, not distributed | [upstream](https://github.com/coveragepy/coveragepy) |
 | python | cryptography | 50.0.2 | platform-conditional runtime | Apache-2.0 OR BSD-3-Clause | permissive | [upstream](https://github.com/pyca/cryptography) |
-| python | cyclonedx-python-lib | 11.11.0 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://github.com/CycloneDX/cyclonedx-python-lib/#readme) |
-| python | dateparser | 1.4.3 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/scrapinghub/dateparser) |
+| python | cyclonedx-python-lib | 11.12.0 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://github.com/CycloneDX/cyclonedx-python-lib/#readme) |
+| python | dateparser | 1.5.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/scrapinghub/dateparser) |
 | python | defusedxml | 0.7.1 | distributed Python runtime | Python Software Foundation License | permissive | [upstream](https://github.com/tiran/defusedxml) |
 | python | deptry | 0.25.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://deptry.com) |
 | python | docstring_parser | 0.18.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/rr-/docstring_parser) |
 | python | execnet | 2.1.2 | Python development tooling | MIT | development only, not distributed | [upstream](https://execnet.readthedocs.io/en/latest/) |
 | python | fastapi | 0.162.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/fastapi/fastapi) |
-| python | filelock | 4.2.6 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/tox-dev/filelock) |
+| python | filelock | 4.2.9 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/tox-dev/filelock) |
 | python | genai-prices | 0.2.1 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/genai-prices) |
 | python | geonamescache | 3.0.2 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/yaph/geonamescache) |
-| python | greenlet | 3.5.4 | distributed Python runtime | MIT AND PSF-2.0 | permissive | [upstream](https://greenlet.readthedocs.io) |
-| python | grimp | 3.17 | Python development tooling | BSD License | development only, not distributed | [upstream](https://grimp.readthedocs.io/) |
+| python | greenlet | 3.5.6 | distributed Python runtime | MIT AND PSF-2.0 | permissive | [upstream](https://greenlet.readthedocs.io) |
+| python | grimp | 3.19 | Python development tooling | BSD License | development only, not distributed | [upstream](https://grimp.readthedocs.io/) |
 | python | h11 | 0.16.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/python-hyper/h11) |
 | python | htmldate | 1.11.0 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://htmldate.readthedocs.io) |
 | python | httpcore | 1.0.9 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://www.encode.io/httpcore/) |
-| python | httpcore2 | 2.12.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pydantic/httpx2) |
+| python | httpcore2 | 2.16.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pydantic/httpx2) |
 | python | httpx | 0.28.1 | distributed Python runtime | BSD License | permissive | [upstream](https://github.com/encode/httpx) |
-| python | httpx2 | 2.12.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pydantic/httpx2) |
-| python | hypothesis | 6.170.14 | Python development tooling | MPL-2.0 | development only, not distributed | [upstream](https://hypothesis.works) |
-| python | idna | 3.18 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/kjd/idna) |
-| python | import-linter | 2.15 | Python development tooling | BSD License | development only, not distributed | [upstream](https://import-linter.readthedocs.io/) |
-| python | iniconfig | 2.3.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/pytest-dev/iniconfig) |
+| python | httpx2 | 2.16.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pydantic/httpx2) |
+| python | hypothesis | 6.170.15 | Python development tooling | MPL-2.0 | development only, not distributed | [upstream](https://hypothesis.works) |
+| python | idna | 3.20 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/kjd/idna) |
+| python | import-linter | 2.16 | Python development tooling | BSD License | development only, not distributed | [upstream](https://import-linter.readthedocs.io/) |
+| python | iniconfig | 2.3.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/pytest-dev/iniconfig) |
 | python | itsdangerous | 2.2.0 | distributed Python runtime | BSD License | permissive | [upstream](https://github.com/pallets/itsdangerous/) |
 | python | jaraco.classes | 3.4.0 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/jaraco/jaraco.classes) |
 | python | jaraco.context | 6.1.2 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/jaraco/jaraco.context) |
 | python | jaraco.functools | 4.6.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/jaraco/jaraco.functools) |
 | python | jeepney | 0.9.0 | platform-conditional runtime | MIT | permissive | [upstream](https://gitlab.com/takluyver/jeepney) |
 | python | Jinja2 | 3.1.6 | distributed Python runtime | BSD License | permissive | [upstream](https://github.com/pallets/jinja/) |
-| python | jiter | 0.16.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/jiter/) |
+| python | jiter | 0.19.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/jiter/) |
 | python | jusText | 3.0.2 | distributed Python runtime | BSD License | permissive | [upstream](https://github.com/miso-belica/jusText) |
 | python | keyring | 25.7.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/jaraco/keyring) |
 | python | libcst | 1.9.0 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/Instagram/LibCST/blob/main/CHANGELOG.md) |
 | python | librt | 0.16.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/mypyc/librt) |
 | python | license-expression | 30.4.4 | Python development tooling | Apache-2.0 | development only, not distributed | [upstream](https://github.com/aboutcode-org/license-expression) |
 | python | lxml | 6.1.3 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://lxml.de/) |
-| python | lxml_html_clean | 0.4.5 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/fedora-python/lxml_html_clean/) |
-| python | Mako | 1.4.2 | distributed Python runtime | MIT | permissive | [upstream](https://www.makotemplates.org/) |
+| python | lxml_html_clean | 0.4.6 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/fedora-python/lxml_html_clean/) |
+| python | Mako | 1.4.3 | distributed Python runtime | MIT | permissive | [upstream](https://www.makotemplates.org/) |
 | python | markdown-it-py | 4.2.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/executablebooks/markdown-it-py) |
-| python | MarkupSafe | 3.0.3 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pallets/markupsafe/) |
+| python | MarkupSafe | 3.0.4 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/pallets/markupsafe/) |
 | python | mdurl | 0.1.2 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/executablebooks/mdurl) |
-| python | more-itertools | 11.1.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/more-itertools/more-itertools) |
+| python | more-itertools | 11.2.1 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/more-itertools/more-itertools) |
 | python | msgpack | 1.2.4 | Python development tooling | Apache-2.0 | development only, not distributed | [upstream](https://msgpack.org/) |
 | python | mypy | 2.4.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://www.mypy-lang.org/) |
-| python | mypy_extensions | 1.1.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/python/mypy_extensions) |
-| python | openai | 3.43.0 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/openai/openai-python) |
-| python | opentelemetry-api | 1.45.1 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api) |
+| python | mypy_extensions | 1.2.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/python/mypy_extensions) |
+| python | openai | 3.46.0 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/openai/openai-python) |
+| python | opentelemetry-api | 1.45.2 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api) |
 | python | packageurl-python | 0.17.6 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/package-url/packageurl-python) |
 | python | packaging | 26.3 | Python development tooling | Apache-2.0 OR BSD-2-Clause | development only, not distributed | [upstream](https://github.com/pypa/packaging) |
 | python | pathspec | 1.1.1 | Python development tooling | Mozilla Public License 2.0 (MPL 2.0) | development only, not distributed | [upstream](https://python-path-specification.readthedocs.io/en/latest/index.html) |
-| python | pip-api | 0.0.34 | Python development tooling | Apache Software License | development only, not distributed | [upstream](http://github.com/di/pip-api) |
 | python | pip-requirements-parser | 32.0.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/nexB/pip-requirements-parser) |
+| python | pip_api | 0.0.35 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://pypi.org/project/pip-api/) |
 | python | pip_audit | 2.10.1 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://pypi.org/project/pip-audit/) |
-| python | platformdirs | 4.14.3 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/tox-dev/platformdirs) |
+| python | platformdirs | 4.14.5 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/tox-dev/platformdirs) |
 | python | playwright | 1.64.1 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/Microsoft/playwright-python) |
-| python | pluggy | 1.6.0 | Python development tooling | MIT License | development only, not distributed | Not provided |
+| python | pluggy | 1.7.0 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/pytest-dev/pluggy) |
 | python | Protego | 0.7.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/scrapy/protego) |
-| python | py-serializable | 2.1.0 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://github.com/madpah/serializable#readme) |
-| python | pycparser | 3.0 | platform-conditional runtime | BSD-3-Clause | permissive | [upstream](https://github.com/eliben/pycparser) |
-| python | pydantic | 2.14.2 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/pydantic) |
+| python | py-serializable | 2.2.0 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://github.com/madpah/serializable#readme) |
+| python | pycparser | 3.12 | platform-conditional runtime | BSD-3-Clause | permissive | [upstream](https://github.com/eliben/pycparser) |
+| python | pydantic | 2.14.3 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/pydantic) |
 | python | pydantic-settings | 2.16.2 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/pydantic-settings) |
-| python | pydantic_core | 2.50.2 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic) |
-| python | pyee | 13.0.1 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/jfhbrook/pyee) |
-| python | Pygments | 2.20.0 | distributed Python runtime | BSD-2-Clause | permissive | [upstream](https://pygments.org) |
-| python | pyparsing | 3.3.2 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/pyparsing/pyparsing/) |
-| python | pypdfium2 | 5.14.0 | distributed Python runtime | BSD-3-Clause, Apache-2.0, dependency licenses | reviewed exception | [upstream](https://github.com/pypdfium2-team/pypdfium2) |
+| python | pydantic_core | 2.50.4 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic) |
+| python | pyee | 14.0.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/jfhbrook/pyee) |
+| python | Pygments | 2.21.0 | distributed Python runtime | BSD-2-Clause | permissive | [upstream](https://pygments.org) |
+| python | pyparsing | 3.3.3 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/pyparsing/pyparsing/) |
+| python | pypdfium2 | 5.15.0 | distributed Python runtime | BSD-3-Clause, Apache-2.0, dependency licenses | reviewed exception | [upstream](https://github.com/pypdfium2-team/pypdfium2) |
 | python | pytest | 9.2.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://docs.pytest.org/en/latest/) |
 | python | pytest-cov | 7.1.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://pytest-cov.readthedocs.io/en/latest/changelog.html) |
 | python | pytest-xdist | 3.8.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/pytest-dev/pytest-xdist) |
-| python | python-dateutil | 2.9.0.post0 | distributed Python runtime | Apache Software License; BSD License | permissive | [upstream](https://github.com/dateutil/dateutil) |
-| python | python-dotenv | 1.2.2 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/theskumar/python-dotenv) |
-| python | python-multipart | 0.0.32 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/Kludex/python-multipart) |
-| python | pytz | 2026.3.post1 | distributed Python runtime | MIT License | permissive | [upstream](http://pythonhosted.org/pytz) |
+| python | python-dateutil | 4.0.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/dateutil/dateutil) |
+| python | python-dotenv | 1.2.4 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/theskumar/python-dotenv) |
+| python | python-multipart | 0.0.33 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://github.com/Kludex/python-multipart) |
+| python | pytz | 2026.6 | distributed Python runtime | MIT License | permissive | [upstream](http://pythonhosted.org/pytz) |
 | python | pywin32-ctypes | 0.2.3 | platform-conditional runtime | BSD-3-Clause | permissive | [upstream](https://github.com/enthought/pywin32-ctypes) |
 | python | PyYAML | 6.0.3 | Python development tooling | MIT License | development only, not distributed | [upstream](https://pyyaml.org/) |
-| python | regex | 2026.7.19 | distributed Python runtime | Apache-2.0 AND CNRI-Python | permissive | [upstream](https://github.com/mrabarnett/mrab-regex) |
+| python | regex | 2026.9.29 | distributed Python runtime | Apache-2.0 AND CNRI-Python | permissive | [upstream](https://github.com/mrabarnett/mrab-regex) |
 | python | requests | 2.34.2 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://github.com/psf/requests) |
 | python | requirements-parser | 0.13.1 | Python development tooling | Apache Software License | development only, not distributed | [upstream](https://github.com/madpah/requirements-parser/#readme) |
 | python | rich | 15.0.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/Textualize/rich) |
-| python | ruff | 0.16.10 | Python development tooling | MIT | development only, not distributed | [upstream](https://docs.astral.sh/ruff) |
+| python | ruff | 0.17.4 | Python development tooling | MIT | development only, not distributed | [upstream](https://docs.astral.sh/ruff) |
 | python | SecretStorage | 3.5.0 | platform-conditional runtime | BSD-3-Clause | permissive | [upstream](https://github.com/mitya57/secretstorage) |
 | python | shellingham | 1.5.4 | distributed Python runtime | ISC License (ISCL) | permissive | [upstream](https://github.com/sarugaku/shellingham) |
-| python | six | 1.17.0 | distributed Python runtime | MIT License | permissive | [upstream](https://github.com/benjaminp/six) |
 | python | sniffio | 1.3.1 | distributed Python runtime | Apache Software License; MIT License | permissive | [upstream](https://github.com/python-trio/sniffio) |
 | python | sortedcontainers | 2.4.0 | Python development tooling | Apache Software License | development only, not distributed | [upstream](http://www.grantjenks.com/docs/sortedcontainers/) |
-| python | SQLAlchemy | 2.1.6 | distributed Python runtime | MIT | permissive | [upstream](https://www.sqlalchemy.org) |
+| python | SQLAlchemy | 2.1.8 | distributed Python runtime | MIT | permissive | [upstream](https://www.sqlalchemy.org) |
 | python | starlette | 1.10.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://github.com/Kludex/starlette) |
 | python | starlette-admin | 1.0.3 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/jowilf/starlette-admin) |
 | python | tld | 0.13.2 | distributed Python runtime | MPL-1.1 OR GPL-2.0-only OR LGPL-2.1-or-later | reviewed exception | [upstream](https://tld.readthedocs.io/en/latest/changelog.html) |
-| python | tomli | 2.4.1 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/hukkin/tomli) |
+| python | tomli | 2.5.0 | Python development tooling | MIT | development only, not distributed | [upstream](https://github.com/hukkin/tomli) |
 | python | tomli_w | 1.2.0 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/hukkin/tomli-w) |
 | python | trafilatura | 2.3.1 | distributed Python runtime | Apache-2.0 | permissive | [upstream](https://trafilatura.readthedocs.io) |
-| python | truststore | 0.10.4 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/sethmlarson/truststore) |
-| python | typer | 0.27.3 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/fastapi/typer) |
-| python | typing-inspection | 0.4.4 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/typing-inspection) |
+| python | truststore | 0.10.5 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/sethmlarson/truststore) |
+| python | typer | 0.28.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/fastapi/typer) |
+| python | typing-inspection | 0.4.5 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/pydantic/typing-inspection) |
 | python | typing_extensions | 4.16.0 | distributed Python runtime | PSF-2.0 | permissive | [upstream](https://github.com/python/typing_extensions) |
-| python | tzdata | 2026.5 | platform-conditional runtime | Apache-2.0 | permissive | [upstream](https://github.com/python/tzdata) |
-| python | tzlocal | 5.4.4 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/regebro/tzlocal/blob/master/CHANGES.txt) |
+| python | tzdata | 2026.6 | platform-conditional runtime | Apache-2.0 | permissive | [upstream](https://github.com/python/tzdata) |
+| python | tzlocal | 5.4.5 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/regebro/tzlocal/blob/master/CHANGES.txt) |
 | python | urllib3 | 2.8.0 | distributed Python runtime | MIT | permissive | [upstream](https://github.com/urllib3/urllib3/blob/main/CHANGES.rst) |
 | python | uvicorn | 0.54.0 | distributed Python runtime | BSD-3-Clause | permissive | [upstream](https://uvicorn.dev/) |
 | python | vulture | 2.16 | Python development tooling | MIT License | development only, not distributed | [upstream](https://github.com/jendrikseipp/vulture) |

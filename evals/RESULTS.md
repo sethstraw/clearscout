@@ -373,9 +373,10 @@ the outcome is what the shipped floors assign the critic's merged verdict.
 The two 2026-09-21 rows are the same six cases run twice to measure spread.
 
 From prompt `c1cc6951842f` the critic's citation index carries the text of each
-cited entry beneath the line, and `planted_scope_widening` widens a team's work into
-the candidate's; every planted case was caught on its line and no clean case
-drew a doubt.
+cited entry beneath the line, and `planted_scope_widening` credits the candidate
+with carrying the platform team's registry cutover from plan to release, where
+the cited entry has them drafting and reviewing its migration scripts; every
+planted case was caught on its line and no clean case drew a doubt.
 
 From prompt `38e1aa7c0f77` the critic asks once per draft instead of three
 times, and the set adds two cover letters. The doubt score was 36 of 39: every resume case
@@ -395,14 +396,16 @@ caught every planted line, so one draw scores the same 6 of 6 as the union
 default stays at one draw. None of these cases sits near the point where draws
 disagree, so the run cannot rule out a defect that one draw catches only
 sometimes. The near-boundary row tests exactly that. It plants six small
-defects, each against its cited entry: a tenure claim alone, a design called
-shipped, a figure written as a word above the evidenced one, "led" for
-"contributed to", one team's modules called company-wide, and an inserted tool
-name. It ran three draws per case, and every draw doubted its planted line (18
-of 18, Wilson 95% lower bound 0.82). Scored for the planted boundary as well,
-15 of 18 hold: every draw on the design-called-shipped line doubted it as team
-contribution or absent from the record, never as `planned_not_shipped`. The
-verdict still fails, so the product outcome is right and the label is not. The duties-letter row ran the clean letter alone at one draw: 2 of 5
+defects, each against its cited entry: a tenure claim alone, a rollout added to
+a registry the record has only as designed, a figure written as a word above
+the evidenced one, "led" for "contributed to", one team's modules called
+company-wide, and an inserted tool name. It ran three draws per case, and every
+draw doubted its planted line (18 of 18, Wilson 95% lower bound 0.82). Scored
+for the planted boundary as well, 15 of 18 hold: every draw on the rollout line
+doubted it as team contribution or absent from the record, while the case then
+expected `planned_not_shipped`. The cited entry is silent on any rollout rather
+than recording one as planned, so `boundary_designed_as_shipped` carries
+`absent_from_record`. The duties-letter row ran the clean letter alone at one draw: 2 of 5
 trials failed it, every doubt marking a sentence that restates the posting's
 duties as miscited.
 
@@ -436,9 +439,8 @@ summary phrase instead. Outcome agreement was 6 of 9, and no trial drew a doubt.
 
 The 30-case row follows a rewrite of that summary phrase, five new clean twins
 of planted cases, and a rule that a listed weakness warns as a style flag does.
-No clean draw drew a doubt. Eight draws missed a planted claim: a widened scope
-and a design described as shipped (3 of 3 each) and a blanket letter fit (2 of
-3). Of 24 clean draws, 15 passed; the tenure twin warned 3 of 3 because its
+No clean draw drew a doubt. Eight draws missed a planted claim: the widened
+cutover and the added rollout (3 of 3 each) and a blanket letter fit (2 of 3). Of 24 clean draws, 15 passed; the tenure twin warned 3 of 3 because its
 summary sentence sits under one employer and so does imply that tenure, and the
 letter's company paragraph warned 3 of 3 as before.
 

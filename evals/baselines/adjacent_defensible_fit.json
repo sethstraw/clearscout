@@ -1,6 +1,6 @@
 {
   "case": "adjacent_defensible_fit",
-  "prompt_suite": "fd815f04798c",
+  "prompt_suite": "3d6a0735b129",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
@@ -51,7 +51,7 @@
     "model_rule_disagreements": 1,
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
-    "request.critic": "f727ffde2056",
+    "request.critic": "7e5c2b0b4a4b",
     "request.draft": "057956a273dc",
     "request.jobspec": "f83dd4900fd3",
     "request.match": "eb3cbbb7b5e4",

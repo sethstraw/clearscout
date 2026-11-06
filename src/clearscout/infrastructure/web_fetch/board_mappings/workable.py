@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -64,4 +66,5 @@ WORKABLE_MAPPING = BoardDeclaration(
     requisition_id=("shortcode",),
     arrangement=_arrangement,
     description=(("description",),),
+    posted=posted_on(("published_on",), PostedDateGrade.FIRST_POSTED),
 )

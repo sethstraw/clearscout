@@ -341,8 +341,9 @@ it so that it always passes, leaves every case green, because a case asserts the
 failures and warnings it expects and a removed check produces neither.
 
 `claim ownership` is the gap worth naming: it is one of the support checks, and no
-case reaches it, because it only fires on a line whose citations include a company
-research source and no draft or cover case supplies research. A first-person achievement
+case reaches it. It only fires on a first-person sentence in a line whose citations
+include a company research source. Every cover case supplies the posting as research,
+as production does, but no case writes such a sentence. A first-person achievement
 resting on the employer's own words is therefore unmeasured.
 
 ## What the relevance family scores against

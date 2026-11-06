@@ -38,8 +38,10 @@ entries give to a team, or with leading more of the work than its entries say
 the candidate led, claims more than they carry. An entry elsewhere in the
 evidence that happens to carry the claim does not support it, because the line
 does not rest on that entry; list that claim in `unsupported_claims` under the
-`miscited` boundary. A line shown as citing nothing is judged against the
-evidence as a whole.
+`miscited` boundary. A resume line written under a role is a claim about that
+role, so a length of service it states is claimed at that employer, and an
+entry giving the span of the whole career does not carry it. A line shown as
+citing nothing is judged against the evidence as a whole.
 
 Use this index to trace a claim, not as a reason to find more. A line whose
 cited entries carry its claim is supported, however few entries it cites and

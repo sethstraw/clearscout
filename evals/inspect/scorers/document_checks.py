@@ -9,6 +9,7 @@ records the shipped verdict instead of inventing a quality threshold.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from clearscout.application.tailoring.stages.verify import FUNCTION_WORDS, doubted_span
@@ -16,14 +17,25 @@ from clearscout.domain.identity import normalize_text
 from clearscout.shared.results import Outcome
 
 _CRITIC_OUTCOMES = frozenset(outcome.value for outcome in Outcome)
+_ELLIPSIS = re.compile(r"\.\.\.|\u2026")
 
 
 def _about(claim: str, line: str) -> bool:
     """Return whether a doubt's words lie inside the line or contain it, sharing its content."""
-    span, folded_line = normalize_text(doubted_span(claim)), normalize_text(line)
+    quoted, folded_line = doubted_span(claim), normalize_text(line)
+    # A quotation shortened with an ellipsis is about the line when each kept part is in it.
+    parts = [p for p in (normalize_text(part) for part in _ELLIPSIS.split(quoted)) if p]
+    span = " ".join(parts)
     # A lone term such as a tool name also appears in lines nobody doubted.
     shared = set(span.split()) & set(folded_line.split()) - FUNCTION_WORDS
-    return len(shared) >= 2 and (span in folded_line or folded_line in span)
+    inside, at = True, 0
+    for part in parts:
+        found = folded_line.find(part, at)
+        if found < 0:
+            inside = False
+            break
+        at = found + len(part)
+    return len(shared) >= 2 and (inside or folded_line in span)
 
 
 def _catches(claim: dict[str, Any], planted: dict[str, Any]) -> bool:

@@ -495,6 +495,14 @@ def _microdata_nodes(body: str) -> Iterator[dict[str, Any]]:
     yield from microdata.items
 
 
+def microdata_date_posted(body: str) -> str:
+    """Return the one datePosted the page's microdata items state, or "" for none or several."""
+    stated = {
+        text for item in _microdata_nodes(body) for text in _texts(item.get("datePosted")) if text
+    }
+    return stated.pop() if len(stated) == 1 else ""
+
+
 def _declared(nodes: Iterator[dict[str, Any]]) -> tuple[JobPostingMarkup, ...]:
     every = list(nodes)
     by_id = {node["@id"]: node for node in every if isinstance(node.get("@id"), str)}

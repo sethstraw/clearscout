@@ -29,7 +29,10 @@ deterministically and projects the minimal dataset. `labeling.py` and
 to hashes, and `prompts/` holds the reviewer's labeling instructions.
 `build_calibration.py` and `diff.py` back the `scripts/eval.sh` subcommands of
 the same names, and `cost_estimate.py` gives the estimate a `--live` run is
-approved against.
+approved against. A live log's header carries a `usage` rollup of every
+provider call (tokens, cache share overall and per trial, latency, and cost per
+sample and per passed sample), which the runner prints as a `usage:` line and
+`diff` prints for each log.
 
 Tracked synthetic inputs live outside this directory: postings and documents in
 `evals/fixtures/`, master CVs in `evals/cvs/`, and the reviewer-labeled scoring
@@ -163,3 +166,9 @@ reviews, and record their agent provenance in the private review records.
 ```bash
 scripts/eval.sh diff reports/eval/<baseline>.jsonl reports/eval/<candidate>.jsonl
 ```
+
+## Rescore a stored log
+
+`scripts/eval.sh --rescore <task_file> <log.jsonl>` re-applies the task's current
+scorer to the solver outputs a finished log stored and writes
+`<log>.rescored.jsonl`, so a scorer-only change is measured without a paid run.

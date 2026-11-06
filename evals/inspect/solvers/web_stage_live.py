@@ -1,8 +1,9 @@
 """Live solvers for the two hosted-web-search stages: posting recovery and guided campaign.
 
 Only ``scripts/eval.sh --live`` should reach these solvers. Each sample sends one
-production request through the production validation and stops before any page
-read, so a run spends provider money and never touches a job board.
+production request through the production validation. Recovery stops before any
+page read. A campaign sample then reads its picks through campaign admission's
+read phase, under the published fetch policy, and writes nothing.
 """
 
 from __future__ import annotations
@@ -10,8 +11,10 @@ from __future__ import annotations
 import contextlib
 import time
 import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -24,6 +27,8 @@ from clearscout.application.discovery.assisted_content_resolution import (
     RecoveryResponseRefusedError,
     cited_recovery_search,
 )
+from clearscout.application.discovery.board_scan import SourceScanService
+from clearscout.application.discovery.board_slugs import board_identity_key
 from clearscout.application.discovery.content_resolution import PostingResolutionTarget
 from clearscout.application.discovery.derived_vocabulary_rules import searched_titles
 from clearscout.application.discovery.guided_campaign import (
@@ -32,6 +37,11 @@ from clearscout.application.discovery.guided_campaign import (
     CampaignIdentities,
     CampaignManifest,
     compile_campaign,
+)
+from clearscout.application.discovery.guided_campaign_admission import (
+    ObservedUrl,
+    ReadUrl,
+    read_captured_urls,
 )
 from clearscout.application.discovery.guided_campaign_request import (
     RESPONSE_SCHEMA_VERSION,
@@ -43,21 +53,29 @@ from clearscout.application.discovery.guided_campaign_runner import (
     matched_queries,
     poll_until_terminal,
 )
+from clearscout.application.discovery.posting_fetch import FetchedPosting, PostingFetcher
 from clearscout.application.discovery.posting_identity import (
     BoardHolder,
     BoardRecord,
     board_holder,
+    posting_identity_keys,
 )
 from clearscout.application.discovery.search_parameter_summary import search_summary
 from clearscout.application.prompts import data_block, load
 from clearscout.application.tailoring.stages.context import record_block
 from clearscout.domain import PostingContentAccessStatus
 from clearscout.domain.identity import requisition_key, url_host
+from clearscout.domain.records import PostingReadIntent
 from clearscout.domain.search_parameters import EmployerArchetype, JobSearchParameters
+from clearscout.domain.staged_facts import StagedListingFacts
+from clearscout.infrastructure.artifacts.runtime import RuntimeStorage
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.providers.base import BackgroundPoll, BackgroundWebSearchProvider
 from clearscout.infrastructure.providers.client import Client
 from clearscout.infrastructure.providers.plan import RequestPlan
+from clearscout.infrastructure.web_fetch.ingest.url import USER_AGENT
+from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
+from clearscout.infrastructure.web_fetch.posting_fetch import PolitePostingFetcher
 from clearscout.shared.costs import Ledger
 from clearscout.shared.costs.prices import table as price_table
 from clearscout.shared.errors import ProviderError
@@ -262,6 +280,10 @@ class CampaignRequest:
     attempt: CampaignAttemptPlan
     plan: RequestPlan
     schema: type[BaseModel]
+    parameters: JobSearchParameters
+    searched_titles: tuple[str, ...]
+    known_source_roots: frozenset[str] = frozenset()
+    known_posting_fingerprints: frozenset[str] = frozenset()
 
 
 def campaign_parameters(sample: dict[str, Any]) -> JobSearchParameters:
@@ -290,9 +312,10 @@ def campaign_request(sample: dict[str, Any], settings: Settings) -> CampaignRequ
         verbosity=choice.verbosity.value if choice.verbosity is not None else "",
         service_tier=choice.service_tier.value,
     )
+    titles = searched_titles(parameters, (), ())
     manifest = compile_campaign(
         parameters,
-        searched_titles(parameters, (), ()),
+        titles,
         archetypes,
         identities=identities,
         bounds=CampaignBounds(),
@@ -312,6 +335,17 @@ def campaign_request(sample: dict[str, Any], settings: Settings) -> CampaignRequ
         attempt=attempt,
         plan=attempt_request_plan(manifest, attempt, evidence),
         schema=campaign_response_schema(tuple(branch.key for branch in manifest.branches)),
+        parameters=parameters,
+        searched_titles=tuple(item.title for item in titles),
+        # A case plants what its workspace already holds, keyed as known_identities_in keys it.
+        known_source_roots=frozenset(
+            board_identity_key(str(url)) for url in sample["input"].get("registered_boards", [])
+        ),
+        known_posting_fingerprints=frozenset(
+            key
+            for url in sample["input"].get("known_urls", [])
+            for key in posting_identity_keys(str(url))
+        ),
     )
 
 
@@ -382,13 +416,106 @@ def campaign_result(request: CampaignRequest, poll: BackgroundPoll) -> dict[str,
         "queries": [query for search in searches for query in search.queries],
         "unattributable_searches": sum(1 for search in searches if not search.queries),
         "branches": [
-            {"key": key, "label": by_key[key].label, "queries": list(queries)}
+            {
+                "key": key,
+                "label": by_key[key].label,
+                "titles": list(by_key[key].title_aliases),
+                "queries": list(queries),
+            }
             for key, queries in matched_queries(request.manifest, request.attempt, poll).items()
         ],
         "postings": _url_picks(poll.value, "postings"),
         "boards": _url_picks(poll.value, "boards"),
         "refused_picks": [dict(item) for item in refused],
     }
+
+
+class RecordedPostings:
+    """A posting fetcher that keeps each read by its requested URL for the scorer."""
+
+    def __init__(self, fetcher: PostingFetcher) -> None:
+        """Wrap ``fetcher`` with an empty record of reads."""
+        self.fetcher = fetcher
+        self.reads: dict[str, FetchedPosting] = {}
+
+    def fetch(
+        self, url: str, *, intent: PostingReadIntent = PostingReadIntent.CRAWL, board_url: str = ""
+    ) -> FetchedPosting:
+        """Read one posting through the wrapped fetcher and keep what it returned."""
+        fetched = self.fetcher.fetch(url, intent=intent, board_url=board_url)
+        self.reads[url] = fetched
+        return fetched
+
+
+@contextlib.contextmanager
+def live_pick_scans(database: Database) -> Iterator[SourceScanService]:
+    """Yield admission's read seam over the polite web client, closing the client after."""
+    with contextlib.closing(PoliteHttpClient(user_agent=USER_AGENT)) as web:
+        yield SourceScanService(
+            database,
+            storage=RuntimeStorage.resolve(database.url),
+            posting_fetcher=RecordedPostings(PolitePostingFetcher(client=web)),
+            http_client=web,
+        )
+
+
+def _read_row(read: ReadUrl, fetched: FetchedPosting | None) -> dict[str, Any]:
+    check = None if fetched is None else fetched.publisher_check
+    facts = check.facts if check is not None else StagedListingFacts()
+    return {
+        "url": read.item.url,
+        "classification": read.classification.value,
+        "outcome": read.outcome.value,
+        "detail": read.detail,
+        "staged_basis": None if read.staged_basis is None else read.staged_basis.value,
+        "title": read.title,
+        "employer": read.employer or read.board_employer,
+        "findings": [finding.model_dump() for finding in read.screening_findings],
+        "board_root": read.board_root,
+        "board_listings": [
+            {"url": listing.url, "title": listing.title, "location": listing.location}
+            for listing in read.board_listings
+        ],
+        # The facts admission's title screen read, so the scorer can screen as it did.
+        "role_aliases": list(facts.role_aliases.values),
+        "focus_terms": list(facts.focus_terms.values),
+        "publisher_vouched": facts.publisher_vouched,
+        "posting_status": "" if fetched is None else fetched.posting_status,
+    }
+
+
+def pick_reads(
+    scans: SourceScanService, request: CampaignRequest, poll: BackgroundPoll
+) -> list[dict[str, Any]]:
+    """Return what campaign admission's read phase decides for each model pick.
+
+    Only picked rows are read, and only what the case planted counts as already held.
+    """
+    rows, _ = captured_url_rows(poll)
+    picked = tuple(
+        ObservedUrl(
+            url=str(row["url"]),
+            observations=tuple(
+                (str(item["action_kind"]), str(item["query"])) for item in row["observations"]
+            ),
+            model_selected=True,
+            model_why=str(row.get("model_why", "")),
+            model_board=bool(row.get("model_board", False)),
+        )
+        for row in rows
+        if row.get("model_selected")
+    )
+    reads = read_captured_urls(
+        scans,
+        parameters=request.parameters,
+        searched_titles=list(request.searched_titles),
+        captured=picked,
+        known_source_roots=request.known_source_roots,
+        known_posting_fingerprints=request.known_posting_fingerprints,
+    )
+    fetcher = scans.postings.fetcher
+    recorded = fetcher.reads if isinstance(fetcher, RecordedPostings) else {}
+    return [_read_row(read, recorded.get(read.item.url)) for read in reads]
 
 
 @dataclass(frozen=True)
@@ -402,6 +529,7 @@ class _GuidedCampaignLiveSolver:
     ledger: Ledger
     database: Database
     workspace_id: str
+    open_scans: Callable[[], AbstractContextManager[SourceScanService]]
 
     def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
         snapshot = _unchanged(CAMPAIGN_PROMPTS, self.prompt_snapshot)
@@ -419,9 +547,20 @@ class _GuidedCampaignLiveSolver:
         provenance = sample_provenance(
             paid.ledger, self.ledger, self.run_metadata, paid.billing_failure
         )
-        return {**paid.value, "metadata": provenance}
+        if isinstance(paid.value, dict):
+            return {**paid.value, "metadata": provenance}
+        request, poll = paid.value
+        result = {**campaign_result(request, poll), "metadata": provenance}
+        try:
+            with self.open_scans() as scans:
+                result["reads"] = pick_reads(scans, request, poll)
+        except Exception as error:  # noqa: BLE001 - the attempt is billed; keep it, record why
+            result["reads_error"] = f"{type(error).__name__}: {' '.join(str(error).split())}"[:500]
+        return result
 
-    def _attempt(self, client: Client, sample: dict[str, Any]) -> dict[str, Any]:
+    def _attempt(
+        self, client: Client, sample: dict[str, Any]
+    ) -> dict[str, Any] | tuple[CampaignRequest, BackgroundPoll]:
         # The prompts render inside paid_call, so the arm's bytes are the ones sent.
         request = campaign_request(sample, self.settings)
         try:
@@ -433,7 +572,7 @@ class _GuidedCampaignLiveSolver:
                 "error": " ".join(str(error).split())[:500],
                 "unbilled_response_id": error.response_id,
             }
-        return campaign_result(request, poll)
+        return request, poll
 
 
 def guided_campaign_live_solver(dataset: Path) -> _GuidedCampaignLiveSolver:
@@ -450,4 +589,5 @@ def guided_campaign_live_solver(dataset: Path) -> _GuidedCampaignLiveSolver:
         ledger=Ledger(prices=price_table(settings.prices)),
         database=database,
         workspace_id=workspace_id,
+        open_scans=partial(live_pick_scans, database),
     )

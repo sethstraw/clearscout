@@ -1,6 +1,6 @@
 {
   "case": "approval_uncited_replacement",
-  "prompt_suite": "fd815f04798c",
+  "prompt_suite": "3d6a0735b129",
   "schemas": "0905beebe712",
   "scores": {
     "approval_outcome": "refused",
@@ -48,7 +48,7 @@
     "model_calls": 4,
     "model_rule_disagreements": 0,
     "ownership_inflation": 0,
-    "request.critic": "1b217c2f697a",
+    "request.critic": "00d4303d7edb",
     "request.draft": "b8f5bf6daa71",
     "request.jobspec": "c40f0e9c4920",
     "request.match": "09691ea31167",

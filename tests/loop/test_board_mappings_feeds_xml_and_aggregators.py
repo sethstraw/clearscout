@@ -38,6 +38,7 @@ def _teamtailor_item(**overrides: str) -> Any:
         f"<guid>{overrides.get('guid', 'tt-1')}</guid>"
         f"<description>{description}</description>"
         f"{f'<remoteStatus>{status}</remoteStatus>' if status else ''}"
+        f"<pubDate>{overrides.get('pub_date', 'Wed, 21 Oct 2026 17:28:23 GMT')}</pubDate>"
         "<tt:locations>"
         "<tt:location><tt:name>Northtown</tt:name></tt:location>"
         f"<tt:location><tt:name>{second_place}</tt:name></tt:location>"
@@ -58,6 +59,19 @@ def test_a_teamtailor_listing_states_its_fields_and_namespaced_locations() -> No
     assert listing.facts.locations.values == ("Northtown", "Southtown")
     assert listing.published_description == "Support clinical teams."
     assert listing.facts.role_aliases.complete is False
+
+
+def test_a_teamtailor_listing_states_its_feed_publication_date() -> None:
+    item = _teamtailor_item(pub_date="Mon, 02 Nov 2026 09:15:00 +0100")
+
+    listing = source_listing(TEAMTAILOR_MAPPING, Posting(item, employer="Globex"))
+
+    assert listing is not None
+    posted = listing.facts.posted_date
+    assert posted is not None
+    assert posted.earliest.basis == "pubDate"
+    assert posted.earliest.normalized_value == "2026-11-02T09:15:00+01:00"
+    assert posted.earliest.grade is PostedDateGrade.FIRST_POSTED
 
 
 @pytest.mark.parametrize(

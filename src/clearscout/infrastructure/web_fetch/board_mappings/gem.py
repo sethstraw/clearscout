@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     plain_description,
+    posted_on,
     stated,
     stated_text,
 )
@@ -61,4 +63,5 @@ GEM_MAPPING = BoardDeclaration(
     description=(("content",),),
     arrangement=_arrangement,
     employment_types=("employment_type",),
+    posted=posted_on(("first_published_at",), PostedDateGrade.FIRST_POSTED),
 )

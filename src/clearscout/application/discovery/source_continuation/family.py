@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import Select, select
+from sqlalchemy.orm import Session, selectinload
 
 from clearscout.infrastructure.persistence.models import (
     BackgroundTask,
@@ -22,6 +22,14 @@ LATEST_SCAN_FIRST = (
     SourceScan.created_at.desc(),
     SourceScan.id.desc(),
 )
+
+
+def select_frontier_rows() -> Select[SourceScanFrontierItem]:
+    """Select frontier rows with each shared listing membership loaded once."""
+    # The relationship's joined default decodes the membership JSON once per row.
+    return select(SourceScanFrontierItem).options(
+        selectinload(SourceScanFrontierItem.listing_membership)
+    )
 
 
 def fresh_root_task(session: Session, root_task_id: str | None) -> BackgroundTask | None:

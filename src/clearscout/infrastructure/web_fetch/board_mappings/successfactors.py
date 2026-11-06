@@ -14,6 +14,7 @@ from clearscout.infrastructure.web_fetch.board_mappings.page_posting import (
 )
 from clearscout.infrastructure.web_fetch.ingest import strip_tags
 from clearscout.infrastructure.web_fetch.ingest.html_blocks import html_blocks
+from clearscout.infrastructure.web_fetch.ingest.job_posting_markup import microdata_date_posted
 from clearscout.infrastructure.web_fetch.ingest.readable import closed_page_notice
 
 # A posting page is /<brand>/job/<slug>/<id>/ or, outside any brand, /job/<slug>/<id>/.
@@ -115,6 +116,15 @@ def successfactors_page_posting(page: str) -> Mapping[str, Any] | None:
     declared = page_posting(page)
     if declared is not None:
         return declared
+    posting = _template_posting(page)
+    if posting is None or "title" not in posting:
+        return posting
+    posted = microdata_date_posted(page)
+    return {**posting, "posted": posted} if posted else posting
+
+
+def _template_posting(page: str) -> Mapping[str, Any] | None:
+    """Read the jobDisplayShell template, or a closed notice when the page has no shell."""
     shells = html_blocks(page, "div", class_name="jobDisplayShell")
     if not shells:
         bodies = html_blocks(page, "body")

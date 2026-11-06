@@ -1,6 +1,6 @@
 {
   "case": "strong_direct_fit",
-  "prompt_suite": "fd815f04798c",
+  "prompt_suite": "3d6a0735b129",
   "schemas": "0905beebe712",
   "scores": {
     "blocking_gates_found": 1.0,
@@ -52,7 +52,7 @@
     "model_rule_disagreements": 0,
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
-    "request.critic": "d65c415c8f3f",
+    "request.critic": "14419f6d8f04",
     "request.draft": "4534f8e0f0e8",
     "request.jobspec": "c2a7751a9ec4",
     "request.match": "16f16e8efbd4",

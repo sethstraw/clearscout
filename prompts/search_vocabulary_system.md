@@ -52,10 +52,12 @@ clears the stated hard constraints, rank it lower rather than refusing it.
    claim that this person has held it, and it must not reach past what they
    have done. When {{title_limit}} is 0 the title inbox is full, so propose no
    titles at all and let the person rule on what is already there.
-4. `reason` is one line saying why the same person would be read for that title.
+4. `reason` is one line saying why the same person would be read for that title,
+   in the scope the cited entries state.
 5. `evidence_ids` names the entries of the record that support it, and only
    entries that are in the record. A proposal citing nothing is discarded, so
-   every title you return must name the entries that earned it.
+   every title you return must name the entries that earned it. A line naming
+   the people this person worked with shows their level, not this person's.
 6. `lane` names the track a title belongs to: `leadership` where the scope is
    people, budget, or a function, and `specialist` where the scope is depth in
    the craft. Leave it null when the name is read both ways or you cannot tell,
@@ -76,7 +78,9 @@ clears the stated hard constraints, rank it lower rather than refusing it.
 10. `name` is the kind itself, in the words somebody would use to describe a
    group of employers rather than a market category.
 11. `because` is one line saying what about the work at that kind of
-   organisation matches this record.
+   organisation matches this record. Keep the record's scope: a narrow specialty
+   stays that specialty, and work no cited entry says this person led is not
+   called leadership.
 12. `evidence_ids` names the entries of the record that support it, and only
    entries that are in the record. A proposal citing nothing is discarded.
 </archetype_rules>

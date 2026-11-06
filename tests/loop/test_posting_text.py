@@ -1003,6 +1003,28 @@ def test_a_body_time_suffix_is_never_silently_dropped() -> None:
             date(2026, 9, 17),
         ),
         ("Oct 21, 2026", "2026-10-21", "date", None, date(2026, 10, 21)),
+        ("October 21, 2026", "2026-10-21", "date", None, date(2026, 10, 21)),
+        (
+            "Wed, 21 Oct 2026 17:28:23 GMT",
+            "2026-10-21T17:28:23+00:00",
+            "timestamp",
+            "+00:00",
+            date(2026, 10, 21),
+        ),
+        (
+            "Mon, 02 Nov 2026 09:15:00 +0100",
+            "2026-11-02T09:15:00+01:00",
+            "timestamp",
+            "+01:00",
+            date(2026, 11, 2),
+        ),
+        (
+            "Mon, 2 Nov 2026 23:30:00 -0500",
+            "2026-11-02T23:30:00-05:00",
+            "timestamp",
+            "-05:00",
+            date(2026, 11, 3),
+        ),
     ],
 )
 def test_publisher_posted_dates_normalize_each_board_format(
@@ -1031,7 +1053,15 @@ def test_relative_posted_text_is_never_a_posted_date(value: str) -> None:
     assert publisher_posted_date(value, basis="postedOn", grade=PostedDateGrade.BOARD_DATE) is None
 
 
-@pytest.mark.parametrize("value", ["2026-02-30", "2026-10-19T17:30:00+24:00", "Week 40 of 2026"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        "2026-02-30",
+        "2026-10-19T17:30:00+24:00",
+        "Week 40 of 2026",
+        "Mon, 30 Feb 2026 09:15:00 GMT",
+    ],
+)
 def test_an_unreadable_posted_date_keeps_its_wording_and_needs_clarification(value: str) -> None:
     from clearscout.application.discovery.posting_text import publisher_posted_date
     from clearscout.domain.staged_facts import PostedDateGrade

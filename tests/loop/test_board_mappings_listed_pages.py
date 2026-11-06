@@ -2519,6 +2519,63 @@ def test_successfactors_reads_a_posting_anchored_on_its_itemprop_title_and_body(
     assert (read.detail.read, read.detail.failed) == (1, 0)
 
 
+_SF_LABELLED_PAGE = (
+    '<div class="jobDisplayShell" itemscope itemtype="http://schema.org/JobPosting">'
+    '<div class="joblayouttoken"><span class="joblayouttoken-label">Title:</span>'
+    '<span class="rtltextaligneligible">Data Engineer</span></div>'
+    '<div class="joblayouttoken"><span class="joblayouttoken-label">Description:</span>'
+    '<span class="rtltextaligneligible"><p>Build clinical data systems.</p></span></div></div>'
+)
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        pytest.param(_successfactors_unlabelled_page(), id="unlabelled"),
+        pytest.param(_SF_LABELLED_PAGE, id="labelled"),
+        pytest.param(_successfactors_itemprop_page("untyped"), id="itemprop-untyped"),
+        pytest.param(_successfactors_itemprop_page("mixed"), id="itemprop-mixed"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("stated", "day"),
+    [
+        pytest.param("Wed Oct 21 00:00:00 UTC 2026", date(2026, 10, 21), id="java"),
+        pytest.param("October 21, 2026", date(2026, 10, 21), id="month-first"),
+        pytest.param(None, None, id="undated"),
+    ],
+)
+def test_a_successfactors_template_posting_states_its_microdata_posted_date(
+    page: str, stated: str | None, day: date | None
+) -> None:
+    if stated is not None:
+        meta = f'<meta itemprop="datePosted" content="{stated}">'
+        page = re.sub(r'(class="jobDisplayShell"[^>]*>)', rf"\1{meta}", page, count=1)
+    fetcher = _fetcher(
+        {
+            f"{_SF_SITE}/Health/": _SF_PAGE,
+            f"{_SF_SITE}/sitemap.xml": sitemap_urlset(_SF_ENGINEER),
+            _SF_ENGINEER: page,
+        },
+        [],
+    )
+
+    read = fetcher.listings("Acme", f"{_SF_SITE}/Health/")
+
+    assert [listing.title for listing in read.listings] == ["Data Engineer"]
+    posted = read.listings[0].facts.posted_date
+    if day is None:
+        assert posted is None
+        return
+    assert posted is not None
+    assert (posted.earliest.basis, posted.earliest.wording, posted.day) == (
+        "datePosted",
+        stated,
+        day,
+    )
+    assert posted.earliest.grade is PostedDateGrade.BOARD_DATE
+
+
 @pytest.mark.parametrize(
     "broken", ["two-title-spans", "og-disagrees", "no-body", "typed-elsewhere", "generic-title"]
 )

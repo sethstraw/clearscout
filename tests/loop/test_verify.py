@@ -1691,6 +1691,20 @@ def test_the_critic_is_told_which_entries_the_document_may_draw_on(
     assert "judge and name only the entries listed in the offered_evidence block." in flat
 
 
+def test_the_critic_is_told_a_span_of_years_under_a_role_is_claimed_of_that_employer(
+    inventory: CvInventory, settings, guardrails: Guardrails, tmp_path: Path
+) -> None:
+    """A career-wide span cited from the summary reads as tenure once it sits under one role."""
+    task = _critic_task(inventory, settings, guardrails, tmp_path / "critic-cache", "")
+
+    flat = " ".join(task.split())
+    assert (
+        "A resume line written under a role is a claim about that role, so a length of"
+        " service it states is claimed at that employer, and an entry giving the span of"
+        " the whole career does not carry it." in flat
+    )
+
+
 def test_the_critic_reads_a_letter_paragraph_under_its_own_citations(
     inventory: CvInventory, settings, guardrails: Guardrails, tmp_path: Path
 ) -> None:
@@ -2298,6 +2312,118 @@ def test_a_letter_over_the_stated_limit_is_sent_back(inventory, settings) -> Non
     finding = next(item for item in report.findings if item.check == "letter length")
     assert finding.outcome is Outcome.FAIL
     assert finding.redraftable
+
+
+DOCUMENT_NOUNS = (
+    "the posting",
+    "the job posting",
+    "this posting",
+    "the job description",
+    "the role description",
+    "the listing",
+    "the job listing",
+    "the company research",
+)
+SOURCE_NOUNS = (*DOCUMENT_NOUNS, "the research")
+SOURCE_SUBJECT_VERBS = (
+    "emphasizes",
+    "also emphasizes",
+    "notes",
+    "highlights",
+    "asks for",
+    "describes",
+    "mentions",
+    "points to",
+    "focuses on",
+)
+SOURCE_FRAMES = ("As {} notes,", "As {} says,", "According to {},", "Per {},")
+ROLE_DEMANDS = tuple(
+    f"{head} {verb} Kafka ingestion and schema compatibility."
+    for head in ("This role", "The role", "This position", "The opening")
+    for verb in ("calls for", "asks for", "requires", "seeks", "is looking for")
+)
+SUPPLY_TALK = (
+    "No company research was provided, so this paragraph keeps to the opening.",
+    "No research was supplied beyond the opening itself.",
+    "Company research was not supplied for Adatum.",
+    "Little information was provided about the team.",
+    "The information provided says Adatum serves regional carriers.",
+    "Beyond the details supplied, Adatum serves regional carriers.",
+    "Beyond what was supplied, Adatum serves regional carriers.",
+    "No context was given about the team.",
+    "No sources were provided for Adatum.",
+    "Limited materials were supplied for this letter.",
+    "Scant research has been provided on the team.",
+    "Details of the team weren't provided.",
+    "The research supplied notes that Adatum serves regional carriers.",
+)
+SOURCE_TALK = [
+    *(
+        f"{noun[0].upper()}{noun[1:]} {verb} schema compatibility for every consumer."
+        for noun in DOCUMENT_NOUNS
+        for verb in SOURCE_SUBJECT_VERBS
+    ),
+    *(
+        f"{frame.format(noun)} Adatum runs ingestion for 40 carriers."
+        for frame in SOURCE_FRAMES
+        for noun in SOURCE_NOUNS
+    ),
+    "Adatum, as its posting notes, runs ingestion for 40 carriers.",
+    "Adatum's posting stresses schema compatibility.",
+    "The team named in the job description runs ingestion for 40 carriers.",
+    *ROLE_DEMANDS,
+    *SUPPLY_TALK,
+]
+
+
+def _source_talk(inventory, settings, text: str) -> Finding:
+    return finding(letter_with(inventory, settings, text), "letter source talk")
+
+
+@pytest.mark.parametrize("sentence", SOURCE_TALK)
+def test_a_letter_sentence_about_the_posting_or_research_is_sent_back(
+    inventory, settings, sentence: str
+) -> None:
+    """Production always supplies the posting, so naming a source is talk about the document."""
+    talk = _source_talk(inventory, settings, f"Adatum serves regional carriers. {sentence}")
+
+    assert talk.outcome is Outcome.FAIL
+    assert talk.redraftable
+    assert repr(sentence) in talk.detail
+
+
+@pytest.mark.parametrize(
+    "sentence",
+    [
+        "Adatum sells freight visibility software to regional carriers.",
+        "The role owns the nightly load and the schema registry behind it.",
+        "The opening sits on a small team that owns ingestion end to end.",
+        "My research on hospital billing codes fed the claims model.",
+        "Research teams at the hospital read the lineage reports.",
+        "The record fits this posting.",
+        "I provided monthly extracts to hospital auditors.",
+        "The listing service I built answered 40 requests a second.",
+        "I wrote the posting rules that routed each ledger entry.",
+        "Data was provided to auditors within a day of each request.",
+        "Its teams describe each schema change before release.",
+        "Its research centers on antibody discovery.",
+        "Northbridge's research focuses on rare kidney disease.",
+        "The research arm runs trials in 12 countries.",
+        "Contoso makes lab results and dosing information available to clinicians at the bedside.",
+        "I made formulary information available to every pharmacist through one search.",
+        "I kept dosing details available during the migration.",
+        "The information provided by sensors drove the alerts.",
+        "Materials provided by suppliers were reconciled nightly.",
+        "Sources available to the team grew from two to twelve.",
+        "I wrote the data sources provided to analysts each morning.",
+        "Details were provided to auditors within a day of each request.",
+        "No information was given to nurses before the alert went live.",
+    ],
+)
+def test_a_letter_sentence_about_the_employer_or_the_work_is_not_source_talk(
+    inventory, settings, sentence: str
+) -> None:
+    assert _source_talk(inventory, settings, sentence).outcome is Outcome.PASS
 
 
 def _letter_report(

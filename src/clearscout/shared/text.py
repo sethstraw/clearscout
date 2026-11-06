@@ -121,7 +121,7 @@ def sanitize_with_offsets(text: str) -> tuple[str, list[tuple[int, int]]]:
         piece = sanitize(raw)
         folded.append(piece)
         # A tail that decoding left unchanged, the "D" of "&amp;D", keeps its own offsets.
-        kept = len(commonprefix([piece[::-1], raw[::-1]]))
+        kept = len(commonprefix([piece[::-1], raw[::-1]]))  # noqa: RUF071
         if piece != raw:
             # "&#59;" decodes to its own last character, which still spells the whole entity.
             kept = min(kept, max(len(piece) - 1, 0))

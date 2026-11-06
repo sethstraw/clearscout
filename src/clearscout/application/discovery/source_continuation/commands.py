@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from clearscout.application.discovery.source_continuation.alignerr import (
     alignerr_body_count,
@@ -21,6 +21,7 @@ from clearscout.application.discovery.source_continuation.family import (
     LATEST_SCAN_FIRST,
     is_current_in_session,
     next_pending,
+    select_frontier_rows,
 )
 from clearscout.application.discovery.source_continuation.frontier_carry import (
     advance_generation,
@@ -296,9 +297,7 @@ class SourceContinuationCommands:
         if not {normalize_fetch_url(url) for url in observed_urls} <= urls:
             return None
         rows = session.scalars(
-            select(SourceScanFrontierItem)
-            .options(selectinload(SourceScanFrontierItem.listing_membership))
-            .where(SourceScanFrontierItem.continuation_id == continuation_id)
+            select_frontier_rows().where(SourceScanFrontierItem.continuation_id == continuation_id)
         )
         checkpoints = alignerr_checkpoint_rows(rows, root)
         membership = validated_alignerr_membership(

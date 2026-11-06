@@ -6,10 +6,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from clearscout.domain.countries import territory_name
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     pay_range,
+    posted_on,
     stated,
     stated_text,
 )
@@ -146,4 +148,5 @@ RIPPLING_MAPPING = BoardDeclaration(
     # The label is a code such as SALARIED_FT; the id is the readable "Salaried, full-time".
     employment_types=("detail", "employmentType", "id"),
     compensation=_compensation,
+    posted=posted_on(("detail", "createdOn"), PostedDateGrade.FIRST_POSTED),
 )

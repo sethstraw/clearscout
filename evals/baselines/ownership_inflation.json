@@ -1,6 +1,6 @@
 {
   "case": "ownership_inflation",
-  "prompt_suite": "fd815f04798c",
+  "prompt_suite": "3d6a0735b129",
   "schemas": "0905beebe712",
   "scores": {
     "check.character policy": "pass",
@@ -49,7 +49,7 @@
     "model_calls": 4,
     "model_rule_disagreements": 0,
     "ownership_inflation": 2,
-    "request.critic": "636ed61ebd0c",
+    "request.critic": "c1be5f98bbde",
     "request.draft": "8d60b5a1bba0",
     "request.jobspec": "177984bf1670",
     "request.match": "7fb77eeb5aa0",

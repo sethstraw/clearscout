@@ -6,10 +6,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from clearscout.domain.countries import territory_name
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     pay_range,
+    posted_on,
     stated,
     stated_text,
 )
@@ -98,4 +100,5 @@ DAYFORCE_MAPPING = BoardDeclaration(
     description=(("Description",),),
     arrangement=_arrangement,
     compensation=_compensation,
+    posted=posted_on(("DatePosted",), PostedDateGrade.FIRST_POSTED),
 )

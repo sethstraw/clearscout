@@ -6,9 +6,12 @@ from collections.abc import Iterable
 from dataclasses import replace
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
-from clearscout.application.discovery.source_continuation.family import continuation_task_ids
+from clearscout.application.discovery.source_continuation.family import (
+    continuation_task_ids,
+    select_frontier_rows,
+)
 from clearscout.application.discovery.source_continuation.limits import POSTING_DETAIL_COMPLETED
 from clearscout.application.discovery.source_continuation.targets import frontier_target
 from clearscout.application.discovery.source_lifecycle import source_read_address
@@ -156,9 +159,7 @@ def _current_alignerr_page_membership(
     root_task = continuation.correlation_id
     task_ids = [root_task, *continuation_task_ids(session, continuation.workspace_id, root_task)]
     rows = session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(
+        select_frontier_rows().where(
             SourceScanFrontierItem.continuation_id == continuation_id,
             SourceScanFrontierItem.correlation_id.in_(task_ids),
         )
@@ -219,9 +220,7 @@ def alignerr_listing_coverage(
         return None
     root = normalize_fetch_url(source_read_address(source.url, source.resolved_url)[0])
     for row in session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(SourceScanFrontierItem.continuation_id == continuation.id)
+        select_frontier_rows().where(SourceScanFrontierItem.continuation_id == continuation.id)
     ):
         if row.detail_checkpoint is None or normalize_fetch_url(row.source_url) != root:
             continue

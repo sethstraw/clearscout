@@ -2,7 +2,7 @@
 
 Only ``scripts/eval.sh --live`` should launch this task. Each case compiles a campaign
 from a synthetic parameter set, sends its named attempt as one background hosted-search
-call, and scores the searches and picks by the checks the campaign runner applies.
+call, reads its picks as campaign admission would, and scores the searches and picks.
 """
 
 from __future__ import annotations

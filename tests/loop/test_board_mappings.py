@@ -7,6 +7,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
+from defusedxml.ElementTree import fromstring
 
 from clearscout.application.discovery.screening import (
     ScreeningCode,
@@ -20,21 +21,35 @@ from clearscout.domain.artifacts import PostingSource
 from clearscout.domain.search_parameters import JobSearchParameters, Location
 from clearscout.domain.staged_facts import FreshnessState, ListingIdentityTrust, PostedDateGrade
 from clearscout.infrastructure.web_fetch.application_form import required_residence_question
+from clearscout.infrastructure.web_fetch.board_mappings.adp import ADP_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.ashby import ASHBY_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.bamboohr import BAMBOOHR_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.breezy import BREEZY_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.clearcompany import CLEARCOMPANY_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.dayforce import DAYFORCE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.gem import GEM_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.greenhouse import GREENHOUSE_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.hibob import HIBOB_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.lever import LEVER_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    map_posting,
     posting_check,
     source_listing,
     source_listings,
 )
+from clearscout.infrastructure.web_fetch.board_mappings.personio import PERSONIO_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.phenom import PHENOM_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.rippling import RIPPLING_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.schema_org import (
     declared_check,
     declared_listing,
 )
+from clearscout.infrastructure.web_fetch.board_mappings.ukg import UKG_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.workable import WORKABLE_MAPPING
 from clearscout.infrastructure.web_fetch.board_mappings.workday import WORKDAY_DETAIL_MAPPING
+from clearscout.infrastructure.web_fetch.board_mappings.zoho import ZOHO_MAPPING
 from clearscout.infrastructure.web_fetch.ingest.job_posting_markup import (
     BaseSalaryMarkup,
     JobPostingMarkup,
@@ -1722,6 +1737,140 @@ def test_a_board_listing_states_the_posted_date_its_record_publishes(
 
     assert listing is not None
     posted = listing.facts.posted_date
+    assert posted is not None
+    assert (posted.earliest.basis, posted.day, posted.earliest.grade) == (basis, day, grade)
+
+
+_FIRST = PostedDateGrade.FIRST_POSTED
+_BOARD = PostedDateGrade.BOARD_DATE
+
+
+@pytest.mark.parametrize(
+    ("declaration", "record", "basis", "day", "grade"),
+    [
+        pytest.param(
+            WORKABLE_MAPPING,
+            {"published_on": "2026-09-25", "created_at": "2026-09-30"},
+            "published_on",
+            date(2026, 9, 25),
+            _FIRST,
+            id="workable",
+        ),
+        pytest.param(
+            ADP_MAPPING,
+            {"detail": {"postDate": "2026-10-01T16:51:00.000-04:00"}},
+            "detail.postDate",
+            date(2026, 10, 1),
+            _FIRST,
+            id="adp",
+        ),
+        pytest.param(
+            BREEZY_MAPPING,
+            {"row": {"published_date": "2026-09-17T15:20:45.752Z"}, "detail": {}},
+            "row.published_date",
+            date(2026, 9, 17),
+            _FIRST,
+            id="breezy",
+        ),
+        pytest.param(
+            CLEARCOMPANY_MAPPING,
+            {"postedDate": "2026-09-30T00:00:00Z", "openDate": "2026-09-01T00:00:00Z"},
+            "postedDate",
+            date(2026, 9, 30),
+            _FIRST,
+            id="clearcompany-posted",
+        ),
+        pytest.param(
+            CLEARCOMPANY_MAPPING,
+            {"openDate": "2026-09-01T00:00:00Z"},
+            "openDate",
+            date(2026, 9, 1),
+            _FIRST,
+            id="clearcompany-open-fallback",
+        ),
+        pytest.param(
+            BAMBOOHR_MAPPING,
+            {"row": {}, "opening": {"datePosted": "2026-09-22"}},
+            "opening.datePosted",
+            date(2026, 9, 22),
+            _FIRST,
+            id="bamboohr",
+        ),
+        pytest.param(
+            RIPPLING_MAPPING,
+            {"row": {}, "detail": {"createdOn": "2026-09-20T12:00:00Z"}},
+            "detail.createdOn",
+            date(2026, 9, 20),
+            _FIRST,
+            id="rippling",
+        ),
+        pytest.param(
+            GEM_MAPPING,
+            {"first_published_at": "2026-09-18T09:00:00Z"},
+            "first_published_at",
+            date(2026, 9, 18),
+            _FIRST,
+            id="gem",
+        ),
+        pytest.param(
+            DAYFORCE_MAPPING,
+            {"DatePosted": "2026-10-06T13:00:00"},
+            "DatePosted",
+            date(2026, 10, 6),
+            _FIRST,
+            id="dayforce",
+        ),
+        pytest.param(
+            UKG_MAPPING,
+            {"PostedDate": "2026-10-02T14:00:00Z"},
+            "PostedDate",
+            date(2026, 10, 2),
+            _FIRST,
+            id="ukg",
+        ),
+        pytest.param(
+            HIBOB_MAPPING,
+            {"publishedAt": "2026-10-04T08:30:00.000Z"},
+            "publishedAt",
+            date(2026, 10, 4),
+            _FIRST,
+            id="hibob",
+        ),
+        pytest.param(
+            PHENOM_MAPPING,
+            {"postedDate": "2026-10-03T00:00:00.000+0000"},
+            "postedDate",
+            date(2026, 10, 3),
+            _BOARD,
+            id="phenom",
+        ),
+        pytest.param(
+            ZOHO_MAPPING,
+            {"Date_Opened": "2026-10-05"},
+            "Date_Opened",
+            date(2026, 10, 5),
+            _BOARD,
+            id="zoho",
+        ),
+        pytest.param(
+            PERSONIO_MAPPING,
+            fromstring("<position><createdAt>2026-09-28T09:15:00+00:00</createdAt></position>"),
+            "createdAt",
+            date(2026, 9, 28),
+            _BOARD,
+            id="personio",
+        ),
+    ],
+)
+def test_a_feed_record_states_its_posted_date_and_grade(
+    declaration: BoardDeclaration,
+    record: Any,
+    basis: str,
+    day: date,
+    grade: PostedDateGrade,
+) -> None:
+    posted = map_posting(declaration, Posting(record, employer="Globex")).facts.posted_date
+
     assert posted is not None
     assert (posted.earliest.basis, posted.day, posted.earliest.grade) == (basis, day, grade)
 

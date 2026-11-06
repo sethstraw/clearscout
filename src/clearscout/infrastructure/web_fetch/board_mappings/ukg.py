@@ -7,9 +7,11 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -93,4 +95,5 @@ UKG_MAPPING = BoardDeclaration(
     places=_places,
     description=(("Description",),),
     compensation=_compensation,
+    posted=posted_on(("PostedDate",), PostedDateGrade.FIRST_POSTED),
 )

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from xml.etree.ElementTree import Element
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
     pay_period,
     pay_range,
+    posted_on,
     stated_text,
 )
 
@@ -61,4 +63,6 @@ PERSONIO_MAPPING = BoardDeclaration(
     places=("office",),
     description=_description,
     compensation=_compensation,
+    # createdAt moves when a position is recreated to repost it.
+    posted=posted_on(("createdAt",), PostedDateGrade.BOARD_DATE),
 )

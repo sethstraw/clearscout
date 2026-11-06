@@ -54,12 +54,16 @@ the same paragraph.
   market, or its industry. Prefer a source whose Kind is not `posting`, such as
   a careers or about page, when it states what the company builds or whom it
   serves, and cite that source; otherwise take the theme from the posting.
-  Benefits, perks, and values statements are not a theme. State the theme as a
+  Benefits, perks, and values statements are not a theme. Keep to the one theme
+  the candidate paragraphs' work bears on most, in one or two sentences, rather
+  than covering a source point by point or in its order. State the theme as a
   fact about the role or employer, with no reaction to it and no reason for
-  applying. Name the theme in your own words rather than listing the posting's
-  duties back: never lift a clause of {{echo_words}} or more consecutive words
-  from a company source. Figures, names, and acronyms may be copied exactly and
-  do not count toward that run.
+  applying. The paragraph's subject is the role, the employer, its product, or
+  whom it serves; never name the posting, job description, or research as a
+  source, or say what was or was not supplied. Name the theme in your own words
+  rather than listing the posting's duties back: never lift a clause of
+  {{echo_words}} or more consecutive words from a company source. Figures,
+  names, and acronyms may be copied exactly and do not count toward that run.
 - End with one candidate paragraph, citing only candidate evidence, that states
   one concrete piece of that evidence's work, such as a system, a decision, a
   scale, or a result, and lets the specifics of that work carry why it bears on

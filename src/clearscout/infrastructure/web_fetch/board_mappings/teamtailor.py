@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from xml.etree.ElementTree import Element
 
+from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_mappings.mapper import (
     BoardDeclaration,
     Posting,
+    posted_on,
     stated,
     stated_text,
 )
@@ -59,4 +61,5 @@ TEAMTAILOR_MAPPING = BoardDeclaration(
     places=_places,
     arrangement=_arrangement,
     description=(("description",),),
+    posted=posted_on(("pubDate",), PostedDateGrade.FIRST_POSTED),
 )

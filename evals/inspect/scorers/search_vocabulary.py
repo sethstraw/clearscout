@@ -5,7 +5,9 @@ program's ``already_stated`` check uses; an archetype matches by the program's
 ``same_employer_archetype``. Precision is taken over labeled proposals only; an
 unlabeled proposal is reported as a warned check, not counted against the call.
 Citation support asks whether each acceptable match cites an entry the label names,
-and recall is reported without gating.
+and recall is reported without gating. A case may name claims the record does not
+support; a reason or ``because`` stating one fails the call. Proposals citing only
+role context, summary, or skill entries are counted, never failed.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from clearscout.application.discovery.derived_vocabulary_rules import (
     searchable_titles,
 )
 from clearscout.application.tailoring.stages.context import citable_entries
+from clearscout.domain.identity import normalize_text
 from clearscout.domain.search_parameters import JobSearchParameters
 from clearscout.domain.search_parameters.roles import title_excluded
 from clearscout.domain.taxonomy import normalize
@@ -32,6 +35,8 @@ REPEATS_STATED = "repeats_stated"
 EXCLUDED = "excluded"
 UNLABELED = "unlabeled"
 AXES = ("titles", "archetypes")
+# Entry kinds a proposal is counted for when it cites nothing else.
+CONTEXT_KINDS = frozenset({"role_context", "summary", "skill"})
 
 # Labels are hand rulings that can disagree at the margin, so precision gates below 1.0.
 # The schema already forbids an invented id, leaving only
@@ -95,7 +100,29 @@ def gold_labels(sample: dict[str, Any]) -> dict[str, Any]:
         for item in labels.get(UNACCEPTABLE, []):
             if not str(item.get("why") or "").strip():
                 raise ValueError(f"sample {case!r} rejects {item.get('name')!r} without a why")
+    for claim in gold.get("unsupported_claims", []):
+        terms = claim.get("terms")
+        if (
+            not isinstance(terms, list)
+            or not terms
+            or not all(isinstance(term, str) and term.strip() for term in terms)
+            or not str(claim.get("why") or "").strip()
+        ):
+            raise ValueError(f"sample {case!r} names an unsupported claim without terms or a why")
     return gold
+
+
+def _unsupported_claim(text: str, claims: list[dict[str, Any]]) -> str:
+    """Return why the record does not support a claim this text makes, empty when none."""
+    padded = f" {normalize_text(text)} "
+    return next(
+        (
+            str(claim["why"])
+            for claim in claims
+            if any(f" {normalize_text(term)} " in padded for term in claim["terms"])
+        ),
+        "",
+    )
 
 
 def _program_refusals(
@@ -144,7 +171,9 @@ def _scored_axis(
     parameters = case_parameters(sample)
     stated = _stated(axis, parameters)
     excluded = [title for title in parameters.seniority.excluded_titles if title.strip()]
-    key = "title" if axis == "titles" else "name"
+    key, reason_key = ("title", "reason") if axis == "titles" else ("name", "because")
+    claims = list(sample["gold"].get("unsupported_claims", []))
+    kinds = {entry.id: entry.kind for entry in citable_entries(case_inventory(sample))}
     rows: list[dict[str, Any]] = []
     recalled: set[str] = set()
     for proposal, refused in zip(proposals, refusals, strict=True):
@@ -156,6 +185,12 @@ def _scored_axis(
             "outcome": outcome,
             "program_refused_because": refused,
         }
+        if claim := _unsupported_claim(str(proposal.get(reason_key) or ""), claims):
+            row["unsupported_claim"] = claim
+        if row["evidence_ids"] and all(
+            kinds.get(entry_id) in CONTEXT_KINDS for entry_id in row["evidence_ids"]
+        ):
+            row["context_only_citation"] = True
         if item is not None:
             row["label"] = item["name"]
         if outcome == UNACCEPTABLE and item is not None:
@@ -172,6 +207,8 @@ def _scored_axis(
         "recalled": sorted(recalled),
         "missed": [item["name"] for item in labels[ACCEPTABLE] if item["name"] not in recalled],
         "program_refused": sum(bool(row["program_refused_because"]) for row in rows),
+        "unsupported_claims": sum("unsupported_claim" in row for row in rows),
+        "context_only_citations": sum("context_only_citation" in row for row in rows),
     }
 
 
@@ -203,6 +240,7 @@ def proposal_usefulness() -> Any:
         citation_support = _ratio(supported, acceptable)
         recall = _ratio(recalled, gold_total)
         refused = sum(axes[axis]["program_refused"] for axis in AXES)
+        overclaimed = sum(axes[axis]["unsupported_claims"] for axis in AXES)
         failed = [
             name
             for name, failing in (
@@ -210,6 +248,7 @@ def proposal_usefulness() -> Any:
                 ("no_labeled_proposals", proposed > 0 and precision is None),
                 ("precision", precision is not None and precision < PRECISION_THRESHOLD),
                 ("citation_support", citation_support < CITATION_SUPPORT_THRESHOLD),
+                ("unsupported_claim", overclaimed > 0),
             )
             if failing
         ]
@@ -229,6 +268,10 @@ def proposal_usefulness() -> Any:
                 "citation_support": citation_support,
                 "citation_support_denominator": "acceptable matches",
                 "program_refused": refused,
+                "unsupported_claims": overclaimed,
+                "context_only_citations": sum(
+                    axes[axis]["context_only_citations"] for axis in AXES
+                ),
                 "clusters_proposed": len(solver_output.get("capabilities") or [])
                 + len(solver_output.get("domains") or []),
                 **axes,

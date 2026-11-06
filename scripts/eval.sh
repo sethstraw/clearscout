@@ -16,14 +16,24 @@
 #     Print passes out of trials per case for each log (or arm), with tokens and
 #     dollars per log.
 #
+#   --rescore <task_file> <log.jsonl> [--output <path>] [--allow-dataset-change]
+#     Re-apply the task's current scorer to a finished log's stored solver
+#     outputs and write a new log (default <log>.rescored.jsonl). Calls no
+#     provider and spends nothing. A dataset whose bytes differ from the run's
+#     is refused unless --allow-dataset-change is passed.
+#
 #   --live <task_file> --data-root <path> --limit N --split <split>
 #     --provider <provider> --i-approve $X.XX --output-dir <private-path> [--trials N]
-#     [--model <id>] [--effort <level>] [--ids <id,id,...>]
+#     [--model <id>] [--effort <level>] [--ids <id,id,...>] [--no-smoke]
 #     [--prompt-arm <name>=<private-dir> ...] [--cv-version <id>]
 #     [--selection-manifest <private-path> --selection-manifest-sha256 <sha256>
 #     --selection-manifest-bytes-sha256 <sha256>] [--dataset <private-path>]
 #     --dataset runs the task on that JSONL instead of its tracked fixture, and the
 #     run records that file's sha256.
+#     A run of more than one call first smoke-tests the first sample once through
+#     the same solver and scorer, prints 'smoke: ok' with the projected cost or
+#     'smoke: failed <reason>', and stops on a failure; the passing call is reused
+#     as that sample's first trial. --no-smoke skips it; batching solvers skip it.
 #     --model sends that model on the task's own stage instead of the shipped
 #     one, and the estimate reads only that model's history.
 #     --effort does the same for the stage's effort level, which the model must
@@ -75,12 +85,13 @@ Subcommands:
   build-calibration --data-root <path> --output <private-path>
   run <task_file>
   diff <baseline_log> <candidate_log>
+  --rescore <task_file> <log.jsonl> [--output <path>] [--allow-dataset-change]
   --live <task_file> --data-root <path> --limit N --split <split> --provider <provider> \
     --i-approve $X.XX --output-dir <private-path> [--trials N] [--model <id>] \
     [--effort <level>] [--ids <id,id,...>] [--prompt-arm <name>=<private-dir> ...] \
     [--cv-version <id>] [--selection-manifest <private-path> \
     --selection-manifest-sha256 <sha256> --selection-manifest-bytes-sha256 <sha256>] \
-    [--dataset <private-path>]
+    [--dataset <private-path>] [--no-smoke]
   --live <task_file> --data-root <path> --provider <provider> --render-only <private-dir> \
     [--model <id>] [--effort <level>] [--cv-version <id>] \
     [--limit N | --ids <id,id,...>] [--split <split>] [--prompt-arm <name>=<private-dir> ...]
@@ -127,6 +138,7 @@ live_run() {
   local selection_manifest="" selection_manifest_sha256=""
   local selection_manifest_bytes_sha256=""
   local prompt_arms="" prompt_arm_names="" arms=0 cv_version="" render_dir="" dataset=""
+  local smoke=1
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --data-root|--limit|--ids|--split|--provider|--i-approve|\
@@ -170,6 +182,7 @@ live_run() {
       --cv-version) cv_version="$2"; shift 2 ;;
       --render-only) render_dir="$2"; shift 2 ;;
       --dataset) dataset="$2"; shift 2 ;;
+      --no-smoke) smoke=0; shift ;;
       --*)
         printf 'Unknown --live option: %s\n' "$1" >&2
         exit 64
@@ -336,6 +349,9 @@ live_run() {
     estimated_cents="$(printf '%s' "$estimated" | awk '{printf "%.0f", $1 * 100}')"
   fi
 
+  local -a smoke_args=()
+  if ((smoke)); then smoke_args=(--smoke "$approve_clean"); fi
+
   CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS="$approved_cents" \
     CLEARSCOUT_EVAL_ESTIMATED_CENTS="$estimated_cents" \
     CLEARSCOUT_EVAL_LIVE_PROVIDER="$provider" \
@@ -354,7 +370,7 @@ live_run() {
     CLEARSCOUT_EVAL_DATABASE_URL="$database_url" \
     uv run python -m evals.inspect.runner "$task_file" \
       --log-dir "$output_dir" "${selection[@]}" --split "$split" --trials "$trials" \
-      --arms "$arms" ${dataset:+--dataset "$dataset"}
+      --arms "$arms" ${dataset:+--dataset "$dataset"} ${smoke_args[@]+"${smoke_args[@]}"}
 }
 
 case "$SUBCOMMAND" in
@@ -375,6 +391,13 @@ case "$SUBCOMMAND" in
       exit 64
     fi
     uv run python -m evals.inspect.diff "$1" "$2"
+    ;;
+  --rescore)
+    if [[ $# -lt 2 ]]; then
+      printf -- '--rescore requires a task file and an eval log path\n' >&2
+      exit 64
+    fi
+    uv run python -m evals.inspect.runner "$1" --rescore "$2" "${@:3}"
     ;;
   --live)
     live_run "$@"

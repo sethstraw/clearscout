@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
+from clearscout.application.discovery.source_continuation.family import select_frontier_rows
 from clearscout.application.discovery.source_continuation.limits import POSTING_DETAIL_COMPLETED
 from clearscout.application.discovery.source_lifecycle import source_read_address
 from clearscout.application.discovery.source_reading import (
@@ -74,9 +74,7 @@ def replace_detail_checkpoints(
     if not scopes and not workday_targets:
         return
     rows = session.scalars(
-        select(SourceScanFrontierItem)
-        .options(selectinload(SourceScanFrontierItem.listing_membership))
-        .where(
+        select_frontier_rows().where(
             SourceScanFrontierItem.continuation_id == continuation_id,
             SourceScanFrontierItem.detail_checkpoint.is_not(None),
         )

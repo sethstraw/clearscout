@@ -97,7 +97,7 @@ PLATFORM_CONDITIONAL_PYTHON = {
     ),
     "pycparser": (
         "pycparser",
-        "3.0",
+        "3.12",
         "BSD-3-Clause",
         "https://github.com/eliben/pycparser",
     ),
@@ -109,7 +109,7 @@ PLATFORM_CONDITIONAL_PYTHON = {
     ),
     "tzdata": (
         "tzdata",
-        "2026.5",
+        "2026.6",
         "Apache-2.0",
         "https://github.com/python/tzdata",
     ),
@@ -118,7 +118,7 @@ PLATFORM_CONDITIONAL_PYTHON = {
 # Each exception is bound to an exact version, so a bump needs a fresh review.
 REVIEWED_EXCEPTIONS = {
     ("python", "certifi", "2026.10.23"),
-    ("python", "pypdfium2", "5.14.0"),
+    ("python", "pypdfium2", "5.15.0"),
     ("python", "tld", "0.13.2"),
 }
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from email.utils import parsedate_to_datetime
 from itertools import groupby
 
 from clearscout.domain.countries import DEFAULT_TABLE
@@ -271,6 +272,11 @@ _JAVA_DATE = re.compile(
     r"[A-Z][a-z]{2} (?P<month>[A-Z][a-z]{2}) (?P<day>\d{1,2}) (?P<time>\d{2}:\d{2}:\d{2}) "
     r"(?P<zone>[A-Z]{2,5}) (?P<year>\d{4})"
 )
+# RSS pubDate: "Wed, 21 Oct 2026 17:28:23 GMT"; "-0000" is excluded because it states no zone.
+_RFC_2822_DATE = re.compile(
+    r"(?:[A-Z][a-z]{2}, )?\d{1,2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}(?::\d{2})? "
+    r"(?:GMT|UTC?|Z|\+\d{4}|-(?!0000)\d{4})"
+)
 
 
 def closure_signal(message: str) -> bool:
@@ -406,6 +412,11 @@ def _iso_form(wording: str) -> str:
         # Another zone abbreviation is ambiguous, so the time stays naive.
         zone = "+00:00" if found["zone"] in {"UTC", "GMT"} else ""
         return f"{found['year']}-{number:02}-{int(found['day']):02}T{found['time']}{zone}"
+    if _RFC_2822_DATE.fullmatch(wording):
+        try:
+            return parsedate_to_datetime(wording).isoformat()
+        except ValueError:
+            return wording
     padded = _UNPADDED_ISO_DAY.sub(
         lambda day: f"{day['year']}-{int(day['month']):02}-{int(day['day']):02}", wording
     )
