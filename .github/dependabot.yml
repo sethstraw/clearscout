@@ -25,3 +25,10 @@ updates:
     groups:
       web-dependencies:
         patterns: ["*"]
+    ignore:
+      # openapi-typescript and typescript-eslint peer ranges stop below TypeScript 6.1.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # These releases fail to load under vitest; a later one is retried.
+      - dependency-name: "@uiw/react-md-editor"
+        versions: ["4.2.2", "4.2.3"]

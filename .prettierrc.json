@@ -1,11 +1,4 @@
 {
   "printWidth": 100,
-  "proseWrap": "preserve",
-  "endOfLine": "lf",
-  "overrides": [
-    {
-      "files": "*.css",
-      "options": { "useTabs": true }
-    }
-  ]
+  "proseWrap": "preserve"
 }

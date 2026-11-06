@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import json
+import subprocess
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+RunHook = Callable[..., subprocess.CompletedProcess[str]]
 PYTEST = "pyt" + "est"
 
 
-def _bash(command: str, agent_id: str = "") -> dict:
-    payload: dict = {"tool_name": "Bash", "tool_input": {"command": command}}
+def _bash(command: str, agent_id: str = "") -> dict[str, Any]:
+    payload: dict[str, Any] = {"tool_name": "Bash", "tool_input": {"command": command}}
     if agent_id:
         payload["agent_id"] = agent_id
     return payload
@@ -28,22 +32,24 @@ def repo(tmp_path: Path) -> Path:
 
 
 class TestCatHeredoc:
-    def _code(self, run_hook, repo: Path, command: str) -> int:
+    def _code(self, run_hook: RunHook, repo: Path, command: str) -> int:
         env = {"CLAUDE_PROJECT_DIR": str(repo), "TMPDIR": str(repo / "scratch")}
         return run_hook("block-cat-heredoc", _bash(command), cwd=repo, env=env).returncode
 
-    def test_a_python_heredoc_editing_a_repo_file_is_refused(self, run_hook, repo) -> None:
+    def test_a_python_heredoc_editing_a_repo_file_is_refused(
+        self, run_hook: RunHook, repo: Path
+    ) -> None:
         command = (
             "python3 - <<'PY'\nfrom pathlib import Path\n"
             "p = Path('tests/test_x.py')\np.write_text(p.read_text().replace('a', 'b'))\nPY"
         )
         assert self._code(run_hook, repo, command) == 2
 
-    def test_a_repo_path_in_a_node_heredoc_is_refused(self, run_hook, repo) -> None:
+    def test_a_repo_path_in_a_node_heredoc_is_refused(self, run_hook: RunHook, repo: Path) -> None:
         command = "node <<'JS'\nrequire('fs').writeFileSync('./web/src/a.ts', '')\nJS"
         assert self._code(run_hook, repo, command) == 2
 
-    def test_a_cat_redirect_into_the_repo_is_refused(self, run_hook, repo) -> None:
+    def test_a_cat_redirect_into_the_repo_is_refused(self, run_hook: RunHook, repo: Path) -> None:
         command = "cat >> web/src/app.css <<'CSS'\n.x {}\nCSS"
         assert self._code(run_hook, repo, command) == 2
 
@@ -56,22 +62,28 @@ class TestCatHeredoc:
             "cat README.md",
         ],
     )
-    def test_scratch_and_read_only_shapes_are_allowed(self, run_hook, repo, command) -> None:
+    def test_scratch_and_read_only_shapes_are_allowed(
+        self, run_hook: RunHook, repo: Path, command: str
+    ) -> None:
         assert self._code(run_hook, repo, command) == 0
 
     @pytest.mark.parametrize("memory_dir", ["agent-memory", "agent-memory-local"])
-    def test_a_heredoc_into_agent_memory_is_allowed(self, run_hook, repo, memory_dir) -> None:
+    def test_a_heredoc_into_agent_memory_is_allowed(
+        self, run_hook: RunHook, repo: Path, memory_dir: str
+    ) -> None:
         target = repo / ".claude" / memory_dir / "cto-review" / "MEMORY.md"
         command = f"cat > {target} <<'MD'\n- note\nMD"
         assert self._code(run_hook, repo, command) == 0
 
-    def test_a_heredoc_into_another_claude_dir_is_refused(self, run_hook, repo) -> None:
+    def test_a_heredoc_into_another_claude_dir_is_refused(
+        self, run_hook: RunHook, repo: Path
+    ) -> None:
         command = "cat > .claude/agent-memory-other/MEMORY.md <<'MD'\n- note\nMD"
         assert self._code(run_hook, repo, command) == 2
 
 
 def test_without_a_project_dir_the_checkout_holding_the_hook_is_guarded(
-    run_hook, monkeypatch
+    run_hook: RunHook, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
     checkout = Path(__file__).resolve().parents[3]
@@ -97,7 +109,7 @@ def test_without_a_project_dir_the_checkout_holding_the_hook_is_guarded(
         (True, "just pytest-log x tests/a.py | grep exit"),
     ],
 )
-def test_piped_test_output(run_hook, blocked: bool, command: str) -> None:
+def test_piped_test_output(run_hook: RunHook, blocked: bool, command: str) -> None:
     assert run_hook("block-piped-test-output", _bash(command)).returncode == (2 if blocked else 0)
 
 
@@ -114,7 +126,7 @@ def test_piped_test_output(run_hook, blocked: bool, command: str) -> None:
         (False, "cat README.md"),
     ],
 )
-def test_credential_reads(run_hook, blocked: bool, command: str) -> None:
+def test_credential_reads(run_hook: RunHook, blocked: bool, command: str) -> None:
     assert run_hook("block-credential-reads", _bash(command)).returncode == (2 if blocked else 0)
 
 
@@ -163,7 +175,9 @@ GIT_CASES: list[tuple[str | None, str, str]] = [
 
 
 @pytest.mark.parametrize(("expected", "command", "agent_id"), GIT_CASES)
-def test_shared_checkout_git(run_hook, expected, command: str, agent_id: str) -> None:
+def test_shared_checkout_git(
+    run_hook: RunHook, expected: str | None, command: str, agent_id: str
+) -> None:
     done = run_hook("block-shared-checkout-git", _bash(command, agent_id))
     verdict = None
     if done.stdout.strip():
@@ -171,7 +185,7 @@ def test_shared_checkout_git(run_hook, expected, command: str, agent_id: str) ->
     assert verdict == expected
 
 
-def test_shared_checkout_git_ignores_other_tools(run_hook) -> None:
+def test_shared_checkout_git_ignores_other_tools(run_hook: RunHook) -> None:
     other = run_hook("block-shared-checkout-git", {"tool_name": "Write", "tool_input": {}})
     assert other.stdout.strip() == ""
     assert other.returncode == 0

@@ -12,6 +12,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 GIT_TIMEOUT = 5
 KEEP_SNAPSHOTS = 5
@@ -32,7 +33,7 @@ def run_git(args: list[str], cwd: Path) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _prompt_text(entry: dict) -> str:
+def _prompt_text(entry: dict[str, Any]) -> str:
     message = entry.get("message") or {}
     if entry.get("type") != "user" or message.get("role") != "user":
         return ""

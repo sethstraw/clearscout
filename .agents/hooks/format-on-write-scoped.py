@@ -54,12 +54,8 @@ def prettier_command(root: Path, path: Path) -> list[str] | None:
         binary = root / relative
         if not binary.is_file():
             continue
-        command = [str(binary), "--write"]
-        for name in (".gitignore", ".prettierignore"):
-            ignore = root / name
-            if ignore.is_file():
-                command += ["--ignore-path", str(ignore)]
-        return [*command, str(path)]
+        # Run from root, Prettier reads root's .gitignore and .prettierignore by default.
+        return [str(binary), "--write", str(path)]
     return None
 
 

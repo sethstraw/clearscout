@@ -10,6 +10,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -36,7 +37,10 @@ def run_hook() -> Callable[..., subprocess.CompletedProcess[str]]:
     """Run a hook script with a JSON payload on stdin, as Claude Code does."""
 
     def run(
-        name: str, payload: dict, cwd: Path | None = None, env: dict[str, str] | None = None
+        name: str,
+        payload: dict[str, Any],
+        cwd: Path | None = None,
+        env: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(  # noqa: S603 - fixed argv
             [sys.executable, str(HOOKS / f"{name}.py")],

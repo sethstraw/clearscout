@@ -27,7 +27,7 @@ pytest-log name +files:
 
 # CI-strength property-test coverage (hypothesis: 100 examples, not 10).
 test-ci:
-    HYPOTHESIS_PROFILE=ci uv run pytest
+    HYPOTHESIS_PROFILE=ci uv run pytest -m ""
 
 # Ruff auto-fix and format for Python; Prettier for the repository.
 fmt:

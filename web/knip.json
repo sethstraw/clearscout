@@ -2,6 +2,5 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "project": ["src/**/*.{ts,tsx}"],
   "ignore": ["src/api/schema.d.ts"],
-  "vite": { "config": ["vite.config.ts"] },
-  "vitest": { "entry": ["src/**/*.test.{ts,tsx}"] }
+  "vite": { "config": ["vite.config.ts"] }
 }

@@ -189,10 +189,15 @@ ignore = ["D203", "D213", "UP046", "UP047", "PLR2004", "PLC0415"]
 "tests/loop/test_import.py" = ["RUF001"]
 "tests/loop/test_verify.py" = ["RUF001"]
 
-# Ceilings, not targets: each caps the worst case in `src/`, so nothing gets
-# worse while the numbers are ratcheted down.
+# Ceilings, not targets, ratcheted down. mccabe caps every path ruff lints;
+# complexipy caps only `src/`.
 [tool.ruff.lint.mccabe]
 max-complexity = 20
+
+[tool.complexipy]
+paths = ["src"]
+max-complexity-allowed = 20
+snapshot-ignore = true
 
 [tool.ruff.lint.pylint]
 max-args = 16
@@ -622,7 +627,7 @@ DEP002 = ["alembic", "uvicorn"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src", "tests", "evals"]
+files = ["src", "tests", "evals", ".agents/hooks"]
 strict = true
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]

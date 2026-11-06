@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Verification gate.
-# Usage: scripts/gate.sh [fast|change|related|py|web|generated|security|package|workflows|push|all]
+# Usage: scripts/gate.sh [fast|change|related|py|web|generated|security|package|workflows|evals-imports|push|all]
 #
 # A check runs at the frequency its answer can change. `change` is the default
 # and covers everything a code edit can break. `related` narrows the test suites
@@ -21,6 +21,8 @@ GATE_FIX="${GATE_FIX:-0}"
 FAILED=()
 TMPDIRS=()
 PYTHON_BIN="${PYTHON:-}"
+ZIZMOR="zizmor@1.30.1"
+CHECK_WHEEL_CONTENTS="check-wheel-contents==0.6.3"
 
 cleanup() {
   if ((${#TMPDIRS[@]})); then
@@ -119,7 +121,7 @@ check_typescript_contract() {
 check_distribution() {
   uv build &&
     "$PYTHON_BIN" scripts/verify_distribution.py dist/*.whl dist/*.tar.gz &&
-    uvx --from check-wheel-contents==0.6.3 check-wheel-contents dist/*.whl
+    uvx --from "$CHECK_WHEEL_CONTENTS" check-wheel-contents dist/*.whl
 }
 
 check_installed_wheel() {
@@ -140,17 +142,15 @@ check_installed_wheel() {
 
 run_fast() {
   if [[ "$GATE_FIX" == "1" ]]; then
-    uv_locked ruff format src tests scripts evals >/dev/null || true
-    uv_locked ruff check --fix src tests scripts evals >/dev/null || true
+    uv_locked ruff format src tests scripts evals .agents >/dev/null || true
+    uv_locked ruff check --fix src tests scripts evals .agents >/dev/null || true
   fi
-  step "ruff format" uv_locked ruff format --check src tests scripts evals
-  step "ruff check" uv_locked ruff check src tests scripts evals
+  step "ruff format" uv_locked ruff format --check src tests scripts evals .agents
+  step "ruff check" uv_locked ruff check src tests scripts evals .agents
   step "mypy" uv_locked mypy
   step "import contracts" uv_locked lint-imports
-  # No snapshot is consulted, so the ceiling is the whole rule and the repository
-  # carries no per-function watermark to drift.
-  step "cognitive complexity" uv_locked complexipy src \
-    --max-complexity-allowed 20 --snapshot-ignore --failed --color no
+  # The ceiling and scope live in pyproject's [tool.complexipy], so every caller agrees.
+  step "cognitive complexity" uv_locked complexipy --failed --color no
 }
 
 run_python() {
@@ -159,7 +159,7 @@ run_python() {
   # The empty marker expression overrides the addopts filter, so the recorded
   # and transport tests are selected here.
   step "pytest" env HYPOTHESIS_PROFILE=ci \
-    uv run --locked pytest -m "" --cov=clearscout --cov-report=term-missing
+    uv run --locked pytest -m "" --cov
   step "evals" uv_locked python -m evals
 }
 
@@ -167,7 +167,7 @@ run_web() {
   if [[ "$GATE_FIX" == "1" ]]; then
     npm --prefix web run format >/dev/null || true
     npm --prefix web run lint -- --fix >/dev/null || true
-    npm --prefix web exec knip -- --fix >/dev/null || true
+    npm --prefix web run knip -- --fix >/dev/null || true
   fi
   step "prettier" npm --prefix web run format:check
   step "eslint" npm --prefix web run lint
@@ -258,7 +258,7 @@ run_related_web() {
   local sources=() path
   while IFS= read -r path; do
     [[ -e "$path" ]] && sources+=("$PWD/$path")
-  done < <(changed_paths | grep '^web/src/')
+  done < <(changed_paths | grep '^web/' | grep -v '^web/dist/')
   if ((${#sources[@]} == 0)); then
     return 0
   fi
@@ -266,6 +266,8 @@ run_related_web() {
   step "eslint" npm --prefix web run lint
   step "related vitest" related_vitest "${sources[@]}"
   step "tsc" npm --prefix web run typecheck
+  # The full scope type-checks tsconfig.node.json through the build's tsc -b.
+  step "tsc node configs" npm --prefix web exec -- tsc -p web/tsconfig.node.json
 }
 
 run_security() {
@@ -285,9 +287,9 @@ run_package() {
 
 run_workflows() {
   if [[ "$GATE_FIX" == "1" ]]; then
-    uvx zizmor@1.30.1 --persona=regular --fix=safe .github/workflows >/dev/null 2>&1 || true
+    uvx "$ZIZMOR" --persona=regular --fix=safe .github/workflows >/dev/null 2>&1 || true
   fi
-  step "workflow lint" uvx zizmor@1.30.1 --persona=regular .github/workflows
+  step "workflow lint" uvx "$ZIZMOR" --persona=regular .github/workflows
 }
 
 check_eval_harness_imports() {
@@ -340,6 +342,9 @@ case "$SCOPE" in
     run_workflows
     run_evals_imports
     ;;
+  evals-imports)
+    run_evals_imports
+    ;;
   all)
     run_python
     run_web
@@ -350,7 +355,7 @@ case "$SCOPE" in
     run_evals_imports
     ;;
   *)
-    printf 'Unknown scope %s. Use fast, change, related, py, web, generated, security, package, workflows, push, or all.\n' "$SCOPE" >&2
+    printf 'Unknown scope %s. Use fast, change, related, py, web, generated, security, package, workflows, evals-imports, push, or all.\n' "$SCOPE" >&2
     exit 64
     ;;
 esac

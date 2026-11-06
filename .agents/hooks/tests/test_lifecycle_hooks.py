@@ -8,9 +8,15 @@ import re
 import shlex
 import subprocess
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 import pytest
+
+RunHook = Callable[..., subprocess.CompletedProcess[str]]
+LoadHook = Callable[[str], ModuleType]
 
 HOOKS = Path(__file__).resolve().parents[1]
 REPO = HOOKS.parents[1]
@@ -32,7 +38,7 @@ def git_repo(tmp_path: Path) -> Path:
 
 
 def test_migration_guard_reads_claude_serena_and_codex_payloads(
-    load_hook, run_hook, git_repo: Path
+    load_hook: LoadHook, run_hook: RunHook, git_repo: Path
 ) -> None:
     migration = load_hook("block-extra-migration")
     untagged = {"CLAUDE_PROJECT_DIR": str(git_repo)}
@@ -56,7 +62,7 @@ def test_migration_guard_reads_claude_serena_and_codex_payloads(
     assert run_hook("block-extra-migration", edit_v0001, env=untagged).returncode == 0
 
 
-def test_migration_guard_allows_serena_reads_of_the_versions_directory(run_hook) -> None:
+def test_migration_guard_allows_serena_reads_of_the_versions_directory(run_hook: RunHook) -> None:
     versions = "src/clearscout/infrastructure/persistence/migrations/versions"
     for tool in ("mcp__serena__find_symbol", "mcp__serena__search_for_pattern"):
         payload = {"tool_name": tool, "tool_input": {"relative_path": versions}}
@@ -86,7 +92,7 @@ def _migration_matcher() -> re.Pattern[str]:
     raise AssertionError("block-extra-migration is not registered")
 
 
-def test_mutation_predicates_agree_with_the_registered_matcher(load_hook) -> None:
+def test_mutation_predicates_agree_with_the_registered_matcher(load_hook: LoadHook) -> None:
     migration = load_hook("block-extra-migration")
     onboarding = load_hook("stop-check-onboarding-reads")
     matcher = _migration_matcher()
@@ -104,7 +110,9 @@ def test_mutation_predicates_agree_with_the_registered_matcher(load_hook) -> Non
         assert is_edit is expected, name
 
 
-def test_codex_matcher_and_guard_take_serena_edits_under_any_server_name(load_hook) -> None:
+def test_codex_matcher_and_guard_take_serena_edits_under_any_server_name(
+    load_hook: LoadHook,
+) -> None:
     migration = load_hook("block-extra-migration")
     hooks = json.loads((REPO / ".codex/hooks.json").read_text(encoding="utf-8"))
     matcher = next(
@@ -127,7 +135,7 @@ def test_codex_matcher_and_guard_take_serena_edits_under_any_server_name(load_ho
 
 
 def test_comment_policy_hook_reads_claude_and_serena_writes(
-    load_hook, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    load_hook: LoadHook, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     hook = load_hook("post-comment-policy-subagent")
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
@@ -146,7 +154,7 @@ def test_comment_policy_hook_reads_claude_and_serena_writes(
         )
 
 
-def test_comment_policy_matcher_covers_the_tools_the_hook_reads(load_hook) -> None:
+def test_comment_policy_matcher_covers_the_tools_the_hook_reads(load_hook: LoadHook) -> None:
     hook = load_hook("post-comment-policy-subagent")
     settings = json.loads((REPO / ".claude/settings.json").read_text(encoding="utf-8"))
     matcher = next(
@@ -177,7 +185,7 @@ def test_comment_policy_matcher_covers_the_tools_the_hook_reads(load_hook) -> No
     ],
 )
 def test_a_review_agent_writes_only_inside_its_memory(
-    run_hook, tmp_path: Path, agent_type: str, file_path: str, refused: bool
+    run_hook: RunHook, tmp_path: Path, agent_type: str, file_path: str, refused: bool
 ) -> None:
     payload = {
         "tool_name": "Edit",
@@ -200,7 +208,7 @@ def test_reviewer_write_guard_is_registered_for_write_and_edit() -> None:
     assert not matcher.search("Bash")
 
 
-def test_codex_stop_hooks_run_on_a_codex_stop_payload(run_hook, git_repo: Path) -> None:
+def test_codex_stop_hooks_run_on_a_codex_stop_payload(run_hook: RunHook, git_repo: Path) -> None:
     hooks = json.loads((REPO / ".codex/hooks.json").read_text(encoding="utf-8"))
     commands = [h["command"] for group in hooks["hooks"]["Stop"] for h in group["hooks"]]
     names = [
@@ -217,7 +225,9 @@ def test_codex_stop_hooks_run_on_a_codex_stop_payload(run_hook, git_repo: Path) 
     assert "docs/missing.md" in checked.stderr
 
 
-def test_migration_guard_stands_down_once_a_release_is_tagged(run_hook, git_repo: Path) -> None:
+def test_migration_guard_stands_down_once_a_release_is_tagged(
+    run_hook: RunHook, git_repo: Path
+) -> None:
     """After the first tag, a schema change is a new revision, so the guard allows it."""
     target = "src/clearscout/infrastructure/persistence/migrations/versions/v0002.py"
     payload = {"tool_name": "Write", "tool_input": {"file_path": target}}
@@ -227,14 +237,14 @@ def test_migration_guard_stands_down_once_a_release_is_tagged(run_hook, git_repo
     assert run_hook("block-extra-migration", payload, env=env).returncode == 0
 
 
-def test_formatter_skips_agent_state_but_not_worktree_sources(load_hook) -> None:
+def test_formatter_skips_agent_state_but_not_worktree_sources(load_hook: LoadHook) -> None:
     formatter = load_hook("format-on-write-scoped")
     assert not formatter.has_skip_segment(Path("/repo/.claude/worktrees/w/src/example.py"))
     assert formatter.has_skip_segment(Path("/repo/.claude/state/context.json"))
     assert formatter.has_skip_segment(Path("/repo/web/dist/index.js"))
 
 
-def test_collector_finds_new_and_renamed_tests_only(load_hook, git_repo: Path) -> None:
+def test_collector_finds_new_and_renamed_tests_only(load_hook: LoadHook, git_repo: Path) -> None:
     collector = load_hook("stop-test-collect")
     (git_repo / "tests").mkdir()
     for name in ("test_gone.py", "test_old.py"):
@@ -251,19 +261,26 @@ def test_collector_finds_new_and_renamed_tests_only(load_hook, git_repo: Path) -
     ]
 
 
-def test_collect_only_repeats_no_addopts_flag(load_hook, monkeypatch, tmp_path: Path) -> None:
+def test_collect_only_repeats_no_addopts_flag(
+    load_hook: LoadHook, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     pyproject = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
     addopts = pyproject["tool"]["pytest"]["ini_options"]["addopts"]
     flags = set(shlex.split(addopts) if isinstance(addopts, str) else addopts)
     collector = load_hook("stop-test-collect")
     seen: list[list[str]] = []
-    monkeypatch.setattr(collector, "run", lambda args, *_: (seen.append(args), (0, ""))[1])
+
+    def fake_run(args: list[str], *_: object) -> tuple[int, str]:
+        seen.append(args)
+        return 0, ""
+
+    monkeypatch.setattr(collector, "run", fake_run)
     collector.collection_result(tmp_path, ["tests/test_x.py"])
     assert seen
     assert not flags & set(seen[0])
 
 
-def test_session_context_names_the_checkout_and_branch(run_hook, git_repo: Path) -> None:
+def test_session_context_names_the_checkout_and_branch(run_hook: RunHook, git_repo: Path) -> None:
     done = run_hook("session-context", {"cwd": str(git_repo), "source": "startup"})
     context = json.loads(done.stdout)["hookSpecificOutput"]["additionalContext"]
     assert f"repository/worktree: {git_repo.resolve()}" in context
@@ -272,7 +289,7 @@ def test_session_context_names_the_checkout_and_branch(run_hook, git_repo: Path)
 
 
 def test_precompact_writes_a_snapshot_and_session_context_points_at_it(
-    run_hook, git_repo: Path
+    run_hook: RunHook, git_repo: Path
 ) -> None:
     transcript = git_repo.parent / "transcript.jsonl"
     entry = {"type": "user", "message": {"role": "user", "content": "Fix the Acme importer"}}
@@ -287,7 +304,7 @@ def test_precompact_writes_a_snapshot_and_session_context_points_at_it(
     assert "pre-compaction recovery:" in done.stdout
 
 
-def test_instruction_paths_report_a_missing_path(run_hook, git_repo: Path) -> None:
+def test_instruction_paths_report_a_missing_path(run_hook: RunHook, git_repo: Path) -> None:
     (git_repo / "docs").mkdir()
     (git_repo / "docs/guide.md").write_text("x\n", encoding="utf-8")
     (git_repo / "AGENTS.md").write_text(
@@ -301,7 +318,7 @@ def test_instruction_paths_report_a_missing_path(run_hook, git_repo: Path) -> No
     assert "docs/guide.md" not in done.stderr
 
 
-def test_instruction_paths_cover_roles_skills_and_agents(run_hook, git_repo: Path) -> None:
+def test_instruction_paths_cover_roles_skills_and_agents(run_hook: RunHook, git_repo: Path) -> None:
     files = (".agents/roles/x.md", ".agents/skills/y/SKILL.md", ".claude/agents/z.md")
     for name in files:
         (git_repo / name).parent.mkdir(parents=True, exist_ok=True)
@@ -313,14 +330,16 @@ def test_instruction_paths_cover_roles_skills_and_agents(run_hook, git_repo: Pat
         assert missing in done.stderr
 
 
-def _transcript(tmp_path: Path, blocks: list[dict]) -> Path:
+def _transcript(tmp_path: Path, blocks: list[dict[str, Any]]) -> Path:
     path = tmp_path / "t.jsonl"
     lines = [json.dumps({"type": "assistant", "message": {"content": [b]}}) for b in blocks]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
 
-def test_onboarding_nudge_fires_only_without_a_first_read(run_hook, tmp_path: Path) -> None:
+def test_onboarding_nudge_fires_only_without_a_first_read(
+    run_hook: RunHook, tmp_path: Path
+) -> None:
     edits = [{"type": "tool_use", "name": "Edit", "input": {"file_path": "src/a.py"}}] * 3
     unread = _transcript(tmp_path, edits)
     done = run_hook("stop-check-onboarding-reads", {"transcript_path": str(unread)})
@@ -334,7 +353,7 @@ def test_onboarding_nudge_fires_only_without_a_first_read(run_hook, tmp_path: Pa
     assert done.stdout.strip() == ""
 
 
-def test_onboarding_nudge_fires_once_per_session(run_hook, tmp_path: Path) -> None:
+def test_onboarding_nudge_fires_once_per_session(run_hook: RunHook, tmp_path: Path) -> None:
     edits = [{"type": "tool_use", "name": "Edit", "input": {"file_path": "src/a.py"}}] * 3
     payload = {"session_id": "s1", "transcript_path": str(_transcript(tmp_path, edits))}
     env = {"TMPDIR": str(tmp_path)}
