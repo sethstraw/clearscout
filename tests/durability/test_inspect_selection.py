@@ -13,6 +13,7 @@ from evals.inspect.labeling import (
     CandidatePool,
     ExtractionQaSet,
     bytes_sha256,
+    canonical_json_bytes,
     domain_sha256,
 )
 from evals.inspect.review_resolution import (
@@ -23,14 +24,19 @@ from evals.inspect.review_resolution import (
     ResolvedLabel,
     match_material,
 )
+from evals.inspect.scorers.match_classification import job_classification_match
 from evals.inspect.selection import (
+    JOB_MANIFEST_DOMAIN,
     SELECTION_CONSTRAINTS,
     SELECTION_MANIFEST_DOMAIN,
     AdjudicationReference,
+    JobManifest,
     SelectedCase,
     SelectionConstraints,
     SelectionManifest,
+    load_live_manifest,
     project_match_dataset,
+    project_match_job_dataset,
     select_cases,
     select_held_out,
     selection_key_sha256,
@@ -38,6 +44,8 @@ from evals.inspect.selection import (
     split_resolution_sha256,
 )
 from evals.inspect.solvers import clearscout_live
+from evals.support.inventory import inventory_for_hash, synthetic_inventory, tracked_cv
+from evals.support.jobspec import canonical_job_spec
 from pydantic import ValidationError
 
 from clearscout.application.tailoring.stages.jobspec import Dimension
@@ -46,6 +54,8 @@ from tests.support.match_selection import (
     CASES,
     HELD_OUT,
     INVENTORY_HASH,
+    JOB_LABELS,
+    JOB_SOURCE,
     MATRIX,
     PARTIAL,
     SET_SIZE,
@@ -53,6 +63,10 @@ from tests.support.match_selection import (
     candidate_content,
     candidate_pool,
     case_uuid,
+    job_manifest,
+    job_pool,
+    job_posting,
+    job_resolution,
     manifest_body,
     pool_from_candidates,
     qa_set,
@@ -971,3 +985,150 @@ def test_the_round_in_force_reproduces_the_tracked_match_dataset() -> None:
     )
 
     assert dataset == (golden / "match.jsonl").read_bytes()
+    manifest = load_live_manifest((receipts / "selection-manifest.json").read_bytes())
+    assert isinstance(manifest, SelectionManifest)
+    assert bytes_sha256(dataset) == manifest.body.dataset_sha256
+
+
+def _job_row(manifest: JobManifest, pool: CandidatePool) -> dict[str, Any]:
+    dataset = project_match_job_dataset(manifest, pool, qa_set(pool), job_resolution())
+    (line,) = dataset.decode("utf-8").splitlines()
+    row: dict[str, Any] = json.loads(line)
+    return row
+
+
+def test_a_job_row_round_trips_its_posting_and_one_label_per_requirement() -> None:
+    pool = job_pool()
+    ruled = case_uuid(904)
+    ruling = CaseRuling(
+        case_id=ruled,
+        accepted=(
+            AcceptedPair(classification=Classification.TRANSFERABLE, strength=Strength.MODERATE),
+            AcceptedPair(classification=Classification.TRANSFERABLE, strength=Strength.WEAK),
+        ),
+        basis="The posting leaves the depth open.",
+    )
+    manifest = job_manifest(pool, job_resolution(), (ruling,))
+
+    row = _job_row(manifest, pool)
+    spec = canonical_job_spec(row["job_spec"])
+    expected = job_classification_match().validate_sample(row)
+
+    order = [str(case_uuid(index)) for index, *_ in JOB_LABELS]
+    assert row["id"] == str(JOB_SOURCE)
+    assert (row["cv_hash"], row["split"]) == (INVENTORY_HASH, "development")
+    assert [item.id for item in spec.requirements] == order
+    assert [(item.importance, item.dimension) for item in spec.requirements] == [
+        (importance, dimension) for _, importance, _, dimension, _ in JOB_LABELS
+    ]
+    assert spec.title == "Principal Data Engineer, Freight Data Platform"
+    assert list(expected) == order
+    assert expected[str(case_uuid(903))] == (("DIRECT", "moderate"),)
+    assert expected[str(case_uuid(901))] == (("ASSERTED", "none"),)
+    assert expected[str(ruled)] == (("TRANSFERABLE", "moderate"), ("TRANSFERABLE", "weak"))
+    assert load_live_manifest(canonical_json_bytes(manifest)) == manifest
+
+
+def test_a_job_manifest_refuses_labels_or_a_posting_its_inputs_do_not_hold() -> None:
+    pool = job_pool()
+    manifest = job_manifest(pool, job_resolution())
+    relabeled = resolution_from_labels(
+        tuple(
+            resolved_label(index, classification=Classification.GAP, dimension=dimension)
+            if index == 903
+            else resolved_label(
+                index, classification=classification, dimension=dimension, challenge=challenge
+            )
+            for index, _, classification, dimension, challenge in JOB_LABELS
+        )
+    )
+    short = job_posting().model_copy(update={"requirements": job_posting().requirements[:-1]})
+    drifted_body = manifest.body.model_copy(update={"dataset_sha256": "0" * 64})
+    drifted = JobManifest(
+        body=drifted_body, manifest_sha256=domain_sha256(JOB_MANIFEST_DOMAIN, drifted_body)
+    )
+
+    with pytest.raises(ValueError, match="resolution set"):
+        manifest.validate_inputs(pool, qa_set(pool), relabeled)
+    with pytest.raises(ValueError, match="candidates of its source"):
+        short.candidates(pool, qa_set(pool))
+    with pytest.raises(ValueError, match="approved by extraction QA"):
+        job_posting().candidates(pool, qa_set(pool, rejected=frozenset({case_uuid(902)})))
+    with pytest.raises(ValueError, match="dataset_sha256 does not match"):
+        drifted.validate_inputs(pool, qa_set(pool), job_resolution())
+
+
+def test_a_job_row_scores_each_requirement_against_its_own_label() -> None:
+    pool = job_pool()
+    row = _job_row(job_manifest(pool, job_resolution()), pool)
+
+    def outcome(index: int, completion: str, strength: str) -> dict[str, Any]:
+        cited = ["b-r1a"] if completion in {"DIRECT", "TRANSFERABLE"} else []
+        return {
+            "requirement_id": str(case_uuid(index)),
+            "completion": completion,
+            "metadata": {"entry_keys": cited, "strength": strength, "outcome_complete": True},
+        }
+
+    score = job_classification_match()(
+        row,
+        {
+            "per_requirement": [
+                outcome(903, "DIRECT", "moderate"),
+                outcome(901, "ASSERTED", "none"),
+                outcome(904, "TRANSFERABLE", "strong"),
+                outcome(902, "DIRECT", "weak"),
+            ]
+        },
+    )
+
+    results = {item["requirement_id"]: item for item in score["requirements"]["results"]}
+    assert score["value"] is False
+    assert (score["requirements"]["passed"], score["requirements"]["total"]) == (3, 4)
+    assert results[str(case_uuid(902))]["classification_matches"] is False
+    assert results[str(case_uuid(904))]["value"] is True
+    assert results[str(case_uuid(904))]["strength_matches"] is False
+    assert (score["metadata"]["strength_agreed"], score["metadata"]["strength_compared"]) == (1, 2)
+
+
+def test_a_job_row_refuses_labels_that_skip_or_reorder_its_requirements() -> None:
+    pool = job_pool()
+    row = _job_row(job_manifest(pool, job_resolution()), pool)
+    scorer = job_classification_match()
+
+    with pytest.raises(ValueError, match="follow the job_spec requirements"):
+        scorer.validate_sample({**row, "expected": row["expected"][1:]})
+    with pytest.raises(ValueError, match="follow the job_spec requirements"):
+        scorer.validate_sample({**row, "expected": list(reversed(row["expected"]))})
+    assert scorer.expected_requirements(row) == len(JOB_LABELS)
+
+
+def test_live_identity_binds_a_job_manifest_to_one_row_of_its_split(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = job_manifest(job_pool(), job_resolution())
+    path = tmp_path / "job-manifest.json"
+    path.write_bytes(canonical_json_bytes(manifest))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST", str(path))
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SELECTION_MANIFEST_SHA256", manifest.manifest_sha256)
+    monkeypatch.setenv(
+        "CLEARSCOUT_EVAL_SELECTION_MANIFEST_BYTES_SHA256", bytes_sha256(path.read_bytes())
+    )
+
+    identity = clearscout_live._selection_manifest_identity(split="development", limit=1)
+
+    assert identity["selection_manifest_sha256"] == manifest.manifest_sha256
+    assert identity["dataset_sha256"] == manifest.body.dataset_sha256
+    with pytest.raises(RuntimeError, match="sample limit"):
+        clearscout_live._selection_manifest_identity(split="development", limit=len(JOB_LABELS))
+    with pytest.raises(RuntimeError, match="holds development cases only"):
+        clearscout_live._selection_manifest_identity(split="holdout", limit=1)
+
+
+def test_the_live_solver_resolves_a_tracked_cv_by_its_manifest_hash() -> None:
+    record = inventory_for_hash("3cced8d0de755855")
+
+    assert record == tracked_cv("long_record.md")
+    assert inventory_for_hash(INVENTORY_HASH) == synthetic_inventory()
+    with pytest.raises(ValueError, match="no evaluation inventory"):
+        inventory_for_hash("0" * 16)

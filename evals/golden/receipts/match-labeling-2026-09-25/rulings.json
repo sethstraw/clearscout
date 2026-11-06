@@ -2,16 +2,32 @@
   {
     "case_id": "10000000-0000-4000-8000-000000000004",
     "accepted": [
-      {"classification": "TAILORING_ONLY", "strength": "strong"},
-      {"classification": "TAILORING_ONLY", "strength": "moderate"}
+      {
+        "classification": "TAILORING_ONLY",
+        "strength": "strong"
+      },
+      {
+        "classification": "TAILORING_ONLY",
+        "strength": "moderate"
+      },
+      {
+        "classification": "DIRECT",
+        "strength": "strong"
+      }
     ],
-    "basis": "Neither the rubric nor the match prompt sets a strength for a partnership pattern narrated without the disposition's label; the product answered moderate 3 of 3 against strong in the dc9dd997 run."
+    "basis": "Neither the rubric nor the match prompt sets a strength for a partnership pattern narrated without the disposition's label; the product answered moderate 3 of 3 against strong in the dc9dd997 run. Ruled TAILORING_ONLY/strong 2026-09-25; DIRECT/strong added on Seth's ruling 2026-11-06, since no rule decides whether a quality word on an action labels the disposition, and the case keeps its job of catching a wrong GAP."
   },
   {
     "case_id": "10000000-0000-4000-8000-00000000000f",
     "accepted": [
-      {"classification": "TRANSFERABLE", "strength": "moderate"},
-      {"classification": "TRANSFERABLE", "strength": "weak"}
+      {
+        "classification": "TRANSFERABLE",
+        "strength": "moderate"
+      },
+      {
+        "classification": "TRANSFERABLE",
+        "strength": "weak"
+      }
     ],
     "basis": "Scale is the named difference, which the rubric says may be moderate, but owners are shown and priorities only loosely, so weak is also a reading it allows; the product answered weak 3 of 3 against moderate in the dc9dd997 run."
   }

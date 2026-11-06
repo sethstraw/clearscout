@@ -33,10 +33,10 @@ from clearscout.shared.costs import Ledger
 from clearscout.shared.costs.prices import table as price_table
 from clearscout.shared.errors import AuthError, ClearscoutError
 from evals.inspect.labeling import bytes_sha256
-from evals.inspect.selection import SelectionManifest
+from evals.inspect.selection import JobManifest, load_live_manifest
 from evals.semantic import StageMeasurement
 from evals.support.client import build_live_client
-from evals.support.inventory import synthetic_guardrails, synthetic_inventory
+from evals.support.inventory import inventory_for_hash, synthetic_guardrails
 from evals.support.jobspec import (
     numbered_job_spec,
     positional_requirement_ids,
@@ -161,7 +161,7 @@ def _selection_manifest_identity(*, split: str, limit: int) -> dict[str, Any]:
         )
     try:
         content = path.read_bytes()
-        manifest = SelectionManifest.model_validate_json(content)
+        manifest = load_live_manifest(content)
     except (OSError, ValueError) as error:
         message = f"Live evaluation refused: invalid selection manifest: {error}"
         raise RuntimeError(message) from error
@@ -174,20 +174,27 @@ def _selection_manifest_identity(*, split: str, limit: int) -> dict[str, Any]:
         raise RuntimeError(
             "Live evaluation refused: selection manifest bytes do not match the approved SHA-256."
         )
-    if manifest.body.synthetic_inventory_hash != synthetic_inventory().content_hash:
+    try:
+        inventory_for_hash(manifest.body.synthetic_inventory_hash)
+    except ValueError as error:
         raise RuntimeError(
             "Live evaluation refused: selection manifest uses another synthetic inventory."
-        )
-    split_cases = {
-        "development": manifest.body.ordered_cases,
-        "holdout": manifest.body.held_out_cases,
-    }
-    if split not in split_cases:
+        ) from error
+    # A job manifest binds one whole-posting row in its own split.
+    split_rows: dict[str, int] = (
+        {manifest.body.split: 1}
+        if isinstance(manifest, JobManifest)
+        else {
+            "development": len(manifest.body.ordered_cases),
+            "holdout": len(manifest.body.held_out_cases),
+        }
+    )
+    if split not in split_rows:
         raise RuntimeError(
-            "Live evaluation refused: the selection manifest holds development and holdout "
-            "cases only."
+            "Live evaluation refused: the selection manifest holds "
+            f"{' and '.join(split_rows)} cases only."
         )
-    if limit != len(split_cases[split]):
+    if limit != split_rows[split]:
         raise RuntimeError(
             "Live evaluation refused: sample limit does not match the approved selection manifest."
         )
@@ -677,7 +684,7 @@ def clearscout_live_solver() -> _ClearScoutLiveSolver:
         database=database,
         workspace_id=workspace_id,
         run_metadata=run_metadata,
-        inventory=synthetic_inventory(),
+        inventory=inventory_for_hash(run_metadata["synthetic_inventory_hash"]),
         guardrails=synthetic_guardrails(),
         provider_name=ProviderName(run_metadata["provider"]),
         settings=settings,

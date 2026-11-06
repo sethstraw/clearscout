@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import cache
@@ -10,13 +11,15 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.jobspec import Dimension, Importance
 from clearscout.application.tailoring.stages.match import Classification, Strength
 from evals.inspect.labeling import (
     PROTOCOL_VERSION,
+    CandidateContent,
     CandidatePool,
     ExtractionQaSet,
     InventoryHash,
+    NonBlank,
     ProtocolVersion,
     Sha256,
     Split,
@@ -35,6 +38,8 @@ from evals.inspect.review_resolution import (
 SELECTION_KEY_DOMAIN = "clearscout-match-selection-key-v1"
 SPLIT_RESOLUTION_DOMAIN = "clearscout-match-split-resolution-v1"
 SELECTION_MANIFEST_DOMAIN = "clearscout-match-selection-manifest-v1"
+JOB_MANIFEST_DOMAIN = "clearscout-match-job-manifest-v1"
+JOB_SPEC_ORIGIN = "evals.golden.match_job"
 SELECTION_ALGORITHM: Literal["lexicographic-feasible-v1"] = "lexicographic-feasible-v1"
 
 
@@ -298,15 +303,11 @@ class SelectionManifestBody(_ArtifactModel):
                 raise ValueError(f"selected {name} must be unique")
 
     def _validate_references(self) -> None:
-        selected_ids = {item.case_id for item in self.all_cases}
-        review_ids = [item.case_id for item in self.review_references]
-        if set(review_ids) != selected_ids or len(review_ids) != len(set(review_ids)):
-            raise ValueError("review references must cover every selected case exactly once")
-        adjudication_ids = [item.case_id for item in self.adjudication_references]
-        if len(adjudication_ids) != len(set(adjudication_ids)):
-            raise ValueError("adjudication references contain duplicate case IDs")
-        if not set(adjudication_ids).issubset(selected_ids):
-            raise ValueError("adjudication references must belong to selected cases")
+        _validate_reference_coverage(
+            [item.case_id for item in self.all_cases],
+            self.review_references,
+            self.adjudication_references,
+        )
 
     def validate_inputs(
         self,
@@ -315,17 +316,7 @@ class SelectionManifestBody(_ArtifactModel):
         resolution_set: ResolutionSet,
     ) -> None:
         """Resolve every selected field against the candidate and resolution sets."""
-        qa.validate_candidates(pool)
-        if self.candidate_pool_sha256 != pool.candidate_pool_sha256:
-            raise ValueError("selection manifest does not reference the candidate pool")
-        if self.review_context_sha256 != pool.review_context_sha256:
-            raise ValueError("selection manifest does not reference the candidate review context")
-        if self.extraction_qa_sha256 != qa.extraction_qa_sha256:
-            raise ValueError("selection manifest does not reference the extraction QA set")
-        if self.resolution_set_sha256 != resolution_set.resolution_set_sha256:
-            raise ValueError("selection manifest does not reference the resolution set")
-        if self.review_set_sha256 != resolution_set.review_set_sha256:
-            raise ValueError("selection manifest does not reference the resolved review set")
+        _require_upstream(self, pool, qa, resolution_set)
         candidates = {item.case_id: item for item in pool.candidates}
         labels = {item.case_id: item for item in resolution_set.labels}
         approved = {item.case_id for item in qa.findings if item.approved}
@@ -366,21 +357,66 @@ class SelectionManifestBody(_ArtifactModel):
             or selected.challenge_class is not resolved.challenge_class
         ):
             raise ValueError("selected case differs from its resolved label")
-        reference = next(item for item in self.review_references if item.case_id == label.case_id)
-        if (
-            reference.review_a_sha256 != label.review_a_sha256
-            or reference.review_b_sha256 != label.review_b_sha256
-        ):
-            raise ValueError("selected review references differ from the resolved label")
-        adjudication = next(
-            (item for item in self.adjudication_references if item.case_id == label.case_id),
-            None,
-        )
-        if label.adjudication_sha256 is None:
-            if adjudication is not None:
-                raise ValueError("agreed selected label cannot reference adjudication")
-        elif adjudication is None or adjudication.adjudication_sha256 != label.adjudication_sha256:
-            raise ValueError("adjudicated selected label requires its adjudication reference")
+        _require_label_references(self.review_references, self.adjudication_references, label)
+
+
+def _require_upstream(
+    body: SelectionManifestBody | JobManifestBody,
+    pool: CandidatePool,
+    qa: ExtractionQaSet,
+    resolution_set: ResolutionSet,
+) -> None:
+    """Refuse a manifest body that names another pool, context, QA, or resolution."""
+    qa.validate_candidates(pool)
+    if body.candidate_pool_sha256 != pool.candidate_pool_sha256:
+        raise ValueError("selection manifest does not reference the candidate pool")
+    if body.review_context_sha256 != pool.review_context_sha256:
+        raise ValueError("selection manifest does not reference the candidate review context")
+    if body.extraction_qa_sha256 != qa.extraction_qa_sha256:
+        raise ValueError("selection manifest does not reference the extraction QA set")
+    if body.resolution_set_sha256 != resolution_set.resolution_set_sha256:
+        raise ValueError("selection manifest does not reference the resolution set")
+    if body.review_set_sha256 != resolution_set.review_set_sha256:
+        raise ValueError("selection manifest does not reference the resolved review set")
+
+
+def _require_label_references(
+    review_references: Sequence[ReviewReference],
+    adjudication_references: Sequence[AdjudicationReference],
+    label: ResolvedLabel,
+) -> None:
+    """Refuse review or adjudication references that differ from one resolved label."""
+    reference = next(item for item in review_references if item.case_id == label.case_id)
+    if (
+        reference.review_a_sha256 != label.review_a_sha256
+        or reference.review_b_sha256 != label.review_b_sha256
+    ):
+        raise ValueError("selected review references differ from the resolved label")
+    adjudication = next(
+        (item for item in adjudication_references if item.case_id == label.case_id),
+        None,
+    )
+    if label.adjudication_sha256 is None:
+        if adjudication is not None:
+            raise ValueError("agreed selected label cannot reference adjudication")
+    elif adjudication is None or adjudication.adjudication_sha256 != label.adjudication_sha256:
+        raise ValueError("adjudicated selected label requires its adjudication reference")
+
+
+def _validate_reference_coverage(
+    case_ids: Sequence[UUID],
+    review_references: Sequence[ReviewReference],
+    adjudication_references: Sequence[AdjudicationReference],
+) -> None:
+    """Require one review reference per case and adjudication only for those cases."""
+    review_ids = [item.case_id for item in review_references]
+    if set(review_ids) != set(case_ids) or len(review_ids) != len(set(review_ids)):
+        raise ValueError("review references must cover every selected case exactly once")
+    adjudication_ids = [item.case_id for item in adjudication_references]
+    if len(adjudication_ids) != len(set(adjudication_ids)):
+        raise ValueError("adjudication references contain duplicate case IDs")
+    if not set(adjudication_ids).issubset(case_ids):
+        raise ValueError("adjudication references must belong to selected cases")
 
 
 class SelectionManifest(_ArtifactModel):
@@ -568,6 +604,30 @@ def _positioned(cases: Iterable[_EligibleCase]) -> tuple[SelectedCase, ...]:
     )
 
 
+def _rulings_by_case(
+    rulings: Sequence[CaseRuling], case_ids: Sequence[UUID]
+) -> dict[UUID, CaseRuling]:
+    """Index rulings by case, refusing a second ruling or one naming an unheld case."""
+    ruled = {item.case_id: item for item in rulings}
+    if len(ruled) != len(rulings):
+        raise ValueError("a case carries at most one ruling")
+    if not ruled.keys() <= set(case_ids):
+        raise ValueError("a ruling names a case the selection does not hold")
+    return ruled
+
+
+def _expected_pair(
+    classification: Classification, strength: Strength, ruling: CaseRuling | None
+) -> tuple[str | list[str], str | list[str]]:
+    """Return a row's expected label, or a ruling's accepted pairs as two index-paired lists."""
+    if ruling is None:
+        return classification.value, strength.value
+    pairs = [(item.classification.value, item.strength.value) for item in ruling.accepted]
+    if (classification.value, strength.value) not in pairs:
+        raise ValueError("a ruling must accept the case's resolved label")
+    return [label for label, _ in pairs], [grade for _, grade in pairs]
+
+
 def serialize_match_dataset(
     selected_cases: tuple[SelectedCase, ...],
     pool: CandidatePool,
@@ -579,11 +639,7 @@ def serialize_match_dataset(
     A ruled case's row carries its ruling's accepted pairs as two index-paired lists.
     """
     candidates = {item.case_id: item for item in pool.candidates}
-    ruled = {item.case_id: item for item in rulings}
-    if len(ruled) != len(rulings):
-        raise ValueError("a case carries at most one ruling")
-    if not ruled.keys() <= {item.case_id for item in selected_cases}:
-        raise ValueError("a ruling names a case the selection does not hold")
+    ruled = _rulings_by_case(rulings, [item.case_id for item in selected_cases])
     lines: list[bytes] = []
     for selected in selected_cases:
         candidate = candidates.get(selected.case_id)
@@ -592,14 +648,9 @@ def serialize_match_dataset(
         if candidate.synthetic_inventory_hash != synthetic_inventory_hash:
             raise ValueError("cannot project a candidate from another synthetic inventory")
         case_id = str(selected.case_id)
-        classification: str | list[str] = selected.classification.value
-        strength: str | list[str] = selected.strength.value
-        if (ruling := ruled.get(selected.case_id)) is not None:
-            pairs = [(item.classification.value, item.strength.value) for item in ruling.accepted]
-            if (classification, strength) not in pairs:
-                raise ValueError("a ruling must accept the case's resolved label")
-            classification = [label for label, _ in pairs]
-            strength = [grade for _, grade in pairs]
+        classification, strength = _expected_pair(
+            selected.classification, selected.strength, ruled.get(selected.case_id)
+        )
         lines.append(
             canonical_json_bytes(
                 {
@@ -632,3 +683,237 @@ def project_match_dataset(
         manifest.body.synthetic_inventory_hash,
         manifest.body.rulings,
     )
+
+
+class PostingRequirement(_ArtifactModel):
+    """One posting requirement in posting order, with the importance its section gives it."""
+
+    case_id: UUID
+    importance: Importance
+
+
+class JobPosting(_ArtifactModel):
+    """The posting fields a whole-job row carries that its candidates do not."""
+
+    source_id: UUID
+    source_artifact_sha256: Sha256
+    title: NonBlank
+    company: NonBlank
+    location: NonBlank | None
+    requirements: tuple[PostingRequirement, ...] = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def validate_posting(self) -> Self:
+        """Require opaque identities and each requirement once."""
+        ids = [item.case_id for item in self.requirements]
+        if any(value.version != 4 for value in (self.source_id, *ids)):
+            raise ValueError("posting source and case ids must be UUIDv4")
+        if len(ids) != len(set(ids)):
+            raise ValueError("a posting names each requirement once")
+        return self
+
+    def candidates(self, pool: CandidatePool, qa: ExtractionQaSet) -> tuple[CandidateContent, ...]:
+        """Return the posting's QA-approved candidates in posting order, refusing any other set."""
+        qa.validate_candidates(pool)
+        of_source = {
+            item.case_id: item for item in pool.candidates if item.source_id == self.source_id
+        }
+        if set(of_source) != {item.case_id for item in self.requirements}:
+            raise ValueError(
+                "the posting's requirements must be the pool's candidates of its source"
+            )
+        approved = {item.case_id for item in qa.findings if item.approved}
+        if not set(of_source) <= approved:
+            raise ValueError("every posting requirement must be approved by extraction QA")
+        ordered = tuple(of_source[item.case_id] for item in self.requirements)
+        if any(item.source_artifact_sha256 != self.source_artifact_sha256 for item in ordered):
+            raise ValueError("a posting requirement cites another source artifact")
+        if len({item.publication_gate.split for item in ordered}) != 1:
+            raise ValueError("a posting's requirements share one split")
+        return ordered
+
+
+class JobLabel(_ArtifactModel):
+    """One posting requirement's resolved label."""
+
+    case_id: UUID
+    resolved_label_sha256: Sha256
+    classification: Classification
+    strength: Strength
+    dimension: Dimension
+    challenge_class: ChallengeClass
+
+
+def job_labels(posting: JobPosting, resolution_set: ResolutionSet) -> tuple[JobLabel, ...]:
+    """Return each posting requirement's resolved label in posting order."""
+    labels = {item.case_id: item for item in resolution_set.labels}
+    resolved: list[JobLabel] = []
+    for requirement in posting.requirements:
+        label = labels.get(requirement.case_id)
+        if label is None:
+            raise ValueError("every posting requirement needs a resolved label")
+        material = match_material(label)
+        resolved.append(
+            JobLabel(
+                case_id=label.case_id,
+                resolved_label_sha256=label.resolved_label_sha256,
+                classification=material.classification,
+                strength=material.strength,
+                dimension=material.dimension,
+                challenge_class=material.challenge_class,
+            )
+        )
+    return tuple(resolved)
+
+
+class JobManifestBody(_ArtifactModel):
+    """The hash-bound receipt for one whole-job match row, excluding its own digest."""
+
+    protocol_version: ProtocolVersion
+    synthetic_inventory_hash: InventoryHash
+    review_context_sha256: Sha256
+    candidate_pool_sha256: Sha256
+    extraction_qa_sha256: Sha256
+    review_set_sha256: Sha256
+    resolution_set_sha256: Sha256
+    split: Split
+    posting: JobPosting
+    labels: tuple[JobLabel, ...]
+    review_references: tuple[ReviewReference, ...]
+    adjudication_references: tuple[AdjudicationReference, ...] = ()
+    rulings: tuple[CaseRuling, ...]
+    dataset_sha256: Sha256
+
+    @model_validator(mode="after")
+    def validate_job_body(self) -> Self:
+        """Require one label per posting requirement in posting order, each referenced."""
+        case_ids = [item.case_id for item in self.posting.requirements]
+        if [item.case_id for item in self.labels] != case_ids:
+            raise ValueError("job labels must follow the posting's requirements in order")
+        _validate_reference_coverage(case_ids, self.review_references, self.adjudication_references)
+        _rulings_by_case(self.rulings, case_ids)
+        return self
+
+    def validate_inputs(
+        self, pool: CandidatePool, qa: ExtractionQaSet, resolution_set: ResolutionSet
+    ) -> None:
+        """Resolve the posting, labels, references, and dataset bytes against their inputs."""
+        _require_upstream(self, pool, qa, resolution_set)
+        candidates = self.posting.candidates(pool, qa)
+        if candidates[0].publication_gate.split != self.split:
+            raise ValueError("job manifest split differs from its candidates' split")
+        if self.labels != job_labels(self.posting, resolution_set):
+            raise ValueError("job labels differ from the resolved labels")
+        resolved = {item.case_id: item for item in resolution_set.labels}
+        for label in self.labels:
+            _require_label_references(
+                self.review_references, self.adjudication_references, resolved[label.case_id]
+            )
+        projected = serialize_match_job_dataset(
+            self.posting, self.labels, pool, qa, self.synthetic_inventory_hash, self.rulings
+        )
+        if bytes_sha256(projected) != self.dataset_sha256:
+            raise ValueError("dataset_sha256 does not match the exact projected JSONL bytes")
+
+
+class JobManifest(_ArtifactModel):
+    """A job manifest body accompanied by its non-self-referential digest."""
+
+    body: JobManifestBody
+    manifest_sha256: Sha256
+
+    @model_validator(mode="after")
+    def validate_manifest(self) -> Self:
+        """Bind the complete job manifest body without hashing the digest itself."""
+        if self.manifest_sha256 != domain_sha256(JOB_MANIFEST_DOMAIN, self.body):
+            raise ValueError("manifest_sha256 does not match job manifest content")
+        return self
+
+    def validate_inputs(
+        self, pool: CandidatePool, qa: ExtractionQaSet, resolution_set: ResolutionSet
+    ) -> None:
+        """Resolve the manifest body against its frozen upstream artifacts."""
+        self.body.validate_inputs(pool, qa, resolution_set)
+
+
+def serialize_match_job_dataset(
+    posting: JobPosting,
+    labels: Sequence[JobLabel],
+    pool: CandidatePool,
+    qa: ExtractionQaSet,
+    synthetic_inventory_hash: InventoryHash,
+    rulings: Sequence[CaseRuling],
+) -> bytes:
+    """Project one posting to a single whole-job JSONL row with a label per requirement.
+
+    The posting goes in ``job_spec``, which the solver sees; the labels go in
+    ``expected``, keyed by requirement id, which only the scorer reads.
+    """
+    candidates = posting.candidates(pool, qa)
+    if any(item.synthetic_inventory_hash != synthetic_inventory_hash for item in candidates):
+        raise ValueError("cannot project a candidate from another synthetic inventory")
+    if [item.case_id for item in labels] != [item.case_id for item in candidates]:
+        raise ValueError("job labels must follow the posting's requirements in order")
+    ruled = _rulings_by_case(rulings, [item.case_id for item in candidates])
+    requirements: list[dict[str, str]] = []
+    expected: list[dict[str, str | list[str]]] = []
+    for requirement, candidate, label in zip(posting.requirements, candidates, labels, strict=True):
+        case_id = str(candidate.case_id)
+        requirements.append(
+            {
+                "id": case_id,
+                "text": candidate.requirement_text,
+                "importance": requirement.importance.value,
+                "dimension": label.dimension.value,
+            }
+        )
+        classification, strength = _expected_pair(
+            label.classification, label.strength, ruled.get(label.case_id)
+        )
+        expected.append(
+            {
+                "requirement_id": case_id,
+                "expected_classification": classification,
+                "expected_strength": strength,
+            }
+        )
+    row = {
+        "id": str(posting.source_id),
+        "cv_hash": synthetic_inventory_hash,
+        "split": candidates[0].publication_gate.split,
+        "job_spec": {
+            "title": posting.title,
+            "company": posting.company,
+            "seniority": None,
+            "location": posting.location,
+            "requirements": requirements,
+            "keywords": [],
+            "hard_gates": [],
+            "origin": JOB_SPEC_ORIGIN,
+        },
+        "expected": expected,
+    }
+    return canonical_json_bytes(row) + b"\n"
+
+
+def project_match_job_dataset(
+    manifest: JobManifest,
+    pool: CandidatePool,
+    qa: ExtractionQaSet,
+    resolution_set: ResolutionSet,
+) -> bytes:
+    """Validate all frozen inputs and return the bound whole-job dataset bytes."""
+    manifest.validate_inputs(pool, qa, resolution_set)
+    body = manifest.body
+    return serialize_match_job_dataset(
+        body.posting, body.labels, pool, qa, body.synthetic_inventory_hash, body.rulings
+    )
+
+
+def load_live_manifest(content: bytes) -> SelectionManifest | JobManifest:
+    """Validate a live run's manifest bytes as a selection manifest or a job manifest."""
+    payload = json.loads(content)
+    body = payload.get("body") if isinstance(payload, dict) else None
+    if isinstance(body, dict) and "posting" in body:
+        return JobManifest.model_validate_json(content)
+    return SelectionManifest.model_validate_json(content)

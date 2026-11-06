@@ -81,7 +81,7 @@ def _header(log: Path) -> dict[str, Any]:
     ("task", "dataset", "total"),
     [
         ("draft_scripted_task.py", "draft_cases.jsonl", 14),
-        ("cover_scripted_task.py", "cover_cases.jsonl", 14),
+        ("cover_scripted_task.py", "cover_cases.jsonl", 17),
         ("critic_scripted_task.py", "critic_cases.jsonl", 33),
     ],
 )
@@ -179,7 +179,7 @@ def test_the_log_counts_warned_checks_the_pass_mark_leaves_out(tmp_path: Path) -
     header = _header(log)
     assert header["passed"] == header["total"]
     assert header["warned_checks"] == {
-        "factual review": 14,
+        "factual review": 17,
         "letter closing": 1,
         "letter echo": 2,
     }
@@ -622,6 +622,7 @@ def test_the_solver_never_sees_the_checks_its_sample_declares() -> None:
         ("draft_live_task.py", Stage.DRAFT),
         ("draft_redraft_live_task.py", Stage.DRAFT),
         ("cover_live_task.py", Stage.COVER),
+        ("cover_redraft_live_task.py", Stage.COVER),
         ("critic_live_task.py", Stage.CRITIC),
         ("match_live_task.py", Stage.MATCH),
     ],
@@ -907,11 +908,147 @@ def test_a_redrafting_live_run_stops_after_a_clean_first_attempt(
     assert score["metadata"]["attempt_one"]["passed"] is True
 
 
-def test_only_the_draft_family_takes_a_second_attempt() -> None:
+def test_the_critic_family_takes_no_second_attempt() -> None:
     with pytest.raises(RuntimeError, match="does not redraft"):
         document_live.document_live_solver(
-            Stage.COVER, FIXTURES / "cover_cases.jsonl", draft_attempts=2
+            Stage.CRITIC, FIXTURES / "critic_cases.jsonl", draft_attempts=2
         )
+
+
+def _scripted_letter_payload(sample: dict[str, Any], scripted: dict[str, Any]) -> dict[str, Any]:
+    """Render a canned letter as the letter schema receives it for this sample's plan."""
+    from evals.support.documents import letter_payload, research_sources
+
+    return letter_payload(scripted, document_context(sample), research_sources(sample))
+
+
+def _cover_redraft_provider(
+    monkeypatch: pytest.MonkeyPatch,
+    database_url: str,
+    tmp_path: Path,
+    answers: list[dict[str, Any]],
+) -> Any:
+    """Route the live cover family to a provider that answers ``answers`` in order."""
+    from evals.support import client as eval_client
+
+    from clearscout.infrastructure.persistence.models.workspaces import Workspace
+    from tests.support.doubles import ScriptedProvider
+
+    database = Database(database_url)
+    try:
+        with database.session() as session:
+            session.add(Workspace(slug="ws", name="Workspace"))
+    finally:
+        database.dispose()
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_APPROVED_CENTS", "100")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_LIVE_PROVIDER", "openai")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATASET_SPLIT", "development")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "16")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_OUTPUT_DIR", str(tmp_path))
+    calls = iter(answers)
+    provider = ScriptedProvider(script={"CoverLetter": lambda _schema: next(calls)})
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "test-key")
+    monkeypatch.setattr(eval_client, "provider_for", lambda provider_name, key: provider)
+    return provider
+
+
+def test_a_redrafting_cover_run_rewrites_a_failed_letter_through_the_production_loop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, durable_database_url: str
+) -> None:
+    """Attempt one's failing checks and its letter reach attempt two; the kept attempt scores."""
+    from evals.inspect.tasks import cover_redraft_live_task
+
+    sample = _case("cover_cases.jsonl", "production_sized_letter_invented_figure")
+    planted = sample["metadata"]["scripted_letter"]
+    corrected = json.loads(json.dumps(planted).replace("1,900", "1,400"))
+    answers = [
+        _scripted_letter_payload(sample, planted),
+        _scripted_letter_payload(sample, corrected),
+    ]
+    provider = _cover_redraft_provider(monkeypatch, durable_database_url, tmp_path, answers)
+    solver = cover_redraft_live_task.solver()
+
+    try:
+        output = solver(sample)
+    finally:
+        solver.database.dispose()
+
+    assert solver.run_metadata["draft_attempts"] == 2
+    assert [call[0] for call in provider.calls] == ["ConstrainedCoverLetter"] * 2
+    first, second = (call[1].task.text for call in provider.calls)
+    kept_paragraph = "Litware gives clinic owners a morning view of the day before"
+    assert "1,900" in second
+    assert kept_paragraph in second
+    assert kept_paragraph not in first
+    assert [(item["attempt"], item["kept"]) for item in output["attempts"]] == [
+        (1, False),
+        (2, True),
+    ]
+    assert "1,400 columns" in output["document"]["text"]
+    score = cover_redraft_live_task.scorer()(sample, output)
+    assert score["value"] is True
+    assert score["metadata"]["attempt_one"] == {
+        "attempt": 1,
+        "passed": False,
+        "failed_checks": ["letter numbers"],
+    }
+    assert score["metadata"]["final"] == {"attempt": 2, "passed": True, "failed_checks": []}
+
+
+def test_a_redrafting_cover_run_stops_after_a_clean_first_letter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, durable_database_url: str
+) -> None:
+    from evals.inspect.tasks import cover_redraft_live_task
+
+    sample = _case("cover_cases.jsonl", "production_sized_letter_clean")
+    answers = [_scripted_letter_payload(sample, sample["metadata"]["scripted_letter"])]
+    provider = _cover_redraft_provider(monkeypatch, durable_database_url, tmp_path, answers)
+    solver = cover_redraft_live_task.solver()
+
+    try:
+        output = solver(sample)
+    finally:
+        solver.database.dispose()
+
+    assert len(provider.calls) == 1
+    score = cover_redraft_live_task.scorer()(sample, output)
+    assert score["value"] is True
+    assert score["metadata"]["attempts_used"] == 1
+    assert score["metadata"]["attempt_one"]["passed"] is True
+
+
+def test_the_cover_redraft_task_passes_the_smoke_stage_before_its_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    durable_database_url: str,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The smoke reads the attempts the redraft scorer requires, and is reused as the trial."""
+    from decimal import Decimal
+
+    from evals.inspect.tasks import cover_redraft_live_task
+
+    sample = _cases("cover_cases.jsonl")[0]
+    answers = [_scripted_letter_payload(sample, sample["metadata"]["scripted_letter"])] * 2
+    provider = _cover_redraft_provider(monkeypatch, durable_database_url, tmp_path, answers)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_SAMPLE_LIMIT", "1")
+    monkeypatch.setenv("CLEARSCOUT_EVAL_TRIALS", "2")
+
+    log = runner.run_task(
+        cover_redraft_live_task.__name__,
+        log_dir=tmp_path,
+        limit=1,
+        split="development",
+        trials=2,
+        smoke_approved_usd=Decimal(1),
+    )
+
+    assert f"smoke: ok case={sample['id']}" in capsys.readouterr().out
+    assert len(provider.calls) == 2
+    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()[1:]]
+    assert [row["score"]["value"] for row in rows] == [True, True]
+    assert [row["score"]["metadata"]["attempts_used"] for row in rows] == [1, 1]
 
 
 def test_the_redraft_scorer_requires_the_attempts_its_smoke_reads() -> None:
@@ -926,6 +1063,19 @@ def test_the_production_sized_draft_cases_carry_ten_requirements_and_keywords() 
         assert len(spec["requirements"]) >= 10, case_id
         assert len(musts) >= 8, case_id
         assert spec["keywords"], case_id
+
+
+def test_the_production_sized_cover_cases_carry_production_length_inputs() -> None:
+    """A production letter request carries a full posting, a careers page, and ~30 requirements."""
+    for case_id in ("production_sized_letter_clean", "production_sized_letter_invented_figure"):
+        case = _case("cover_cases.jsonl", case_id)
+        requirements = case["job_spec"]["requirements"]
+        musts = [item for item in requirements if item["importance"] == "must_have"]
+        assert len(requirements) >= 25, case_id
+        assert len(musts) >= 10, case_id
+        assert case["job_spec"]["keywords"], case_id
+        assert len(case["input"]) >= 5000, case_id
+        assert len(case["metadata"]["research"][0]["text"]) >= 3500, case_id
 
 
 def test_a_live_letter_critique_is_asked_as_the_product_asks_about_a_letter(

@@ -63,6 +63,10 @@ the labels in `evals/golden/relevance_review.jsonl`.
     --selection-manifest-bytes-sha256 <exact-bytes-sha256>
   ```
 
+  `evals/inspect/tasks/match_job_live_task.py` takes the same flags with a job
+  manifest and `--limit 1`; its one row is a whole posting, and the run header
+  counts each requirement beside the row.
+
   `--limit` must equal the manifest's case count. It is the only mode that
   spends money and the only one that tests prompt-quality regressions. The output directory must be outside the public
   repository.

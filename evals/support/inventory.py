@@ -1,7 +1,8 @@
-"""Deterministic synthetic ``CvInventory`` for the harness.
+"""Deterministic evaluation ``CvInventory`` values for the harness.
 
-The scripted solvers and, by default, the live solvers render this citable-entry
-vocabulary, so a run does not depend on whichever workspace is open.
+The scripted solvers and, by default, the live solvers render the synthetic
+citable-entry vocabulary, so a run does not depend on whichever workspace is
+open. A tracked CV under ``evals/cvs/`` is the other inventory a run may name.
 
 The employer name and the email domain come from the closed vocabularies the
 public-data audit accepts under ``evals/``: ``EVAL_EMPLOYERS`` for employers
@@ -12,9 +13,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clearscout.application.master_cv.cv import CvInventory, Entry, EntryKind, Role, content_hash
+from clearscout.application.master_cv.cv import (
+    CvInventory,
+    Entry,
+    EntryKind,
+    Role,
+    content_hash,
+    parse_cv,
+)
 from clearscout.application.tailoring.guardrails import Guardrails
 
+EVAL_CV_DIR = Path(__file__).resolve().parents[1] / "cvs"
+SYNTHETIC_INVENTORY_NAME = "synthetic"
 SYNTHETIC_SOURCE = Path("/evals/support/synthetic_cv.md")
 SYNTHETIC_WORK_AUTHORIZATION = "Authorized to work in Canada without sponsorship."
 SYNTHETIC_LOCATION = "Located in Calgary, Alberta, Canada."
@@ -88,3 +98,28 @@ def synthetic_inventory() -> CvInventory:
         roles=(role,),
         entries=entries,
     )
+
+
+def tracked_cv(file_name: str) -> CvInventory:
+    """Return the tracked CV ``file_name`` names under ``evals/cvs/``, refusing any other path."""
+    path = (EVAL_CV_DIR / file_name).resolve()
+    if path.parent != EVAL_CV_DIR or not path.is_file():
+        raise ValueError(f"{file_name!r} names no CV in {EVAL_CV_DIR}")
+    return parse_cv(path)
+
+
+def eval_inventory(name: str = SYNTHETIC_INVENTORY_NAME) -> CvInventory:
+    """Return the synthetic inventory, or the tracked CV file ``name`` names."""
+    return synthetic_inventory() if name == SYNTHETIC_INVENTORY_NAME else tracked_cv(name)
+
+
+def inventory_for_hash(inventory_hash: str) -> CvInventory:
+    """Return the evaluation inventory whose content hash is ``inventory_hash``."""
+    candidates = (
+        synthetic_inventory(),
+        *(tracked_cv(path.name) for path in sorted(EVAL_CV_DIR.glob("*.md"))),
+    )
+    for inventory in candidates:
+        if inventory.content_hash == inventory_hash:
+            return inventory
+    raise ValueError(f"no evaluation inventory has content hash {inventory_hash}")

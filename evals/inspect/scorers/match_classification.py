@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from evals.inspect.labeling import ReviewFamily
@@ -175,7 +175,7 @@ def stored_classification_consistency() -> Any:
     return score
 
 
-def _coverage_failure(message: str, expected: dict[str, str]) -> dict[str, Any]:
+def _coverage_failure(message: str, expected: Mapping[str, object]) -> dict[str, Any]:
     """Return a failing score for a whole-posting sample whose outcomes are incoherent."""
     total = len(expected)
     return {
@@ -187,7 +187,7 @@ def _coverage_failure(message: str, expected: dict[str, str]) -> dict[str, Any]:
 
 
 def _score_per_requirement(
-    expected: dict[str, str], solver_output: dict[str, Any]
+    expected: dict[str, tuple[AcceptedLabel, ...]], solver_output: dict[str, Any]
 ) -> dict[str, Any]:
     """Grade a whole-posting sample by stable id, one outcome per requirement.
 
@@ -210,8 +210,7 @@ def _score_per_requirement(
     passed = 0
     for item in outcomes:
         requirement_id = str(item.get("requirement_id"))
-        want = str(expected[requirement_id]).strip().upper()
-        graded = _score(accepted_labels(want, None), item)
+        graded = _score(expected[requirement_id], item)
         requirement_ok = bool(graded["value"])
         if requirement_ok:
             passed += 1
@@ -219,17 +218,25 @@ def _score_per_requirement(
             {
                 "requirement_id": requirement_id,
                 "value": requirement_ok,
-                "expected": want,
+                "expected": graded["metadata"]["expected"],
                 "classification_matches": graded["metadata"]["classification_matches"],
                 "citation_valid": graded["metadata"]["citation_valid"],
                 "outcome_complete": graded["metadata"]["outcome_complete"],
+                "strength_matches": graded["metadata"]["strength_matches"],
                 "explanation": graded["explanation"],
             }
         )
     total = len(results)
+    compared = [
+        item["strength_matches"] for item in results if item["strength_matches"] is not None
+    ]
+    metadata: dict[str, Any] = {"expected_requirements": total}
+    if compared:
+        metadata["strength_agreed"] = sum(compared)
+        metadata["strength_compared"] = len(compared)
     return {
         "value": passed == total,
-        "metadata": {"expected_requirements": total},
+        "metadata": metadata,
         "requirements": {"total": total, "passed": passed, "results": results},
         "explanation": f"requirements {passed}/{total} passed",
     }
@@ -238,16 +245,61 @@ def _score_per_requirement(
 def per_requirement_scripted_contract() -> Any:
     """Return the per-requirement scorer for a canned whole-posting contract."""
 
-    def expected(sample: dict[str, Any]) -> dict[str, str]:
+    def expected(sample: dict[str, Any]) -> dict[str, tuple[AcceptedLabel, ...]]:
         metadata = sample.get("metadata") or {}
         requested = metadata.get("scripted_matches") if isinstance(metadata, dict) else None
         if not isinstance(requested, dict) or not requested:
             raise ValueError("scripted multi sample is missing metadata.scripted_matches")
-        return {str(key): str(value) for key, value in requested.items()}
+        return {
+            str(key): accepted_labels(str(value).strip().upper(), None)
+            for key, value in requested.items()
+        }
 
     def score(sample: dict[str, Any], solver_output: dict[str, Any]) -> dict[str, Any]:
         return _score_per_requirement(expected(sample), solver_output)
 
     # The runner counts a truncated row's requirements from this, since it has no answer.
     score.expected_requirements = lambda sample: len(expected(sample))  # type: ignore[attr-defined]
+    return score
+
+
+def _job_expected(sample: dict[str, Any]) -> dict[str, tuple[AcceptedLabel, ...]]:
+    """Return each whole-job requirement's accepted pairs, refusing a gap or a stray id."""
+    rows = sample.get("expected")
+    job_spec = sample.get("job_spec")
+    if not isinstance(rows, list) or not rows or not isinstance(job_spec, dict):
+        raise ValueError("a whole-job match row needs a job_spec and an expected list")
+    expected: dict[str, tuple[AcceptedLabel, ...]] = {}
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {
+            "requirement_id",
+            "expected_classification",
+            "expected_strength",
+        }:
+            raise ValueError("each expected entry names a requirement and its label only")
+        requirement_id = str(row["requirement_id"])
+        if requirement_id in expected:
+            raise ValueError(f"requirement {requirement_id} is labeled twice")
+        expected[requirement_id] = accepted_labels(
+            row["expected_classification"], row["expected_strength"]
+        )
+    posted = [str(item.get("id")) for item in job_spec.get("requirements") or []]
+    if posted != list(expected):
+        raise ValueError("expected labels must follow the job_spec requirements in order")
+    return expected
+
+
+def job_classification_match() -> Any:
+    """Return the scorer that grades every requirement of a whole-job reviewed row.
+
+    The row passes only when every requirement passes; the runner sums the
+    requirement counts, so a run reports per-requirement agreement beside it.
+    """
+
+    def score(sample: dict[str, Any], solver_output: dict[str, Any]) -> dict[str, Any]:
+        return _score_per_requirement(_job_expected(sample), solver_output)
+
+    score.validate_sample = _job_expected  # type: ignore[attr-defined]
+    score.expected_requirements = lambda sample: len(_job_expected(sample))  # type: ignore[attr-defined]
+    score.required_fields = ("per_requirement",)  # type: ignore[attr-defined]
     return score

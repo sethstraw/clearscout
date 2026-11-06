@@ -31,21 +31,28 @@ from evals.inspect.review_resolution import (
     review_domain,
 )
 from evals.inspect.selection import (
+    JOB_MANIFEST_DOMAIN,
     SELECTION_ALGORITHM,
     SELECTION_CONSTRAINTS,
     SELECTION_MANIFEST_DOMAIN,
     AdjudicationReference,
+    JobManifest,
+    JobManifestBody,
+    JobPosting,
+    PostingRequirement,
     ReviewReference,
     SelectedCase,
     SelectionManifest,
     SelectionManifestBody,
+    job_labels,
     selection_key_sha256,
     serialize_match_dataset,
+    serialize_match_job_dataset,
     split_resolution_sha256,
 )
 from evals.support.inventory import synthetic_inventory
 
-from clearscout.application.tailoring.stages.jobspec import Dimension
+from clearscout.application.tailoring.stages.jobspec import Dimension, Importance
 from clearscout.application.tailoring.stages.match import Classification, Strength
 
 MATCH = ReviewFamily.MATCH
@@ -376,3 +383,129 @@ def selection_manifest(
         body=body,
         manifest_sha256=domain_sha256(SELECTION_MANIFEST_DOMAIN, body),
     )
+
+
+JOB_SOURCE = source_uuid(900)
+JOB_ARTIFACT = "e" * 64
+# One posting's requirements in posting order, each with the label reviewers resolved.
+JOB_LABELS: tuple[tuple[int, Importance, Classification, Dimension, ChallengeClass], ...] = (
+    (
+        903,
+        Importance.MUST_HAVE,
+        Classification.DIRECT,
+        Dimension.HARD,
+        ChallengeClass.CLEAR_SUPPORTED,
+    ),
+    (
+        901,
+        Importance.MUST_HAVE,
+        Classification.ASSERTED,
+        Dimension.HARD,
+        ChallengeClass.BOILERPLATE_OR_STATUS,
+    ),
+    (
+        904,
+        Importance.NICE_TO_HAVE,
+        Classification.TRANSFERABLE,
+        Dimension.BEHAVIORAL,
+        ChallengeClass.SOFT_OR_TRANSFERABLE,
+    ),
+    (
+        902,
+        Importance.NICE_TO_HAVE,
+        Classification.GAP,
+        Dimension.BEHAVIORAL,
+        ChallengeClass.ABSENT_EVIDENCE,
+    ),
+)
+
+
+def job_candidate(index: int) -> CandidateContent:
+    """Return one development requirement of the synthetic posting."""
+    text = f"Posting requirement {index}."
+    return CandidateContent(
+        protocol_version=PROTOCOL_VERSION,
+        case_id=case_uuid(index),
+        source_id=JOB_SOURCE,
+        source_artifact_sha256=JOB_ARTIFACT,
+        requirement_text=text,
+        normalized_requirement_sha256=normalized_requirement_sha256(text),
+        synthetic_inventory_hash=INVENTORY_HASH,
+        review_context_sha256=CONTEXT_HASH,
+        publication_gate=PublicationGate(
+            sanitized=True,
+            privacy_review_passed=True,
+            redistribution_approved=True,
+            split="development",
+        ),
+    )
+
+
+def job_pool() -> CandidatePool:
+    """Return a pool holding every requirement of the synthetic posting."""
+    return pool_from_candidates(tuple(job_candidate(index) for index, *_ in JOB_LABELS))
+
+
+def job_posting() -> JobPosting:
+    """Return the synthetic posting with its requirements in posting order."""
+    return JobPosting(
+        source_id=JOB_SOURCE,
+        source_artifact_sha256=JOB_ARTIFACT,
+        title="Principal Data Engineer, Freight Data Platform",
+        company="Aster Systems",
+        location="Remote, United States",
+        requirements=tuple(
+            PostingRequirement(case_id=case_uuid(index), importance=importance)
+            for index, importance, *_ in JOB_LABELS
+        ),
+    )
+
+
+def job_resolution() -> ResolutionSet:
+    """Return an agreed label for every requirement of the synthetic posting."""
+    return resolution_from_labels(
+        tuple(
+            resolved_label(
+                index, classification=classification, dimension=dimension, challenge=challenge
+            )
+            for index, _, classification, dimension, challenge in JOB_LABELS
+        )
+    )
+
+
+def job_manifest(
+    pool: CandidatePool,
+    resolution: ResolutionSet,
+    rulings: Sequence[CaseRuling] = (),
+    *,
+    posting: JobPosting | None = None,
+) -> JobManifest:
+    """Return a hash-bound job manifest over the posting, projecting its dataset digest."""
+    posting = posting or job_posting()
+    qa = qa_set(pool)
+    labels = job_labels(posting, resolution)
+    by_case = {item.case_id: item for item in resolution.labels}
+    dataset = serialize_match_job_dataset(posting, labels, pool, qa, INVENTORY_HASH, rulings)
+    body = JobManifestBody(
+        protocol_version=PROTOCOL_VERSION,
+        synthetic_inventory_hash=INVENTORY_HASH,
+        review_context_sha256=pool.review_context_sha256,
+        candidate_pool_sha256=pool.candidate_pool_sha256,
+        extraction_qa_sha256=qa.extraction_qa_sha256,
+        review_set_sha256=resolution.review_set_sha256,
+        resolution_set_sha256=resolution.resolution_set_sha256,
+        split="development",
+        posting=posting,
+        labels=labels,
+        review_references=tuple(
+            ReviewReference(
+                case_id=item.case_id,
+                review_a_sha256=by_case[item.case_id].review_a_sha256,
+                review_b_sha256=by_case[item.case_id].review_b_sha256,
+            )
+            for item in labels
+        ),
+        rulings=tuple(rulings),
+        dataset_sha256=bytes_sha256(dataset),
+    )
+    return JobManifest(body=body, manifest_sha256=domain_sha256(JOB_MANIFEST_DOMAIN, body))

@@ -682,6 +682,38 @@ def test_the_match_prompt_cites_no_entry_missing_the_named_tool_for_any_part() -
     )
 
 
+def test_the_match_prompt_answers_a_named_tool_from_its_platform_alone_weakly() -> None:
+    text = flat("match_system")
+    assert (
+        "An entry that names the platform or ecosystem a named tool belongs to, but neither "
+        "that tool nor another tool doing its job, names that tool's ecosystem: it answers "
+        "the requirement `TRANSFERABLE` at `weak` strength, not `GAP` for that reason alone "
+        "and never stronger." in text
+    )
+    assert (
+        "No other unmet qualifier forces `weak`, except that an entry naming only a tool's "
+        "platform stays `weak` as rule 4 says." in text
+    )
+    assert (
+        "The tool's own work is what such an entry leaves out, so it is materially partial "
+        "under rule 6 and is not the adjacent tool rule 6 may rate `moderate`." in text
+    )
+
+
+def test_an_asserted_line_answers_only_the_fact_it_states() -> None:
+    text = flat("match_system")
+    assert (
+        "A line about the same kind of fact for a different country, place, or status, "
+        "such as work authorization in another country, does not answer it, and that "
+        "requirement is `GAP`." in text
+    )
+    assert "A different amount of the same condition, as in rule 8, still answers it." in text
+    assert (
+        "A place inside the one asked for, or a status that carries the one asked for, "
+        "as citizenship carries work authorization, also answers it." in text
+    )
+
+
 def test_the_match_prompt_lists_named_tools_for_every_requirement() -> None:
     text = flat("match_system")
     assert "9. For every requirement, list in `named_tools` each tool it asks for" in text

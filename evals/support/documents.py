@@ -48,6 +48,7 @@ from clearscout.application.tailoring.stages.verify import (
     LETTER_CRITIC,
     CriticVerdict,
     Report,
+    check_letter,
     critic_finding,
     line_citations,
     misquoted_evidence,
@@ -348,6 +349,48 @@ def redrafted_resume(
     )
 
 
+def redrafted_letter(
+    client: Any,
+    context: DocumentContext,
+    research: tuple[ResearchSource, ...],
+    attempts: int,
+) -> tuple[CoverLetter, Report, tuple[Attempt, ...]]:
+    """Write the letter through production's rewrite loop, without the critic.
+
+    Each rewrite receives the failing checks and the previous letter, as production sends them.
+    """
+    drafted: list[CoverLetter] = []
+
+    def produce(feedback: str, attempt: int) -> tuple[CoverLetter, Report]:
+        del attempt
+        letter = cover_letter(
+            client,
+            context.inventory,
+            context.spec,
+            context.plan,
+            context.guardrails,
+            feedback,
+            research=research,
+            employer=context.spec.company,
+            previous=drafted[-1] if drafted else None,
+        )
+        drafted.append(letter)
+        return letter, check_letter(
+            letter=letter,
+            plan=context.plan,
+            inventory=context.inventory,
+            guardrails=context.guardrails,
+            research=research,
+        )
+
+    return _until_clean(
+        steps=_Progress(None, total=1),
+        label="writing the letter",
+        attempts=attempts,
+        produce=produce,
+    )
+
+
 def fixed_letter(
     sample: Mapping[str, Any], context: DocumentContext, research: tuple[ResearchSource, ...]
 ) -> CoverLetter:
@@ -440,16 +483,20 @@ def draft_result(
         "document": {"lines": len(fitted.printed.lines()), "characters": len(fitted.markdown)},
     }
     if attempts:
-        result["attempts"] = [
-            {
-                "attempt": item.number,
-                "kept": item.kept,
-                "findings": _finding_rows(item.findings),
-                "feedback_digest": item.feedback_digest,
-            }
-            for item in attempts
-        ]
+        result["attempts"] = _attempt_rows(attempts)
     return result
+
+
+def _attempt_rows(attempts: Sequence[Attempt]) -> list[dict[str, Any]]:
+    return [
+        {
+            "attempt": item.number,
+            "kept": item.kept,
+            "findings": _finding_rows(item.findings),
+            "feedback_digest": item.feedback_digest,
+        }
+        for item in attempts
+    ]
 
 
 def critic_result(
@@ -478,9 +525,16 @@ def critic_result(
 
 
 def letter_result(
-    letter: CoverLetter, report: Report, *, keep_text: bool = False
+    letter: CoverLetter,
+    report: Report,
+    attempts: Sequence[Attempt] = (),
+    *,
+    keep_text: bool = False,
 ) -> dict[str, Any]:
-    """Return the solver output one cover-letter attempt produces, with its body when kept."""
+    """Return the solver output a cover-letter run produces, with its body when kept.
+
+    A redrafting run also lists every attempt's findings and which one was kept.
+    """
     rendered = letter.rendered()
     document: dict[str, Any] = {
         "paragraphs": len(letter.paragraphs),
@@ -488,8 +542,11 @@ def letter_result(
     }
     if keep_text:
         document["text"] = rendered
-    return {
+    result: dict[str, Any] = {
         "completion": "pass" if report.passed else "fail",
         "findings": findings(report),
         "document": document,
     }
+    if attempts:
+        result["attempts"] = _attempt_rows(attempts)
+    return result

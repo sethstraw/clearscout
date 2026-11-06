@@ -43,6 +43,7 @@ from evals.support.documents import (
     draft_result,
     fitted_resume,
     letter_result,
+    redrafted_letter,
     redrafted_resume,
     research_sources,
 )
@@ -125,13 +126,22 @@ class _DraftLiveSolver(_DocumentLiveSolver):
 
 @dataclass(frozen=True)
 class _CoverLiveSolver(_DocumentLiveSolver):
-    """Write the letter live, then score it through ``verify.check_letter``."""
+    """Write the letter live, then score it through ``verify.check_letter``.
+
+    With more than one attempt, a failing letter is rewritten through production's loop.
+    """
+
+    attempts: int = 1
 
     def _measure(
         self, sample: dict[str, Any], context: DocumentContext, client: Any
     ) -> dict[str, Any]:
         """Write the cover letter live from the sample's research and check it."""
         research = research_sources(sample)
+        # Live receipts are refused inside the repository, so the body stays private.
+        if self.attempts > 1:
+            letter, report, attempts = redrafted_letter(client, context, research, self.attempts)
+            return letter_result(letter, report, attempts, keep_text=True)
         letter = cover_letter(
             client,
             context.inventory,
@@ -148,7 +158,6 @@ class _CoverLiveSolver(_DocumentLiveSolver):
             guardrails=context.guardrails,
             research=research,
         )
-        # Live receipts are refused inside the repository, so the body stays private.
         return letter_result(letter, report, keep_text=True)
 
 
@@ -184,6 +193,8 @@ FAMILIES: dict[Stage, tuple[type[_DocumentLiveSolver], Sequence[str], str]] = {
     Stage.COVER: (_CoverLiveSolver, COVER_PROMPTS, "eval.cover_live"),
     Stage.CRITIC: (_CriticLiveSolver, CRITIC_PROMPTS, "eval.critic_live"),
 }
+# Production's rewrite loop redrafts a resume or a letter; the critic only judges inside it.
+REDRAFTING_STAGES = frozenset({Stage.DRAFT, Stage.COVER})
 
 
 def document_live_solver(
@@ -192,7 +203,7 @@ def document_live_solver(
     """Return the prepared solver that runs one document family's stage live."""
     if stage not in FAMILIES:
         raise RuntimeError(f"Live evaluation refused: no document family runs the {stage} stage.")
-    if draft_attempts != 1 and stage is not Stage.DRAFT:
+    if draft_attempts != 1 and stage not in REDRAFTING_STAGES:
         raise RuntimeError(f"Live evaluation refused: the {stage} stage does not redraft.")
     kind, prompt_names, origin = FAMILIES[stage]
     run_metadata = paid_stage_metadata(stage, prompt_names, dataset)
@@ -214,6 +225,6 @@ def document_live_solver(
         workspace_id=workspace_id,
         origin=origin,
     )
-    if isinstance(solver, _DraftLiveSolver) and draft_attempts != 1:
+    if isinstance(solver, _DraftLiveSolver | _CoverLiveSolver) and draft_attempts != 1:
         return replace(solver, attempts=draft_attempts)
     return solver

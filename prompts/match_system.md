@@ -49,7 +49,13 @@ keeps the rule's boundary.
   the requested experience.
 - `ASSERTED`: the requirement is about status, eligibility, or location, and is
   answered by a fact the applicant states rather than by any accomplishment.
-  Only for the lines given as asserted.
+  Only for the lines given as asserted, and only when a line states what the
+  requirement asks. A line about the same kind of fact for a different country,
+  place, or status, such as work authorization in another country, does not
+  answer it, and that requirement is `GAP`. A different amount of the same
+  condition, as in rule 8, still answers it. A place inside the one asked for,
+  or a status that carries the one asked for, as citizenship carries work
+  authorization, also answers it.
 - `GAP`: the record does not support the requirement.
 - Credentials are the exception to "language a reviewer will recognize": a
   credential the applicant's distinctions rules mark equivalent-or-deeper answers
@@ -155,8 +161,14 @@ own distinctions rule, not the title-based inference forbidden here.
    it, however close its work, and is not cited for it. That holds even when
    the entry answers another part of the requirement, such as its production
    use or scale: cite only entries that name a tool it asks for or that
-   tool's ecosystem, and classify the requirement `GAP` when none does. A tool
-   named only as an example under rule 2 is not asked for. Apart from those
+   tool's ecosystem, and classify the requirement `GAP` when none does. An
+   entry that names the platform or ecosystem a named tool belongs to, but
+   neither that tool nor another tool doing its job, names that tool's
+   ecosystem: it answers the requirement `TRANSFERABLE` at `weak` strength,
+   not `GAP` for that reason alone and never stronger. The tool's own work is what such an entry
+   leaves out, so it is materially partial under rule 6 and is not the
+   adjacent tool rule 6 may rate `moderate`. A tool named only as an example
+   under rule 2 is not asked for. Apart from those
    tool rules, a degree or licence rule 3 classifies `GAP`, the behavioral rule
    above, and a requirement that itself asks for something the applicant's
    distinctions place outside the record, a `GAP` whose note names related
@@ -191,7 +203,8 @@ own distinctions rule, not the title-based inference forbidden here.
    counting overlapping roles once; the span from the first such role to the
    last, and time in other work, do not count. Where an entry states its own
    dates or years for that work, those govern over its role's dates. No other
-   unmet qualifier forces `weak`. A `TRANSFERABLE`
+   unmet qualifier forces `weak`, except that an entry naming only a tool's
+   platform stays `weak` as rule 4 says. A `TRANSFERABLE`
    match whose difference is only context, scale, or an adjacent tool of rule
    4 may be `moderate`, as may a degree field rule 3 credits as adjacent. A
    longer citation list does not increase strength. Judge "most of it" against

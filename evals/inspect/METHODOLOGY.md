@@ -100,6 +100,14 @@ split, never the other split's, so relabeling a held-out case leaves the order
 of development cases unchanged. The pool digest still covers both splits, so
 adding a candidate to either one changes every key in both.
 
+A whole posting is labeled the same way, one blind case per requirement, and
+frozen by a job manifest instead: `JobManifest` in `evals/inspect/selection.py`
+binds the posting's title, order, and importance, which candidates do not carry,
+with every requirement's resolved label and rulings, and
+`serialize_match_job_dataset` writes it as one `job_spec` row. Nothing is
+selected or held out of a posting. The run reports each requirement's agreement
+and whether the whole posting passed.
+
 A small dataset can expose a defect. It cannot support a precise population
 claim. Publish counts beside rates and report disagreement. Keep rare failure
 classes visible, even though a production stream would bury them.
@@ -420,9 +428,11 @@ names. It is not a lasting claim about the adapter or the provider.
   requirement. The other is a whole `job_spec` posting with several
   requirements, sent through one match call and scored per requirement by
   stable id (`evals/support/jobspec.py`).
-- Both shapes validate against the synthetic inventory in
-  `evals/support/inventory.py` by `cv_hash`. A dataset tied to any other
-  inventory needs its own inventory wiring before the harness can use it.
+- Both shapes validate by `cv_hash` against the inventory their manifest names:
+  the synthetic inventory or a tracked CV under `evals/cvs/`, resolved by
+  `inventory_for_hash` in `evals/support/inventory.py`. Every inventory is
+  judged against the synthetic guardrails, so their work authorization is the
+  asserted status for a tracked CV too.
 - The sample's own requirement ids are mapped onto the shipped r01..rNN
   vocabulary for the call and mapped back afterward. An outcome is credited only
   when the solver asserts `outcome_complete`: the live and scripted solvers set
@@ -432,10 +442,10 @@ names. It is not a lasting claim about the adapter or the provider.
   `gap_class` and `note`, and fails its frozen label rather than agreeing with
   it, so neither a paid row that returned nothing nor a replay row that was
   never written can inflate the agreement number.
-- The many-requirement path is exercised only by the scripted contract
-  (`match-scripted-multi`) and unit tests. No independently reviewed
-  many-requirement `golden` dataset is frozen, so live multi-requirement
-  scoring waits on one.
+- `match-job-live` scores one reviewed posting as one row against its own
+  labels, bound by a job manifest rather than the selection manifest, whose
+  frozen slots refuse cases sharing a source. No reviewed many-requirement row
+  is frozen yet, so the task has no dataset to run.
 - A document case's plan comes from a canned match answer the case writes, so a
   change to the match prompt cannot move a `draft`, `cover`, or `critic` result.
   Selection is still the shipped one.

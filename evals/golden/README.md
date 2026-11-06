@@ -62,6 +62,17 @@ read were the same cases in another order, and they stay in the private archive.
 so the receipts behind an `evals/RESULTS.md` row on an earlier manifest are not
 in the repository.
 
+## Match_job.jsonl record shape
+
+One reviewed posting per line, written only by `serialize_match_job_dataset` in
+`evals/inspect/selection.py`: the opaque source id as `id`, `cv_hash`, `split`,
+a `job_spec` the solver sees (title, company, location, and each requirement's
+case id, text, importance, and reviewed dimension, in posting order), and an
+`expected` list the scorer reads, one `requirement_id` with its
+`expected_classification` and `expected_strength` per requirement in the same
+order. A ruled requirement carries the index-paired lists described above.
+`.gitignore` does not yet publish this file.
+
 ## Relevance_review.jsonl record shape
 
 One record per line. Fields:

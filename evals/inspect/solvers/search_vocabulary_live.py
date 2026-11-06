@@ -19,7 +19,7 @@ from clearscout.application.discovery.search_vocabulary import (
     SearchVocabularyService,
     response_schema,
 )
-from clearscout.application.master_cv.cv import CvInventory, parse_cv
+from clearscout.application.master_cv.cv import CvInventory
 from clearscout.domain.search_parameters import (
     MAX_ARCHETYPES,
     MAX_CLUSTERS,
@@ -42,18 +42,15 @@ from evals.inspect.solvers.clearscout_live import (
     run_settings,
     sample_provenance,
 )
+from evals.support.inventory import tracked_cv
 
 SEARCH_VOCABULARY_PROMPTS = ("search_vocabulary_system", "search_vocabulary_user")
 BILLING_ORIGIN = "eval.search_vocabulary_live"
-CV_DIR = Path(__file__).resolve().parents[2] / "cvs"
 
 
 def case_inventory(sample: dict[str, Any]) -> CvInventory:
     """Return the parsed CV a sample names, refusing a path outside ``evals/cvs/``."""
-    path = (CV_DIR / str(sample["input"]["cv"])).resolve()
-    if path.parent != CV_DIR:
-        raise ValueError(f"sample {sample.get('id')!r} names a CV outside {CV_DIR}")
-    return parse_cv(path)
+    return tracked_cv(str(sample["input"]["cv"]))
 
 
 def case_parameters(sample: dict[str, Any]) -> JobSearchParameters:
