@@ -489,6 +489,23 @@ single-posting reader in `ingest/url/` both map through it, so the two reads
 cannot drift. A declaration holds field paths and references to typed
 derivation functions, and nothing conditional.
 
+A declaration's `posted` field names where the record states a posted date and
+grades it (`PostedDateGrade` in `domain/staged_facts.py`). `FIRST_POSTED` means
+the field states first publication. `BOARD_DATE` means only the board's own
+date, such as an opening or start date, which can move when the employer
+reposts. A platform whose records state no posted date says why in
+`_UNDATED_BY_DESIGN` in `tests/loop/test_adapter_completeness.py`, and that
+test fails a platform that neither declares a date nor gives a reason.
+
+The posted date is a staged fact. `merged_posted_date` keeps the earliest
+usable statement, preferring a first-posted grade, and records each read's
+statement as the latest, so a later date reports a repost. A pass that reads
+the same value twice on one day counts once. The kept date is withheld from
+sorting and filtering when it is unreadable, repeats the read day with another
+year, or changed on every one of three or more reads. A posting's own detail
+page carries its date into the row only from a read whose identity verified
+(`_take_posted_date` in `application/discovery/content_resolution/store.py`).
+
 A work arrangement is always a derivation, never a path. A publisher value goes
 through its platform's rule, including the check that leaves a hybrid or
 on-site value unresolved when the posting also offers remote work. A retained

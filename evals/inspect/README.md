@@ -58,7 +58,7 @@ the labels in `evals/golden/relevance_review.jsonl`.
   ```bash
   scripts/eval.sh --live evals/inspect/tasks/match_live_task.py \
     --data-root <root> --limit <manifest-cases> --split development --provider <provider> \
-    --i-approve 0.56 --output-dir <private-path> --selection-manifest <private-path> \
+    --i-approve <usd> --output-dir <private-path> --selection-manifest <private-path> \
     --selection-manifest-sha256 <semantic-sha256> \
     --selection-manifest-bytes-sha256 <exact-bytes-sha256>
   ```
@@ -84,6 +84,30 @@ names the workspace whose recorded calls price the estimate and whose master CV
 `--cv-version` reads. For `relevance_review`, `--render-only <private-dir>`
 writes every batch a run would send and calls no provider. The usage block of
 `scripts/eval.sh` lists the rest.
+
+## Smoke stage and trials
+
+A `--live` run of more than one call first smokes the selected samples through
+the same solver and scorer, in order, until one makes a paid call. A case whose
+output carries no provider measurement is scored, kept as its first row, and
+the walk moves on (`smoke: unpaid case=<id>`). The smoke fails, and the run
+stops, when the solver raises, when the output lacks a field the scorer
+declares in its `required_fields`, when the scorer raises or returns no value,
+when a paid measurement carries no dollars or no prompt usage, when that one
+call cost more than the approval, or when no selected case made a paid call.
+A failed smoke output is kept in the partial receipt. A passing call prints
+`smoke: ok` with its projected cost and is reused as that sample's first trial,
+so it is not paid twice; a projection over the approval only warns.
+`--no-smoke` skips the stage, and batching solvers skip it. `_smoke` in
+`runner.py` is the rule.
+
+`--trials N` runs every selected sample N times per prompt arm against one
+approval. With N above one the solver sets a repeat hint, and the adapters mark
+the task block for the provider cache, so later trials of a sample read it
+from cache; the log's `usage` rollup reports `cache_share_by_trial`.
+
+Each task names its scorer from `scorers/`; the module list there is the set
+of scorers.
 
 ## The document families
 
@@ -123,7 +147,7 @@ selection manifest:
 ```bash
 scripts/eval.sh --live evals/inspect/tasks/draft_live_task.py \
   --data-root <root> --limit 6 --split development --provider <provider> \
-  --i-approve 0.20 --output-dir <private-path>
+  --i-approve <usd> --output-dir <private-path>
 ```
 
 Swap in `cover_live_task.py` or `critic_live_task.py` with that family's case

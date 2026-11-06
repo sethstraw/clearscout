@@ -30,10 +30,12 @@
 #     --selection-manifest-bytes-sha256 <sha256>] [--dataset <private-path>]
 #     --dataset runs the task on that JSONL instead of its tracked fixture, and the
 #     run records that file's sha256.
-#     A run of more than one call first smoke-tests the first sample once through
-#     the same solver and scorer, prints 'smoke: ok' with the projected cost or
-#     'smoke: failed <reason>', and stops on a failure; the passing call is reused
-#     as that sample's first trial. --no-smoke skips it; batching solvers skip it.
+#     A run of more than one call first smoke-tests samples in order through the
+#     same solver and scorer until one makes a paid call, failing on an output
+#     that lacks a field the scorer requires. It prints 'smoke: ok' with the
+#     projected cost or 'smoke: failed <reason>', and stops on a failure; the
+#     passing call is reused as that sample's first trial. --no-smoke skips it;
+#     batching solvers skip it.
 #     --model sends that model on the task's own stage instead of the shipped
 #     one, and the estimate reads only that model's history.
 #     --effort does the same for the stage's effort level, which the model must

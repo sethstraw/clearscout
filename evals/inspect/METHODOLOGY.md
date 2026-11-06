@@ -42,7 +42,8 @@ any available cost estimate are recorded for every returned result.
 the shipped readers, checks, selection code and scorers. So the baselines are a
 deterministic regression suite. They move when a reader, a check, a template or
 a scorer changes, which is why a drifted reader fails a comparison instead of
-reporting an incomparable result.
+reporting an incomparable result. `python -m evals --record-baselines` is the
+only path that rewrites them; `evals/README.md` describes recording.
 
 They do not move when model quality moves, because no model is in the loop. The
 number of baseline files is not a measure of model coverage. Only `--live`

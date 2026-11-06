@@ -9,6 +9,8 @@ Each lesson stands alone and comes from a real incident in this repository. The
 numbers describe the software, its tests, and its evals. Counts from the
 maintainer's own job search appear only as rates or are left out.
 [How it was built](contributing/agent-workflow.md) shows the agent setup itself.
+Lessons about the program's own model pipelines, its evals, grounding, and
+spend, are in [Agentic workflows](agentic-workflows.md).
 
 ## Building with AI agents
 
@@ -208,313 +210,7 @@ old name. Re-baseline eval comparisons on purpose.
 **Open.** Archives and compatibility code keep the old name by design. Agents
 still read it there, so it keeps showing up in their work.
 
-## Evals and LLM quality
-
-[evals/FINDINGS.md](../evals/FINDINGS.md) holds the run-by-run detail. The
-lessons below are the parts that apply beyond this project.
-
-### An eval can run green while measuring nothing
-
-**What was tried.** The first live run of all four eval families reported
-success.
-
-**What the numbers showed.** Reading the stored logs turned up 14 defects, most
-in the harness. A missing match outcome scored as correct. A scorer read a
-field the program leaves null on purpose. Six "cases" were one input repeated.
-A billing call inside `finally` threw away a paid result. All 48 stored
-baselines were scripted canned answers, so they could catch a code regression
-but never a worse model answer. A critic scorer always returned True, and a
-critic that failed everything still scored 6 of 9 in a rebuilt scorer.
-
-**What we concluded.** After every paid run, read samples one at a time and ask
-what each number means. Count distinct inputs, not rows. Label each eval mode
-by the question it can answer: replay, scripted, or live. Pair every planted
-defect with a clean control, so a judge that doubts everything fails.
-
-**Open.** [METHODOLOGY.md](../evals/inspect/METHODOLOGY.md) states what each
-mode cannot measure.
-
-### One run of a judge is an anecdote
-
-**What was tried.** The fabrication critic, the last check before an
-application goes out, ran 18 times on one unchanged document with a real
-distortion.
-
-**What the numbers showed.** It caught the distortion 7 times: 38.9%, Wilson
-95% interval 0.20 to 0.61. Each verdict either saw it or did not, so a looser
-threshold would not help. The fix made the critic able to sample several times
-and fail the draft on any doubt. Building it showed the provider response cache
-was keyed on content alone, so three identical calls returned one answer. A
-test that counts real provider calls failed `1 == 3` against the old code. On
-the next model, one draw caught every planted defect on every draw, and three
-draws only turned a one-in-three false doubt into a sure fail, so the shipped
-default stays at one draw.
-
-**What we concluded.** Run a judge many times on one fixed input and report an
-interval. If verdicts split cleanly, sample several times and union them.
-Test that each sample really reaches the provider. Write down what the evidence
-supports separately from what it does not.
-
-**Open.** The projected 77% catch rate at three samples is arithmetic, never
-measured. A new rule that scored 1.000 on a 10-row set with no held-out split
-shows the rule fires, not that it generalizes.
-
-### Test the check before you change the prompt
-
-**What was tried.** Nine drafting runs passed, then the next three failed the
-same checks.
-
-**What the numbers showed.** The failures started the day a list-length counter
-shipped. It counted commas across whole clauses, so an ordinary three-item list
-scored 5 or 6. The drafter was told to cut a list it had not written. About
-1,000 unit tests passed while live output tripped the checks, and eight paid
-runs failed on false positives. Two checks contradicted each other: one
-required a figure copied exactly, and the other flagged the copy.
-
-**What we concluded.** Line up the date failures began with the commit history.
-Ship every check change with a labelled synthetic corpus, a joint test showing
-honest items pass all checks together, and a free replay over stored real
-output. Decide on purpose which checks block and which only warn.
-
-**Open.** A warning never triggers a redraft, so a warning-level echo survived
-two rounds. That is a stated limit: copying cited evidence verbatim is the
-safest behavior against fabrication.
-
-### Gold labels can be wrong, and model labellers are not independent
-
-**What was tried.** Hand-made fixtures and model-annotated gold sets were
-treated as ground truth.
-
-**What the numbers showed.** The live critic scored 7 of 10, but it had judged
-all 10 correctly: three "clean" fixtures held real unsupported claims. A reader
-gold set showed alpha 0.973 between two blind annotators, but both were the
-same model on the same instructions, and 106 of 631 shared reasons were
-word-for-word identical. The match gold set went through about ten relabel
-rounds, because each rubric edit shifted other borderline labels.
-
-**What we concluded.** Check each scored miss against the source before
-touching the prompt. Record that model annotators share a model. Settle
-disagreements under written principles, and have a human review the rulings.
-Freeze the rubric by digest during each prompt cycle, and allow one relabel per
-cycle. A user's correction is calibration data, never gold.
-
-**Open.** The agent session made the adjudication rulings, under written
-principles, for the maintainer to review afterwards.
-
-### Read your prompt the way the model reads it
-
-**What was tried.** A relevance prompt said to prefer "investigate" when a
-deciding fact was missing. That sentence was the last line of its section.
-
-**What the numbers showed.** An earlier "choose the first that applies" list
-put `core_gap` ahead of `insufficient_posting`, so the model reached it first.
-After a reorder and a new line ("posting silence is not a missing
-qualification"), 0 of 43 later `core_gap` verdicts carried an open question.
-In another run the maintainer disputed about a quarter of the "unlikely"
-verdicts. All of them matched an excluded kind of work by its head noun and
-dropped the qualifier. A rewording cut failures from 23 of 39 to 10 of 39 but
-moved a control, so it did not land.
-
-**What we concluded.** An explicit ordering beats a later sentence of caution.
-Have the domain owner dispute real outputs, and group the disputes by
-mechanism. Fix structure (order, definitions) rather than adding emphasis. Ask
-a negative verdict, in the prompt, to cite the evidence it weighed. Re-run a
-small batch with control rows that should not move.
-
-**Open.** Prompt wording could not enforce the head-noun class. A code
-validator requiring cited ids was rejected, because it invites fabricated
-citations.
-
-### Show each stage the rules it is judged by
-
-**What was tried.** A paid cassette reseal failed on the critic's preservation
-score, so the obvious moves were a looser floor or more redrafts.
-
-**What the numbers showed.** Every low draw named a line the program copies
-verbatim from the CV, such as the name line. No redraft could change those
-lines. The block telling the critic which lines were program-copied listed only
-four kinds. The merge step read scores from the first draw alone. Preservation
-had 0 false lows in 79 cached draws, so it keeps the minimum. Alignment failed
-on 2 of 79 draws, so it takes the median.
-
-**What we concluded.** For every check, find where its rule appears in the
-checked stage's prompt. If it is not there, add it or drop the check. Pass
-program-copied lines to the judge marked as asserted. Choose the merge
-statistic per axis from measured per-draw error rates, and keep every draw.
-
-**Open.** [Architecture](architecture.md) records more cases of the same kind:
-a stage judged on text or distinctions it was never shown.
-
-### Rule out the setting before the third prompt rewrite
-
-**What was tried.** A new match rule regressed two cases at low reasoning
-effort, and one wording fix recovered one.
-
-**What the numbers showed.** Before another rewrite, a control at medium effort
-with the same prompt scored 39 of 39. At low effort the model spent zero
-reasoning tokens on the failing case. A newer model scored 54 of 57 against 57
-of 57 for 25% less, and all three misses were one case answered the same way on
-every trial.
-
-**What we concluded.** Treat effort and model as variables to rule out first.
-Look at reasoning tokens on the hard cases and at per-draw catches, not the
-aggregate. When you accept a cheaper model, write down exactly which case you
-gave up. [FINDINGS.md](../evals/FINDINGS.md#reasoning-effort-as-a-lever) has
-the paired runs.
-
-**Open.** Medium effort masks the literal reading rather than removing it.
-
-### Eval effort lands where testing is easy, not where the risk is
-
-**What was tried.** The offline eval reported "37 case(s) match their
-baselines" after a prompt rewrite.
-
-**What the numbers showed.** Six of eleven prompt families had no case at all.
-A coverage audit joined each family to its spend. The guided search stage was
-77.6% of all spend with zero eval cases. The first audit counted text mentions,
-so "match" scored 91 files because it is an English word. One prompt edit would
-have invalidated all 45 baselines, inviting a mass re-record that hides
-regressions.
-
-**What we concluded.** Rank eval work by spend and by how hard a wrong answer is
-to spot. Require every prompt to be covered or listed as uncovered with a
-reason; `evals/runner.py` keeps that list. Mutation-test each new case: delete
-its rule and confirm it goes red. Fingerprint each case over only the stages it
-reaches.
-
-**Open.** Web search has no offline eval. No recorded case can judge real search
-results.
-
-### The exact request decides what you measure and what you pay
-
-**What was tried.** Caching was switched on and assumed to work. The eval
-harness sent one posting per call because that was easier to write.
-
-**What the numbers showed.** One stage wrote 60,768 cache tokens and read back
-none, because shared evidence sat in the per-call part of the request. A
-response schema listed that run's ids, so every prefix was unique and 576,180
-tokens were written that a stable prefix would have read. A two-sentence
-docstring edit on a response model changed every request digest and broke the
-recorded cassettes. The one-per-call harness cost about four times as much as
-production batching and could never reproduce batch-mode errors.
-
-**What we concluded.** Log cache reads and writes per call and compare them per
-stage. Put stable instructions, evidence, and schema first, and check per-run
-ids in code. Treat schema docstrings as prompt text. Have the harness render the
-full production request before any paid run.
-
-**Open.** Each cassette reseal costs money, so reseals come last in a cycle.
-
-## Product design
-
-### Make fabrication impossible to express
-
-**What was tried.** Program-owned facts and closed lists of real evidence ids,
-in place of an instruction to "only use the provided evidence".
-
-**What the numbers showed.** Every CV entry gets an id derived from its content.
-Response schemas are built at runtime as closed lists over those ids. The
-program copies titles, employers, dates, degrees, and citations verbatim. Code
-checks every cited id against the run's selected evidence and every quote
-against the stored posting. On one queue review, 493 of 493 cited CV ids and
-587 of 587 posting citations held. Models still tried to invent: participation
-upgraded to delivery, a draft crediting the model's own "reasoning", and an
-invented posting id. The checks caught each one.
-
-**What we concluded.** Let the program own the facts. Let the model choose,
-order, and rephrase. Enforce citations in the schema, check provenance in code,
-and report "verified" and "good" as two measures.
-
-**Open.** "Verified" is a floor. A cheaper model passed it while scoring a point
-lower on three critic axes. The design makes some failures impossible and
-others easy to see, which is why human review stays part of the product.
-
-### Anti-fabrication fails where code silently fills a provenance field
-
-**What was tried.** A fallback kept the screen from looking empty. When code
-could not find a requirement's text in the posting, it quoted the posting's
-first 240 characters.
-
-**What the numbers showed.** A requirement for a specific tool showed the
-company's "About us" paragraph as what the posting asked for. A census found
-the fallback on about two thirds of requirement rows. The checks for unanswered
-requirements had fired on none of them. A sibling defect gave an evidence
-anchor a default classification of direct and moderate. Separately, a commit
-step used `model_title or stored_title`, so the model's title won whenever it
-returned one, including the literal heading "The Role". The first fix covered
-only the ledger; the report, the file name, and the drafts kept the model's
-title until a second fix. A suite of over 37,000 Python tests passed throughout.
-
-**What we concluded.** Run a census over stored output for the fallback's
-signature before trusting what a screen claims. When an anchor misses, store
-nothing and say so. Never give a provenance field a default. Before calling a
-provenance fix done, list every reader of the field.
-
-**Open.** The README once said every requirement quotes the posting, which
-overstated the code. A large green suite is not proof a promise holds.
-
-### Replay a rule change over every real input you hold
-
-**What was tried.** Adding "work from anywhere" to the remote vocabulary, to
-recover remote roles.
-
-**What the numbers showed.** A benefits line ("the opportunity to work from
-anywhere") outranked a board's own "Hybrid" tag. Across 184 stored postings the
-phrase changed one reading, and that change was wrong. The rows it was meant to
-rescue numbered 0, so the change was reverted. A job-board URL fix was accepted
-on the same kind of table: "USA---City-GA" had been read as the US plus Gabon.
-The fix changed about 15% of stored URLs, every change toward the right
-country.
-
-**What we concluded.** Use a before-and-after table as the acceptance evidence:
-newly correct, newly wrong, unchanged. Revert when the gain is zero. Copy string
-shapes from real payloads into synthetic fixtures. Test each changed pattern
-against a generated matrix of surface forms: spelled numbers, dashes,
-abbreviations, and non-breaking spaces.
-
-**Open.** Benefits and marketing text use the same words with a different
-meaning. A replay is only as wide as the stored inputs.
-
-### Treat money as an estimate and a record, never a gate
-
-**What was tried.** A $1.00 per-run spend limit.
-
-**What the numbers showed.** A web search made 6 calls costing $1.04, refused
-the seventh, and failed the task, discarding all six paid results. Typical
-runs sat near the limit, so it was sure to trip again. Exact caps then refused
-whole classes of request. The spending ledger had its own failures: four paid
-paths billed without writing a row, a dated served-model name left most calls
-in one demo unpriced, and a partial price override made cached reads 5 times
-too expensive.
-
-**What we concluded.** Ask for approval with an estimate. Record actual usage in
-its own transaction before anything else can fail. Keep partial paid results.
-Show partial totals with a count of unpriced calls. Price by the model actually
-served, and stop only on hard provider errors. Run unattended work on the
-cheaper low-priority tier.
-
-**Open.** A few early cost rows were rebuilt from a table a model wrote, so
-those totals are estimates, not measurements.
-
-### Run a rule-based reader beside the model and report them apart
-
-**What was tried.** A fit reader that takes level, years, degree, location,
-management, and must-have versus preferred from the raw posting text, with no
-model.
-
-**What the numbers showed.** It answers "not stated" when unsure. It reads the
-raw text, not the model's extraction, because a rule reading of a summary only
-measures the summary. Its taxonomy covers more than 70 role families, and
-fewer than 10 of more than 500 terms are single words. Rounds 7, 8, and 9 each
-fixed the last replay's defects and introduced a smaller new class.
-
-**What we concluded.** Pair each model judgment with a cheap reading that may
-abstain. Print both side by side with their quotes, with no precedence and no
-averaging. Their disagreements are the rows a person should review.
-[Architecture](architecture.md) explains the design.
-
-**Open.** The reader was frozen after round 10. A rule change now may only fix a
-false rejection.
+## Product and process
 
 ### A written "synthetic only" rule does not keep real data out
 
@@ -557,21 +253,38 @@ not clean up what admission let in.
 
 ## If you build something similar
 
-These are opinions, each backed by a lesson above.
+These are opinions. Each links the lesson above that backs it.
 
-- Turn a repeated correction into a check that runs on the write.
-- Verify an agent's claim with a command or a query before it becomes the
-  record.
-- Run the query that could disprove a finding before you file or fix it.
-- Review each agent's diff when it hands back, and list the assertions it
-  changed.
-- Feed every safety check the case it should block.
-- Give each file one writer, each agent its own scratch path, and enforce git
-  rules with hooks.
-- Write the stop rule before the fix loop starts.
-- Read eval samples one at a time, and pair every planted defect with a clean
-  control.
-- Let the program own the facts, and make the model cite ids that code checks.
-- Replay a rule change over every stored input before accepting it.
-- Keep real data out of agent tasks, then sweep for it anyway before you
-  publish.
+- After the third identical correction, stop adding instructions and build a
+  check that runs on the write and names the file and line.
+  ([lesson](#more-instructions-did-not-stop-a-repeated-agent-mistake))
+- Treat an agent's report, a confident tone, and an exit code as leads. Confirm
+  each with a command, a query, or the log before it becomes the record.
+  ([lesson](#treat-an-agents-report-as-a-lead-to-check))
+- Before you file or fix a finding, run the one query that could prove it
+  false, and put its count in the finding.
+  ([lesson](#run-the-query-that-could-kill-the-premise-first))
+- Review each agent's diff when it hands back, and treat every assertion it
+  flipped or deleted as a product decision.
+  ([lesson](#a-green-gate-is-not-a-review))
+- Feed every safety check the case it should block and watch it refuse; a
+  check that has never fired is unproven.
+  ([lesson](#a-safety-check-that-has-never-fired-may-be-unable-to-fire))
+- Budget by agent count, not by model price: every agent re-reads its context
+  on every request. Use one reviewer per round and one auditor per list.
+  ([lesson](#the-bill-comes-from-agents-re-reading-context))
+- Give each file surface one writer and each agent its own scratch path, and
+  enforce the git rules with hooks rather than instructions.
+  ([lesson](#parallel-agents-in-one-checkout-will-damage-each-others-work))
+- Write the stop rule into the fix loop before it starts, and land what is
+  accepted when it fires.
+  ([lesson](#a-fix-loop-with-no-stop-rule-does-not-converge))
+- Plan a rename as a data migration: list every place the name is stored, and
+  migrate each with a check.
+  ([lesson](#renaming-a-project-with-agents-is-a-data-migration))
+- Give agents synthetic shapes, never live text, and sweep for real data
+  against the private sources before you publish anyway.
+  ([lesson](#a-written-synthetic-only-rule-does-not-keep-real-data-out))
+- Keep everything recoverable, but send a person only the rows with real
+  evidence; apply definite gates at admission.
+  ([lesson](#keep-record-it-separate-from-ask-a-human-about-it))

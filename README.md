@@ -349,8 +349,10 @@ The same habit runs through the rest of the program:
   decides whether to open it.
 - The server binds to loopback only, and a provider key never reaches the
   browser.
-- The live OpenAI run is committed as a cassette and replayed through the real
-  SDK in the offline suite.
+- One live OpenAI tailoring run of a synthetic CV and posting is committed as a
+  cassette and replayed through the real SDK in the offline suite. It covers
+  that run's requests only, and any change to the prompts, fixtures, or request
+  shape invalidates it until it is re-recorded.
 
 Abstention is the feature. An analyzer that says "not stated" three times in
 ten is a better instrument than one that always answers. Those three rows are
@@ -436,6 +438,7 @@ that it will help someone else get hired.
 - [How it was built](docs/contributing/agent-workflow.md) and
   [AI-assisted development](docs/contributing/ai-assisted-development.md).
 - [Building with agents](docs/building-with-agents.md): lessons from building ClearScout with AI coding agents.
+- [Agentic workflows](docs/agentic-workflows.md): lessons from ClearScout's LLM pipelines, evals, grounding, and spend.
 - [Storage and portability](docs/storage-and-portability.md) and
   [support](.github/SUPPORT.md).
 
