@@ -4108,6 +4108,110 @@ def test_a_fresh_continuation_keeps_protected_postings_and_their_content_read_ti
             assert disposition.origin == "test"
 
 
+@pytest.mark.parametrize("fresh", [True, False], ids=["fresh", "ordinary"])
+def test_a_fresh_continuation_reads_a_held_rows_content_again_and_stages_its_posted_date(
+    durable_database: Database, fresh: bool
+) -> None:
+    """Content held from before a fresh scan is read again where its continuation stages it."""
+    from clearscout.application.discovery.posting_text import publisher_posted_date
+    from clearscout.domain import PostingContentExtractionMethod, PostingIdentityStatus
+    from clearscout.domain.staged_facts import PostedDateGrade, StagedListingFacts
+
+    workspace_id = _workspace(durable_database)
+    state_target_titles(durable_database, workspace_id, "Data Platform Lead")
+    board_url = "https://jobs.example/globex"
+    source_id = _source(durable_database, workspace_id, "Globex", board_url)
+    listed, held = f"{board_url}/listed", f"{board_url}/held"
+    _stage_known_rows(durable_database, workspace_id, source_id, (held,))
+
+    class DatingResolver:
+        def __init__(self, fetched_at: datetime, dated: bool) -> None:
+            self.fetched_at, self.dated = fetched_at, dated
+            self.urls: list[str] = []
+
+        def resolve(self, url: str, **_kwargs: Any) -> ResolvedPostingContent:
+            self.urls.append(url)
+            return ResolvedPostingContent(
+                requested_url=url,
+                final_url=url,
+                content_status=PostingContentAccessStatus.READABLE,
+                identity_status=PostingIdentityStatus.VERIFIED,
+                posting_status=PostingStatus.ACTIVE,
+                extraction_method=PostingContentExtractionMethod.STATIC_HTML,
+                fetched_at=self.fetched_at,
+                content=b"Data Platform Lead\nBuild the clinical data platform.",
+                http_status=200,
+                publisher_markup_present=True,
+                identity_evidence={"publisher_declaration": True},
+                note="Verified publisher body.",
+                publisher_posted_date=publisher_posted_date(
+                    "2026-08-20",
+                    basis="greenhouse.first_published",
+                    grade=PostedDateGrade.FIRST_POSTED,
+                )
+                if self.dated
+                else None,
+            )
+
+    storage = runtime_storage(durable_database)
+    with durable_database.session() as session:
+        held_id = session.scalars(
+            select(PendingDiscovery.id).where(PendingDiscovery.discovery_url == held)
+        ).one()
+    PostingContentResolutionService(
+        durable_database,
+        DatingResolver(utc_now() - timedelta(days=1), dated=False),
+        storage=storage,
+    ).resolve_automatic(workspace_id, [held_id], origin="source.scan")
+
+    resolver = DatingResolver(utc_now(), dated=True)
+    content = PostingContentResolutionService(durable_database, resolver, storage=storage)
+    board = _DrainingBoard(listed, held, (held,))
+    scan_handler = SourceScanHandler(
+        durable_database,
+        storage=storage,
+        fetcher=board,
+        posting_fetcher=UnexpectedPostingFetcher(),
+        content_resolution=content,
+    )
+    worker = Worker(
+        durable_database,
+        worker_id="held-continuation",
+        handlers={
+            "source.scan": scan_handler,
+            "source.continue": SourceContinuationHandler(
+                durable_database,
+                board,
+                scan_handler.service.sweep,
+                lambda workspace_id, task_id, outcomes: scan_handler.service.record_task_outcomes(
+                    workspace_id, task_id, outcomes, origin="source.continue"
+                ),
+                scan_handler.service.begin_recording_pass,
+            ),
+        },
+    )
+    TaskQueueService(durable_database).enqueue(
+        workspace_id=workspace_id,
+        task_type="source.scan",
+        payload={"source_ids": [source_id], "fresh_details": fresh},
+        idempotency_key="held-continuation",
+    )
+    for _ in range(4):
+        if not worker.run_once():
+            break
+    else:
+        raise AssertionError("the source batch did not drain")
+
+    assert board.continue_calls == 1
+    assert resolver.urls.count(held) == int(fresh)
+    with durable_database.session() as session:
+        row = session.get_one(PendingDiscovery, held_id)
+        posted = StagedListingFacts.from_json(row.staged_facts).posted_date
+    assert (posted.earliest.normalized_value if posted else None) == (
+        "2026-08-20" if fresh else None
+    )
+
+
 @pytest.mark.parametrize("mode", ["reuse", "fresh", "failed_fresh"])
 def test_only_a_successful_fresh_detail_read_replaces_the_retained_body_and_read_time(
     durable_database: Database, monkeypatch: pytest.MonkeyPatch, mode: str

@@ -6,9 +6,10 @@ import hashlib
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from clearscout.application.discovery.content_resolution.current import CurrentPostingContentReader
@@ -138,11 +139,13 @@ class PostingContentResolutionService:
         origin: str,
         prefetched: Mapping[str, PrefetchedContent] | None = None,
         require_source_read: Callable[[Session], None] | None = None,
+        reread_before: datetime | None = None,
     ) -> dict[str, Any]:
         """Persist current content for every unresolved target without a user batch step.
 
         A target whose address and identity match a ``prefetched`` read takes that
-        read instead of reading the posting again.
+        read instead of reading the posting again. Retained content fetched before
+        ``reread_before`` is read again.
         """
         ordered_ids = list(dict.fromkeys(pending_discovery_ids))
         state = _AutomaticResolution(selected=len(ordered_ids))
@@ -151,6 +154,7 @@ class PostingContentResolutionService:
             ordered_ids,
             state,
             correlation_id=context.task_id if context is not None else None,
+            reread_before=reread_before,
         )
         self._resolve_automatic_targets(
             workspace_id,
@@ -193,6 +197,7 @@ class PostingContentResolutionService:
         state: _AutomaticResolution,
         *,
         correlation_id: str | None,
+        reread_before: datetime | None,
     ) -> list[StoredTarget]:
         targets = [
             target
@@ -211,6 +216,20 @@ class PostingContentResolutionService:
                     )
                 )
             }
+            # Kept-aside bodyless reads count, since they leave the held body current.
+            last_read: dict[str, datetime] = dict(
+                session.execute(
+                    select(
+                        PendingPostingContent.pending_discovery_id,
+                        func.max(PendingPostingContent.fetched_at),
+                    )
+                    .where(
+                        PendingPostingContent.workspace_id == workspace_id,
+                        PendingPostingContent.pending_discovery_id.in_(ordered_ids),
+                    )
+                    .group_by(PendingPostingContent.pending_discovery_id)
+                ).all()
+            )
             dismissed_by_body = {
                 event.pending_discovery_id
                 for event in session.scalars(
@@ -229,10 +248,17 @@ class PostingContentResolutionService:
                 retained = self.current.read(workspace_id, target.id)
             except ValidationError:
                 retained = None
-            if retained is None or (
-                target.id in dismissed_by_body
-                and current.get(target.id) is not None
-                and current[target.id].correlation_id != correlation_id
+            if (
+                retained is None
+                or (
+                    reread_before is not None
+                    and last_read.get(target.id, retained.fetched_at) < reread_before
+                )
+                or (
+                    target.id in dismissed_by_body
+                    and current.get(target.id) is not None
+                    and current[target.id].correlation_id != correlation_id
+                )
             ):
                 unresolved.append(target)
             else:

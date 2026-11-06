@@ -9,7 +9,7 @@ from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Literal
 
 import httpx
@@ -607,11 +607,13 @@ class BoardSweep:
         remaining_seconds: Callable[[], float] = lambda: math.inf,
         require_live: Callable[[], None] = lambda: None,
         require_source_read: Callable[[Session], None] | None = None,
+        reread_before: datetime | None = None,
     ) -> dict[str, Any]:
         """Apply the board-sweep screening and staging policy to a partial read.
 
         Each staging write waits for its turn no longer than `remaining_seconds` says,
         and `require_live` raises to stop the content writes that follow staging.
+        Held content fetched before `reread_before` is read again.
         """
         parameters = self.parameters.current(workspace_id)
         targets = self._collect_targets(workspace_id, parameters)
@@ -688,6 +690,7 @@ class BoardSweep:
             context,
             origin="source.continue",
             require_source_read=require_source_read,
+            reread_before=reread_before,
         )
         body_screened = body_screened_listings(
             self.database, workspace_id, resolvable, placed, origin="source.continue"
@@ -831,6 +834,11 @@ class BoardSweep:
             origin="source.scan",
             prefetched=lane.prefetched,
             require_source_read=require_source_read,
+            reread_before=self._fresh_scan_start(
+                context.task_id if context is not None else correlation_id
+            )
+            if board.fresh_details
+            else None,
         )
         body_screened = body_screened_listings(
             self.database, workspace_id, resolvable, placed, origin="source.scan"
@@ -1036,6 +1044,7 @@ class BoardSweep:
         origin: str,
         prefetched: dict[str, PrefetchedContent] | None = None,
         require_source_read: Callable[[Session], None] | None = None,
+        reread_before: datetime | None = None,
     ) -> dict[str, Any]:
         """Persist free current content before a newly staged row reaches the queue."""
         if ids:
@@ -1061,7 +1070,14 @@ class BoardSweep:
                 origin=origin,
                 prefetched=prefetched,
                 require_source_read=require_source_read,
+                reread_before=reread_before,
             )
+
+    def _fresh_scan_start(self, root_task_id: str | None) -> datetime | None:
+        """Return when the fresh scan behind this root began, or None for an ordinary scan."""
+        with self.database.session() as session:
+            fresh_root = fresh_root_task(session, root_task_id)
+            return fresh_root.created_at if fresh_root is not None else None
 
     def _visible_addresses(self, workspace_id: str, ids: list[str]) -> dict[str, str]:
         """Map active, unprotected rows to their current read addresses."""

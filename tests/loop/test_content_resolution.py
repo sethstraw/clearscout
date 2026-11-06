@@ -3960,6 +3960,88 @@ def test_a_retained_publisher_probe_carries_the_posted_date_its_check_states() -
     assert result.publisher_posted_date == check.facts.posted_date
 
 
+@pytest.mark.parametrize(
+    ("reread_before", "read_again"),
+    [
+        (datetime(2026, 9, 2, tzinfo=UTC), True),
+        (datetime(2026, 8, 28, tzinfo=UTC), False),
+        (None, False),
+    ],
+    ids=["fetched-before-cutoff", "fetched-at-cutoff", "no-cutoff"],
+)
+def test_an_automatic_pass_reads_held_content_again_only_when_fetched_before_its_cutoff(
+    durable_database: Database,
+    tmp_path: Path,
+    reread_before: datetime | None,
+    read_again: bool,
+) -> None:
+    """A fresh scan reads content held from before it began, and nothing read since."""
+    workspace_id, pending_id, url = _pending(durable_database, tmp_path)
+    _resolve(durable_database, tmp_path, workspace_id, pending_id, url, _PLACELESS_BODY)
+    resolver = ScriptedResolver(
+        [
+            replace(
+                _readable(url, _PLACELESS_BODY),
+                fetched_at=datetime(2026, 9, 2, 9, tzinfo=UTC),
+                publisher_posted_date=publisher_posted_date(
+                    "2026-08-20",
+                    basis="greenhouse.first_published",
+                    grade=PostedDateGrade.FIRST_POSTED,
+                ),
+            )
+        ]
+    )
+    service = PostingContentResolutionService(
+        durable_database, resolver, storage=runtime_storage(durable_database, tmp_path)
+    )
+
+    report = service.resolve_automatic(
+        workspace_id, [pending_id], origin="source.scan", reread_before=reread_before
+    )
+
+    posted = _staged_posted(durable_database, pending_id)
+    assert (report["attempted"], report["retained"]) == ((1, 0) if read_again else (0, 1))
+    assert (posted.earliest.normalized_value if posted else None) == (
+        "2026-08-20" if read_again else None
+    )
+
+
+def test_a_bodyless_reread_under_a_cutoff_is_not_repeated_by_a_later_pass(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    """A fresh scan's blocked re-read counts as its read, and the held body stays current."""
+    workspace_id, pending_id, url = _pending(durable_database, tmp_path)
+    _resolve(durable_database, tmp_path, workspace_id, pending_id, url, _PLACELESS_BODY)
+    with durable_database.session() as session:
+        held_content_id = session.get_one(PendingDiscovery, pending_id).current_content_id
+    blocked = ResolvedPostingContent(
+        requested_url=url,
+        final_url=None,
+        content_status=PostingContentAccessStatus.ACCESS_BLOCKED,
+        identity_status=PostingIdentityStatus.NOT_YET_VERIFIED,
+        posting_status=None,
+        extraction_method=None,
+        fetched_at=datetime(2026, 9, 2, 9, tzinfo=UTC),
+        http_status=403,
+        note="The publisher refused the read.",
+    )
+    cutoff = datetime(2026, 9, 2, tzinfo=UTC)
+    storage = runtime_storage(durable_database, tmp_path)
+    first = PostingContentResolutionService(
+        durable_database, ScriptedResolver([blocked]), storage=storage
+    ).resolve_automatic(workspace_id, [pending_id], origin="source.scan", reread_before=cutoff)
+    later = ScriptedResolver([_readable(url)])
+
+    second = PostingContentResolutionService(
+        durable_database, later, storage=storage
+    ).resolve_automatic(workspace_id, [pending_id], origin="source.continue", reread_before=cutoff)
+
+    assert first["attempted"] == 1
+    assert (second["attempted"], second["retained"], later.calls) == (0, 1, [])
+    with durable_database.session() as session:
+        assert session.get_one(PendingDiscovery, pending_id).current_content_id == held_content_id
+
+
 @pytest.mark.parametrize("field", ["employer", "title"])
 def test_resolution_binds_presented_identity_fields_in_snapshot(
     durable_database: Database, tmp_path: Path, field: str

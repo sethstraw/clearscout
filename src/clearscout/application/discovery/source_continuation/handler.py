@@ -366,6 +366,7 @@ class SourceContinuationHandler:
                 remaining_seconds=staging_wait,
                 require_live=chunk.require_live,
                 require_source_read=require_source_read,
+                reread_before=fresh_root.created_at if fresh_root is not None else None,
             )
             listing_coverage = read.listing_coverage
             staging_succeeded = True

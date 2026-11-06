@@ -28,7 +28,10 @@ from clearscout.application.discovery.content_resolution import (
 from clearscout.application.discovery.funnel_audit import MAX_CONTINUATION_AUDIT_OUTCOMES
 from clearscout.application.discovery.pending import reset_protected_ids
 from clearscout.application.discovery.posting_fetch import FetchedPosting
-from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.posting_text import (
+    publisher_closing_date,
+    publisher_posted_date,
+)
 from clearscout.application.discovery.scan_queries.history import QUERY_LABEL
 from clearscout.application.discovery.scan_sweep import (
     SCAN_LANES,
@@ -80,6 +83,7 @@ from clearscout.domain.staged_facts import (
     LISTED_UNTIL,
     ClosingDateStatement,
     ListingIdentityTrust,
+    PostedDateGrade,
     PublisherClosingDate,
     StagedListingFacts,
 )
@@ -1244,6 +1248,85 @@ def test_scan_uses_retained_publisher_bodies_for_recoverable_admission(
         )
     assert [event.action for event in foreign_history] == ["dismiss", "restore"]
     assert foreign_history[1].supersedes_event_id == foreign_history[0].id
+
+
+@pytest.mark.parametrize("fresh", [True, False], ids=["fresh", "ordinary"])
+def test_a_fresh_scan_reads_a_held_rows_content_again_and_stages_its_posted_date(
+    durable_database: Database, fresh: bool
+) -> None:
+    """Only a fresh scan reads content held from before it began, once per row."""
+    workspace_id = _workspace(durable_database)
+    _source(durable_database, workspace_id, "Acme", "https://boards.greenhouse.io/acme")
+    SearchParametersService(durable_database).save(
+        workspace_id,
+        JobSearchParameters(seniority=Seniority(target_titles=titles("Data Engineer"))),
+    )
+    url = "https://boards.greenhouse.io/acme/jobs/held"
+    listings = [_listing("Data Engineer", url, location="")]
+
+    class PostedDateResolver:
+        calls = 0
+
+        def resolve(self, url: str, **_kwargs: Any) -> ResolvedPostingContent:
+            self.calls += 1
+            return ResolvedPostingContent(
+                requested_url=url,
+                final_url=url,
+                content_status=PostingContentAccessStatus.READABLE,
+                identity_status=PostingIdentityStatus.VERIFIED,
+                posting_status=PostingStatus.ACTIVE,
+                extraction_method=PostingContentExtractionMethod.STATIC_HTML,
+                fetched_at=utc_now(),
+                content=b"Data Engineer\nBuild clinical data tools.",
+                http_status=200,
+                publisher_markup_present=True,
+                identity_evidence={"publisher_declaration": True},
+                note="Verified publisher body.",
+                publisher_posted_date=None
+                if self.calls == 1
+                else publisher_posted_date(
+                    "2026-08-20",
+                    basis="greenhouse.first_published",
+                    grade=PostedDateGrade.FIRST_POSTED,
+                ),
+            )
+
+    resolver = PostedDateResolver()
+    content_resolution = PostingContentResolutionService(
+        durable_database, resolver, storage=runtime_storage(durable_database)
+    )
+    handler = SourceScanHandler(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": listings}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+        content_resolution=content_resolution,
+    )
+    handlers = default_handlers(durable_database, fetcher=ScriptedBoards({"Acme": listings}))
+    handlers["source.scan"] = handler
+    queue = TaskQueueService(durable_database)
+    worker = Worker(durable_database, worker_id="held-content", handlers=handlers)
+
+    def scan(key: str, payload: dict[str, Any]) -> None:
+        task = queue.enqueue(
+            workspace_id=workspace_id, task_type="source.scan", payload=payload, idempotency_key=key
+        )
+        assert worker.run_once()
+        finished = queue.get(str(task.id))
+        assert finished.status == "completed", (finished.error_category, finished.error_message)
+
+    scan("held-first", {})
+    scan("held-second", {"fresh_details": True} if fresh else {})
+
+    with durable_database.session() as session:
+        row = session.scalars(
+            select(PendingDiscovery).where(PendingDiscovery.canonical_url == url)
+        ).one()
+        posted = StagedListingFacts.from_json(row.staged_facts).posted_date
+    assert resolver.calls == (2 if fresh else 1)
+    assert (posted.earliest.normalized_value if posted else None) == (
+        "2026-08-20" if fresh else None
+    )
 
 
 def test_scan_dismisses_structured_hybrid_and_same_country_residence_bodies(
