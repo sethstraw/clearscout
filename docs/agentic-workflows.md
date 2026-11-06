@@ -33,6 +33,12 @@ what each number means. Count distinct inputs, not rows. Label each eval mode
 by the question it can answer: replay, scripted, or live. Pair every planted
 defect with a clean control, so a judge that doubts everything fails.
 
+A later live case written to measure when guided search picks a board page
+scored 0 of 0 on every trial: none of 104 picks across runs was a board. The
+prompt allows a board only when no detail URL turns up, and search almost never
+leaves that gap. The scoring is covered offline; the live case cannot force the
+path it was written for.
+
 **Open.** [METHODOLOGY.md](../evals/inspect/METHODOLOGY.md) states what each
 mode cannot measure.
 
@@ -198,12 +204,19 @@ response schema listed that run's ids, so every prefix was unique and 576,180
 tokens were written that a stable prefix would have read. A two-sentence
 docstring edit on a response model changed every request digest and broke the
 recorded cassettes. The one-per-call harness cost about four times as much as
-production batching and could never reproduce batch-mode errors.
+production batching and could never reproduce batch-mode errors. The same holds
+for plain web reads: rendered page reads took 9 to 12 seconds, and the delay was
+assumed to be politeness. A profile showed 25 serial requests per read, 13 of
+them to analytics and cookie-consent hosts, with 7.6 seconds of polite sleeps.
+Skipping those hosts and reusing the page already fetched cut a read to 11
+requests and about 3 seconds faster, with posting text unchanged on three
+platforms.
 
 **What we concluded.** Log cache reads and writes per call and compare them per
 stage. Put stable instructions, evidence, and schema first, and check per-run
 ids in code. Treat schema docstrings as prompt text. Have the harness render the
-full production request before any paid run.
+full production request before any paid run. Profile a slow step's requests
+before blaming the delay on politeness.
 
 **Open.** Each cassette reseal costs money, so reseals come last in a cycle.
 
@@ -401,6 +414,38 @@ rule.
 **Open.** A board date can still move when an employer reposts, and that reads
 as a repost rather than as noise.
 
+### An option every layer carries can still be read by none
+
+**What was tried.** A "fresh scan" option was set on the scan task, copied onto
+each board, and passed into the reader options, so new posted-date readers
+would reach postings already held.
+
+**What the numbers showed.** No production code read the option. A fresh scan
+re-read nothing it already held, and 24 held rows stayed undated after one.
+Only a recount of undated rows exposed it. With a re-read cutoff taken from the
+fresh scan's start time, one fresh scan re-read 82 held rows and every one came
+back dated.
+
+**What we concluded.** Prove an option changes an outcome with a test on that
+outcome, not on the value passed along. Delete plumbing nothing reads.
+
+**Open.** A passed-through value looks wired in every diff that touches it.
+
+### Cutting repeated work can cut a side effect another reader needs
+
+**What was tried.** Ordinary scans re-read every body-dismissed row on each
+pass, 58 slow reads on one board pass, so the repeat was removed.
+
+**What the numbers showed.** Each repeat had also written a fresh dismissal
+event. An audit label matched that event's origin exactly, and without the
+repeat it began reporting about half those rows as already known instead of
+excluded. A review caught it before landing.
+
+**What we concluded.** Before removing repeated work, list what each repetition
+wrote and who reads it, and move any reader that depends on it.
+
+**Open.** Nothing finds such a reader automatically; the list is by hand.
+
 ## If you build something similar
 
 These are opinions. Each links the lesson above that backs it.
@@ -453,3 +498,7 @@ These are opinions. Each links the lesson above that backs it.
   ([lesson](#synthetic-fixtures-miss-the-formats-real-publishers-write))
 - Make merging an unchanged value a no-op before any guard counts changes.
   ([lesson](#merging-an-unchanged-value-must-not-count-as-a-change))
+- Test an option by the outcome it should change, and delete plumbing nothing
+  reads. ([lesson](#an-option-every-layer-carries-can-still-be-read-by-none))
+- Before cutting repeated work, list what each repetition wrote and who reads
+  it. ([lesson](#cutting-repeated-work-can-cut-a-side-effect-another-reader-needs))

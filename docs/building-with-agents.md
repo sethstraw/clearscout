@@ -51,7 +51,10 @@ reports called a phrase synthetic, and one query found it on 41 real rows.
 Labelling receipts took the model name from text an agent typed, so 6 rounds
 on a weaker model were recorded as the stronger one. Once, a background
 wrapper's exit code said the gate passed when it failed on three scopes.
-Another time the harness said exit 0 while the log showed 1 failure.
+Another time the harness said exit 0 while the log showed 1 failure. A writer
+blamed a flaky SPA test on focus returning before a refetch; tracing focus in a
+passing and a failing run refuted that. The test focused a control that was
+still disabled, which only a stray blur under load exposed.
 
 **What we concluded.** Agreement among agents is not evidence, and neither is a
 confident tone or an exit code. Make "is it really on main" a one-command
@@ -201,6 +204,10 @@ an eval round. Eval digests hash a domain string that held the old name, so no
 earlier row compares with a new one. A backfill rewrote 41,320 stored paths. A
 move script's leftover check skipped one settings file, so a hook pointed at a
 deleted folder and every shell call showed a hook error until it was fixed.
+Long after the rename, the tool that rebuilds an eval's frozen selection
+refused its own archived input, because the old name sat inside domain-separated
+hashes as well as a version string. Rebuilding the frozen selection byte for
+byte from a migrated private copy was the proof required before amending it.
 
 **What we concluded.** List every place the name lives: stored paths, browser
 keys, eval digests, hooks, agent memory, and default lists. Migrate each with a

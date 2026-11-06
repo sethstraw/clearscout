@@ -1,6 +1,6 @@
 # What live validation found
 
-ClearScout calls paid models at eleven stages, from CV import to posting recovery. The runs here concentrate on five of them: requirement extraction (jobspec), evidence matching (match), relevance review, drafting of resumes and cover letters, and critique. Between August and November 2026 the maintainer ran about 170 dated paid runs against those stages and kept a private ledger of each. This file publishes what those runs taught, because a claim like "the model never cites evidence it was not given" is only worth what the evidence behind it is worth.
+ClearScout calls paid models at eleven stages, from CV import to posting recovery. The runs here concentrate on five of them: requirement extraction (jobspec), evidence matching (match), relevance review, drafting of resumes and cover letters, and critique. Between August and November 2026 the maintainer ran about 190 dated paid runs against those stages and kept a private ledger of each. This file publishes what those runs taught, because a claim like "the model never cites evidence it was not given" is only worth what the evidence behind it is worth.
 
 Read these as defect discovery on small samples, not as accuracy claims. Most runs cover 4 to 19 synthetic cases or a handful of real postings, with 1 to 5 draws each. A number here says a behavior happened at least that often under one prompt and one model. It does not carry to real postings in general. [inspect/METHODOLOGY.md](inspect/METHODOLOGY.md) explains what each eval family measures and what it cannot. [RESULTS.md](RESULTS.md) holds the tables; this file is the narrative.
 
@@ -16,6 +16,7 @@ Runs on the maintainer's real job search appear here only as counts, costs, and 
 - Match, 2026-09-23, 10 cases x 3: sol 22 of 30 for USD 0.031106, luna 19 of 30 for USD 0.002155. Luna dropped one case to 1 of 3 where sol held 3 of 3.
 - Relevance, same day, 16 cases x 3: sol 38 of 48 for USD 0.097379, luna 34 of 48 for USD 0.006198. Sol gave one answer across all three trials on 15 of 16 cases. See [RESULTS.md, Match](RESULTS.md#match) and [Relevance review](RESULTS.md#relevance-review).
 - Match, 2026-10-04, 19 cases x 3: gpt-6-sol 57 of 57 for USD 0.101493, gpt-6.1-sol 54 of 57 for USD 0.075995. All three misses were one case, answered GAP on every trial, against the rule that counts a related tool as transferable. gpt-6.1-sol reasoned about a third as much (2,779 against 7,925 tokens).
+- Match, 2026-11-06, the same 19 x 3 on gpt-6.1-sol with only the output ceiling changed: 56 of 57 for USD 0.055. Every miss was one case, a named tool the CV shows only through its ecosystem, read as unproven.
 - After the switch, one real posting re-evaluated with prompts unchanged moved from 92 to 86 per cent on one re-sampled requirement (2026-10-05).
 
 **What we concluded.** Luna costs about a tenth of sol's price and is not at parity with sol on either extraction stage. Sol stays. gpt-6.1-sol replaced gpt-6-sol on 2026-10-04 on cost, by the maintainer's call, against a reviewer who read the Helm miss as a regression. The cost of that choice is one known related-tool case.
@@ -32,6 +33,7 @@ Runs on the maintainer's real job search appear here only as counts, costs, and 
 - Drafting, 2026-08-15, two postings: terra at medium cost 35 per cent less than at high and scored identically on all six critic axes.
 - Match, 2026-09-23, 13 cases x 3, same prompt and manifest: low 36 of 39 for USD 0.041343, medium 39 of 39 for USD 0.057228, 38 per cent more. All nine low-effort trials on the hardest case, across three runs, spent zero reasoning tokens. At medium the same case reasoned 90 to 180 tokens and passed.
 - Critic, 2026-09-23, 10 cases: low caught all 10 plants for USD 0.092364 against USD 0.158845 at medium. Per draw, low caught 13 of 15 plant-draws and medium 15 of 15. One plant survived at low only because the merge keeps any single draw's doubt.
+- Critic, 2026-11-06, on gpt-6.1-sol: low effort named the planted boundary on every planted case (34 of 34 draws over 17 cases), as default effort did (51 of 51), for about 11 per cent less per call. Default effort false-failed clean cases on 9 of 93 samples. The low-effort arm never ran the clean cases, so its false-fail rate is unknown and the critic stays at default.
 
 **What we concluded.** Effort is not the cost lever on short extraction calls. Reasoning is a small share of their output, and changing effort disturbs caching more than it saves. It is an accuracy lever where a judgment hinges on reading a qualifier. Match ships at medium. The critic stays at medium because its low-effort catch rested on one draw. Drafting at medium matched high on two postings, which is a price, not a verdict.
 
@@ -49,9 +51,11 @@ The relevance stage taught the subtler lesson. Under explicit caching the respon
 
 **Batching.** Production relevance review sends up to 20 postings per call with the CV evidence once. An eval harness that sent one posting per call cost about four times as much per posting (2026-09-28, USD 0.9223 for 31 calls). Its estimator was six times off (2026-09-20) because it averaged batched production calls.
 
+**Output length and search fees.** On 2026-11-06, asking relevance review for low verbosity on 47 real-workspace postings, in three batched calls, cut output from 19k to 11k tokens and cost from USD 0.225 to 0.154. Rows labelled `investigate` kept out of `unlikely` held at 19 of 20 on both arms. Lower search depth on guided search cut input tokens 9 per cent and saved nothing, because hosted-search fees dominate that bill. An eval-harness change that let repeated trials of one case read the same cache prefix took the critic from 51 to 83 per cent cache share and from USD 0.490 to 0.354, with identical prompt tokens and no scored outcome changed.
+
 **Billed but unusable.** Six calls on archived postings were paid and then refused at commit (2026-09-26, USD 0.1117). Two rows that were dismissed variants failed after spend (2026-10-15, USD 0.0963). A retry after a timeout re-reviewed 36 unchanged rows (2026-10-01, USD 0.179 spent twice). Archived postings are now refused before the paid stages.
 
-**Totals, with their limit.** Of the ledger's 172 entries, the 113 whose headings carry a USD figure sum to about USD 45. That is not a full total. The August entries priced in another format, earlier totals omit the hosted-search fee of USD 10 per thousand calls, and six early rows are estimates rebuilt from a model-written report (2026-08-16 audit).
+**Totals, with their limit.** Of the ledger's 192 entries, the 131 whose headings carry a USD figure sum to about USD 50. That is not a full total. The August entries priced in another format, earlier totals omit the hosted-search fee of USD 10 per thousand calls, and six early rows are estimates rebuilt from a model-written report (2026-08-16 audit).
 
 ## Prompt engineering, with before and after
 
@@ -78,7 +82,11 @@ One limit came out of the review. Round 1 never reproduced the duty-sentence spa
 
 The cases became a permanent eval of eight synthetic postings. Its first run (81 calls, USD 0.5537) scored the old prompt 40 of 40 and the shipped prompt 39 of 40, one missed draw on the generic ML platform. Neither misfired on its domain-tied cases. That is the variance lesson again: a defect seen 3 of 5 times on one live posting did not appear on new synthetic postings, so the set is a regression guard, not proof of the fix.
 
-**Critic.** The 2026-09-22 reseal (re-recording the replay cassettes) failed on content preservation. All six draws reported no unsupported claim, and every below-floor draw named a line the program copies verbatim from the CV, not model text. The fix declared those lines and stopped a single minority draw from forcing a rejection. On 2026-09-23 three clean fixtures drew doubts on all three draws. Reading the synthetic CV showed the fixtures were wrong, not the critic.
+**Critic.** The 2026-09-22 reseal (re-recording the replay cassettes) failed on content preservation. All six draws reported no unsupported claim, and every below-floor draw named a line the program copies verbatim from the CV, not model text. The fix declared those lines and stopped a single minority draw from forcing a rejection. On 2026-09-23 three clean fixtures drew doubts on all three draws. Reading the synthetic CV showed the fixtures were wrong, not the critic. It happened again on 2026-11-06: a planted case failed on its planted line 3 of 3 under a different boundary than its label, and the prompt's own definition showed the critic right and the label wrong. A second boundary, planned work written as shipped, the critic never separated from `production` or `adjacent` in six draws, though it caught every claim, so it is recorded as a limit.
+
+**Draft required phrases.** On 2026-11-06 a synthetic career-change draft failed 3 of 3 because it dropped the skill item carrying a phrase the guardrails require. The draft prompt never names required phrases, the program checks them after drafting, and that failure allowed no redraft, so one dropped item sank the document. With the check made redraftable, and its feedback naming the phrase the selected evidence carries, the first attempt still failed 3 of 3 and the redraft passed 3 of 3 (42 of 42 on the redraft task, USD 0.246). The fix costs one extra call on a case that trips it.
+
+**Cover letter subject.** A prompt line saying the company paragraph states what the employer or the role does, not what the role calls for, cut sentences opening "The role" or "This role" from 5 and 7 per 14 letters to 1, with 14 of 14 letters still cleared (2026-11-06).
 
 ## Variance and measurement
 
@@ -86,6 +94,7 @@ The cases became a permanent eval of eight synthetic postings. Its first run (81
 - One match case read DIRECT on 2, 0, 0, and 2 of 3 trials across four runs of an unchanged prompt. A fix that "moves" it in one run moved nothing.
 - The boundary defect was 3 of 5 on one posting. One draw or a cached replay cannot see a 3-in-5 effect, so the fix rounds used five draws per case. Even five draws did not reproduce the original span on the live posting.
 - Labels come from two blind reviewers and an adjudicator, frozen before a run. A relabel gets a new manifest digest, and rows compare only at the same digest. Rulings are calibration data, not gold.
+- A case can run green and measure nothing. A guided-search case written to see when a board page is picked scored 0 of 0 on every trial: none of 104 picks across it and the 13-case baseline was a board, because the prompt allows a board only as a fallback. The same baseline showed one pick in five pointing at a closed posting, stale search-index entries that repeated on both trials.
 - A wrong score is not always a wrong answer. On 2026-09-20 two relevance misses were the scorer reading a field the product deliberately empties. It was fixed from the stored logs, with no rerun bought.
 - `scripts/eval.sh run` runs a scripted task against a canned provider, or the match replay task against a stored calibration snapshot. Neither tests a prompt; only `--live` does. The cassette replay in `tests/delivery/test_recorded.py` runs the real SDK against a recording. Any change to a prompt, schema, or schema docstring changes the request and invalidates it. Reseals on 2026-09-18, 09-22, and 11-02 cost USD 0.12 to 0.31 each.
 
