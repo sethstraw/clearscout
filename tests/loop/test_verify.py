@@ -621,6 +621,57 @@ def test_a_missing_required_string_fails(inventory, settings) -> None:
     assert outcome(report, "required strings") is Outcome.FAIL
 
 
+def _required_finding(inventory, settings, phrase: str) -> tuple[Finding, frozenset[str]]:
+    spec = spec_with("schema registry")
+    plan = build_plan(inventory, spec, EvidenceMap(), settings)
+    report = check(
+        markdown="# JANE\n\n---\n\n## Summary\n\nText.\n",
+        draft=simple_draft(inventory, "Text.", (inventory.entries[0].id,)),
+        plan=plan,
+        inventory=inventory,
+        spec=spec,
+        guardrails=Guardrails(required=[phrase]),
+    )
+    return finding(report, "required strings"), frozenset(plan.all_ids())
+
+
+def test_a_required_phrase_the_selected_evidence_carries_is_sent_back_by_name(
+    inventory, settings
+) -> None:
+    missing, chosen = _required_finding(inventory, settings, "schema registry")
+
+    assert any("schema registry" in inventory.by_id(entry).full_text for entry in chosen)
+    assert missing.outcome is Outcome.FAIL
+    assert missing.redraftable
+    assert "schema registry" in missing.detail
+    assert "add them there" not in missing.detail
+
+
+def test_a_required_phrase_only_in_unselected_evidence_is_not_blamed_on_the_cv(
+    inventory, settings
+) -> None:
+    _, chosen = _required_finding(inventory, settings, "schema registry")
+    phrase = next(
+        entry.text.split(",")[0]
+        for entry in inventory.entries
+        if entry.id not in chosen and entry.text.startswith("Wrote the Terraform")
+    )
+
+    missing, _ = _required_finding(inventory, settings, phrase)
+
+    assert missing.outcome is Outcome.FAIL
+    assert not missing.redraftable
+    assert "not in the evidence selected" in missing.detail
+
+
+def test_a_required_phrase_the_cv_lacks_asks_for_it_in_the_cv(inventory, settings) -> None:
+    missing, _ = _required_finding(inventory, settings, "Project Neptune")
+
+    assert missing.outcome is Outcome.FAIL
+    assert not missing.redraftable
+    assert "add them there" in missing.detail
+
+
 def test_a_protected_phrase_in_variant_case_must_be_written_verbatim(inventory, settings) -> None:
     entry = inventory.entries[0]
     draft = simple_draft(inventory, "Text.", (entry.id,))

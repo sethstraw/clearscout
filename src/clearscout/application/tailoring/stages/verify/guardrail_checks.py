@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Sequence
 
 from clearscout.application.tailoring.guardrails import Guardrails
 from clearscout.shared.results import Finding, Outcome
@@ -132,18 +133,44 @@ def forbidden(markdown: str, written: str, guardrails: Guardrails) -> Finding:
     return Finding("forbidden strings", Outcome.PASS, "none present")
 
 
-def required(markdown: str, guardrails: Guardrails) -> Finding:
-    """Require every string the guardrails file says must always appear."""
+def required(
+    markdown: str,
+    guardrails: Guardrails,
+    *,
+    selected: Sequence[str] = (),
+    recorded: Sequence[str] = (),
+) -> Finding:
+    """Require every string the guardrails file says must always appear.
+
+    A phrase an entry in ``selected`` carries was dropped by the drafter, so a redraft
+    can restore it; ``recorded`` is the rest of the record, which only changes the advice.
+    """
     missing = [value for value in guardrails.required if value and value not in markdown]
-    if missing:
+    if not missing:
+        return Finding("required strings", Outcome.PASS, "all present")
+    listed = ", ".join(missing)
+    if all(any(value in text for text in selected) for value in missing):
         return Finding(
             "required strings",
             Outcome.FAIL,
-            f"missing: {', '.join(missing)}. These are copied from your master CV, "
-            "so add them there or drop them from your rules.",
+            f"missing: {listed}. The selected evidence carries each of these; "
+            "keep them word for word.",
+        )
+    if all(any(value in text for text in (*selected, *recorded)) for value in missing):
+        return Finding(
+            "required strings",
+            Outcome.FAIL,
+            f"missing: {listed}. Your master CV has these, but not in the evidence "
+            "selected for this posting.",
             redraftable=False,
         )
-    return Finding("required strings", Outcome.PASS, "all present")
+    return Finding(
+        "required strings",
+        Outcome.FAIL,
+        f"missing: {listed}. These are copied from your master CV, "
+        "so add them there or drop them from your rules.",
+        redraftable=False,
+    )
 
 
 def protected(markdown: str, guardrails: Guardrails) -> Finding:
