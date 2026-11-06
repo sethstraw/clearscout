@@ -187,7 +187,7 @@ class OpenAIProvider:
         if plan.evidence is not None:
             content.append({"type": "input_text", "text": plan.evidence.text, **cache_mark})
         # A single draw keeps its task out of the cache; repeat draws read it back.
-        repeated = cache_mark if plan.draws > 1 else {}
+        repeated = cache_mark if plan.caches_task else {}
         content.append({"type": "input_text", "text": plan.task.text, **repeated})
         # Explicit mode writes only marked prefixes; implicit mode would also write
         # the per-call content up to the end of the user message.

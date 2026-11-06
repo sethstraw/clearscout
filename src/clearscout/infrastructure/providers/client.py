@@ -107,6 +107,8 @@ class Client:
     watcher: Watcher | None = None
     # Stages that must ask the model again even when an answer is cached.
     redraw: frozenset[str] = frozenset()
+    # Every request will be sent again soon, as repeated eval trials are; caching only.
+    repeat_hint: bool = False
     # Interactive calls stay standard; queue work passes `Settings.unattended_tier()`.
     service_tier: ServiceTier = ServiceTier.STANDARD
     build_identity: BuildIdentity = field(default_factory=current_build)
@@ -126,6 +128,7 @@ class Client:
         """
         if self.raise_if_cancelled is not None:
             self.raise_if_cancelled()
+        plan = self._hinted(plan)
         choice = self.settings.choice_for_stage(plan.stage, self.service_tier)
         sent_schema = wire_schema(self.provider.name, schema)
         web_search = plan.search is not None
@@ -193,12 +196,17 @@ class Client:
             raise ProviderError(
                 f"{provider.name.value.title()} does not support background web search."
             )
+        hinted = self._hinted(plan)
         return self._send_on_flex_first(
-            plan,
+            hinted,
             choice,
-            lambda sent: provider.dispatch_background(plan, schema, sent, metadata=metadata),
+            lambda sent: provider.dispatch_background(hinted, schema, sent, metadata=metadata),
             creating=True,
         )
+
+    def _hinted(self, plan: RequestPlan) -> RequestPlan:
+        """Return ``plan`` marked as repeating when this client's requests repeat."""
+        return replace(plan, repeat_hint=True) if self.repeat_hint else plan
 
     def collect_background(
         self,

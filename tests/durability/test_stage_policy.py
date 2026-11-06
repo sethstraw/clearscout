@@ -105,10 +105,14 @@ def test_only_the_match_stage_states_its_own_effort(provider: ProviderName) -> N
     ]
 
 
-def test_no_stage_ships_a_verbosity_so_every_response_keeps_the_vendor_default() -> None:
+def test_only_relevance_review_ships_a_verbosity_and_it_is_low() -> None:
     settings = Settings()
 
-    assert all(settings.policy_for(stage).verbosity is None for stage in Stage)
+    assert {
+        stage: settings.policy_for(stage).verbosity
+        for stage in Stage
+        if settings.policy_for(stage).verbosity is not None
+    } == {Stage.RELEVANCE_REVIEW: Verbosity.LOW}
 
 
 def test_a_stage_takes_its_controls_from_its_own_setting() -> None:

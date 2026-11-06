@@ -291,6 +291,7 @@ class _RelevanceLiveSolver:
                 yield position, failed
             return
         response, valid, failures = paid.value
+        translated = request.case.aliases.translate(response)
         share = None if call["call_dollars"] is None else call["call_dollars"] / call["size"]
         for member, (position, posting) in enumerate(
             zip(request.positions, request.case.pending, strict=True)
@@ -308,7 +309,7 @@ class _RelevanceLiveSolver:
             result = relevance_result(
                 [item for item in valid if item.pending_discovery_id == posting.id],
                 [item for item in failures if item.pending_discovery_id == posting.id],
-                response,
+                translated,
             )
             yield position, {**result, "metadata": provenance}
 
@@ -360,6 +361,8 @@ def _prepared(dataset: Path, run_metadata: dict[str, Any]) -> _RelevanceLiveSolv
         # would name prompts no row was produced from.
         run_metadata.pop("prompt_suite_fingerprint", None)
         run_metadata.update(declared)
+    # Batched repeats run trial after trial, so a cached task would expire before reuse.
+    run_metadata["repeat_hint"] = False
     provider_name = ProviderName(run_metadata["provider"])
     settings = run_settings(provider_name, Stage.RELEVANCE_REVIEW)
     rows = _dataset_rows(dataset)

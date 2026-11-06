@@ -65,6 +65,10 @@ from clearscout.application.discovery.relevance_review import (
     response_schema as relevance_review_schema,
 )
 from clearscout.application.discovery.relevance_review import review_plan
+from clearscout.application.discovery.relevance_review_spans import (
+    RelevanceReviewAliases,
+    posting_spans,
+)
 from clearscout.application.discovery.search_vocabulary import SearchVocabularyService
 from clearscout.application.discovery.search_vocabulary import (
     response_schema as search_vocabulary_schema,
@@ -435,10 +439,13 @@ class ScriptedProvider:
         scripted = self.case.relevance_review
         if scripted is None:
             raise EvalError(f"{self.case.name}: reached relevance review with no scripted batch")
+        aliases = RelevanceReviewAliases.issue(
+            {posting.id: posting_spans(posting.id, posting.body) for posting in scripted.postings}
+        )
         return {
             "recommendations": [
                 {
-                    "pending_discovery_id": item.posting,
+                    "pending_discovery_id": aliases.posting_alias(item.posting),
                     "recommendation": item.recommendation,
                     "summary": item.summary,
                     "core_work_alignment": item.core_work_alignment,
@@ -446,7 +453,7 @@ class ScriptedProvider:
                     "hard_condition": item.hard_condition,
                     "decisive_basis": item.decisive_basis,
                     "posting_evidence_span_ids": [
-                        f"{item.span_owner or item.posting}:span-{index:04d}"
+                        f"{aliases.posting_alias(item.span_owner or item.posting)}:{index}"
                         for index in item.spans
                     ],
                     "master_cv_evidence_ids": [self._entry(alias) for alias in item.evidence],

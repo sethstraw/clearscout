@@ -42,10 +42,12 @@ def build_live_client(
     cache_dir: Path | None = None,
     ledger: Ledger | None = None,
     settings: Settings | None = None,
+    repeat_hint: bool = False,
 ) -> Client:
     """Return a Client wired to the real vendor SDK for one provider.
 
     A live run waits on nobody, so it asks for the tier queue work uses.
+    ``repeat_hint`` caches each task for the run's later trials.
     """
     settings = settings if settings is not None else Settings(provider=provider_name)
     live_provider: Provider = provider_for(provider_name, api_key)
@@ -55,4 +57,5 @@ def build_live_client(
         cache=_cache(cache_dir),
         ledger=ledger if ledger is not None else Ledger(prices=price_table(settings.prices)),
         service_tier=settings.unattended_tier(),
+        repeat_hint=repeat_hint,
     )

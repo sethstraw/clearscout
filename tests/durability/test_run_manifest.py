@@ -150,12 +150,28 @@ def test_where_a_request_is_cached_moves_no_digest_that_names_it(client_factory)
 
     client.complete(_plan(), Answer)
     client.complete(_plan(draws=2), Answer)
+    client.repeat_hint = True
+    client.complete(_plan(), Answer)
 
-    first, second = client.ledger.entries
-    assert second.cache_key == first.cache_key
-    assert second.instructions_digest == first.instructions_digest
-    assert second.evidence_digest == first.evidence_digest
-    assert second.task_digest == first.task_digest
+    first, *later = client.ledger.entries
+    for entry in later:
+        assert entry.cache_key == first.cache_key
+        assert entry.instructions_digest == first.instructions_digest
+        assert entry.evidence_digest == first.evidence_digest
+        assert entry.task_digest == first.task_digest
+
+
+def test_a_client_told_its_requests_repeat_sends_each_plan_hinted(client_factory) -> None:
+    """The hint reaches the adapter on every call, and a plain client leaves plans as built."""
+    plain = client_factory(SCRIPT)
+    hinted = client_factory(SCRIPT)
+    hinted.repeat_hint = True
+
+    plain.complete(_plan(), Answer)
+    hinted.complete(_plan(), Answer)
+
+    assert [plan.repeat_hint for _, plan in plain.provider.calls] == [False]
+    assert [plan.repeat_hint for _, plan in hinted.provider.calls] == [True]
 
 
 def test_the_manifest_keeps_no_text_from_the_request(client_factory) -> None:

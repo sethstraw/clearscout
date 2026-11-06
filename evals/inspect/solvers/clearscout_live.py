@@ -245,6 +245,8 @@ class PaidRunScope:
             "sample_limit": self.limit,
             "sample_ids": list(self.sample_ids) if self.sample_ids is not None else None,
             "trials": self.trials,
+            # Repeats run back to back per sample, so later trials read the task from cache.
+            "repeat_hint": self.trials > 1,
             "output_dir": str(self.output_dir),
         }
 
@@ -582,7 +584,11 @@ def paid_call(
     """
     call_ledger = Ledger(prices=run_ledger.prices)
     client = build_live_client(
-        provider_name, credential_for(provider_name), ledger=call_ledger, settings=settings
+        provider_name,
+        credential_for(provider_name),
+        ledger=call_ledger,
+        settings=settings,
+        repeat_hint=bool(run_metadata.get("repeat_hint")),
     )
     try:
         with overriding(prompt_snapshot):

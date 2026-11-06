@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 from evals.inspect import runner
 from evals.inspect.runner import dataset_samples
-from evals.inspect.scorers.guided_campaign import campaign_attempt
+from evals.inspect.scorers.guided_campaign import campaign_attempt, title_bin
 from evals.inspect.scorers.posting_recovery import recovered_posting
 from evals.inspect.solvers import clearscout_live, web_stage_live
 from evals.inspect.tasks import guided_campaign_live_task as campaign_task
@@ -24,6 +24,12 @@ from clearscout.application.config import ProviderName, Settings, Stage
 from clearscout.application.discovery.board_scan import SourceScanService
 from clearscout.application.discovery.guided_campaign_admission import NOT_CAPTURED_DETAIL
 from clearscout.application.discovery.posting_fetch import FetchedPosting
+from clearscout.application.discovery.screening import (
+    ScreeningCode,
+    ScreeningDimension,
+    ScreeningFinding,
+    ScreeningStanding,
+)
 from clearscout.application.discovery.source_reading import PostingCheck
 from clearscout.domain import utc_now
 from clearscout.domain.records import PageClassification, PostingReadIntent
@@ -65,13 +71,21 @@ def _wire(
     provider: ScriptedProvider,
     sleeper: Callable[[float], None] = _no_wait,
 ) -> None:
-    def build(_name: ProviderName, _key: str, *, ledger: Ledger, settings: Settings) -> Client:
+    def build(
+        _name: ProviderName,
+        _key: str,
+        *,
+        ledger: Ledger,
+        settings: Settings,
+        repeat_hint: bool = False,
+    ) -> Client:
         return Client(
             provider=provider,
             settings=settings,
             cache=ResponseCache(enabled=False),
             ledger=ledger,
             sleeper=sleeper,
+            repeat_hint=repeat_hint,
         )
 
     monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
@@ -460,14 +474,16 @@ def _campaign_poll(
     queries: list[str],
     *,
     postings: list[str] = (),  # type: ignore[assignment]
+    boards: list[str] = (),  # type: ignore[assignment]
     attributed: bool = True,
     sources: tuple[str, ...] = (),
+    page_actions: int = 0,
 ) -> BackgroundPoll:
     keys = list(request.attempt.branch_keys)
     value: BaseModel = request.schema.model_validate(
         {
             "postings": [{"url": url, "branch_keys": keys[:1], "why": "Fits."} for url in postings],
-            "boards": [],
+            "boards": [{"url": url, "branch_keys": keys[:1], "why": "Fits."} for url in boards],
             "searches": [
                 {"query": query, "branch_keys": keys if attributed else []} for query in queries
             ],
@@ -479,6 +495,7 @@ def _campaign_poll(
         model="gpt-6.1-sol",
         response_id="resp_scripted_0",
         searches=tuple(Search(queries=(query,), sources=found) for query in queries),
+        page_action_count=page_actions,
     )
     return BackgroundPoll(status="complete", value=value, record=record)
 
@@ -754,6 +771,19 @@ def _graded(
     case: str = "gc-excluded-employers",
 ) -> dict[str, Any]:
     """Score one finished single-branch attempt whose picks were read."""
+    sample, output = _read_attempt(reads, boards=boards, why=why, case=case)
+    score: dict[str, Any] = campaign_attempt()(sample, output)
+    return score
+
+
+def _read_attempt(
+    reads: list[dict[str, Any]],
+    *,
+    boards: tuple[str, ...] = (),
+    why: str = "Fits.",
+    case: str = "gc-excluded-employers",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Return one case and a finished single-branch attempt over ``reads``."""
     sample, request = _campaign_request(case)
     [key] = request.attempt.branch_keys
     branch = next(item for item in request.manifest.branches if item.key == key)
@@ -780,8 +810,7 @@ def _graded(
         "refused_picks": [],
         "reads": reads,
     }
-    score: dict[str, Any] = campaign_attempt()(sample, output)
-    return score
+    return sample, output
 
 
 def test_a_pick_admission_stages_on_its_branch_title_passes_every_pick_measure() -> None:
@@ -795,7 +824,9 @@ def test_a_pick_admission_stages_on_its_branch_title_passes_every_pick_measure()
         "novel": {"passed": 1, "total": 1},
         "open_posting": {"passed": 1, "total": 1},
         "board_proven": {"passed": 0, "total": 0},
-        "title_fit": {"passed": 1, "total": 1},
+        "title_plausible": {"passed": 1, "total": 1},
+        "title_conflict": {"passed": 0, "total": 1},
+        "title_mismatch": {"passed": 0, "total": 1},
         "place_fit": {"passed": 1, "total": 1},
     }
     assert score["metadata"]["pick_quality"]["flagged"] == []
@@ -915,13 +946,14 @@ def _job(number: int) -> str:
     return f"https://boards.greenhouse.io/acme/jobs/{4500000 + number}"
 
 
-def test_title_fit_rates_matches_against_mismatches_and_lists_undecided_titles_apart() -> None:
+def test_titles_bin_as_plausible_a_role_family_conflict_or_a_mismatch() -> None:
     titles = (
         "Senior Data Engineer",
         "Sr. Data Engineer",
         "Senior Data Engineer, Platform",
         "Data Engineer III",
         "Senior Analytics Engineer",
+        "Senior Data Scientist",
     )
     reads = [
         _read(_job(number), "staged", title=title, employer="Acme")
@@ -931,9 +963,22 @@ def test_title_fit_rates_matches_against_mismatches_and_lists_undecided_titles_a
     score = _graded(reads, case="gc-senior-ic-remote-us")
 
     assert score["checks"] == {"failed": [], "warned": ["title_misfit"]}
-    quality = score["metadata"]["pick_quality"]
-    assert quality["rates"]["title_fit"] == {"passed": 1, "total": 2}
-    assert quality["title_undecided"] == [_job(1), _job(2), _job(3)]
+    rates = score["metadata"]["pick_quality"]["rates"]
+    assert rates["title_plausible"] == {"passed": 4, "total": 6}
+    assert rates["title_conflict"] == {"passed": 1, "total": 6}
+    assert rates["title_mismatch"] == {"passed": 1, "total": 6}
+    flagged = score["metadata"]["pick_quality"]["flagged"]
+    assert [(grade["url"], grade["title_bin"]) for grade in flagged] == [(_job(4), "mismatch")]
+
+
+def test_a_title_reading_outside_the_bin_map_is_refused() -> None:
+    """A screen code no bin names would otherwise drop out of every title rate unseen."""
+    finding = ScreeningFinding(
+        ScreeningDimension.TITLE, ScreeningStanding.UNKNOWN, ScreeningCode.LOCATION_OUTSIDE
+    )
+
+    with pytest.raises(ValueError, match="location_outside"):
+        title_bin(finding)
 
 
 def test_a_title_the_publisher_lists_under_a_searched_alias_fits() -> None:
@@ -947,8 +992,8 @@ def test_a_title_the_publisher_lists_under_a_searched_alias_fits() -> None:
 
     score = _graded([read], case="gc-senior-ic-remote-us")
 
-    assert score["metadata"]["pick_quality"]["rates"]["title_fit"] == {"passed": 1, "total": 1}
-    assert score["metadata"]["pick_quality"]["title_undecided"] == []
+    rates = score["metadata"]["pick_quality"]["rates"]
+    assert rates["title_plausible"] == {"passed": 1, "total": 1}
 
 
 def test_an_excluded_title_no_publisher_vouched_for_is_undecided_and_never_fails() -> None:
@@ -963,7 +1008,8 @@ def test_an_excluded_title_no_publisher_vouched_for_is_undecided_and_never_fails
     score = _graded([read])
 
     assert score["checks"] == {"failed": [], "warned": []}
-    assert score["metadata"]["pick_quality"]["title_undecided"] == [SRE_OPEN]
+    rates = score["metadata"]["pick_quality"]["rates"]
+    assert rates["title_plausible"] == {"passed": 1, "total": 1}
 
 
 def test_a_pick_no_search_returned_counts_against_the_grounded_rate() -> None:
@@ -1010,6 +1056,85 @@ def test_an_output_recorded_before_picks_were_read_scores_only_the_attempt_check
 
     assert score["value"] is True, score["checks"]
     assert score["metadata"]["pick_quality"] is None
+
+
+def test_the_solver_records_the_attempts_page_action_count() -> None:
+    _, request = _campaign_request("gc-two-titles")
+    poll = _campaign_poll(request, _floor_queries(request), page_actions=3)
+
+    assert web_stage_live.campaign_result(request, poll)["page_action_count"] == 3
+
+
+def _rescored_header(
+    tmp_path: Path, attempts: list[tuple[dict[str, Any], dict[str, Any]]]
+) -> dict[str, Any]:
+    """Rescore a finished campaign log holding ``attempts`` and return the new header."""
+    log = tmp_path / "campaign.jsonl"
+    stored = [
+        {"id": sample["id"], "score": {"value": True}, "solver_output": output}
+        for sample, output in attempts
+    ]
+    header = {"task": campaign_task.TASK_NAME, "total": len(stored), "split": "development"}
+    log.write_text("".join(json.dumps(record) + "\n" for record in [header, *stored]))
+    return _header(runner.rescore_log(str(Path(campaign_task.__file__)), log))
+
+
+def test_a_run_header_pools_pick_rates_and_warns_on_a_low_admission_rate(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The floor reaches the reader without failing a sample, since picks are graded apart."""
+    staged = _read(SRE_OPEN, "staged", title=SRE_ROLE, employer="Acme")
+    attempts = [
+        _read_attempt([staged]),
+        _read_attempt([_read(SRE_OPEN, "unresolved", detail="none staged")]),
+        _read_attempt([_read(_job(1), "unresolved", detail="none staged")]),
+    ]
+
+    header = _rescored_header(tmp_path, attempts)
+
+    assert header["pick_rates"]["admitted"] == {"passed": 1, "total": 3}
+    assert header["pick_rates"]["open_posting"] == {"passed": 1, "total": 3}
+    assert header["pick_rates"]["title_plausible"] == {"passed": 1, "total": 1}
+    assert header["pick_rates_below_floor"] == {"admitted": {"rate": 1 / 3, "floor": 0.7}}
+    assert header["passed"] == 3
+    assert "admitted" not in header.get("failed_checks", {})
+    assert "warning: admitted rate 0.333 is below its floor 0.70" in capsys.readouterr().out
+
+
+def test_a_run_header_names_no_floor_an_admission_rate_meets(tmp_path: Path) -> None:
+    staged = _read(SRE_OPEN, "staged", title=SRE_ROLE, employer="Acme")
+
+    header = _rescored_header(tmp_path, [_read_attempt([staged])])
+
+    assert header["pick_rates"]["admitted"] == {"passed": 1, "total": 1}
+    assert "pick_rates_below_floor" not in header
+
+
+def test_a_planted_board_is_read_as_held_and_measures_board_proof(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sample, request = _campaign_request("gc-registered-board")
+    [board] = sample["input"]["registered_boards"]
+    assert request.known_source_roots
+    poll = _campaign_poll(request, _floor_queries(request), boards=[board], sources=(board,))
+
+    score, _ = _campaign_score(monkeypatch, sample, poll)
+
+    rates = score["metadata"]["pick_quality"]["rates"]
+    assert rates["board_proven"]["total"] == 1
+    assert rates["novel"] == {"passed": 0, "total": 1}
+
+
+def test_a_planted_known_posting_counts_its_pick_as_not_novel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sample, request = _campaign_request("gc-known-posting")
+    [known] = sample["input"]["known_urls"]
+    poll = _campaign_poll(request, _floor_queries(request), postings=[known], sources=(known,))
+
+    score, _ = _campaign_score(monkeypatch, sample, poll)
+
+    assert score["metadata"]["pick_quality"]["rates"]["novel"] == {"passed": 0, "total": 1}
 
 
 def _open_posting(

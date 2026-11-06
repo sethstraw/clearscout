@@ -469,6 +469,45 @@ def _agreement(
     return {f"{name}_agreed": sum(compared), f"{name}_compared": len(compared)}
 
 
+def _pick_rates(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Pool every row's pick-quality rates, naming each pooled rate below its declared floor."""
+    pooled: dict[str, dict[str, int]] = {}
+    floors: dict[str, float] = {}
+    for row in rows:
+        score = row.get("score")
+        metadata = score.get("metadata") if isinstance(score, dict) else None
+        quality = metadata.get("pick_quality") if isinstance(metadata, dict) else None
+        if not isinstance(quality, dict):
+            continue
+        floors.update(quality.get("floors") or {})
+        for name, rate in quality["rates"].items():
+            tally = pooled.setdefault(name, {"passed": 0, "total": 0})
+            tally["passed"] += rate["passed"]
+            tally["total"] += rate["total"]
+    if not pooled:
+        return {}
+    below = {
+        name: {"rate": pooled[name]["passed"] / pooled[name]["total"], "floor": floor}
+        for name, floor in floors.items()
+        if pooled.get(name, {}).get("total")
+        and pooled[name]["passed"] / pooled[name]["total"] < floor
+    }
+    return {"pick_rates": pooled, **({"pick_rates_below_floor": below} if below else {})}
+
+
+def _pick_rate_lines(label: str, counts: dict[str, dict[str, Any]]) -> list[str]:
+    """Return the console lines for pooled pick rates or the floors they missed."""
+    if label == "pick_rates":
+        rates = " ".join(
+            f"{name}={rate['passed']}/{rate['total']}" for name, rate in counts.items()
+        )
+        return [f"{label}: {rates}"]
+    return [
+        f"warning: {name} rate {below['rate']:.3f} is below its floor {below['floor']:.2f}"
+        for name, below in counts.items()
+    ]
+
+
 def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Return the per-label counts a reader acts on.
 
@@ -492,6 +531,7 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     summary.update(_axes_that_did_not_decide(rows))
     summary.update(_agreement(rows, "strength_matches", "strength"))
     summary.update(_agreement(rows, "outcome_matches", "critic_outcome"))
+    summary.update(_pick_rates(rows))
     return summary
 
 
@@ -1245,6 +1285,9 @@ def _print_result(
     if (usage := usage_rollup(rows)) is not None:
         print(usage_line(usage))
     for label, counts in summary.items():
+        if label in ("pick_rates", "pick_rates_below_floor"):
+            print("\n".join(_pick_rate_lines(label, counts)))
+            continue
         if isinstance(counts, int):
             print(f"{label}: {counts}")
             continue

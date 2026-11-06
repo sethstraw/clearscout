@@ -5,8 +5,8 @@ it was given as the runner credits branches, named no excluded title or employer
 query, and picked no URL the published fetch policy refuses. When the solver recorded
 admission's reads of the picks, a pick also fails for repeating an earlier pick or for
 a publisher read naming an excluded title or employer. Every other pick measure warns
-or is reported only as a rate; a title the screen leaves undecided is listed apart
-and kept out of the title rate.
+or is reported only as a rate; each read title falls in one of three bins: plausible,
+a role-family conflict, or a mismatch.
 """
 
 from __future__ import annotations
@@ -67,7 +67,25 @@ _PLACE_REFUSALS = BODY_REFUSAL_CATEGORIES | {
     ScreeningCode.LOCATION_INELIGIBLE.value,
     ScreeningCode.ARRANGEMENT_REMOTE_ONLY_SITES.value,
 }
-FIT, MISFIT, UNDECIDED = "fit", "misfit", "undecided"
+PLAUSIBLE, CONFLICT, MISMATCH = "plausible", "conflict", "mismatch"
+_TITLE_BINS = {
+    ScreeningCode.TITLE_MATCH: PLAUSIBLE,
+    ScreeningCode.TITLE_NEAR_MATCH: PLAUSIBLE,
+    ScreeningCode.TITLE_EXTRA_ROLE_WORDS: PLAUSIBLE,
+    ScreeningCode.TITLE_ROLE_FAMILY_REVIEW: PLAUSIBLE,
+    ScreeningCode.TITLE_SPECIALIST_IC_REVIEW: PLAUSIBLE,
+    ScreeningCode.TITLE_DOMAIN_REVIEW: PLAUSIBLE,
+    ScreeningCode.TITLE_UNRESTRICTED: PLAUSIBLE,
+    # An unvouched title admission could not refuse, so it stays undecided.
+    ScreeningCode.TITLE_UNVERIFIED: PLAUSIBLE,
+    ScreeningCode.TITLE_ROLE_FAMILY_CONFLICT: CONFLICT,
+    ScreeningCode.TITLE_MISMATCH: MISMATCH,
+    ScreeningCode.TITLE_EXCLUDED: MISMATCH,
+    ScreeningCode.TITLE_TEST_REQUISITION: MISMATCH,
+}
+_BIN_ORDER = (PLAUSIBLE, CONFLICT, MISMATCH)
+# Pooled run rates below these floors are warned in the run header, never failed.
+RATE_FLOORS = {"admitted": 0.70}
 
 
 def campaign_case(sample: dict[str, Any]) -> JobSearchParameters:
@@ -137,22 +155,23 @@ def _title_finding(
     return finding
 
 
+def title_bin(finding: ScreeningFinding) -> str:
+    """Return the plausible, conflict or mismatch bin of one title finding."""
+    binned = _TITLE_BINS.get(finding.code)
+    if binned is None:
+        raise ValueError(f"no title bin for screening code {finding.code.value!r}")
+    return binned
+
+
 def _title_reading(
     read: dict[str, Any], claimed: list[list[str]], parameters: JobSearchParameters
 ) -> tuple[bool, str | None]:
-    """Return whether the title is excluded and its fit reading, None with no title branch."""
+    """Return whether the title is excluded and its most favorable bin, None with no branch."""
     findings = [_title_finding(read, titles, parameters) for titles in claimed or [[]]]
     excluded = any(finding.code is ScreeningCode.TITLE_EXCLUDED for finding in findings)
     if not claimed:
         return excluded, None
-    if any(finding.standing is ScreeningStanding.MATCH for finding in findings):
-        return excluded, FIT
-    undecided = any(
-        finding.standing is ScreeningStanding.UNKNOWN
-        and finding.code is not ScreeningCode.TITLE_MISMATCH
-        for finding in findings
-    )
-    return excluded, UNDECIDED if undecided else MISFIT
+    return excluded, min((title_bin(finding) for finding in findings), key=_BIN_ORDER.index)
 
 
 def _grade_open_posting(
@@ -163,13 +182,12 @@ def _grade_open_posting(
     grade: dict[str, Any],
 ) -> None:
     claimed = [titles[key] for key in pick.get("branch_keys") or [] if titles.get(key)]
-    excluded, reading = _title_reading(read, claimed, parameters)
-    grade["title_reading"] = reading
-    grade["title_fit"] = None if reading in (None, UNDECIDED) else reading == FIT
+    excluded, binned = _title_reading(read, claimed, parameters)
+    grade["title_bin"] = binned
     grade["place_fit"] = not _place_refused(read)
     if excluded:
         grade["failed"].append(EXCLUDED_TITLE_PICK)
-    if reading == MISFIT:
+    if binned == MISMATCH:
         grade["warned"].append(TITLE_MISFIT)
     if not grade["place_fit"]:
         grade["warned"].append(PLACE_MISFIT)
@@ -255,6 +273,11 @@ def _rate(grades: list[dict[str, Any]], measure: str) -> dict[str, int]:
     return {"passed": sum(1 for value in judged if value), "total": len(judged)}
 
 
+def _bin_rate(postings: list[dict[str, Any]], name: str) -> dict[str, int]:
+    binned = [grade["title_bin"] for grade in postings if grade.get("title_bin") is not None]
+    return {"passed": binned.count(name), "total": len(binned)}
+
+
 def _pick_quality(grades: list[dict[str, Any]]) -> dict[str, Any]:
     """Return precision-style rates over the graded picks, with every flagged pick."""
     postings = [grade for grade in grades if grade["kind"] == "postings"]
@@ -269,12 +292,10 @@ def _pick_quality(grades: list[dict[str, Any]]) -> dict[str, Any]:
             "novel": _rate(grades, "novel"),
             "open_posting": _rate(postings, "open"),
             "board_proven": _rate(boards, "admitted"),
-            "title_fit": _rate(postings, "title_fit"),
+            **{f"title_{name}": _bin_rate(postings, name) for name in _BIN_ORDER},
             "place_fit": _rate(postings, "place_fit"),
         },
-        "title_undecided": [
-            grade["url"] for grade in postings if grade.get("title_reading") == UNDECIDED
-        ],
+        "floors": RATE_FLOORS,
         "flagged": [grade for grade in grades if grade["failed"] or grade["warned"]],
     }
 

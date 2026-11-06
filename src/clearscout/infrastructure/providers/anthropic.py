@@ -211,7 +211,7 @@ def _user_content(plan: RequestPlan) -> list[dict[str, Any]]:
             {"type": "text", "text": plan.evidence.text, "cache_control": {"type": "ephemeral"}}
         )
     # A single draw keeps its task out of the cache; repeat draws read it back.
-    repeated = {"cache_control": {"type": "ephemeral"}} if plan.draws > 1 else {}
+    repeated = {"cache_control": {"type": "ephemeral"}} if plan.caches_task else {}
     content.append({"type": "text", "text": plan.task.text, **repeated})
     return content
 

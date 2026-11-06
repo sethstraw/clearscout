@@ -198,7 +198,9 @@ DEFAULT_STAGES: dict[Stage, StageSetting] = {
     # The capped vocabulary proposal stays below this response limit.
     Stage.SEARCH_VOCABULARY: StageSetting(tier=Tier.EXTRACTION, max_tokens=6000),
     # An unused ceiling bills nothing; a truncated batch bills in full and is discarded.
-    Stage.RELEVANCE_REVIEW: StageSetting(tier=Tier.EXTRACTION, max_tokens=16000),
+    Stage.RELEVANCE_REVIEW: StageSetting(
+        tier=Tier.EXTRACTION, max_tokens=16000, verbosity=Verbosity.LOW
+    ),
     Stage.POSTING_RECOVERY: StageSetting(tier=Tier.EXTRACTION, max_tokens=2000),
 }
 

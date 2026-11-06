@@ -138,7 +138,7 @@ class RequestPlan:
     block every drafting stage sends unchanged, and no model may read it as
     instruction. ``kernel`` is derived rather than passed, so no caller can
     build a request without it. ``draws`` counts identical requests the stage
-    sends; above one, adapters cache the task as well.
+    sends; above one, or with ``repeat_hint`` set, adapters cache the task as well.
     """
 
     stage: Stage
@@ -151,6 +151,13 @@ class RequestPlan:
     search: SearchPolicy | None = None
     max_tokens: int = 8192
     draws: int = 1
+    # Set when the caller will send this exact request again soon; it changes the bill only.
+    repeat_hint: bool = False
+
+    @property
+    def caches_task(self) -> bool:
+        """Return whether adapters mark the task block for the provider cache."""
+        return self.draws > 1 or self.repeat_hint
 
     @property
     def tool_names(self) -> tuple[str, ...]:

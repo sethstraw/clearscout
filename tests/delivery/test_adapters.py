@@ -459,6 +459,30 @@ def test_repeated_draws_read_the_task_from_the_cache_as_well(
 
 
 @pytest.mark.parametrize(
+    ("provider_class", "fake", "body", "marker", "mark"),
+    [
+        (AnthropicProvider, FakeAnthropic, "messages", "cache_control", {"type": "ephemeral"}),
+        (OpenAIProvider, FakeOpenAI, "input", "prompt_cache_breakpoint", {"mode": "explicit"}),
+    ],
+)
+@pytest.mark.parametrize("hinted", [True, False])
+def test_a_single_draw_caches_its_task_only_when_the_request_will_repeat(
+    provider_class, fake, body, marker, mark, hinted
+) -> None:
+    """A repeated trial reads the task back; a single production draw writes no task cache."""
+    client = fake()
+    plan = replace(plan_for("instructions", "ask", evidence="record"), repeat_hint=hinted)
+
+    provider_class(api_key="x", client=cast(Any, client)).complete(plan, Answer, CHOICE)
+
+    blocks = client.kwargs[body][-1]["content"]
+    assert [(block["text"], block.get(marker)) for block in blocks] == [
+        ("record", mark),
+        ("ask", mark if hinted else None),
+    ]
+
+
+@pytest.mark.parametrize(
     ("provider_class", "fake"), [(AnthropicProvider, FakeAnthropic), (OpenAIProvider, FakeOpenAI)]
 )
 def test_a_candidate_record_never_reaches_instruction_authority(provider_class, fake) -> None:
@@ -625,6 +649,19 @@ def test_openai_states_the_detail_and_verbosity_the_stage_chose() -> None:
     provider.complete(plan, Answer, choice)
 
     assert client.kwargs["input"][-1]["content"][0]["detail"] == "original"
+    assert client.kwargs["text"]["verbosity"] == "low"
+
+
+def test_openai_asks_a_relevance_review_batch_for_low_verbosity() -> None:
+    from clearscout.application.config import ProviderName, Stage
+
+    client = FakeOpenAI()
+    provider = OpenAIProvider(api_key="x", client=cast(Any, client))
+    settings = Settings(provider=ProviderName.OPENAI)
+    plan = review_plan(settings, synthetic_inventory(), "Remote only.", "DISCOVERY p1")
+
+    provider.complete(plan, Answer, settings.choice_for_stage(Stage.RELEVANCE_REVIEW))
+
     assert client.kwargs["text"]["verbosity"] == "low"
 
 

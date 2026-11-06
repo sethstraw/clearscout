@@ -176,10 +176,15 @@ def test_a_case_refuses_a_citation_of_another_postings_span() -> None:
     own = [span.id for span in case.spans[POSTING_ID]]
     assert len(own) > 1
 
-    accepted = case.schema.model_validate({"recommendations": [_answer(own[1])]})
-    foreign = case.schema.model_validate({"recommendations": [_answer("rrp-901:span-0001")]})
+    accepted = case.schema.model_validate(
+        {"recommendations": [{**_answer("p1:2"), "pending_discovery_id": "p1"}]}
+    )
+    foreign = case.schema.model_validate(
+        {"recommendations": [{**_answer("p2:1"), "pending_discovery_id": "p1"}]}
+    )
 
-    assert accepted.model_dump()["recommendations"][0]["posting_evidence_span_ids"] == [own[1]]
+    [review], _ = case.validate(RelevanceReviewBatchResponse.model_validate(accepted.model_dump()))
+    assert [citation.span_id for citation in review.posting_citations] == [own[1]]
     _, failures = case.validate(RelevanceReviewBatchResponse.model_validate(foreign.model_dump()))
     assert [failure.failure_code for failure in failures] == ["wrong_posting_span"]
 
@@ -401,6 +406,36 @@ def test_a_rejected_row_in_a_batch_carries_its_own_answer() -> None:
     assert output["validation_failure"]["rejected_answer"]["recommendation"] == "investigate"
 
 
+class _AnsweringClient:
+    """Answer every call with one fixed batch response, in the names the batch issued."""
+
+    def __init__(self, answer: dict[str, Any]) -> None:
+        self.settings = Settings()
+        self._answer = answer
+
+    def complete(self, plan: RequestPlan, schema: type[BaseModel]) -> RelevanceReviewBatchResponse:
+        """Return the scripted answer."""
+        return RelevanceReviewBatchResponse.model_validate(self._answer)
+
+
+def test_a_live_rejection_quotes_the_answer_the_model_gave_under_the_batch_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(clearscout_live.PROMPT_ARMS_ENV, raising=False)
+    impossible = {**_answer("p1:1"), "pending_discovery_id": "p1", "recommendation": "unlikely"}
+    solver = _armed_solver(relevance_live.declared_arms(), monkeypatch, [])
+    monkeypatch.setattr(
+        clearscout_live,
+        "build_live_client",
+        lambda *args, **kwargs: _AnsweringClient({"recommendations": [impossible]}),
+    )
+
+    output = solver(_sample())
+
+    assert output["validation_failure"]["reason"] == "inconsistent_verdict"
+    assert output["validation_failure"]["rejected_answer"]["recommendation"] == "unlikely"
+
+
 class _RecordingClient:
     """Answer without a provider, recording the system prompt and schema in force for the call."""
 
@@ -601,9 +636,7 @@ def test_a_kept_posting_note_reaches_the_task_as_production_renders_it(
     solver(noted)
     solver(_sample())
 
-    assert (
-        f"DISCOVERY {POSTING_ID}\nPerson's note (kept this posting): {NOTE}" in plans[0].task.text
-    )
+    assert f"DISCOVERY p1\nPerson's note (kept this posting): {NOTE}" in plans[0].task.text
     assert "Person's note" not in plans[1].task.text
 
 
@@ -641,8 +674,9 @@ def _long_body(characters: int) -> str:
 
 
 def _task_ids(task: str) -> list[str]:
-    """Return the posting ids one batch's task text names, in the order it names them."""
-    return re.findall(r"^DISCOVERY (\S+)$", task, flags=re.MULTILINE)
+    """Return the sample ids of one batch's postings, in task order, from each `_posting` title."""
+    found = re.findall(r"^Title: Platform Engineer (\d+)$", task, flags=re.MULTILINE)
+    return [f"rrp-{int(index):03d}" for index in found]
 
 
 class _BatchClient:
@@ -746,6 +780,8 @@ def test_each_search_context_is_its_own_task_with_its_own_evidence(
     list(solver.batch(samples))
 
     assert [_task_ids(plan.task.text) for plan in plans] == [["rrp-001", "rrp-003"], ["rrp-002"]]
+    named = [re.findall(r"^DISCOVERY (\S+)$", plan.task.text, flags=re.MULTILINE) for plan in plans]
+    assert named == [["p1", "p2"], ["p1"]]
     evidence = [plan.evidence.text for plan in plans if plan.evidence is not None]
     assert [SECOND_CONTEXT in text for text in evidence] == [False, True]
 
@@ -1017,6 +1053,21 @@ def test_a_run_naming_no_cv_version_reviews_against_the_synthetic_cv(
     )
     assert accepted.model_dump()["recommendations"][0]["master_cv_evidence_ids"] == ["syn-e1"]
     assert "master_cv_version_id" not in solver.run_metadata
+
+
+def test_a_repeated_relevance_run_leaves_its_task_uncached(
+    durable_database_url: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Batched repeats run trial by trial, so a cached task would expire before it is read."""
+    _stored_cv_version(durable_database_url, tmp_path)
+    _live_environment(monkeypatch, tmp_path, durable_database_url)
+    monkeypatch.setenv("CLEARSCOUT_EVAL_TRIALS", "3")
+
+    solver = relevance_live_solver(_dataset(tmp_path / "cases.jsonl", _sample()))
+    solver.database.dispose()
+
+    assert solver.run_metadata["trials"] == 3
+    assert solver.run_metadata["repeat_hint"] is False
 
 
 def test_a_cv_version_is_refused_for_a_dataset_inside_the_repository(

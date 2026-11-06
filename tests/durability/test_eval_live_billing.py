@@ -8,6 +8,7 @@ answer it could not record.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -172,6 +173,49 @@ def test_a_paid_call_that_raises_after_spending_still_bills_and_propagates(
 
     assert len(run_ledger.entries) == 1
     assert billed == [1]
+
+
+@pytest.mark.parametrize(("trials", "hinted"), [(1, False), (3, True)])
+def test_a_repeated_run_records_and_sends_the_repeat_hint(
+    durable_database_url: str, monkeypatch: pytest.MonkeyPatch, trials: int, hinted: bool
+) -> None:
+    """Later trials read the task back from the provider cache; a single trial writes none."""
+    _workspace(durable_database_url, ["only"])
+    monkeypatch.setenv("CLEARSCOUT_EVAL_DATABASE_URL", durable_database_url)
+    database, workspace_id = clearscout_live.billing_target()
+    built: list[dict[str, Any]] = []
+    monkeypatch.setattr(clearscout_live, "credential_for", lambda provider_name: "token")
+    monkeypatch.setattr(
+        clearscout_live, "build_live_client", lambda *args, **kwargs: built.append(kwargs)
+    )
+    scope = clearscout_live.PaidRunScope(
+        provider=ProviderName.OPENAI,
+        split="development",
+        limit=1,
+        output_dir=Path("unused"),
+        approved_cents=10,
+        estimated_cents=None,
+        trials=trials,
+    )
+    metadata = scope.as_metadata()
+
+    try:
+        clearscout_live.paid_call(
+            lambda client: None,
+            provider_name=ProviderName.OPENAI,
+            settings=Settings(provider=ProviderName.OPENAI),
+            run_ledger=Ledger(),
+            run_metadata=metadata,
+            prompt_snapshot={},
+            database=database,
+            workspace_id=workspace_id,
+            origin="eval.match_live",
+        )
+    finally:
+        database.dispose()
+
+    assert metadata["repeat_hint"] is hinted
+    assert [kwargs["repeat_hint"] for kwargs in built] == [hinted]
 
 
 def test_a_live_requirement_the_run_never_established_is_not_credited(

@@ -25,7 +25,10 @@ from clearscout.application.discovery.relevance_review_records import (
     RelevanceReviewPostingInput,
     ValidatedRelevanceReview,
 )
-from clearscout.application.discovery.relevance_review_spans import RelevanceReviewPostingSpan
+from clearscout.application.discovery.relevance_review_spans import (
+    RelevanceReviewAliases,
+    RelevanceReviewPostingSpan,
+)
 from clearscout.application.job_search.models import RelevanceReviewBatchResponse
 from clearscout.application.master_cv.cv import CvInventory
 from clearscout.application.tailoring.stages.context import citable_entries
@@ -71,6 +74,7 @@ class RelevanceCase:
     inventory: CvInventory
     entry_ids: tuple[str, ...]
     spans: dict[str, tuple[RelevanceReviewPostingSpan, ...]]
+    aliases: RelevanceReviewAliases
     schema: type[BaseModel]
     search_context: str
     posting_block: str
@@ -84,14 +88,14 @@ class RelevanceCase:
     @property
     def person_notes(self) -> str:
         """Return the kept-posting notes block production sends with this batch."""
-        return RelevanceReviewService.person_notes(self.pending, self.notes)
+        return RelevanceReviewService.person_notes(self.pending, self.notes, self.aliases)
 
     def validate(
         self, response: RelevanceReviewBatchResponse
     ) -> tuple[list[ValidatedRelevanceReview], list[RelevanceReviewItemFailure]]:
         """Run the shipped validation over this batch's answer."""
         return RelevanceReviewService.validate_response(
-            response, self.inputs, self.pending_ids, set(self.entry_ids)
+            response, self.inputs, self.aliases, set(self.entry_ids)
         )
 
 
@@ -124,6 +128,7 @@ def relevance_batch(
     for item in pending:
         if not spans[item.id]:
             raise RelevanceSampleError(f"{sample_id}: posting {item.id} yields no citation spans")
+    aliases = RelevanceReviewAliases.issue(spans)
     return RelevanceCase(
         sample_id=sample_id,
         pending=pending,
@@ -131,11 +136,12 @@ def relevance_batch(
         inventory=inventory,
         entry_ids=entry_ids,
         spans=spans,
+        aliases=aliases,
         schema=RelevanceReviewService.batch_schema(
             inventory, conditions=stated_conditions(search_context)
         ),
         search_context=search_context,
-        posting_block=RelevanceReviewService.posting_block(pending, spans),
+        posting_block=RelevanceReviewService.posting_block(pending, spans, aliases),
         notes={
             str(posting["id"]): str(posting["note"])
             for posting in postings

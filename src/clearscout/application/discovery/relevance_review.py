@@ -37,6 +37,7 @@ from clearscout.application.discovery.relevance_review_rejections import (
     RelevanceReviewRejectionService,
 )
 from clearscout.application.discovery.relevance_review_spans import (
+    RelevanceReviewAliases,
     RelevanceReviewPostingSpan,
     posting_spans,
 )
@@ -255,8 +256,8 @@ class RelevanceReviewOutcome:
 def response_schema(entry_ids: tuple[str, ...], *, conditions: tuple[str, ...]) -> type[BaseModel]:
     """Close model citations over the CV evidence and exclusions every batch of a search shares.
 
-    Posting and span ids are open strings; validation refuses one the batch never sent, and the
-    task outcome lists each unsent posting id an answer named.
+    Posting and span names are open strings; validation refuses one the batch never issued, and
+    the task outcome lists each unissued posting name an answer used.
     """
     if entry_ids:
         evidence: Any = list[Literal[entry_ids]]  # type: ignore[valid-type]
@@ -453,25 +454,25 @@ class RelevanceReviewService:
                 },
             )
             inputs = {item.id: prepared.inputs[item.id] for item in pending}
+            spans = self.spans(pending, inputs)
+            aliases = RelevanceReviewAliases.issue(spans)
             response, calls = self._complete(
                 workspace_id,
                 prepared.settings,
                 prepared.inventory,
                 prepared.search_context,
-                pending,
-                inputs,
+                self.posting_block(pending, spans, aliases),
+                self.person_notes(pending, prepared.notes, aliases),
                 context,
                 schema=schema,
-                notes=prepared.notes,
             )
-            sent = {item.id for item in pending}
             valid, invalid = self.validate_response(
                 response,
                 inputs,
-                sent,
+                aliases,
                 {entry.id for entry in citable_entries(prepared.inventory)},
             )
-            unsent.extend(self.unsent_posting_ids(response, sent))
+            unsent.extend(aliases.unissued_postings(response))
             self.recorder.append(
                 workspace_id=workspace_id,
                 task_id=context.task_id,
@@ -545,14 +546,12 @@ class RelevanceReviewService:
         settings: Settings,
         inventory: CvInventory,
         search_context: str,
-        pending: list[PendingDiscovery],
-        inputs: dict[str, RelevanceReviewPostingInput],
+        posting_block: str,
+        person_notes: str,
         context: TaskContext,
         *,
         schema: type[BaseModel],
-        notes: Mapping[str, str],
     ) -> tuple[RelevanceReviewBatchResponse, int]:
-        spans = self.spans(pending, inputs)
         with billed_run(
             self.database,
             workspace_id=workspace_id,
@@ -565,8 +564,8 @@ class RelevanceReviewService:
                 settings,
                 inventory,
                 search_context,
-                self.posting_block(pending, spans),
-                person_notes=self.person_notes(pending, notes),
+                posting_block,
+                person_notes=person_notes,
             )
             raw = run.build_client().complete(plan, schema)
         response = RelevanceReviewBatchResponse.model_validate(raw.model_dump(mode="json"))
@@ -576,20 +575,29 @@ class RelevanceReviewService:
     def posting_block(
         pending: list[PendingDiscovery],
         spans: dict[str, tuple[RelevanceReviewPostingSpan, ...]],
+        aliases: RelevanceReviewAliases,
     ) -> str:
-        """Render the batch's postings and their citable spans for the prompt."""
+        """Render the batch's postings and their citable spans under their batch names."""
         return "\n\n".join(
-            f"DISCOVERY {item.id}\nEmployer: {item.employer}\nTitle: {item.title}\n"
+            f"DISCOVERY {aliases.posting_alias(item.id)}\n"
+            f"Employer: {item.employer}\nTitle: {item.title}\n"
             f"Location: {item.location or 'not stated'}\nPosting spans:\n"
-            + "\n".join(f"[SPAN {span.id}] {span.text}" for span in spans[item.id])
+            + "\n".join(
+                f"[SPAN {aliases.span_alias(span.id)}] {span.text}" for span in spans[item.id]
+            )
             for item in pending
         )
 
     @staticmethod
-    def person_notes(pending: list[PendingDiscovery], notes: Mapping[str, str]) -> str:
+    def person_notes(
+        pending: list[PendingDiscovery],
+        notes: Mapping[str, str],
+        aliases: RelevanceReviewAliases,
+    ) -> str:
         """Render the person's notes on kept postings in the batch, or nothing when none has one."""
         lines = [
-            f"DISCOVERY {item.id}\nPerson's note (kept this posting): {flatten(notes[item.id])}"
+            f"DISCOVERY {aliases.posting_alias(item.id)}\n"
+            f"Person's note (kept this posting): {flatten(notes[item.id])}"
             for item in pending
             if item.id in notes
         ]
@@ -609,15 +617,18 @@ class RelevanceReviewService:
         cls,
         response: RelevanceReviewBatchResponse,
         inputs: dict[str, RelevanceReviewPostingInput],
-        expected_ids: set[str],
+        aliases: RelevanceReviewAliases,
         allowed_evidence_ids: set[str],
     ) -> tuple[list[ValidatedRelevanceReview], list[RelevanceReviewItemFailure]]:
-        """Split a batch answer into accepted reviews and per-posting failures."""
+        """Split a batch answer, in its batch names, into accepted reviews and failures."""
+        translated = aliases.translate(response)
         grouped = {
             pending_id: [
-                item for item in response.recommendations if item.pending_discovery_id == pending_id
+                item
+                for item in translated.recommendations
+                if item.pending_discovery_id == pending_id
             ]
-            for pending_id in expected_ids
+            for pending_id in aliases.pending_ids
         }
         valid: list[ValidatedRelevanceReview] = []
         failures: list[RelevanceReviewItemFailure] = []
@@ -628,19 +639,6 @@ class RelevanceReviewService:
             else:
                 valid.append(result)
         return valid, failures
-
-    @staticmethod
-    def unsent_posting_ids(
-        response: RelevanceReviewBatchResponse, expected_ids: set[str]
-    ) -> list[str]:
-        """Return each posting id the answer names that its batch never sent, once."""
-        return list(
-            dict.fromkeys(
-                item.pending_discovery_id
-                for item in response.recommendations
-                if item.pending_discovery_id not in expected_ids
-            )
-        )
 
     @staticmethod
     def _validate_one(

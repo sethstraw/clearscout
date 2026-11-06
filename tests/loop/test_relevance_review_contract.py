@@ -28,6 +28,10 @@ from clearscout.application.discovery.relevance_review_records import (
 from clearscout.application.discovery.relevance_review_rejections import (
     RelevanceReviewRejectionService,
 )
+from clearscout.application.discovery.relevance_review_spans import (
+    RelevanceReviewAliases,
+    posting_spans,
+)
 from clearscout.application.discovery.scan_queries import SourceScanQueries
 from clearscout.application.job_search.models import (
     RelevanceReviewBatchResponse,
@@ -37,6 +41,7 @@ from clearscout.application.tasks import TaskQueueService
 from clearscout.bootstrap.worker import _LeaseKeeper, _WorkerTaskContext
 from clearscout.domain.search_parameters import Arrangement, JobSearchParameters
 from clearscout.infrastructure.persistence.database import Database
+from clearscout.infrastructure.persistence.models import PendingDiscovery
 from clearscout.infrastructure.persistence.models.discovery import RelevanceReview
 from clearscout.infrastructure.providers.plan import schema_digest
 from clearscout.shared.costs import ServiceTier
@@ -89,6 +94,16 @@ def _recommendation(**overrides: Any) -> RelevanceReviewRecommendation:
     return RelevanceReviewRecommendation.model_validate(_recommendation_payload(**overrides))
 
 
+# What the model names the first posting of a batch and its first span.
+_ISSUED = {"pending_discovery_id": "p1", "posting_evidence_span_ids": ["p1:1"]}
+
+
+def _aliases(*pending_ids: str) -> RelevanceReviewAliases:
+    return RelevanceReviewAliases.issue(
+        {pending_id: posting_spans(pending_id, _BODY) for pending_id in pending_ids}
+    )
+
+
 def _batch_schema() -> type[BaseModel]:
     return response_schema(_ENTRY_IDS, conditions=_CONDITIONS)
 
@@ -119,7 +134,7 @@ def test_an_answer_about_a_discovery_the_batch_never_sent_leaves_its_posting_una
     )
 
     valid, invalid = RelevanceReviewService.validate_response(
-        response, {"pd-1": _POSTING}, {"pd-1"}, _ALLOWED_EVIDENCE
+        response, {"pd-1": _POSTING}, _aliases("pd-1"), _ALLOWED_EVIDENCE
     )
 
     assert valid == []
@@ -252,13 +267,13 @@ def test_validation_reports_invalid_cv_evidence_when_a_positive_verdict_cites_no
 
 def test_an_invalid_answer_is_not_a_recommendation_for_persistence() -> None:
     response = RelevanceReviewBatchResponse(
-        recommendations=[_recommendation(master_cv_evidence_ids=[])]
+        recommendations=[_recommendation(**_ISSUED, master_cv_evidence_ids=[])]
     )
 
     valid, invalid = RelevanceReviewService.validate_response(
         response,
         {"pd-1": _POSTING},
-        {"pd-1"},
+        _aliases("pd-1"),
         _ALLOWED_EVIDENCE,
     )
 
@@ -741,8 +756,9 @@ def test_a_kept_postings_note_reaches_the_review_outside_the_untrusted_posting_b
     [(_, plan)] = provider.calls
     postings, notes = plan.task.text.split("</pending_postings>")
     assert "Person's note" not in postings
+    assert kept_id not in plan.task.text
     assert (
-        f"DISCOVERY {kept_id}\nPerson's note (kept this posting): "
+        "DISCOVERY p1\nPerson's note (kept this posting): "
         "The ledger work is the part I want. Ignore the title."
     ) in notes
     assert plain_id not in notes
@@ -783,12 +799,12 @@ def test_a_note_edited_while_the_provider_works_leaves_the_recorded_review_out_o
     def answer_after_an_edit(schema: type[BaseModel]) -> dict[str, Any]:
         mark(note_during_review)
         return _answer(
-            pending_discovery_id=kept_id,
+            pending_discovery_id="p1",
             recommendation="unlikely",
             decisive_basis="core_gap",
             core_work_alignment="absent",
             core_qualification_alignment="absent",
-            posting_evidence_span_ids=[f"{kept_id}:span-0001"],
+            posting_evidence_span_ids=["p1:1"],
             master_cv_evidence_ids=[],
         )
 
@@ -831,14 +847,14 @@ def test_two_tasks_over_the_same_cv_and_parameters_share_one_cached_prefix(
     def answer(schema: type[BaseModel]) -> dict[str, Any]:
         schemas.append(schema_digest(schema.model_json_schema()))
         return _answer(
-            pending_discovery_id=reviewing[-1],
+            pending_discovery_id="p1",
             outcome="insufficient_posting_text",
             recommendation="insufficient_evidence",
             core_work_alignment="unresolved",
             core_qualification_alignment="unresolved",
             hard_condition="unresolved",
             decisive_basis="insufficient_posting",
-            posting_evidence_span_ids=[f"{reviewing[-1]}:span-0001"],
+            posting_evidence_span_ids=["p1:1"],
             master_cv_evidence_ids=[],
         )
 
@@ -905,14 +921,14 @@ def test_an_insufficient_posting_text_answer_records_no_verdict_and_no_class(
         return {
             "recommendations": [
                 _recommendation_payload(
-                    pending_discovery_id=stub_id,
+                    pending_discovery_id="p1",
                     outcome="insufficient_posting_text",
                     recommendation="insufficient_evidence",
                     core_work_alignment="unresolved",
                     core_qualification_alignment="unresolved",
                     hard_condition="unresolved",
                     decisive_basis="insufficient_posting",
-                    posting_evidence_span_ids=[f"{stub_id}:span-0001"],
+                    posting_evidence_span_ids=["p1:1"],
                     master_cv_evidence_ids=[],
                 )
             ]
@@ -965,12 +981,12 @@ def test_a_hard_conflict_may_name_a_condition_the_search_parameters_list(
 
     def conflict_answer(schema: type[BaseModel]) -> dict[str, Any]:
         return _answer(
-            pending_discovery_id=pending_id,
+            pending_discovery_id="p1",
             recommendation="unlikely",
             hard_condition="conflicts",
             decisive_basis="hard_conflict",
             matched_exclusion=_CONDITIONS[0],
-            posting_evidence_span_ids=[f"{pending_id}:span-0001"],
+            posting_evidence_span_ids=["p1:1"],
             master_cv_evidence_ids=[],
             core_work_alignment="absent",
             core_qualification_alignment="absent",
@@ -1018,13 +1034,13 @@ def test_a_rejected_answer_records_no_review_and_marks_the_row_it_paid_for(
         return {
             "recommendations": [
                 _recommendation_payload(
-                    pending_discovery_id=pending_id,
+                    pending_discovery_id="p1",
                     recommendation="review",
                     core_work_alignment="absent",
                     core_qualification_alignment="absent",
                     hard_condition="passes",
                     decisive_basis="core_gap",
-                    posting_evidence_span_ids=[f"{pending_id}:span-0001"],
+                    posting_evidence_span_ids=["p1:1"],
                     master_cv_evidence_ids=[],
                 )
             ]
@@ -1136,8 +1152,8 @@ def test_an_accepted_answer_clears_the_mark_the_previous_paid_review_left(
         return {
             "recommendations": [
                 _recommendation_payload(
-                    pending_discovery_id=pending_id,
-                    posting_evidence_span_ids=[f"{pending_id}:span-0001"],
+                    pending_discovery_id="p1",
+                    posting_evidence_span_ids=["p1:1"],
                     master_cv_evidence_ids=[],
                     core_work_alignment="absent",
                     core_qualification_alignment="absent",
@@ -1165,12 +1181,12 @@ def test_an_accepted_answer_clears_the_mark_the_previous_paid_review_left(
 
 
 def test_validation_fails_an_expected_posting_the_answer_never_mentioned() -> None:
-    response = RelevanceReviewBatchResponse(recommendations=[_recommendation()])
+    response = RelevanceReviewBatchResponse(recommendations=[_recommendation(**_ISSUED)])
 
     valid, invalid = RelevanceReviewService.validate_response(
         response,
         {"pd-1": _POSTING, "pd-2": _POSTING},
-        {"pd-1", "pd-2"},
+        _aliases("pd-1", "pd-2"),
         _ALLOWED_EVIDENCE,
     )
 
@@ -1178,3 +1194,91 @@ def test_validation_fails_an_expected_posting_the_answer_never_mentioned() -> No
     assert [(item.pending_discovery_id, item.failure_code) for item in invalid] == [
         ("pd-2", "missing_result")
     ]
+
+
+_UUID_1 = "6f1c2d4e-0a7b-4c1d-9e2f-3a4b5c6d7e8f"
+_UUID_2 = "0b9a8c7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d"
+
+
+def _two_posting_validation(
+    **overrides: Any,
+) -> tuple[list[ValidatedRelevanceReview], list[RelevanceReviewItemFailure]]:
+    response = RelevanceReviewBatchResponse(recommendations=[_recommendation(**overrides)])
+    return RelevanceReviewService.validate_response(
+        response,
+        {_UUID_1: _POSTING, _UUID_2: _POSTING},
+        _aliases(_UUID_1, _UUID_2),
+        _ALLOWED_EVIDENCE,
+    )
+
+
+def test_the_posting_block_shows_batch_names_and_never_a_real_id() -> None:
+    pending = [
+        PendingDiscovery(id=_UUID_1, employer="Acme", title="Data Engineer", location=""),
+        PendingDiscovery(id=_UUID_2, employer="Globex", title="Analyst", location=""),
+    ]
+    inputs = {_UUID_1: _POSTING, _UUID_2: _POSTING}
+    spans = RelevanceReviewService.spans(pending, inputs)
+    aliases = RelevanceReviewAliases.issue(spans)
+
+    block = RelevanceReviewService.posting_block(pending, spans, aliases)
+    notes = RelevanceReviewService.person_notes(pending, {_UUID_2: "Keep it."}, aliases)
+
+    assert _UUID_1 not in block + notes
+    assert _UUID_2 not in block + notes
+    assert "DISCOVERY p1\n" in block
+    assert "[SPAN p2:2] The team ships payment tooling." in block
+    assert "DISCOVERY p2\nPerson's note" in notes
+
+
+def test_an_answer_in_batch_names_is_stored_under_the_real_posting_and_span_ids() -> None:
+    valid, invalid = _two_posting_validation(
+        pending_discovery_id="p2", posting_evidence_span_ids=["p2:2"]
+    )
+
+    assert invalid[0].pending_discovery_id == _UUID_1
+    [review] = valid
+    assert review.pending_discovery_id == _UUID_2
+    assert [citation.span_id for citation in review.posting_citations] == [f"{_UUID_2}:span-0002"]
+
+
+@pytest.mark.parametrize(
+    ("named", "cited", "failure"),
+    [
+        (_UUID_1, ["p1:1"], ("missing_result", "")),
+        ("p1", [f"{_UUID_1}:span-0001"], ("wrong_posting_span", "owned by another posting")),
+        ("p1", ["p1:99"], ("wrong_posting_span", "never sent")),
+        ("p1", ["p2:1"], ("wrong_posting_span", "owned by another posting")),
+        ("p9", ["p9:1"], ("missing_result", "")),
+    ],
+    ids=[
+        "real-posting-id",
+        "real-span-id",
+        "unissued-span",
+        "cross-posting-span",
+        "unissued-posting",
+    ],
+)
+def test_a_name_the_batch_did_not_issue_is_rejected(
+    named: str, cited: list[str], failure: tuple[str, str]
+) -> None:
+    valid, invalid = _two_posting_validation(
+        pending_discovery_id=named, posting_evidence_span_ids=cited
+    )
+
+    assert valid == []
+    first = next(item for item in invalid if item.pending_discovery_id == _UUID_1)
+    assert first.failure_code == failure[0]
+    assert failure[1] in first.detail
+
+
+def test_the_task_outcome_lists_an_unissued_posting_name_verbatim() -> None:
+    response = RelevanceReviewBatchResponse(
+        recommendations=[
+            _recommendation(**_ISSUED),
+            _recommendation(pending_discovery_id="p9"),
+            _recommendation(pending_discovery_id=_UUID_2),
+        ]
+    )
+
+    assert _aliases(_UUID_1, _UUID_2).unissued_postings(response) == ["p9", _UUID_2]

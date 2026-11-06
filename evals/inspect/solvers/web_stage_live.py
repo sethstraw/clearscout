@@ -415,6 +415,7 @@ def campaign_result(request: CampaignRequest, poll: BackgroundPoll) -> dict[str,
         "search_count": 0 if poll.record is None else poll.record.search_count or len(searches),
         "queries": [query for search in searches for query in search.queries],
         "unattributable_searches": sum(1 for search in searches if not search.queries),
+        "page_action_count": 0 if poll.record is None else poll.record.page_action_count,
         "branches": [
             {
                 "key": key,
