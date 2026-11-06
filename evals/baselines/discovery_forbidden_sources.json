@@ -1,6 +1,6 @@
 {
   "case": "discovery_forbidden_sources",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -37,7 +37,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "448744bc8dd3",
-    "request.match": "926108bf505d",
+    "request.match": "a8462e07e910",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

@@ -1,6 +1,6 @@
 {
   "case": "derived_boilerplate_requirements",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -28,7 +28,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "5688bd85301d",
-    "request.match": "395488d69350",
+    "request.match": "a1fb21ac0f57",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

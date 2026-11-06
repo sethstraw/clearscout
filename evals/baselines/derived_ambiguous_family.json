@@ -1,6 +1,6 @@
 {
   "case": "derived_ambiguous_family",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -28,7 +28,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "3077f83476e2",
-    "request.match": "2b13da71c8b5",
+    "request.match": "cbcad29cdcf5",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

@@ -1,6 +1,6 @@
 {
   "case": "ai_assisted_development",
-  "prompt_suite": "e64b2173a1af",
+  "prompt_suite": "9b863229ed75",
   "schemas": "ab32398ba3e6",
   "scores": {
     "check.character policy": "pass",
@@ -50,7 +50,7 @@
     "posting_language_echoed": 0,
     "request.draft": "c506f39a35e7",
     "request.jobspec": "9f877926ba94",
-    "request.match": "bedbfbc95017",
+    "request.match": "785ad54f8a7d",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

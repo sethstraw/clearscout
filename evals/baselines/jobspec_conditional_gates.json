@@ -1,6 +1,6 @@
 {
   "case": "jobspec_conditional_gates",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "blocking_gates_found": 1.0,
@@ -31,7 +31,7 @@
     "model_rule_disagreements": 0,
     "nonblocking_gates_kept": 1.0,
     "request.jobspec": "928f7a1fdf26",
-    "request.match": "229cefa94f6f",
+    "request.match": "1751448a4f35",
     "requirement_precision": 1.0,
     "requirement_recall": 1.0,
     "stage_failure": "",

@@ -1,6 +1,6 @@
 {
   "case": "invented_figure",
-  "prompt_suite": "e64b2173a1af",
+  "prompt_suite": "9b863229ed75",
   "schemas": "ab32398ba3e6",
   "scores": {
     "check.character policy": "pass",
@@ -49,7 +49,7 @@
     "ownership_inflation": 0,
     "request.draft": "8f63e1f50a51",
     "request.jobspec": "2c947de03629",
-    "request.match": "e5dcfe8822e5",
+    "request.match": "515ed2eacaeb",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

@@ -1,6 +1,6 @@
 {
   "case": "posting_recovery_uncited_candidate_refused",
-  "prompt_suite": "1b1fae787876",
+  "prompt_suite": "4ac54f2ad423",
   "schemas": "61a3cacac376",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -30,7 +30,7 @@
     "posting_recovery_outcome": "response_refused",
     "posting_recovery_refusal": "Posting recovery returned an uncited candidate URL.",
     "request.jobspec": "4e3cb3a74bf4",
-    "request.match": "6da6f750cb45",
+    "request.match": "d1aecf8f4dff",
     "request.posting_recovery": "c2e3192c7c00",
     "stage_failure": "",
     "structured_output": "valid",

@@ -1,7 +1,7 @@
 {
   "case": "strong_direct_fit",
-  "prompt_suite": "3d6a0735b129",
-  "schemas": "0905beebe712",
+  "prompt_suite": "2931425ff63c",
+  "schemas": "720c92210ed3",
   "scores": {
     "blocking_gates_found": 1.0,
     "check.character policy": "pass",
@@ -52,10 +52,10 @@
     "model_rule_disagreements": 0,
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
-    "request.critic": "14419f6d8f04",
+    "request.critic": "dd5f97fa1802",
     "request.draft": "4534f8e0f0e8",
     "request.jobspec": "c2a7751a9ec4",
-    "request.match": "16f16e8efbd4",
+    "request.match": "4976a3fe7136",
     "requirement_precision": 1.0,
     "requirement_recall": 1.0,
     "stage_failure": "",

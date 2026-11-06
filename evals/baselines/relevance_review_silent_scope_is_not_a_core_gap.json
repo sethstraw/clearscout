@@ -1,6 +1,6 @@
 {
   "case": "relevance_review_silent_scope_is_not_a_core_gap",
-  "prompt_suite": "7149879130ab",
+  "prompt_suite": "e64ced9c219e",
   "schemas": "8f90ddf665d3",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -33,7 +33,7 @@
     "relevance_review_undefined_basis_values": 0,
     "relevance_review_valid": 1,
     "request.jobspec": "9857b40ab91e",
-    "request.match": "6180139753cd",
+    "request.match": "2bed4f9c176d",
     "request.relevance_review": "9e8fb264455b",
     "stage_failure": "",
     "structured_output": "valid",

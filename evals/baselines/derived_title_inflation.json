@@ -1,6 +1,6 @@
 {
   "case": "derived_title_inflation",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -28,7 +28,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 1,
     "request.jobspec": "51e2210f819b",
-    "request.match": "36301b7d5db2",
+    "request.match": "88684fa709f8",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

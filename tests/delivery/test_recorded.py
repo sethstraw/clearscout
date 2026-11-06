@@ -213,8 +213,11 @@ def test_a_recorded_stage_replays_through_the_real_sdk(
 ) -> None:
     """Each stage completes against genuine model output, offline."""
     name = ProviderName(cassette_path.stem.removeprefix(f"{stage}_"))
-    provider = provider_from(Cassette.load(cassette_path), name)
-    CHECKS[stage](replay(stage, provider, name, tmp_path, monkeypatch))
+    cassette = Cassette.load(cassette_path)
+    CHECKS[stage](replay(stage, provider_from(cassette, name), name, tmp_path, monkeypatch))
+    assert cassette.replayed == set(range(len(cassette.interactions))), (
+        "a recorded call went unused"
+    )
 
 
 def test_every_recorded_stage_has_a_replay_check_and_a_canned_exchange() -> None:

@@ -1,6 +1,6 @@
 {
   "case": "ambiguous_requirement",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "blocking_gates_found": 1.0,
@@ -31,7 +31,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "cbf38a138515",
-    "request.match": "b0136e70915a",
+    "request.match": "7ac03289bbb6",
     "requirement_precision": 1.0,
     "requirement_recall": 1.0,
     "stage_failure": "",

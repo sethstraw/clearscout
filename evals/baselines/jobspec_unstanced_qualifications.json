@@ -1,6 +1,6 @@
 {
   "case": "jobspec_unstanced_qualifications",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "blocking_gates_found": 1.0,
@@ -32,7 +32,7 @@
     "must_have_accuracy": 1.0,
     "nice_to_have_accuracy": 1.0,
     "request.jobspec": "c9204ef446d0",
-    "request.match": "234aa2d45ec6",
+    "request.match": "14069b235123",
     "requirement_precision": 1.0,
     "requirement_recall": 1.0,
     "stage_failure": "",

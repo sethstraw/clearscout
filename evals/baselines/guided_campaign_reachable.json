@@ -1,6 +1,6 @@
 {
   "case": "guided_campaign_reachable",
-  "prompt_suite": "bcae2b4cc8f9",
+  "prompt_suite": "1f8f71f0b7db",
   "schemas": "4f93327e43a9",
   "scores": {
     "campaign_branch_labels_missing_from_task": 0,
@@ -34,7 +34,7 @@
     "model_rule_disagreements": 0,
     "request.guided_campaign": "3750be1448ae",
     "request.jobspec": "4e3cb3a74bf4",
-    "request.match": "6da6f750cb45",
+    "request.match": "d1aecf8f4dff",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

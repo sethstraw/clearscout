@@ -1,6 +1,6 @@
 {
   "case": "derived_sales_pipeline",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -29,7 +29,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "b74e29622aa5",
-    "request.match": "cd682d0156c9",
+    "request.match": "5b3d9a9751e6",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

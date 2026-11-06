@@ -1,7 +1,7 @@
 {
   "case": "adjacent_defensible_fit",
-  "prompt_suite": "3d6a0735b129",
-  "schemas": "0905beebe712",
+  "prompt_suite": "2931425ff63c",
+  "schemas": "720c92210ed3",
   "scores": {
     "check.character policy": "pass",
     "check.critic": "pass",
@@ -51,10 +51,10 @@
     "model_rule_disagreements": 1,
     "must_have_accuracy": 1.0,
     "ownership_inflation": 0,
-    "request.critic": "7e5c2b0b4a4b",
+    "request.critic": "623728ee0110",
     "request.draft": "057956a273dc",
     "request.jobspec": "f83dd4900fd3",
-    "request.match": "eb3cbbb7b5e4",
+    "request.match": "f2796f7cd466",
     "requirement_precision": 1.0,
     "requirement_recall": 1.0,
     "stage_failure": "",

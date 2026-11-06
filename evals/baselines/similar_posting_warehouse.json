@@ -1,6 +1,6 @@
 {
   "case": "similar_posting_warehouse",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "blocking_gates_found": 1.0,
@@ -31,7 +31,7 @@
     "model_rule_disagreements": 0,
     "must_have_accuracy": 1.0,
     "request.jobspec": "51cfae305272",
-    "request.match": "5beaf65a7621",
+    "request.match": "fd89c80f6651",
     "selection_distinct": 2,
     "stage_failure": "",
     "structured_output": "valid",

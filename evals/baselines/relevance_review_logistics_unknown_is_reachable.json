@@ -1,6 +1,6 @@
 {
   "case": "relevance_review_logistics_unknown_is_reachable",
-  "prompt_suite": "7149879130ab",
+  "prompt_suite": "e64ced9c219e",
   "schemas": "8f90ddf665d3",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -33,7 +33,7 @@
     "relevance_review_undefined_basis_values": 0,
     "relevance_review_valid": 2,
     "request.jobspec": "c29e556782d6",
-    "request.match": "e9ee7bf5822c",
+    "request.match": "56000ca4722c",
     "request.relevance_review": "a56fc3f75a9e",
     "stage_failure": "",
     "structured_output": "valid",

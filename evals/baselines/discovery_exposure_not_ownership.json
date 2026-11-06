@@ -1,6 +1,6 @@
 {
   "case": "discovery_exposure_not_ownership",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -37,7 +37,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "5afdd6556bed",
-    "request.match": "54cb6502d378",
+    "request.match": "f8ea31feacbe",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

@@ -1,6 +1,6 @@
 {
   "case": "structure_fabricated_summary_refused",
-  "prompt_suite": "9b461f8ac64b",
+  "prompt_suite": "6e1948dc5aac",
   "schemas": "e5c921733908",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -28,7 +28,7 @@
     "model_calls": 3,
     "model_rule_disagreements": 0,
     "request.jobspec": "4e3cb3a74bf4",
-    "request.match": "6da6f750cb45",
+    "request.match": "d1aecf8f4dff",
     "request.structure": "c4515208ea31",
     "stage_failure": "",
     "structure_check.authentic": "fail",

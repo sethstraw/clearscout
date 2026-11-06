@@ -1,6 +1,6 @@
 {
   "case": "match_years_sum",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "classification_agreement": 1.0,
@@ -29,7 +29,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "658e44901bf4",
-    "request.match": "556162efe9b7",
+    "request.match": "5dd7687d09c9",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

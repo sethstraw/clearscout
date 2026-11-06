@@ -1,6 +1,6 @@
 {
   "case": "batch_shared_requirement_b",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -29,7 +29,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "a285ce8a7527",
-    "request.match": "ff5e89355d2a",
+    "request.match": "d0db92ccd228",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

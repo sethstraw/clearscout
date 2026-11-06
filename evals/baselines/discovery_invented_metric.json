@@ -1,6 +1,6 @@
 {
   "case": "discovery_invented_metric",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -37,7 +37,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "6694c7c4f46b",
-    "request.match": "edceff473cb6",
+    "request.match": "d5d244e4fc2d",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

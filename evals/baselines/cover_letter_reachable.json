@@ -1,6 +1,6 @@
 {
   "case": "cover_letter_reachable",
-  "prompt_suite": "2a9e97edae53",
+  "prompt_suite": "6784193e138a",
   "schemas": "b11aba40033b",
   "scores": {
     "check.character policy": "pass",
@@ -62,7 +62,7 @@
     "request.cover": "aa06289f5382",
     "request.draft": "830fe4bcd0ce",
     "request.jobspec": "4e3cb3a74bf4",
-    "request.match": "6da6f750cb45",
+    "request.match": "d1aecf8f4dff",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

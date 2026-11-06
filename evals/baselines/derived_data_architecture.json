@@ -1,6 +1,6 @@
 {
   "case": "derived_data_architecture",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "derived.arrangement_fit": "not stated",
@@ -29,7 +29,7 @@
     "model_rule_disagreements": 0,
     "must_have_accuracy": 1.0,
     "request.jobspec": "c2a58f61da10",
-    "request.match": "47ae1e2faa14",
+    "request.match": "741cb44f3e36",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

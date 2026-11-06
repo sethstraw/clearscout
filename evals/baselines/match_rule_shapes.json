@@ -1,6 +1,6 @@
 {
   "case": "match_rule_shapes",
-  "prompt_suite": "baff5cd07446",
+  "prompt_suite": "d67ef9562238",
   "schemas": "d4bfdf4a3b99",
   "scores": {
     "asserted_lines_unsent": 0,
@@ -31,7 +31,7 @@
     "model_calls": 2,
     "model_rule_disagreements": 0,
     "request.jobspec": "f4ca39894237",
-    "request.match": "b70a923c3cd2",
+    "request.match": "2367e6f3dfc7",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,

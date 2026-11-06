@@ -1,7 +1,7 @@
 {
   "case": "vision_reachable",
-  "prompt_suite": "f9e421b24ac3",
-  "schemas": "76912751594f",
+  "prompt_suite": "d955bbb1bef4",
+  "schemas": "fa84fc500c9e",
   "scores": {
     "derived.arrangement_fit": "not stated",
     "derived.authorization": "not stated",
@@ -27,9 +27,9 @@
     "deterministic_work_requested": 0,
     "model_calls": 3,
     "model_rule_disagreements": 0,
-    "request.ingest": "9c3169cd91c7",
+    "request.ingest": "37993e64da8d",
     "request.jobspec": "4e3cb3a74bf4",
-    "request.match": "6da6f750cb45",
+    "request.match": "d1aecf8f4dff",
     "stage_failure": "",
     "structured_output": "valid",
     "tokens": 0,
