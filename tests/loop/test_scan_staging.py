@@ -3347,59 +3347,6 @@ def test_a_verified_active_body_keeping_an_absent_row_records_it_as_verified_cur
         )
 
 
-def test_a_verified_active_row_storing_an_older_facts_document_keeps_what_it_stored(
-    durable_database: Database, tmp_path: Path
-) -> None:
-    """A staged-facts document this reader cannot read keeps its facts instead of being blanked."""
-    workspace_id = _workspace(durable_database, tmp_path)
-    source_id = employer_board(durable_database, workspace_id, "Acme")
-    url = "https://acme.example.test/careers/operations-lead"
-    stored_facts = {
-        "schema_version": 2,
-        "identity_trust": "publisher",
-        "locations": {
-            "values": ["Remote"],
-            "unresolved_values": [],
-            "provenance": "publisher",
-            "complete": True,
-        },
-    }
-    pending_id = _pending(
-        durable_database,
-        workspace_id,
-        url=url,
-        first_seen_on=date(2026, 8, 24),
-        source_id=source_id,
-    )
-    with durable_database.session() as session:
-        row = session.get(PendingDiscovery, pending_id)
-        assert row is not None
-        content = pending_posting_content(
-            workspace_id,
-            pending_id,
-            url,
-            identity_status=PostingIdentityStatus.VERIFIED,
-            posting_status=PostingStatus.ACTIVE,
-        )
-        session.add(content)
-        session.flush()
-        row.current_content_id = content.id
-        row.staged_facts = stored_facts
-
-    withdrawn = _staging(durable_database, tmp_path).withdraw_absent(
-        workspace_id, source_id, [], date(2026, 8, 25)
-    )
-
-    assert withdrawn == []
-    with durable_database.session() as session:
-        kept = session.get(PendingDiscovery, pending_id)
-        assert kept is not None
-        assert kept.staged_facts == {
-            **stored_facts,
-            "freshness": FreshnessState.VERIFIED_CURRENT.value,
-        }
-
-
 _PAGED_ROLE_URL = "https://acme.example.test/careers/operations-lead"
 _PAGED_READ = WithdrawingRead(raw_count=40, read_count=40, complete=True, listing_pages=2)
 

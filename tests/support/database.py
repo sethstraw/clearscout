@@ -8,8 +8,11 @@ from __future__ import annotations
 import shutil
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 from clearscout.infrastructure.persistence.migration import upgrade
+
+_FILLER = {"INTEGER": 0, "BOOLEAN": 0, "JSON": "{}", "DATE": "2026-01-01"}
 
 
 def build_template(destination: Path) -> Path:
@@ -37,4 +40,16 @@ def clone(template: Path, destination: Path) -> str:
     return f"sqlite+pysqlite:///{destination}"
 
 
-__all__ = ["build_template", "clone"]
+def insert_row(connection: sqlite3.Connection, table: str, **values: Any) -> None:
+    """Insert a raw row, filling required columns the case does not name."""
+    for _, name, kind, notnull, default, _ in connection.execute(f"PRAGMA table_info({table})"):
+        if notnull and default is None and name not in values:
+            filler = "2026-01-01 00:00:00" if "DATETIME" in kind else ""
+            values[name] = _FILLER.get(kind.split("(")[0], filler)
+    columns = ", ".join(values)
+    marks = ", ".join("?" for _ in values)
+    statement = f"INSERT INTO {table} ({columns}) VALUES ({marks})"  # noqa: S608
+    connection.execute(statement, list(values.values()))
+
+
+__all__ = ["build_template", "clone", "insert_row"]

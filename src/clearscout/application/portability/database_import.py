@@ -249,6 +249,35 @@ def _finalize_relocations(
     )
 
 
+def _assert_source_at_target_revision(
+    connection: sqlite3.Connection, database: Database, source: Path
+) -> None:
+    """Refuse a source whose stored data predates the target's migrations."""
+    with database.engine.connect() as target:
+        head = target.execute(text("SELECT version_num FROM alembic_version")).scalar()
+    try:
+        row = connection.execute("SELECT version_num FROM alembic_version").fetchone()
+    except sqlite3.OperationalError:
+        row = None
+    stamped = row[0] if row else None
+    if stamped == head:
+        return
+    # Revision ids are zero-padded, so string order is migration order.
+    if stamped is None:
+        remedy = "Import a database that ClearScout created or backed up."
+    elif head is not None and stamped > head:
+        remedy = "Upgrade ClearScout to a build that knows that revision, then import again."
+    else:
+        remedy = (
+            "Copy the source database, run 'clearscout db upgrade' on the copy, "
+            "and import the upgraded copy."
+        )
+    raise ValidationError(
+        f"{source} is at schema revision {stamped or 'unknown'}, but this build expects "
+        f"{head}. {remedy}"
+    )
+
+
 def _preflight(
     source: Path,
     database: Database,
@@ -290,6 +319,7 @@ def _preflight(
                 f"{source} is not a ClearScout database with a recognizable schema; "
                 "missing tables: " + ", ".join(missing_markers)
             )
+        _assert_source_at_target_revision(connection, database, source)
         active_source_work = connection.execute(
             "SELECT 1 FROM background_tasks WHERE task_type IN "
             "('source.scan', 'source.continue') AND status IN ('queued', 'running') LIMIT 1"

@@ -67,20 +67,6 @@ def test_a_read_without_closing_statements_cites_its_new_publisher_evidence() ->
     assert fact.normalized_value is None
 
 
-def test_missing_date_facts_in_version_three_do_not_invent_a_publisher_date() -> None:
-    stored = {
-        "schema_version": 3,
-        "identity_trust": "publisher",
-        "locations": PublishedFact(values=("Freedonia",), complete=True).as_json(),
-    }
-
-    facts = StagedListingFacts.from_json(stored)
-
-    assert facts.publisher_vouched
-    assert facts.locations.values == ("Freedonia",)
-    assert facts.closing_date is None
-
-
 @pytest.mark.parametrize(
     ("value", "precision", "zone", "expected"),
     [
@@ -121,7 +107,8 @@ def test_staged_facts_round_trip_and_reject_an_unknown_document_version() -> Non
     )
 
     assert StagedListingFacts.from_json(facts.as_json()) == facts
-    assert StagedListingFacts.from_json({"schema_version": 3}).focus_terms == PublishedFact()
+    older = {**facts.as_json(), "schema_version": 4}
+    assert not StagedListingFacts.from_json(older).publisher_vouched
     assert StagedListingFacts.from_json({"schema_version": 99}).identity_trust.value == (
         "unverified_hint"
     )
@@ -158,22 +145,6 @@ def _reads(*reads: tuple[str | None, date]) -> PublisherPostedDate | None:
     for value, read_on in reads:
         kept = merged_posted_date(kept, _posted(value) if value else None, read_on)
     return kept
-
-
-@pytest.mark.parametrize("version", [3, 4, 5])
-def test_each_supported_staged_facts_version_is_read(version: int) -> None:
-    stored = {
-        "schema_version": version,
-        "identity_trust": "publisher",
-        "locations": PublishedFact(values=("Freedonia",), complete=True).as_json(),
-    }
-
-    facts = StagedListingFacts.from_json(stored)
-
-    assert facts.publisher_vouched
-    assert facts.locations.values == ("Freedonia",)
-    assert facts.posted_date is None
-    assert facts.as_json()["schema_version"] == 5
 
 
 def test_a_posted_date_survives_the_staged_facts_round_trip() -> None:

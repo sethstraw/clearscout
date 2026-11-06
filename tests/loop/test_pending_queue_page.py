@@ -1441,16 +1441,7 @@ def test_pending_pages_choose_the_strongest_rows_before_applying_the_limit(
         assert strongest is not None
         sales.title = "Sales Director"
         accountant.title = "Payroll Accountant"
-        publisher_facts = {
-            "schema_version": 3,
-            "identity_trust": "publisher",
-            "role_aliases": {"values": [], "source_text": ""},
-            "locations": {"values": [], "source_text": ""},
-            "arrangements": {"values": [], "source_text": ""},
-            "employment_types": {"values": [], "source_text": ""},
-            "compensation": {"values": [], "source_text": ""},
-            "freshness": "unknown",
-        }
+        publisher_facts = StagedListingFacts().as_json()
         sales.staged_facts = publisher_facts
         accountant.staged_facts = publisher_facts
         strongest.staged_facts = publisher_facts

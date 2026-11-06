@@ -61,7 +61,9 @@ def database_upgrade(
 
 
 def database_import(
-    source: Annotated[Path, typer.Argument(help="An earlier ClearScout SQLite database.")],
+    source: Annotated[
+        Path, typer.Argument(help="A ClearScout SQLite database at this build's schema revision.")
+    ],
     database_url: DatabaseUrlOption = None,
     dry_run: Annotated[
         bool,

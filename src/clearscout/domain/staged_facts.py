@@ -8,8 +8,8 @@ from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any
 
-# Stored documents from_json reads; as_json writes the last.
-STAGED_FACTS_VERSIONS = (3, 4, 5)
+# The one stored document version as_json writes and from_json reads.
+STAGED_FACTS_VERSION = 5
 # Fewer reads than this that each moved the date are a repost, not a rolling date.
 _ROLLING_DATE_READS = 3
 _READ_DAY_ECHO = "The posted date repeats the day it was read with another year."
@@ -443,7 +443,7 @@ class StagedListingFacts:
     def as_json(self) -> dict[str, object]:
         """Return a versioned document suitable for durable JSON storage."""
         return {
-            "schema_version": STAGED_FACTS_VERSIONS[-1],
+            "schema_version": STAGED_FACTS_VERSION,
             "identity_trust": self.identity_trust.value,
             "employer": self.employer.as_json(),
             "role_aliases": self.role_aliases.as_json(),
@@ -460,7 +460,7 @@ class StagedListingFacts:
     @classmethod
     def from_json(cls, value: object) -> StagedListingFacts:
         """Reconstruct the supported version of a durable staged-facts document."""
-        if not isinstance(value, dict) or value.get("schema_version") not in STAGED_FACTS_VERSIONS:
+        if not isinstance(value, dict) or value.get("schema_version") != STAGED_FACTS_VERSION:
             return cls(identity_trust=ListingIdentityTrust.UNVERIFIED_HINT)
         raw_identity_trust = value.get("identity_trust")
         if not isinstance(raw_identity_trust, str):

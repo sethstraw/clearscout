@@ -4,28 +4,15 @@ from pathlib import Path
 from typing import Any
 
 from clearscout.infrastructure.persistence.migration import downgrade, upgrade
-
-_FILLER = {"INTEGER": 0, "BOOLEAN": 0, "JSON": "{}", "DATE": "2026-01-01"}
-
-
-def _insert(connection: sqlite3.Connection, table: str, **values: Any) -> None:
-    """Insert a row, filling required columns the case does not name."""
-    for _, name, kind, notnull, default, _ in connection.execute(f"PRAGMA table_info({table})"):
-        if notnull and default is None and name not in values:
-            filler = "2026-01-01 00:00:00" if "DATETIME" in kind else ""
-            values[name] = _FILLER.get(kind.split("(")[0], filler)
-    columns = ", ".join(values)
-    marks = ", ".join("?" for _ in values)
-    statement = f"INSERT INTO {table} ({columns}) VALUES ({marks})"  # noqa: S608
-    connection.execute(statement, list(values.values()))
+from tests.support.database import insert_row
 
 
 def _seed(path: Path) -> None:
     connection = sqlite3.connect(path)
     with connection:
-        _insert(connection, "workspaces", id="w")
+        insert_row(connection, "workspaces", id="w")
         for source in ("s1", "s2"):
-            _insert(
+            insert_row(
                 connection,
                 "sources",
                 id=source,
@@ -34,7 +21,7 @@ def _seed(path: Path) -> None:
                 name=source,
             )
         for status in ("completed", "failed", "cancelled", "running"):
-            _insert(
+            insert_row(
                 connection,
                 "background_tasks",
                 id=status,
@@ -43,7 +30,7 @@ def _seed(path: Path) -> None:
                 task_type="source.scan",
                 idempotency_key=status,
             )
-            _insert(
+            insert_row(
                 connection,
                 "source_scan_members",
                 id=f"m-{status}",
@@ -59,7 +46,7 @@ def _seed(path: Path) -> None:
             ("only", "s2", "2026-01-01 08:00:00", "q-only"),
         )
         for scan, source, started, label in scans:
-            _insert(
+            insert_row(
                 connection,
                 "source_scans",
                 id=scan,
@@ -68,7 +55,7 @@ def _seed(path: Path) -> None:
                 scan_started_at=started,
                 exhausted_outcome="not_recorded",
             )
-            _insert(
+            insert_row(
                 connection,
                 "source_scan_continuations",
                 id=f"c-{scan}",
@@ -78,9 +65,9 @@ def _seed(path: Path) -> None:
                 handoff_scopes="[]",
             )
         for sha in ("sha-old", "sha-new", "sha-only", "sha-orphan"):
-            _insert(connection, "source_listing_memberships", sha256=sha, membership="[]")
+            insert_row(connection, "source_listing_memberships", sha256=sha, membership="[]")
         for scan in ("old", "new", "only"):
-            _insert(
+            insert_row(
                 connection,
                 "source_scan_frontier_items",
                 id=f"f-{scan}",

@@ -21,7 +21,7 @@ from clearscout.application.discovery.scan_staging.matching import listed_row_id
 from clearscout.application.tasks.records import task_pending_discovery_ids
 from clearscout.application.workspaces.records.access import audit_columns
 from clearscout.domain import PostingIdentityStatus, PostingStatus, TaskStatus, utc_now
-from clearscout.domain.staged_facts import STAGED_FACTS_VERSIONS, FreshnessState, StagedListingFacts
+from clearscout.domain.staged_facts import FreshnessState, StagedListingFacts
 from clearscout.infrastructure.persistence.models import (
     AuditEvent,
     BackgroundTask,
@@ -203,14 +203,8 @@ def _record_absent_but_verified_active(
 
 def _mark_verified_current(row: PendingDiscovery) -> None:
     """Set a kept row's staged freshness to verified current."""
-    stored_facts = row.staged_facts
-    if stored_facts and stored_facts.get("schema_version") not in STAGED_FACTS_VERSIONS:
-        # This reader returns a blank record for a document it cannot read, so an
-        # older one takes the freshness key in place and keeps its stored facts.
-        row.staged_facts = {**stored_facts, "freshness": FreshnessState.VERIFIED_CURRENT.value}
-        return
     row.staged_facts = replace(
-        StagedListingFacts.from_json(stored_facts),
+        StagedListingFacts.from_json(row.staged_facts),
         freshness=FreshnessState.VERIFIED_CURRENT,
     ).as_json()
 

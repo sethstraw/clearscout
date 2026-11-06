@@ -112,6 +112,27 @@ def test_import_does_not_schedule_an_earlier_workspace(tmp_path: Path) -> None:
         target.dispose()
 
 
+@pytest.mark.parametrize(
+    ("stamp", "remedy"),
+    [("0002", "clearscout db upgrade"), ("9999", "Upgrade ClearScout")],
+    ids=["behind", "ahead"],
+)
+def test_import_refuses_a_source_stamped_at_another_schema(
+    tmp_path: Path, stamp: str, remedy: str
+) -> None:
+    source = _populated(tmp_path, "behind.sqlite3")
+    with sqlite3.connect(source) as connection:
+        connection.execute("UPDATE alembic_version SET version_num = ?", (stamp,))
+    target_path, target = _fresh(tmp_path, "behind-target.sqlite3")
+    try:
+        with pytest.raises(ValidationError, match=remedy):
+            import_database(source, target)
+    finally:
+        target.dispose()
+    with sqlite3.connect(target_path) as imported:
+        assert imported.execute("SELECT count(*) FROM workspaces").fetchone()[0] == 0
+
+
 def test_import_preserves_saved_schedule_and_occurrence_history(tmp_path: Path) -> None:
     source = _populated(tmp_path, "scheduled.sqlite3")
     schedule = {

@@ -92,8 +92,10 @@ the storage root they came from.
 
 ## Importing from another database
 
-`clearscout db import` takes a recognizable ClearScout SQLite database and a
-fresh, migrated target, and nothing else. Preflight checks integrity on both
+`clearscout db import` takes a recognizable ClearScout SQLite database at the
+same schema revision as a fresh, migrated target, and nothing else. A source
+at an earlier revision is refused: copy it, run `clearscout db upgrade` on the
+copy, and import that. Preflight checks integrity on both
 sides and the schema columns it needs, orders dependent history, and produces a
 stable plan. Deterministic seed rows already in the target are compared on every
 shared column, and only identical rows are skipped. A primary-key collision with
@@ -108,8 +110,10 @@ results and saved links import normally; resume them once the new worker runs.
 Always read a dry run first:
 
 ```bash
+cp ./old-clearscout.sqlite3 ./old-upgraded.sqlite3
+clearscout db upgrade --database-url sqlite+pysqlite:///./old-upgraded.sqlite3
 clearscout db upgrade --data-root ./new-private-data
-clearscout db import ./old-clearscout.sqlite3 \
+clearscout db import ./old-upgraded.sqlite3 \
   --source-data-root ./old-private-data \
   --data-root ./new-private-data \
   --dry-run
