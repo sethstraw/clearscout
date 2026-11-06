@@ -347,9 +347,7 @@ def test_taleo_protected_redirect_destination_is_never_read() -> None:
     read = site.fetcher.listings(
         "Acme",
         site.root,
-        options=SourceReadOptions(
-            fresh_details=True, protected_posting_urls=frozenset({site.detail_url(2)})
-        ),
+        options=SourceReadOptions(protected_posting_urls=frozenset({site.detail_url(2)})),
     )
     assert site.detail_url(2) not in site.requests
     assert [item.requisition_id for item in read.listings] == ["3"]

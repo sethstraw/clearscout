@@ -302,9 +302,11 @@ class SourceContinuationHandler:
             manual_detail_retry=chunk.include_policy_deferred,
             fresh_detail_retry_ids=fresh_detail_retry_ids,
             options=SourceReadOptions(
-                fresh_details=fresh_root is not None,
                 protected_posting_urls=self.sweep.staging.protected_posting_urls(
                     chunk.workspace_id
+                ),
+                listed_title_screen=self.sweep.continuation_title_screen(
+                    chunk.workspace_id, employer
                 ),
             ),
         )

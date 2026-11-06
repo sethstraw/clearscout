@@ -83,6 +83,9 @@ class _SearchSlice:
     listing_pass: int = 1
     # Identities listed by the current relisted pass; empty on the first pass.
     pass_ids: set[str] = field(default_factory=set)
+    listed_titles: bool = False
+    # Title-only listings whose stated title the read's screen rules out, keyed by URL.
+    set_aside: dict[str, SourceListing] = field(default_factory=dict)
 
     def listed(self) -> set[str]:
         """Return the identities the current listing pass has seen."""
@@ -264,6 +267,32 @@ class _SearchSlice:
                 )
             )
 
+    def unscreened(
+        self,
+        fetcher: BoardTransport,
+        mapping: BoardDeclaration,
+        rows: list[dict[str, Any]],
+        employer: str,
+    ) -> list[dict[str, Any]]:
+        """Keep rows whose listed title is ruled out as title-only listings; return the rest."""
+        # A detail that declares role aliases could add a title the listed one lacks.
+        if not self.listed_titles or mapping.role_aliases is not None:
+            return rows
+        aside = [
+            row
+            for row in rows
+            if not _row_carried(row)
+            and fetcher.rules_out_listed_title(str(row["url"]), str(row.get("title") or ""))
+        ]
+        if not aside:
+            return rows
+        self.set_aside.update(
+            (listing.url, listing)
+            for listing in _enumerated_search_read(mapping, aside, employer).listings
+        )
+        ruled_out = {row_id(row) for row in aside}
+        return [row for row in rows if row_id(row) not in ruled_out]
+
     def consume(self, rows: list[dict[str, Any]], read: SourceRead, platform: str) -> None:
         """Apply one detail read and retain each unresolved listed row as its own target."""
         self.detail = self.detail.combined(read.detail)
@@ -340,9 +369,15 @@ class _SearchSlice:
             else target
             for target in self.deferred
         )
+        set_aside = [
+            listing
+            for url, listing in self.set_aside.items()
+            if url not in self.listings
+            and self.listing_urls.get(listing.requisition_id) == listing.url
+        ]
         return robots_short(
             SourceRead(
-                listings=list(self.listings.values()),
+                listings=[*self.listings.values(), *set_aside],
                 complete=complete,
                 raw_count=max(len(self.identities), len(self.listings)),
                 outcome=SourceReadOutcome.ATS_COMPLETE
@@ -483,6 +518,9 @@ def _search_detail_phase(
     if state.enumeration_only:
         read = _enumerated_search_read(mapping, rows, employer)
     else:
+        rows = state.unscreened(fetcher, mapping, rows, employer)
+        if not rows:
+            return
         read = fetcher.detailed_read(
             employer,
             rows,
@@ -586,14 +624,20 @@ def publisher_search_read(
     detail: Callable[[dict[str, Any]], Mapping[str, Any] | None],
     target: SourceContinuationTarget | None = None,
     enumeration_only: bool = False,
+    listed_titles: bool = False,
 ) -> SourceRead:
-    """List declared pages to explicit exhaustion, then read the listed details."""
+    """List declared pages to explicit exhaustion, then read the listed details.
+
+    ``listed_titles`` says each row's ``title`` is its posting's title, so the read's
+    title screen may set a row aside without reading its detail.
+    """
     page = search_page_number(target, first_page) if target is not None else first_page
     resumed = _publisher_search_start(source_url, reason, target, page, enumeration_only)
     if isinstance(resumed, SourceRead):
         return resumed
     state, page = resumed
     state.first_page = first_page
+    state.listed_titles = listed_titles
     state.detail_phase = partial(
         _search_detail_phase, fetcher, employer, state, mapping=mapping, detail=detail
     )

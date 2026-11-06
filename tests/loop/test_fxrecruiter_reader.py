@@ -9,7 +9,12 @@ from urllib.parse import urlsplit
 import httpx
 import pytest
 
-from clearscout.application.discovery.source_reading import SourceReadOptions
+from clearscout.application.discovery.scan_sweep.listing_screen import (
+    listed_title_screen,
+    screen_listings,
+)
+from clearscout.application.discovery.source_reading import SourceListing, SourceReadOptions
+from clearscout.domain.search_parameters import JobSearchParameters, Seniority
 from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
 from clearscout.infrastructure.web_fetch.ingest import strip_tags
@@ -17,6 +22,7 @@ from clearscout.infrastructure.web_fetch.ingest.careers import inspect_publisher
 from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 from tests.support.doubles import declaring_page
 from tests.support.http import public_resolver
+from tests.support.scenarios import titles
 
 _BODY = (
     "<h2>Responsibilities</h2><p>Review clinical records and maintain governed reporting. "
@@ -41,6 +47,7 @@ class _FeedSite:
         self.stopped = False
         self.interrupt_after: int | None = None
         self.detail_reads = 0
+        self.titles: dict[int, str] = {}
         self.now = 100.0
         self.quota_interval = quota_interval
         self.last_request_at: float | None = None
@@ -83,6 +90,9 @@ class _FeedSite:
             "?utm_source=feed"
         )
 
+    def title(self, number: int) -> str:
+        return self.titles.get(number, f"Data Analyst {number}")
+
     def markup(self, number: int) -> str:
         if number in self.challenge:
             return '<main><h1>Sign in to continue</h1><input type="password"></main>'
@@ -90,14 +100,14 @@ class _FeedSite:
             return declaring_page(
                 {
                     "@type": "JobPosting",
-                    "title": f"Data Analyst {number}",
+                    "title": self.title(number),
                     "description": _BODY,
                     "hiringOrganization": {"name": "Acme"},
                 }
             )
         return (
-            f"<title>Data Analyst {number} | Jobs from Acme</title>"
-            f"<h1>Data Analyst {number}</h1>"
+            f"<title>{self.title(number)} | Jobs from Acme</title>"
+            f"<h1>{self.title(number)}</h1>"
             '<div hidden><input type="password"><h2>Account login</h2></div>'
             '<script type="application/ld+json">'
             '{"@type":"JobPosting",/* board comment */"title":"Untrusted title",'
@@ -136,7 +146,8 @@ class _FeedSite:
                 if self.foreign_detail and number == 2:
                     address = address.replace(self.origin, "https://other.example")
                 items.append(
-                    f"<item><title>Data Analyst {number}</title><link>{escape(address)}</link>"
+                    f"<item><title>{escape(self.title(number))}</title>"
+                    f"<link>{escape(address)}</link>"
                     f"<guid>{escape(address)}</guid>"
                     f"<description>Summary only: Ref {number + 500}</description>"
                     "</item>"
@@ -272,9 +283,7 @@ def test_paced_details_cannot_follow_a_redirect_to_a_protected_posting() -> None
     read = site.fetcher.listings(
         "Acme",
         site.root,
-        options=SourceReadOptions(
-            fresh_details=True, protected_posting_urls=frozenset({site.url(2)})
-        ),
+        options=SourceReadOptions(protected_posting_urls=frozenset({site.url(2)})),
     )
 
     assert site.url(2) not in site.requested
@@ -343,10 +352,7 @@ def test_protected_feed_details_are_covered_without_being_fetched() -> None:
     read = site.fetcher.listings(
         "Acme",
         site.root,
-        options=SourceReadOptions(
-            fresh_details=True,
-            protected_posting_urls=frozenset({site.url(2)}),
-        ),
+        options=SourceReadOptions(protected_posting_urls=frozenset({site.url(2)})),
     )
 
     assert site.url(2) not in site.requested
@@ -364,6 +370,65 @@ def test_a_genuine_login_wall_never_promotes_the_feed_summary() -> None:
     assert {row.requisition_id for row in read.listings} == {"1", "3"}
     assert read.detail.failed == 1
     assert all("Summary only" not in row.published_description for row in read.listings)
+
+
+_TARGETS = ["Data Analyst"]
+_ANALYST_SEARCH = JobSearchParameters(seniority=Seniority(target_titles=titles(*_TARGETS)))
+
+
+def _title_screened(protected: frozenset[str] = frozenset()) -> SourceReadOptions:
+    screen = listed_title_screen(_ANALYST_SEARCH, _TARGETS, source_employer="Acme")
+    return SourceReadOptions(protected_posting_urls=protected, listed_title_screen=screen)
+
+
+def _title_buckets(listings: list[SourceListing]) -> tuple[list[str], int, list[str]]:
+    wanted, refused, unsupported = screen_listings(
+        listings, _ANALYST_SEARCH, _TARGETS, source_employer="Acme"
+    )
+    return sorted(item.url for item in wanted), len(refused), sorted(i.url for i, _ in unsupported)
+
+
+def test_a_listed_title_the_search_rules_out_is_listed_without_a_detail_read() -> None:
+    site, unscreened_site = _FeedSite(), _FeedSite()
+    site.titles = unscreened_site.titles = {2: "Warehouse Forklift Operator"}
+
+    read = site.fetcher.listings("Acme", site.root, options=_title_screened())
+    unscreened = unscreened_site.fetcher.listings("Acme", unscreened_site.root)
+
+    assert site.url(2) not in site.requested
+    assert unscreened_site.url(2) in unscreened_site.requested
+    assert read.complete is True
+    assert not read.deferred_targets
+    assert read.detail_read_urls == (site.url(1), site.url(3))
+    [aside] = [row for row in read.listings if row.requisition_id == "2"]
+    assert (aside.title, aside.url, aside.published_description) == (
+        "Warehouse Forklift Operator",
+        site.url(2),
+        "",
+    )
+    assert _title_buckets(read.listings) == _title_buckets(unscreened.listings)
+    assert _title_buckets(read.listings)[2] == [site.url(2)]
+
+
+@pytest.mark.parametrize("title", ["Data Analyst 2", ""], ids=["on-target", "title-less"])
+def test_a_listed_title_the_search_could_keep_is_still_detail_read(title: str) -> None:
+    site = _FeedSite()
+    site.titles = {2: title}
+
+    site.fetcher.listings("Acme", site.root, options=_title_screened())
+
+    assert site.requested.count(site.url(2)) == 1
+
+
+def test_a_protected_posting_is_never_set_aside_by_its_title() -> None:
+    site = _FeedSite()
+    site.titles = {2: "Warehouse Forklift Operator"}
+    read = site.fetcher.listings(
+        "Acme", site.root, options=_title_screened(frozenset({site.url(2)}))
+    )
+
+    assert site.url(2) in read.protected_posting_urls
+    assert {row.requisition_id for row in read.listings} == {"1", "3"}
 
 
 @pytest.mark.parametrize("boundary", ["foreign_feed", "foreign_detail"])

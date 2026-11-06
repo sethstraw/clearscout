@@ -432,10 +432,7 @@ def test_protected_search_identities_are_covered_without_fetching_their_detail(
     read = site.fetcher.listings(
         "Acme",
         site.root,
-        options=SourceReadOptions(
-            fresh_details=True,
-            protected_posting_urls=frozenset({site.detail_url(2)}),
-        ),
+        options=SourceReadOptions(protected_posting_urls=frozenset({site.detail_url(2)})),
     )
 
     assert site.detail_url(2) not in site.requested

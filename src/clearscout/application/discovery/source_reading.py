@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Literal, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, cast, runtime_checkable
 
 from pydantic import StrictInt, TypeAdapter
 
@@ -16,6 +16,9 @@ from clearscout.domain.records import (
     SourceReadOutcome,
 )
 from clearscout.domain.staged_facts import StagedListingFacts
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 MAX_DEFERRED_SOURCE_URL_LENGTH = 4_096
 MAX_SOURCE_READ_ATTEMPTS = 3
@@ -393,12 +396,13 @@ class SourceRead:
 
 @dataclass(frozen=True)
 class SourceReadOptions:
-    """Detail reuse and protected posting addresses for one source read."""
+    """Detail reuse, protected posting addresses, and the listed-title screen for one read."""
 
-    fresh_details: bool = False
     protected_posting_urls: frozenset[str] = frozenset()
     # Normalized posting URLs read since the rescreen cutoff, which an opted-in reader skips.
     recent_posting_urls: frozenset[str] = frozenset()
+    # False for a listed title no read posting could keep; an opted-in reader skips its detail.
+    listed_title_screen: Callable[[str], bool] | None = None
     protected_posting_keys: frozenset[str] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:

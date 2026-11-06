@@ -1,5 +1,7 @@
 """Role-family, adjacency, rung, and bare-function title rules decide what a title may claim."""
 
+from typing import Literal
+
 import pytest
 
 from clearscout.application.discovery import titles as titles_module
@@ -7,6 +9,7 @@ from clearscout.application.discovery.screening import (
     ScreeningCode,
     ScreeningFinding,
     ScreeningStanding,
+    listed_title_may_qualify,
     screen_discovery,
     screen_discovery_title,
     supports_bulk_staging,
@@ -21,7 +24,11 @@ from clearscout.application.discovery.titles import (
     shares_occupation_noun,
 )
 from clearscout.domain.search_parameters import (
+    Cluster,
     CountryNames,
+    EmployerArchetype,
+    Employers,
+    Focus,
     JobSearchParameters,
     Location,
     Seniority,
@@ -521,3 +528,89 @@ def test_a_different_kind_of_work_still_mismatches_regardless_of_rung(
     """Rung agreement never papers over a genuinely different occupation."""
     finding = _rung_agreement_finding(target, title)
     assert finding.code in (ScreeningCode.TITLE_MISMATCH, ScreeningCode.TITLE_ROLE_FAMILY_CONFLICT)
+
+
+_ANALYST_SEARCH = JobSearchParameters(seniority=Seniority(target_titles=titles("Data Analyst")))
+
+
+def _summary_kept_search(
+    title_matching: Literal["guided", "strict"] = "guided",
+) -> JobSearchParameters:
+    return JobSearchParameters(
+        seniority=Seniority(
+            target_titles=titles("Logistics Planner"),
+            specialist_ic_role_nouns=["Data Analyst"],
+            title_matching=title_matching,
+        ),
+        focus=Focus(domains=[Cluster(name="integration", terms=["clinical data integration"])]),
+    )
+
+
+@pytest.mark.parametrize(
+    ("title", "parameters", "targets", "qualifies"),
+    [
+        pytest.param("Data Analyst", _ANALYST_SEARCH, ["Data Analyst"], True, id="on-target"),
+        pytest.param(
+            "Warehouse Forklift Operator", _ANALYST_SEARCH, ["Data Analyst"], False, id="off-target"
+        ),
+        pytest.param("  ", _ANALYST_SEARCH, ["Data Analyst"], True, id="title-less"),
+        pytest.param(
+            "Data Analyst Intern",
+            JobSearchParameters(
+                seniority=Seniority(
+                    target_titles=titles("Data Analyst"), excluded_titles=["Intern"]
+                )
+            ),
+            ["Data Analyst"],
+            False,
+            id="excluded",
+        ),
+        pytest.param(
+            "Warehouse Forklift Operator", _ANALYST_SEARCH, [], True, id="no-stated-title"
+        ),
+        pytest.param(
+            "Analyst, Data", _summary_kept_search(), ["Logistics Planner"], True, id="summary"
+        ),
+        pytest.param(
+            "Analyst, Data",
+            _summary_kept_search("strict"),
+            ["Logistics Planner"],
+            False,
+            id="strict",
+        ),
+        pytest.param(
+            "Writer",
+            JobSearchParameters(
+                seniority=Seniority(
+                    target_titles=titles("Service Manager"), specialist_ic_role_nouns=["Writer"]
+                ),
+                employers=Employers(
+                    archetypes=[
+                        EmployerArchetype(name="Knowledge publisher", employer_names=["Acme"])
+                    ]
+                ),
+            ),
+            ["Service Manager"],
+            True,
+            id="employer-domain",
+        ),
+    ],
+)
+def test_a_listed_title_is_ruled_out_only_when_no_read_posting_could_keep_it(
+    title: str, parameters: JobSearchParameters, targets: list[str], qualifies: bool
+) -> None:
+    assert listed_title_may_qualify(title, parameters, targets) is qualifies
+
+
+def test_a_listed_title_only_a_posting_summary_keeps_is_still_read() -> None:
+    parameters = _summary_kept_search()
+    targets = ["Logistics Planner"]
+
+    bare = screen_discovery_title("Analyst, Data", PublishedFact(), parameters, targets)
+    summarized = screen_discovery_title(
+        "Analyst, Data", PublishedFact(), parameters, targets, "Own clinical data integration."
+    )
+
+    assert not supports_title_expansion(bare, include_bounded_review=True)
+    assert supports_title_expansion(summarized, include_bounded_review=True)
+    assert listed_title_may_qualify("Analyst, Data", parameters, targets)

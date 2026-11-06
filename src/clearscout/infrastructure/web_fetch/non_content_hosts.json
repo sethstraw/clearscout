@@ -1,0 +1,35 @@
+{
+  "cookie_consent": [
+    "consensu.org",
+    "cookiebot.com",
+    "cookielaw.org",
+    "iubenda.com",
+    "onetrust.com",
+    "osano.com",
+    "termly.io",
+    "trustarc.com",
+    "usercentrics.eu"
+  ],
+  "tag_manager": ["ensighten.com", "googletagmanager.com", "tealiumiq.com", "tiqcdn.com"],
+  "rum_telemetry": [
+    "browser-intake-datadoghq.com",
+    "datadoghq-browser-agent.com",
+    "newrelic.com",
+    "nr-data.net",
+    "sentry-cdn.com",
+    "sentry.io"
+  ],
+  "product_analytics": [
+    "amplitude.com",
+    "clarity.ms",
+    "doubleclick.net",
+    "fullstory.com",
+    "google-analytics.com",
+    "heapanalytics.com",
+    "hotjar.com",
+    "mixpanel.com",
+    "pendo.io",
+    "segment.com",
+    "segment.io"
+  ]
+}

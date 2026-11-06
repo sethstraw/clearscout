@@ -164,6 +164,13 @@ class BoardHttpTransport:
         return deadline_at is not None and time.monotonic() >= deadline_at
 
     @staticmethod
+    def rules_out_listed_title(url: str, title: str) -> bool:
+        """Return whether this read's title screen rejects an unprotected listed posting."""
+        options = SOURCE_READ_OPTIONS.get()
+        screen = options.listed_title_screen
+        return screen is not None and options.allows_posting(url) and not screen(title)
+
+    @staticmethod
     def _remaining_seconds(url: str) -> float:
         return remaining_seconds(url)
 

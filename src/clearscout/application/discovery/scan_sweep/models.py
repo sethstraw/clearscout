@@ -112,4 +112,5 @@ class SweepBoard:
     # True when a person named this board by hand, so the sweep keeps that name
     # instead of the one the board's own records state.
     employer_is_authoritative: bool = False
-    fresh_details: bool = False
+    # Start of the fresh scan reading this board; held content read before it is read again.
+    fresh_scan_start: datetime | None = None

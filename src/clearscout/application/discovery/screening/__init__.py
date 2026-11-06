@@ -33,6 +33,7 @@ from clearscout.application.discovery.screening.location import stated_places
 from clearscout.application.discovery.screening.screen import screen_discovery
 from clearscout.application.discovery.screening.titles import (
     body_states_saved_focus,
+    listed_title_may_qualify,
     screen_discovery_title,
     select_title_survivors,
     summary_focus_terms,
@@ -55,6 +56,7 @@ __all__ = [
     "body_states_saved_focus",
     "bulk_staging_refusal",
     "constraint_confidence",
+    "listed_title_may_qualify",
     "office_only_at_remote_only_sites",
     "resolve_arrangement_categories",
     "screen_discovery",

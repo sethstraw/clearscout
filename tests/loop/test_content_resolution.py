@@ -4042,6 +4042,63 @@ def test_a_bodyless_reread_under_a_cutoff_is_not_repeated_by_a_later_pass(
         assert session.get_one(PendingDiscovery, pending_id).current_content_id == held_content_id
 
 
+class _ScanTask:
+    """The task context of a later scan pass, which reports nothing back."""
+
+    queue = cast(TaskQueueService, None)
+    worker_id = "worker-1"
+
+    def __init__(self, task_id: str) -> None:
+        self.task_id = task_id
+
+    def progress(self, stage: str, payload: dict[str, Any]) -> None:
+        pass
+
+    def cancellation_requested(self) -> bool:
+        return False
+
+    def raise_if_cancelled(self) -> None:
+        pass
+
+
+@pytest.mark.parametrize(
+    ("reread_before", "read_again"),
+    [(None, False), (datetime(2026, 9, 2, tzinfo=UTC), True)],
+    ids=["ordinary-rescan", "fresh-scan"],
+)
+def test_a_body_dismissed_row_is_read_again_only_under_a_fresh_scan_cutoff(
+    durable_database: Database,
+    tmp_path: Path,
+    reread_before: datetime | None,
+    read_again: bool,
+) -> None:
+    """A later scan pass keeps a body-dismissed row's held body unless a fresh scan began."""
+    screened = _body_screened(
+        durable_database,
+        tmp_path,
+        _canada_home_with_us_remote(),
+        "Candidates must reside in the United States.",
+    )
+    assert screened is not None
+    assert screened[0] == "location_residence_required"
+    with durable_database.session() as session:
+        row = session.scalars(select(PendingDiscovery)).one()
+        workspace_id, pending_id = row.workspace_id, row.id
+    resolver = ScriptedResolver([_readable("https://example.test/jobs/operations-lead")])
+
+    report = PostingContentResolutionService(
+        durable_database, resolver, storage=runtime_storage(durable_database, tmp_path)
+    ).resolve_automatic(
+        workspace_id,
+        [pending_id],
+        _ScanTask("scan-2"),
+        origin="source.scan",
+        reread_before=reread_before,
+    )
+
+    assert (report["attempted"], len(resolver.calls)) == ((1, 1) if read_again else (0, 0))
+
+
 @pytest.mark.parametrize("field", ["employer", "title"])
 def test_resolution_binds_presented_identity_fields_in_snapshot(
     durable_database: Database, tmp_path: Path, field: str

@@ -207,9 +207,7 @@ def test_jobvite_reads_each_listed_opening_once_with_its_page_posting(board_page
 
 
 @pytest.mark.parametrize("board_page", [_JOBVITE_TABLE, _JOBVITE_LIST], ids=["table", "list"])
-@pytest.mark.parametrize("fresh_details", [False, True])
 def test_a_protected_listed_posting_is_covered_without_a_detail_request(
-    fresh_details: bool,
     board_page: str,
 ) -> None:
     requested: list[str] = []
@@ -218,10 +216,7 @@ def test_a_protected_listed_posting_is_covered_without_a_detail_request(
     read = fetcher.listings(
         "Acme",
         _JOBVITE_BOARD,
-        options=SourceReadOptions(
-            fresh_details=fresh_details,
-            protected_posting_urls=frozenset({_JOBVITE_ANALYST}),
-        ),
+        options=SourceReadOptions(protected_posting_urls=frozenset({_JOBVITE_ANALYST})),
     )
 
     assert requested == [_JOBVITE_BOARD, _JOBVITE_ENGINEER]

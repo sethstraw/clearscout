@@ -1300,9 +1300,6 @@ def test_resuming_a_cancelled_batch_reads_its_retained_frontier_without_rereadin
     durable_database: Database,
     fresh: bool,
 ) -> None:
-    from typing import cast
-
-    from clearscout.application.discovery.source_reading import SourceReadOptions
     from clearscout.infrastructure.persistence.models import (
         SourceScanContinuation,
         SourceScanMember,
@@ -1316,10 +1313,6 @@ def test_resuming_a_cancelled_batch_reads_its_retained_frontier_without_rereadin
     class ResumedBoard(_DrainingBoard):
         reads = 0
 
-        def __init__(self, first_read: SourceRead) -> None:
-            super().__init__(first_read)
-            self.modes: list[bool] = []
-
         def listings(
             self,
             employer: str,
@@ -1329,23 +1322,9 @@ def test_resuming_a_cancelled_batch_reads_its_retained_frontier_without_rereadin
             options: object = None,
         ) -> SourceRead:
             self.reads += 1
-            self.modes.append(cast(SourceReadOptions, options).fresh_details)
             return super().listings(
                 employer, url, employer_is_authoritative=employer_is_authoritative
             )
-
-        def continue_listings(
-            self,
-            employer: str,
-            targets: tuple[SourceContinuationTarget, ...],
-            *,
-            root_url: str = "",
-            handoff_scopes: tuple[tuple[str, str, str], ...] = (),
-            employer_is_authoritative: bool = False,
-            options: object = None,
-        ) -> SourceRead:
-            self.modes.append(cast(SourceReadOptions, options).fresh_details)
-            return super().continue_listings(employer, targets, options=options)
 
     board = ResumedBoard(_deferring_read(_target(target)))
     queue = TaskQueueService(durable_database)
@@ -1379,7 +1358,6 @@ def test_resuming_a_cancelled_batch_reads_its_retained_frontier_without_rereadin
     _drain(durable_database, board)
     assert _rows_by_url(durable_database)[target].status == "completed"
     assert board.reads == 1
-    assert board.modes == [fresh, fresh]
     assert [task.status for task in _continue_tasks(durable_database)] == [
         TaskStatus.CANCELLED.value,
         TaskStatus.COMPLETED.value,

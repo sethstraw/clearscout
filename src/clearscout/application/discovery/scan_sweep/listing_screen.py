@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
+from functools import partial
 
 from sqlalchemy import select
 
@@ -13,6 +15,7 @@ from clearscout.application.discovery.scan_staging import StagedListings
 from clearscout.application.discovery.screening import (
     DiscoveryScreening,
     StructuredHoldout,
+    listed_title_may_qualify,
     screen_discovery,
     select_title_survivors,
     structured_holdout,
@@ -74,13 +77,25 @@ def screen_listings(
     return selected + stage_omitted, refused, unsupported
 
 
+def listed_title_screen(
+    parameters: JobSearchParameters, targets: list[str], *, source_employer: str
+) -> Callable[[str], bool] | None:
+    """Return the pre-read title screen, or None when the search states no title."""
+    if not any(term.strip() for term in targets):
+        return None
+    return partial(
+        listed_title_may_qualify,
+        parameters=parameters,
+        searched=targets,
+        source_employer=source_employer,
+    )
+
+
 def body_screened_listings(
     database: Database,
     workspace_id: str,
     listings: list[SourceListing],
     placed: StagedListings,
-    *,
-    origin: str,
 ) -> dict[str, tuple[FunnelScreeningFinding, ...]]:
     """Return current verified-body dismissal findings keyed by stable listing URL."""
     ids = placed.row_ids(listings)
@@ -113,7 +128,8 @@ def body_screened_listings(
         if (
             pending_id not in screened_now
             or event.action != "dismiss"
-            or event.origin != f"{origin}.body_screen"
+            or not event.origin.startswith("source.")
+            or not event.origin.endswith(".body_screen")
             or event.category not in BODY_REFUSAL_CATEGORIES
         ):
             continue

@@ -163,6 +163,7 @@ def _read(fetcher: BoardTransport, employer: str, _groups: dict[str, str], url: 
         request=partial(_request, fetcher, feed, url),
         mapping=_MAPPING,
         detail=partial(_detail, fetcher),
+        listed_titles=True,
     )
 
 

@@ -3800,11 +3800,9 @@ def test_a_recent_posting_read_under_the_current_parameters_is_not_read_again(
 
 
 @pytest.mark.parametrize("fresh", [False, True])
-def test_a_queued_fresh_scan_rereads_recent_details_and_passes_its_mode(
+def test_a_queued_fresh_scan_rereads_recent_details(
     durable_database: Database, fresh: bool
 ) -> None:
-    from clearscout.application.discovery.source_reading import SourceReadOptions
-
     workspace_id = _workspace(durable_database)
     state_target_titles(durable_database, workspace_id, "Data Platform Lead")
     source_id = _source(durable_database, workspace_id, "Globex", "https://jobs.example/globex")
@@ -3823,35 +3821,6 @@ def test_a_queued_fresh_scan_rereads_recent_details_and_passes_its_mode(
         ],
     )
 
-    class ModeBoard(_DrainingBoard):
-        def __init__(self) -> None:
-            super().__init__("https://jobs.example/globex/root", url, (url,))
-            self.modes: list[bool] = []
-
-        def listings(
-            self,
-            employer: str,
-            url: str,
-            *,
-            employer_is_authoritative: bool = False,
-            options: object = None,
-        ) -> SourceRead:
-            self.modes.append(cast(SourceReadOptions, options).fresh_details)
-            return super().listings(employer, url, options=options)
-
-        def continue_listings(
-            self,
-            employer: str,
-            targets: tuple[SourceContinuationTarget, ...],
-            *,
-            root_url: str = "",
-            handoff_scopes: tuple[tuple[str, str, str], ...] = (),
-            employer_is_authoritative: bool = False,
-            options: object = None,
-        ) -> SourceRead:
-            self.modes.append(cast(SourceReadOptions, options).fresh_details)
-            return super().continue_listings(employer, targets, options=options)
-
     queue = TaskQueueService(durable_database)
     root = queue.enqueue(
         workspace_id=workspace_id,
@@ -3859,7 +3828,7 @@ def test_a_queued_fresh_scan_rereads_recent_details_and_passes_its_mode(
         payload={"source_ids": [source_id], "fresh_details": fresh},
         idempotency_key="fresh-details",
     )
-    board = ModeBoard()
+    board = _DrainingBoard("https://jobs.example/globex/root", url, (url,))
     worker = Worker(
         durable_database,
         worker_id="fresh-details",
@@ -3872,7 +3841,6 @@ def test_a_queued_fresh_scan_rereads_recent_details_and_passes_its_mode(
         raise AssertionError("the source batch did not drain")
 
     assert board.continue_calls == int(fresh)
-    assert board.modes == ([True, True] if fresh else [False])
     with durable_database.session() as session:
         member = session.scalars(
             select(SourceScanMember).where(SourceScanMember.root_task_id == str(root.id))
@@ -6759,6 +6727,77 @@ def test_a_pacing_deadline_keeps_a_fresh_detail_pending_without_spending_history
     [completed] = [row for row in _rows(durable_database, prior_id) if row.url == url]
     assert completed.status == "completed" and completed.attempt_count == 3
     assert site.requested.count(url) == 1
+
+
+def test_a_complete_sweep_keeps_an_off_target_listed_row_unread_and_listed(
+    durable_database: Database,
+) -> None:
+    from tests.loop.test_fxrecruiter_reader import _FeedSite
+
+    workspace_id = _workspace(durable_database)
+    site = _FeedSite()
+    site.titles = {2: "Warehouse Forklift Operator"}
+    source_id = _source(durable_database, workspace_id, "Acme", site.root)
+    state_target_titles(durable_database, workspace_id, "Data Analyst")
+    _stage_known_rows(durable_database, workspace_id, source_id, (site.url(2),))
+    with durable_database.session() as session:
+        known_id = session.scalars(select(PendingDiscovery.id)).one()
+
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    for _ in range(4):
+        if not worker.run_once():
+            break
+
+    assert site.url(2) not in site.requested
+    assert site.detail_reads == 2
+    with durable_database.session() as session:
+        known = session.get(PendingDiscovery, known_id)
+        assert known is not None
+        assert (known.absent_since, known.withdrawn_at) == (None, None)
+        assert not session.scalars(select(SourceScanFrontierItem)).all()
+
+
+def test_a_relisted_search_continuation_reads_no_off_target_detail_and_counts_it(
+    durable_database: Database,
+) -> None:
+    from tests.loop.test_fxrecruiter_reader import _FeedSite
+
+    workspace_id = _workspace(durable_database)
+    site = _FeedSite()
+    site.titles = {2: "Warehouse Forklift Operator"}
+    _source(durable_database, workspace_id, "Acme", site.root)
+    state_target_titles(durable_database, workspace_id, "Data Analyst")
+    original = site.fetcher.client.getter
+    assert original is not None
+
+    def stop_after_root(address: str, **kwargs: Any) -> httpx.Response:
+        site.stopped = site.stopped or address == site.root
+        return original(address, **kwargs)
+
+    site.fetcher.client.getter = stop_after_root
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    with durable_database.session() as session:
+        [cursor] = session.scalars(select(SourceScanFrontierItem)).all()
+        assert cursor.deferred_reason == "fxrecruiter_search_page"
+    site.fetcher.client.getter = original
+    site.stopped = False
+
+    for _ in range(4):
+        if not worker.run_once():
+            break
+
+    assert site.url(1) in site.requested
+    assert site.url(2) not in site.requested
+    with durable_database.session() as session:
+        assert normalize_fetch_url(site.url(2)) not in set(
+            session.scalars(select(SourceScanFrontierItem.normalized_url))
+        )
+        tasks = session.scalars(
+            select(BackgroundTask).where(BackgroundTask.task_type == "source.continue")
+        ).all()
+        counts = {(task.progress["matched"], task.progress["no_title_match"]) for task in tasks}
+    assert counts == {(2, 1)}
 
 
 def test_a_fresh_detail_host_hold_keeps_history_and_stops_the_automatic_chain(

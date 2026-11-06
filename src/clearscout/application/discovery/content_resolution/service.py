@@ -34,11 +34,7 @@ from clearscout.application.discovery.content_resolution.targets import (
     StoredEvidence,
     StoredTarget,
 )
-from clearscout.application.discovery.dispositions import BODY_REFUSAL_CATEGORIES
-from clearscout.application.discovery.pending import (
-    corrected_title_ids,
-    latest_disposition_statement,
-)
+from clearscout.application.discovery.pending import corrected_title_ids
 from clearscout.application.discovery.posting_text import lists_many_postings
 from clearscout.application.discovery.scan_staging.reasons import staged_by_person
 from clearscout.application.discovery.source_lifecycle import source_read_address
@@ -153,7 +149,6 @@ class PostingContentResolutionService:
             workspace_id,
             ordered_ids,
             state,
-            correlation_id=context.task_id if context is not None else None,
             reread_before=reread_before,
         )
         self._resolve_automatic_targets(
@@ -196,7 +191,6 @@ class PostingContentResolutionService:
         ordered_ids: list[str],
         state: _AutomaticResolution,
         *,
-        correlation_id: str | None,
         reread_before: datetime | None,
     ) -> list[StoredTarget]:
         targets = [
@@ -207,15 +201,6 @@ class PostingContentResolutionService:
             )
         ]
         with self.database.session() as session:
-            current = {
-                evidence.pending_discovery_id: evidence
-                for evidence in session.scalars(
-                    select(PendingPostingContent).where(
-                        PendingPostingContent.workspace_id == workspace_id,
-                        PendingPostingContent.pending_discovery_id.in_(ordered_ids),
-                    )
-                )
-            }
             # Kept-aside bodyless reads count, since they leave the held body current.
             last_read: dict[str, datetime] = dict(
                 session.execute(
@@ -230,35 +215,15 @@ class PostingContentResolutionService:
                     .group_by(PendingPostingContent.pending_discovery_id)
                 ).all()
             )
-            dismissed_by_body = {
-                event.pending_discovery_id
-                for event in session.scalars(
-                    latest_disposition_statement(workspace_id, ordered_ids)
-                )
-                if (
-                    event.action == "dismiss"
-                    and event.origin.startswith("source.")
-                    and event.origin.endswith(".body_screen")
-                    and event.category in BODY_REFUSAL_CATEGORIES
-                )
-            }
         unresolved: list[StoredTarget] = []
         for target in targets:
             try:
                 retained = self.current.read(workspace_id, target.id)
             except ValidationError:
                 retained = None
-            if (
-                retained is None
-                or (
-                    reread_before is not None
-                    and last_read.get(target.id, retained.fetched_at) < reread_before
-                )
-                or (
-                    target.id in dismissed_by_body
-                    and current.get(target.id) is not None
-                    and current[target.id].correlation_id != correlation_id
-                )
+            if retained is None or (
+                reread_before is not None
+                and last_read.get(target.id, retained.fetched_at) < reread_before
             ):
                 unresolved.append(target)
             else:

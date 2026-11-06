@@ -51,6 +51,7 @@ from clearscout.application.discovery.scan_sweep.listing_audit import (
 from clearscout.application.discovery.scan_sweep.listing_screen import (
     SOURCE_STAGE_LIMIT,
     body_screened_listings,
+    listed_title_screen,
     screen_listings,
 )
 from clearscout.application.discovery.scan_sweep.models import (
@@ -248,7 +249,8 @@ class BoardSweep:
                 else root.attempt_count
             )
             is_resume = root.payload.get("resume_from_task_id") is not None
-            fresh_details = fresh_root_task(session, root.id) is not None
+            fresh_root = fresh_root_task(session, root.id)
+            fresh_scan_start = fresh_root.created_at if fresh_root is not None else None
         names = self._batch_source_names(workspace_id, members)
         available: dict[str, SourceScanMember] = {}
         busy: list[dict[str, str]] = []
@@ -277,7 +279,7 @@ class BoardSweep:
                 batch_task_id=batch_task_id,
                 members=available,
                 attempt_count=attempt_count,
-                fresh_details=fresh_details,
+                fresh_scan_start=fresh_scan_start,
             )
             result = self._merge_scan_results(
                 [*recorded, result],
@@ -452,7 +454,7 @@ class BoardSweep:
         batch_task_id: str,
         members: dict[str, SourceScanMember],
         attempt_count: int,
-        fresh_details: bool = False,
+        fresh_scan_start: datetime | None = None,
     ) -> dict[str, Any]:
         """Sweep the selected sources, or every enabled one; report what each answered.
 
@@ -466,7 +468,9 @@ class BoardSweep:
             if source_ids
             else DueBoards(readable=[], omitted=[])
         )
-        sources = [replace(board, fresh_details=fresh_details) for board in due_boards.readable]
+        sources = [
+            replace(board, fresh_scan_start=fresh_scan_start) for board in due_boards.readable
+        ]
         omitted_boards = due_boards.omitted
         today = utc_now().date()
         scanned: list[dict[str, Any]] = []
@@ -692,9 +696,7 @@ class BoardSweep:
             require_source_read=require_source_read,
             reread_before=reread_before,
         )
-        body_screened = body_screened_listings(
-            self.database, workspace_id, resolvable, placed, origin="source.continue"
-        )
+        body_screened = body_screened_listings(self.database, workspace_id, resolvable, placed)
         held_out = self._refresh_held_out(
             workspace_id,
             refused,
@@ -741,6 +743,17 @@ class BoardSweep:
             "withdrawn_on_read": len(closed_ids) + len(resolution["withdrawn_ids"]),
             "funnel": audit.build().model_dump(mode="json"),
         }
+
+    def continuation_title_screen(
+        self, workspace_id: str, source_employer: str
+    ) -> Callable[[str], bool] | None:
+        """Return the listed-title screen a continuation read applies, as the sweep's read does."""
+        parameters = self.parameters.current(workspace_id)
+        return listed_title_screen(
+            parameters,
+            self._collect_targets(workspace_id, parameters),
+            source_employer=source_employer,
+        )
 
     def _collect_targets(self, workspace_id: str, parameters: JobSearchParameters) -> list[str]:
         """Merge stated titles with derived ones; a derived title is still stated."""
@@ -834,15 +847,9 @@ class BoardSweep:
             origin="source.scan",
             prefetched=lane.prefetched,
             require_source_read=require_source_read,
-            reread_before=self._fresh_scan_start(
-                context.task_id if context is not None else correlation_id
-            )
-            if board.fresh_details
-            else None,
+            reread_before=board.fresh_scan_start,
         )
-        body_screened = body_screened_listings(
-            self.database, workspace_id, resolvable, placed, origin="source.scan"
-        )
+        body_screened = body_screened_listings(self.database, workspace_id, resolvable, placed)
         held_out = self._refresh_held_out(
             workspace_id,
             refused,
@@ -1073,12 +1080,6 @@ class BoardSweep:
                 reread_before=reread_before,
             )
 
-    def _fresh_scan_start(self, root_task_id: str | None) -> datetime | None:
-        """Return when the fresh scan behind this root began, or None for an ordinary scan."""
-        with self.database.session() as session:
-            fresh_root = fresh_root_task(session, root_task_id)
-            return fresh_root.created_at if fresh_root is not None else None
-
     def _visible_addresses(self, workspace_id: str, ids: list[str]) -> dict[str, str]:
         """Map active, unprotected rows to their current read addresses."""
         return self.evidence.visible_addresses(workspace_id, ids)
@@ -1287,7 +1288,13 @@ class BoardSweep:
         """Read one board, then do the network work its recording needs, writing nothing."""
         if halted():
             return None
-        outcome = self._listings(board, inputs.task_id)
+        outcome = self._listings(
+            board,
+            inputs.task_id,
+            title_screen=listed_title_screen(
+                inputs.parameters, inputs.targets, source_employer=board.employer
+            ),
+        )
         if outcome.read is None or halted():
             return outcome
         read = outcome.read
@@ -1367,7 +1374,13 @@ class BoardSweep:
                 break
         return reads
 
-    def _listings(self, board: SweepBoard, root_task_id: str | None = None) -> BoardReadOutcome:
+    def _listings(
+        self,
+        board: SweepBoard,
+        root_task_id: str | None = None,
+        *,
+        title_screen: Callable[[str], bool] | None = None,
+    ) -> BoardReadOutcome:
         """Return one board's openings, or the reason reading it did not work."""
         started_at = utc_now()
         operation_id = new_id()
@@ -1386,11 +1399,11 @@ class BoardSweep:
                 board.url,
                 employer_is_authoritative=board.employer_is_authoritative,
                 options=SourceReadOptions(
-                    fresh_details=board.fresh_details,
                     protected_posting_urls=self.staging.protected_posting_urls(
                         board.source.workspace_id
                     ),
                     recent_posting_urls=self._recent_posting_urls(board, root_task_id),
+                    listed_title_screen=title_screen,
                 ),
             )
             return BoardReadOutcome(

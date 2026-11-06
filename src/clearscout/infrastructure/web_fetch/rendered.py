@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import functools
+import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from importlib import resources
+from typing import TypeGuard
+from urllib.parse import urlsplit
 
 import httpx
 from playwright.sync_api import (
@@ -22,6 +27,7 @@ from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
+from clearscout.domain.identity import normalize_fetch_url
 from clearscout.domain.records import RobotsReadBasis
 from clearscout.infrastructure.web_fetch.ingest.url import USER_AGENT
 from clearscout.infrastructure.web_fetch.policy import (
@@ -32,6 +38,8 @@ from clearscout.infrastructure.web_fetch.policy import (
 
 _ALLOWED_RESOURCE_TYPES = frozenset({"document", "fetch", "script", "xhr"})
 _JSON_TYPES = frozenset({"application/json", "application/ld+json"})
+_NON_CONTENT_HOSTS = "non_content_hosts.json"
+NON_CONTENT_HOST_REASON = "non_content_third_party_host"
 
 
 class RenderRuntimeUnavailableError(RuntimeError):
@@ -162,7 +170,7 @@ class RenderedPageFetcher:
                 else _installed_browser(playwright.chromium)
             )
             try:
-                page = self._read(browser, target_url, deadline_at=deadline_at)
+                page = self._read(browser, target_url, deadline_at=deadline_at, landing=landing)
             except PlaywrightTimeoutError:
                 return self._landing_page(url, landing)
             else:
@@ -194,6 +202,7 @@ class RenderedPageFetcher:
         url: str,
         *,
         deadline_at: float | None = None,
+        landing: httpx.Response | None = None,
     ) -> RenderedPage:
         capture = _RenderCapture(url, [], [], [])
         context = browser.new_context(
@@ -210,6 +219,7 @@ class RenderedPageFetcher:
                 request,
                 capture,
                 deadline_at=deadline_at,
+                landing=landing,
                 is_main_document=(
                     request.resource_type == "document"
                     and request.is_navigation_request()
@@ -282,6 +292,7 @@ class RenderedPageFetcher:
         capture: _RenderCapture,
         *,
         deadline_at: float | None = None,
+        landing: httpx.Response | None = None,
         is_main_document: bool = False,
     ) -> None:
         if request.resource_type not in _ALLOWED_RESOURCE_TYPES:
@@ -290,6 +301,15 @@ class RenderedPageFetcher:
                 request,
                 capture,
                 "resource_type_not_required",
+                self.limits.max_blocked_requests,
+            )
+            return
+        if not is_main_document and _non_content_host(request.url, capture.final_document_url):
+            _abort(
+                route,
+                request,
+                capture,
+                NON_CONTENT_HOST_REASON,
                 self.limits.max_blocked_requests,
             )
             return
@@ -314,10 +334,14 @@ class RenderedPageFetcher:
             )
             return
         try:
-            response = self._request(
-                request,
-                max_bytes=min(self.limits.max_response_bytes, remaining_total) + 1,
-                max_elapsed_seconds=self._remaining_seconds(deadline_at),
+            response = (
+                landing
+                if is_main_document and _serves_document(landing, request)
+                else self._request(
+                    request,
+                    max_bytes=min(self.limits.max_response_bytes, remaining_total) + 1,
+                    max_elapsed_seconds=self._remaining_seconds(deadline_at),
+                )
             )
         except (FetchPolicyError, httpx.HTTPError, ValueError) as exc:
             _abort(
@@ -444,6 +468,39 @@ def _record_blocked(
         capture.blocked.append(blocked)
         return
     capture.blocked_overflow_count += 1
+
+
+def _serves_document(landing: httpx.Response | None, request: Request) -> TypeGuard[httpx.Response]:
+    # A refused landing read is retried with the browser's own headers, which some hosts accept.
+    return (
+        landing is not None
+        and landing.is_success
+        and request.method == "GET"
+        and normalize_fetch_url(request.url) == normalize_fetch_url(str(landing.url))
+    )
+
+
+@functools.cache
+def non_content_hosts() -> frozenset[str]:
+    """Load the packaged consent, tag-manager, telemetry, and analytics host suffixes."""
+    data = json.loads(
+        resources.files("clearscout.infrastructure.web_fetch")
+        .joinpath(_NON_CONTENT_HOSTS)
+        .read_text(encoding="utf-8")
+    )
+    return frozenset(host.casefold() for hosts in data.values() for host in hosts)
+
+
+def _listed_suffix(host: str) -> str | None:
+    labels = host.casefold().rstrip(".").split(".")
+    listed = non_content_hosts()
+    return next((s for i in range(len(labels)) if (s := ".".join(labels[i:])) in listed), None)
+
+
+def _non_content_host(url: str, posting_url: str) -> bool:
+    suffix = _listed_suffix(urlsplit(url).hostname or "")
+    # A posting served under a listed domain still reads its own site.
+    return suffix is not None and _listed_suffix(urlsplit(posting_url).hostname or "") != suffix
 
 
 def _response_limit_reached(

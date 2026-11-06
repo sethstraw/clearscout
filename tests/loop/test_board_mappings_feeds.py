@@ -1972,11 +1972,10 @@ def test_an_adp_body_without_a_leading_company_value_keeps_the_source_name_and_t
     assert listing.published_description == strip_tags(description)
 
 
-@pytest.mark.parametrize("fresh_details", [False, True])
 @pytest.mark.parametrize("apply_address", [False, True])
 @pytest.mark.parametrize("same_tenant", [False, True])
 def test_an_adp_read_skips_a_protected_item_before_its_detail_request(
-    fresh_details: bool, apply_address: bool, same_tenant: bool
+    apply_address: bool, same_tenant: bool
 ) -> None:
     second_item = "9200000000002_1"
     canonical = (
@@ -2003,10 +2002,7 @@ def test_an_adp_read_skips_a_protected_item_before_its_detail_request(
     read = fetcher.listings(
         "Globex",
         _ADP_BOARD,
-        options=SourceReadOptions(
-            fresh_details=fresh_details,
-            protected_posting_urls=frozenset({protected_url}),
-        ),
+        options=SourceReadOptions(protected_posting_urls=frozenset({protected_url})),
     )
 
     expected_items = [second_item] if same_tenant else [_ADP_JOB, second_item]

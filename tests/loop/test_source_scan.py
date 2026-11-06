@@ -1233,6 +1233,7 @@ def test_scan_uses_retained_publisher_bodies_for_recoverable_admission(
         workspace_id,
         [foreign_pending_id],
         origin="source.continue",
+        reread_before=utc_now(),
     )
     assert refreshed["attempted"] == 1
     assert "https://boards.greenhouse.io/acme/jobs/foreign" in {
@@ -2427,6 +2428,69 @@ def test_a_scan_listing_a_known_row_at_another_address_retains_and_screens_its_b
         for outcome in result["funnel"]["outcomes"]
         if outcome["url"] == listed_url
     ] == ["hard_constraint_excluded"]
+
+
+def test_a_scan_reports_a_body_dismissal_a_continuation_filed_as_a_hard_exclusion(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    _source(durable_database, workspace_id, "Acme", "https://boards.example.test/acme")
+    SearchParametersService(durable_database).save(
+        workspace_id,
+        JobSearchParameters(
+            locations=[Location(key="us_remote", country="United States")],
+            countries=[CountryNames(country="United States")],
+            seniority=Seniority(target_titles=titles("Data Engineer")),
+        ),
+    )
+    url = _GREENHOUSE_STAGED_URL
+    listed = _listing("Data Engineer", url)
+    SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": [listed]}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+    ).scan(workspace_id)
+
+    class ForeignBodyResolver:
+        def resolve(self, url: str, **_kwargs: Any) -> ResolvedPostingContent:
+            return ResolvedPostingContent(
+                requested_url=url,
+                final_url=url,
+                content_status=PostingContentAccessStatus.READABLE,
+                identity_status=PostingIdentityStatus.VERIFIED,
+                posting_status=PostingStatus.ACTIVE,
+                extraction_method=PostingContentExtractionMethod.STATIC_HTML,
+                fetched_at=utc_now(),
+                content=b"Location: Amsterdam, Netherlands",
+                http_status=200,
+                publisher_markup_present=True,
+                identity_evidence={"publisher_declaration": True},
+                note="Verified publisher body.",
+            )
+
+    PostingContentResolutionService(
+        durable_database, ForeignBodyResolver(), storage=runtime_storage(durable_database)
+    ).resolve_automatic(
+        workspace_id, [_pending_id_for(durable_database, url)], origin="source.continue"
+    )
+    with durable_database.session() as session:
+        [dismissal] = session.scalars(select(PendingDiscoveryDispositionEvent)).all()
+        assert dismissal.origin == "source.continue.body_screen"
+
+    result = SourceScanService(
+        durable_database,
+        storage=runtime_storage(durable_database),
+        fetcher=ScriptedBoards({"Acme": [listed]}),
+        posting_fetcher=UnexpectedPostingFetcher(),
+        content_resolution=PostingContentResolutionService(
+            durable_database, UnexpectedContentResolver(), storage=runtime_storage(durable_database)
+        ),
+    ).scan(workspace_id)
+
+    assert [o["reason"] for o in result["funnel"]["outcomes"] if o["url"] == url] == [
+        "hard_constraint_excluded"
+    ]
 
 
 def test_a_rescan_does_not_report_an_old_body_dismissal_its_unverified_read_never_judged(

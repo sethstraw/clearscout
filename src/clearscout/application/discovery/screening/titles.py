@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TypeVar
 
+from clearscout.application.discovery.screening.bulk import supports_title_expansion
 from clearscout.application.discovery.screening.employer import excluded_employer
 from clearscout.application.discovery.screening.findings import (
     DiscoveryScreening,
@@ -193,6 +194,45 @@ def summary_may_retain_title(
         and specialist_role_noun(title, parameters) is not None
         and bool(_summary_retention_terms(parameters))
     )
+
+
+def listed_title_may_qualify(
+    title: str,
+    parameters: JobSearchParameters,
+    searched: list[str],
+    *,
+    source_employer: str = "",
+) -> bool:
+    """Return whether a posting read behind this listed title could pass the title screen.
+
+    The read may add a summary and a publisher-vouched employer; either keeps the title.
+    """
+    if not title.strip():
+        return True
+    # A vouched employer changes the finding only through a saved role phrase.
+    vouched = (
+        (
+            name
+            for archetype in parameters.employers.stated_archetypes
+            for name in archetype.employer_names
+        )
+        if _saved_role_phrase(title, parameters) is not None
+        else ()
+    )
+    for employer in dict.fromkeys(("", *vouched)):
+        finding = screen_discovery_title(
+            title,
+            PublishedFact(),
+            parameters,
+            searched,
+            employer=employer,
+            source_employer=source_employer,
+        )
+        if supports_title_expansion(
+            finding, include_bounded_review=True
+        ) or summary_may_retain_title(finding, title, parameters):
+            return True
+    return False
 
 
 def _summary_retention_terms(parameters: JobSearchParameters) -> tuple[str, ...]:

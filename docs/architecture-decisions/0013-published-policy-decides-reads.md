@@ -5,8 +5,9 @@ Status: accepted
 ## Decision
 
 Every posting read goes through the shared fetch policy. That includes
-robots.txt, rate limits, redirect checks, and address validation. No hostname is
-allowed or refused by a special-case list. A site's published policy is the
+robots.txt, rate limits, redirect checks, and address validation. No posting,
+board, or ATS host is allowed or refused by a special-case list; the one listed
+exception is the rendered tier's non-content hosts, below. A site's published policy is the
 reason a read proceeds or stops. Bulk crawling, board scans, and lead freshness
 probes all honor a robots disallow with no exception.
 
@@ -38,6 +39,17 @@ redirect limit. Each hop still resolves a public address and loads that host's
 own robots, and still refuses a group naming either agent. An exempt
 read is never retried on Retry-After. The precheck a posting read runs before
 its request applies the same rule as the request.
+
+## Non-content hosts in the rendered tier
+
+The rendered browser tier aborts, before any policy check, subresource requests
+to known cookie-consent, tag-manager, RUM or telemetry, and product-analytics
+hosts, because they never carry posting content. The list ships with the
+package as `infrastructure/web_fetch/non_content_hosts.json`, matches on host
+suffix, and never applies to the main document or to a host that shares a
+listed domain with the posting itself. Each abort is recorded with the reason
+`non_content_third_party_host`. No posting, board, or ATS host may be listed.
+robots.txt and API terms still decide every read that is made.
 
 A robots refusal is a policy refusal, not a publisher that declined to answer.
 A refresh reports it as a failed read with the robots reason. It does not count

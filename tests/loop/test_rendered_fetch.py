@@ -346,6 +346,77 @@ def test_a_navigation_timeout_without_a_landing_read_still_fails(
         fetcher.fetch("https://board.example/viewjob?jk=a1b2c3")
 
 
+def test_the_browser_document_request_is_served_from_the_landing_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _PolicyClient()
+    browser = _StalledBrowser(_Page)
+    fetcher = _stalled_fetcher(monkeypatch, client, browser)
+
+    page = fetcher.fetch("https://publisher.example/careers")
+
+    assert [(method, url) for method, url, _, _ in client.calls] == [
+        ("GET", "https://publisher.example/careers"),
+    ]
+    assert not page.navigation_timed_out
+    assert page.final_url == "https://publisher.example/careers"
+    assert page.document_status == 200
+    assert page.html == "<html><main>Rendered</main></html>"
+
+
+def _route_subresources(
+    posting_url: str, urls: list[str]
+) -> tuple[_PolicyClient, rendered_module._RenderCapture]:
+    client = _PolicyClient()
+    fetcher = RenderedPageFetcher(client=cast(Any, client))
+    capture = rendered_module._RenderCapture(posting_url, [], [], [])
+    for url in urls:
+        fetcher._route(
+            cast(Any, _Route()),
+            cast(Any, _Request(url, resource_type="script", headers={})),
+            capture,
+        )
+    return client, capture
+
+
+def test_listed_non_content_hosts_are_aborted_before_policy() -> None:
+    client, capture = _route_subresources(
+        "https://jobs.publisher.example/posting/1",
+        [
+            "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js",
+            "https://www.googletagmanager.com/gtm.js?id=GTM-X",
+            "https://jobs.publisher.example/static/app.js",
+            "https://cdn.assets-vendor.example/widget.js",
+        ],
+    )
+
+    assert [url for _, url, _, _ in client.calls] == [
+        "https://jobs.publisher.example/static/app.js",
+        "https://cdn.assets-vendor.example/widget.js",
+    ]
+    assert [(blocked.url, blocked.reason) for blocked in capture.blocked] == [
+        ("https://cdn.cookielaw.org/scripttemplates/otSDKStub.js", "non_content_third_party_host"),
+        ("https://www.googletagmanager.com/gtm.js?id=GTM-X", "non_content_third_party_host"),
+    ]
+
+
+def test_a_posting_on_a_listed_domain_still_reads_its_own_site() -> None:
+    client, capture = _route_subresources(
+        "https://careers.segment.com/jobs/42",
+        ["https://cdn.segment.com/app.js", "https://www.google-analytics.com/analytics.js"],
+    )
+
+    assert [url for _, url, _, _ in client.calls] == ["https://cdn.segment.com/app.js"]
+    assert [blocked.reason for blocked in capture.blocked] == ["non_content_third_party_host"]
+
+
+def test_the_non_content_host_list_loads_from_the_package() -> None:
+    hosts = rendered_module.non_content_hosts()
+
+    assert {"cookielaw.org", "googletagmanager.com", "nr-data.net", "mixpanel.com"} <= hosts
+    assert "publisher.example" not in hosts
+
+
 def test_rendered_fetch_records_unsupported_browser_requests() -> None:
     client = _PolicyClient()
     fetcher = RenderedPageFetcher(client=cast(Any, client))

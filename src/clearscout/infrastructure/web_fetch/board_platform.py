@@ -157,6 +157,10 @@ class BoardTransport(Protocol):
         """Return whether the current board read has used up its time."""
         ...
 
+    def rules_out_listed_title(self, url: str, title: str) -> bool:
+        """Return whether this read's title screen rejects an unprotected listed posting."""
+        ...
+
     def paginated_request(
         self, request: Callable[[], Any], listings: list[SourceListing], raw_count: int
     ) -> Any:
