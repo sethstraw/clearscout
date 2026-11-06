@@ -59,8 +59,9 @@ the same paragraph.
   than covering a source point by point or in its order. State the theme as a
   fact about the role or employer, with no reaction to it and no reason for
   applying. The paragraph's subject is the role, the employer, its product, or
-  whom it serves; never name the posting, job description, or research as a
-  source, or say what was or was not supplied. Name the theme in your own words
+  whom it serves, and it says what that subject does, not what the role calls
+  for, requires, or seeks; never name the posting, job description, or research
+  as a source, or say what was or was not supplied. Name the theme in your own words
   rather than listing the posting's duties back: never lift a clause of
   {{echo_words}} or more consecutive words from a company source. Figures,
   names, and acronyms may be copied exactly and do not count toward that run.

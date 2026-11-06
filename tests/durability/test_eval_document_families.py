@@ -82,7 +82,7 @@ def _header(log: Path) -> dict[str, Any]:
     [
         ("draft_scripted_task.py", "draft_cases.jsonl", 12),
         ("cover_scripted_task.py", "cover_cases.jsonl", 14),
-        ("critic_scripted_task.py", "critic_cases.jsonl", 31),
+        ("critic_scripted_task.py", "critic_cases.jsonl", 33),
     ],
 )
 def test_a_scripted_document_task_runs_offline_and_every_case_scores_as_declared(
@@ -129,12 +129,18 @@ def test_a_planted_critic_case_differs_from_its_clean_control_by_its_planted_lin
     cases = {case["id"]: case for case in _cases("critic_cases.jsonl")}
 
     planted = [case for case in cases.values() if "planted" in case["metadata"]]
+    draft_controls = {
+        "platform_engineer.md": cases["strong_verdict"],
+        "hybrid_career.md": cases["clean_hybrid_control"],
+    }
 
     assert any("scripted_letter" in case["metadata"] for case in planted)
     for case in planted:
         line = case["metadata"]["planted"]["line"]
         if "scripted_draft" in case["metadata"]:
-            control = cases["strong_verdict"]
+            control = draft_controls.get(case["metadata"]["cv"])
+            assert control is not None, case["id"]
+            assert control["metadata"]["cv"] == case["metadata"]["cv"], case["id"]
             assert case["job_spec"] == control["job_spec"], case["id"]
             assert _drafted_lines(case) == sorted([*_drafted_lines(control), line]), case["id"]
             continue
@@ -192,7 +198,7 @@ def test_the_critic_log_counts_the_outcomes_the_shipped_floors_assigned(tmp_path
     """The critic family reports a distribution to read, not an invented pass rate."""
     log = runner.run_task(str(TASKS / "critic_scripted_task.py"), log_dir=tmp_path / "logs")
 
-    assert _header(log)["critic_outcomes"] == {"fail": 20, "warn": 3, "pass": 8}
+    assert _header(log)["critic_outcomes"] == {"fail": 21, "warn": 3, "pass": 9}
 
 
 def test_a_planted_uncited_line_fails_provenance_and_its_untraceable_span() -> None:

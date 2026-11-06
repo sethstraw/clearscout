@@ -12,6 +12,7 @@ role context, summary, or skill entries are counted, never failed.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from typing import Any
 
@@ -37,6 +38,11 @@ UNLABELED = "unlabeled"
 AXES = ("titles", "archetypes")
 # Entry kinds a proposal is counted for when it cites nothing else.
 CONTEXT_KINDS = frozenset({"role_context", "summary", "skill"})
+_WORD = re.compile(r"[a-z0-9]+")
+_SENTENCE_BREAK = re.compile(r"[.;:!?\n]")
+_JOINERS = frozenset({"-", "\u2013"})
+# "Co-led" and "self-directed" still claim the work; only an employer compound is excused.
+_CLAIM_PREFIXES = frozenset({"co", "self"})
 
 # Labels are hand rulings that can disagree at the margin, so precision gates below 1.0.
 # The schema already forbids an invented id, leaving only
@@ -102,24 +108,52 @@ def gold_labels(sample: dict[str, Any]) -> dict[str, Any]:
                 raise ValueError(f"sample {case!r} rejects {item.get('name')!r} without a why")
     for claim in gold.get("unsupported_claims", []):
         terms = claim.get("terms")
+        opening = claim.get("opening_terms", [])
         if (
             not isinstance(terms, list)
             or not terms
-            or not all(isinstance(term, str) and term.strip() for term in terms)
+            or not isinstance(opening, list)
+            or not all(isinstance(term, str) and term.strip() for term in [*terms, *opening])
             or not str(claim.get("why") or "").strip()
         ):
             raise ValueError(f"sample {case!r} names an unsupported claim without terms or a why")
     return gold
 
 
+def _claim_words(text: str) -> list[tuple[str, bool, bool]]:
+    """Return each word with whether it opens a sentence and whether a hyphen joins it leftward."""
+    lowered = text.lower()
+    words: list[tuple[str, bool, bool]] = []
+    end = 0
+    for found in _WORD.finditer(lowered):
+        gap = lowered[end : found.start()]
+        joined = gap in _JOINERS and bool(words) and words[-1][0] not in _CLAIM_PREFIXES
+        words.append((found.group(), not words or bool(_SENTENCE_BREAK.search(gap)), joined))
+        end = found.end()
+    return words
+
+
+def _states(words: list[tuple[str, bool, bool]], term: str, *, opening: bool) -> bool:
+    target = normalize_text(term).split()
+    return any(
+        [word for word, _, _ in words[start : start + len(target)]] == target
+        and not words[start][2]
+        and (words[start][1] or not opening)
+        for start in range(len(words) - len(target) + 1)
+    )
+
+
 def _unsupported_claim(text: str, claims: list[dict[str, Any]]) -> str:
     """Return why the record does not support a claim this text makes, empty when none."""
-    padded = f" {normalize_text(text)} "
+    # "Product-led AI" names an employer, so a term never starts inside a hyphen compound.
+    # A present-tense verb is the candidate's only when it opens a sentence with no subject.
+    words = _claim_words(text)
     return next(
         (
             str(claim["why"])
             for claim in claims
-            if any(f" {normalize_text(term)} " in padded for term in claim["terms"])
+            if any(_states(words, term, opening=False) for term in claim["terms"])
+            or any(_states(words, term, opening=True) for term in claim.get("opening_terms", []))
         ),
         "",
     )

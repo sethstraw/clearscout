@@ -2576,6 +2576,109 @@ def test_a_successfactors_template_posting_states_its_microdata_posted_date(
     assert posted.earliest.grade is PostedDateGrade.BOARD_DATE
 
 
+def _sf_row(label: str, value: str, lang: str = "en-US") -> str:
+    return (
+        '<div class="row"><div class="col-xs-12 fontalign-left">'
+        f'<span class="joblayouttoken-label" role="heading" aria-level="2">{label}</span> '
+        f'<span xml:lang="{lang}" lang="{lang}" class="rtltextaligneligible">{value} </span>'
+        "</div></div>"
+    )
+
+
+_SF_DATED_LABELS = [
+    f"{label}{tail}"
+    for label in ("Posting Start Date", "Date Posted", "Posted Date")
+    for tail in (": ", ":")
+]
+
+
+@pytest.mark.parametrize("label", _SF_DATED_LABELS)
+@pytest.mark.parametrize(
+    ("lang", "value", "day"),
+    [
+        pytest.param("en-US", "11/5/26", date(2026, 11, 5), id="us-short"),
+        pytest.param("en-US", "11/05/2026", date(2026, 11, 5), id="us-long"),
+        pytest.param("en-US", "2026-11-05", date(2026, 11, 5), id="iso"),
+        pytest.param("de-DE", "2026-11-05", date(2026, 11, 5), id="iso-de"),
+        pytest.param("en-GB", "11/5/26", None, id="gb-numeric"),
+        pytest.param("de-DE", "11/05/2026", None, id="de-numeric"),
+        pytest.param("en-US", "soon", None, id="garbage"),
+        pytest.param("en-US", "13/40/26", None, id="impossible"),
+    ],
+)
+def test_a_successfactors_template_posting_reads_its_labelled_posted_date(
+    label: str, lang: str, value: str, day: date | None
+) -> None:
+    page = _SF_LABELLED_PAGE.replace(
+        "</div></div>", f"</div>{_sf_row(label, value, lang)}</div>", 1
+    )
+    fetcher = _fetcher(
+        {
+            f"{_SF_SITE}/Health/": _SF_PAGE,
+            f"{_SF_SITE}/sitemap.xml": sitemap_urlset(_SF_ENGINEER),
+            _SF_ENGINEER: page,
+        },
+        [],
+    )
+
+    read = fetcher.listings("Contoso", f"{_SF_SITE}/Health/")
+
+    assert [listing.title for listing in read.listings] == ["Data Engineer"]
+    posted = read.listings[0].facts.posted_date
+    if day is None:
+        assert posted is None
+        return
+    assert posted is not None
+    assert (posted.earliest.basis, posted.day) == ("datePosted", day)
+    assert posted.earliest.grade is PostedDateGrade.BOARD_DATE
+
+
+def test_a_declared_successfactors_posting_without_a_date_reads_its_labelled_one() -> None:
+    page = (
+        '<div class="jobDisplayShell" itemscope itemtype="http://schema.org/JobPosting">'
+        '<div class="row"><span class="joblayouttoken-label">Job Title: </span>'
+        '<span itemprop="title" class="rtltextaligneligible">Data Engineer</span></div>'
+        '<div class="row"><span itemprop="description" class="rtltextaligneligible">'
+        "<p>Build clinical data systems.</p></span></div>"
+        f"{_sf_row('Posting Start Date: ', '11/5/26')}</div>"
+    )
+    fetcher = _fetcher(
+        {
+            f"{_SF_SITE}/Health/": _SF_PAGE,
+            f"{_SF_SITE}/sitemap.xml": sitemap_urlset(_SF_ENGINEER),
+            _SF_ENGINEER: page,
+        },
+        [],
+    )
+
+    read = fetcher.listings("Northbridge", f"{_SF_SITE}/Health/")
+
+    assert [listing.title for listing in read.listings] == ["Data Engineer"]
+    posted = read.listings[0].facts.posted_date
+    assert posted is not None
+    assert posted.day == date(2026, 11, 5)
+
+
+def test_successfactors_microdata_posted_date_wins_over_a_labelled_one() -> None:
+    meta = '<meta itemprop="datePosted" content="October 21, 2026">'
+    page = _SF_LABELLED_PAGE.replace(
+        'JobPosting">', f'JobPosting">{meta}{_sf_row("Posting Start Date: ", "11/5/26")}', 1
+    )
+    fetcher = _fetcher(
+        {
+            f"{_SF_SITE}/Health/": _SF_PAGE,
+            f"{_SF_SITE}/sitemap.xml": sitemap_urlset(_SF_ENGINEER),
+            _SF_ENGINEER: page,
+        },
+        [],
+    )
+
+    posted = fetcher.listings("Contoso", f"{_SF_SITE}/Health/").listings[0].facts.posted_date
+
+    assert posted is not None
+    assert posted.day == date(2026, 10, 21)
+
+
 @pytest.mark.parametrize(
     "broken", ["two-title-spans", "og-disagrees", "no-body", "typed-elsewhere", "generic-title"]
 )

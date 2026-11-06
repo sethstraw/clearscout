@@ -199,7 +199,7 @@ def _source_talk(lines: Sequence[DraftedLine]) -> Finding:
             Outcome.FAIL,
             f"{len(offenders)} sentence(s) talk about the posting or research instead of the "
             "employer; make the role, the employer, its product, or whom it serves the "
-            "subject, and "
+            "subject and say what it does, not what the role calls for, and "
             f"never say what was or was not supplied: {quoted(offenders)}",
         )
     return Finding("letter source talk", Outcome.PASS, "no sentence talks about its sources")

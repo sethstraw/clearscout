@@ -208,6 +208,13 @@ def test_a_reason_that_inflates_a_specialty_into_leadership_fails_by_name() -> N
         "Leads AI evaluation for documentation releases.",
         "Headed up evaluation of model-drafted pages.",
         "Directed model evaluation for the product team.",
+        "Led the AI evaluation program for drafted pages.",
+        "Shipped the evaluation set. Oversaw model quality for each release.",
+        "Heads up the LLM evaluation team.",
+        "Shipped the evaluation set. Leads evaluation for releases.",
+        "Shipped the evaluation set\nLeads evaluation for releases.",
+        "Co-led the AI evaluation program.",
+        "Self-directed AI evaluation work for the docs team.",
     ],
 )
 def test_a_title_reason_claiming_evaluation_leadership_fails_by_name(reason: str) -> None:
@@ -228,6 +235,9 @@ def test_a_title_reason_claiming_evaluation_leadership_fails_by_name(reason: str
         "Companies leading the AI tooling market need documentation evaluation.",
         "Developer tools companies leading the LLM tooling space.",
         "AI labs where the head of AI evaluation needs release checks on drafted pages.",
+        "Product-led AI companies that ship model-drafted documentation.",
+        "Founder-led AI startups publishing developer documentation.",
+        "Labs where a quality team oversees model evaluation.",
     ],
 )
 def test_a_because_describing_the_employer_is_not_a_claim(because: str) -> None:
@@ -246,6 +256,7 @@ def test_a_because_describing_the_employer_is_not_a_claim(because: str) -> None:
         "A role leading evaluation of model output, built on the record's evaluation set.",
         "Moves toward the evaluation leadership the thesis asks for.",
         "Built the documentation evaluation set; a step toward leading evaluation for AI products.",
+        "A role that leads evaluation for AI products.",
     ],
 )
 def test_a_title_reason_describing_the_target_role_is_not_a_claim(reason: str) -> None:
@@ -258,7 +269,13 @@ def test_a_title_reason_describing_the_target_role_is_not_a_claim(reason: str) -
 
 
 @pytest.mark.parametrize(
-    "claim", [{"terms": ["led ai"]}, {"terms": "led ai", "why": "No AI function was led."}]
+    "claim",
+    [
+        {"terms": ["led ai"]},
+        {"terms": "led ai", "why": "No AI function was led."},
+        {"terms": ["led ai"], "opening_terms": "leads ai", "why": "No AI function was led."},
+        {"terms": ["led ai"], "opening_terms": [""], "why": "No AI function was led."},
+    ],
 )
 def test_an_unsupported_claim_label_without_a_term_list_or_a_why_is_refused(
     claim: dict[str, Any],

@@ -156,7 +156,8 @@ def test_the_letter_prompt_binds_the_letter_to_this_one_role() -> None:
         "sentences, rather than covering a source point by point or in its order." in text
     )
     assert (
-        "The paragraph's subject is the role, the employer, its product, or whom it serves; "
+        "The paragraph's subject is the role, the employer, its product, or whom it serves, "
+        "and it says what that subject does, not what the role calls for, requires, or seeks; "
         "never name the posting, job description, or research as a source, or say what was "
         "or was not supplied." in text
     )

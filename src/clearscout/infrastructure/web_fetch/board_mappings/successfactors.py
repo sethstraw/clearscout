@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
+from datetime import date
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -115,12 +116,46 @@ def successfactors_page_posting(page: str) -> Mapping[str, Any] | None:
     """Read declared posting facts or an owned SuccessFactors detail template."""
     declared = page_posting(page)
     if declared is not None:
-        return declared
+        labelled = "" if declared.get("posted") else _labelled_posted(page)
+        return {**declared, "posted": labelled} if labelled else declared
     posting = _template_posting(page)
     if posting is None or "title" not in posting:
         return posting
-    posted = microdata_date_posted(page)
+    posted = microdata_date_posted(page) or _labelled_posted(page)
     return {**posting, "posted": posted} if posted else posting
+
+
+_POSTED_LABELS = frozenset({"posting start date", "date posted", "posted date"})
+_US_DATE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})")
+
+
+def _labelled_posted(page: str) -> str:
+    """Return the one labelled posted date as ISO, or "" when absent, several, or ambiguous."""
+    stated: set[str] = set()
+    for row in html_blocks(page, "div"):
+        labels = html_blocks(row.inner, "span", class_name="joblayouttoken-label")
+        values = html_blocks(row.inner, "span", class_name="rtltextaligneligible")
+        if len(labels) != 1 or len(values) != 1:
+            continue
+        label = strip_tags(labels[0].inner).strip().rstrip(":").strip().casefold()
+        if label in _POSTED_LABELS:
+            stated.add(_posted_day(strip_tags(values[0].inner).strip(), values[0].attrs))
+    return stated.pop() if len(stated) == 1 else ""
+
+
+def _posted_day(value: str, attrs: Mapping[str, str]) -> str:
+    # Day and month order is only known for a US-English span; other numeric dates stay unread.
+    try:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            return date.fromisoformat(value).isoformat()
+        us = _US_DATE.fullmatch(value)
+        lang = (attrs.get("lang") or attrs.get("xml:lang") or "").casefold()
+        if us is None or lang != "en-us":
+            return ""
+        year = int(us.group(3)) + (2000 if len(us.group(3)) == 2 else 0)
+        return date(year, int(us.group(1)), int(us.group(2))).isoformat()
+    except ValueError:
+        return ""
 
 
 def _template_posting(page: str) -> Mapping[str, Any] | None:

@@ -292,15 +292,18 @@ def test_every_critic_and_drafting_case_carries_its_own_canned_draft() -> None:
         assert len(drafts) == len(sampled), dataset
 
 
-def test_every_document_family_shares_one_candidate_cv() -> None:
+def test_the_drafting_families_share_one_candidate_cv() -> None:
     """A differing result between cases is about the posting, never about the person."""
     candidates = {
         (case["metadata"]["cv"], case["cv_hash"])
-        for dataset in DOCUMENT_DATASETS
+        for dataset in ("draft_cases.jsonl", "cover_cases.jsonl")
         for case in cases(dataset)
     }
+    critic = {(case["metadata"]["cv"], case["cv_hash"]) for case in cases("critic_cases.jsonl")}
 
+    # Critic cases on a second CV compare only against a control on that CV.
     assert len(candidates) == 1
+    assert candidates <= critic
 
 
 def test_every_baseline_records_a_scripted_run() -> None:
