@@ -167,8 +167,13 @@ function PendingDiscoveryWorkspace({ workspaceId }: { workspaceId: string }) {
             : null,
       }
     : null;
-  const reviewsByPending = relevanceReviewsByPending(
-    discoveries.flatMap((item) => (item.relevance_review ? [item.relevance_review] : [])),
+  // The queue resets its open editors whenever this map changes identity.
+  const reviewsByPending = useMemo(
+    () =>
+      relevanceReviewsByPending(
+        discoveries.flatMap((item) => (item.relevance_review ? [item.relevance_review] : [])),
+      ),
+    [discoveries],
   );
   // A favorite or kept closed posting stays in the queue, so it is not history yet.
   const closedDiscoveries = (discoveryHistory.data ?? []).filter(

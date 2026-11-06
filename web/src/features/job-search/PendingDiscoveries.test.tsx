@@ -3208,6 +3208,32 @@ describe("PendingDiscoveries", () => {
     );
   });
 
+  it("keeps a row's dismissal editor open while the queue re-renders with the same rows", async () => {
+    vi.useFakeTimers();
+    try {
+      installRows(pendingDiscoveryRows(1));
+      render(
+        <MemoryRouter>
+          <AppProviders>
+            <PendingDiscoveries workspaceId="workspace-1" />
+          </AppProviders>
+        </MemoryRouter>,
+      );
+      const row = (await vi.waitFor(() => screen.getByText("Role 0"))).closest("tr");
+      if (!row) throw new Error("Expected the Role 0 row.");
+      fireEvent.click(within(row).getByRole("button", { name: "Dismiss from pending" }));
+      expect(screen.getByLabelText("Dismissal reason")).toBeTruthy();
+
+      // Opening the history re-renders the page around the queue without changing its rows.
+      fireEvent.click(screen.getByText("Closed posting history"));
+      await act(() => vi.advanceTimersByTimeAsync(10));
+
+      expect(screen.queryByLabelText("Dismissal reason")).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("offers no dismiss-all while the rows shown belong to the filter just left", async () => {
     installQueueWithReviews(
       [queueRow("stale-1", "Role Stale", 2), queueRow("current-1", "Role Current", 1)],
