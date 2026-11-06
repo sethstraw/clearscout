@@ -6,6 +6,8 @@ import re
 from typing import TYPE_CHECKING
 from urllib.parse import urlencode, urlsplit
 
+from clearscout.domain.staged_facts import PostedDateGrade
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import posted_on
 from clearscout.infrastructure.web_fetch.board_mappings.page_posting import page_posting_declaration
 from clearscout.infrastructure.web_fetch.board_platform import HOST_START, BoardPlatform
 from clearscout.infrastructure.web_fetch.board_reads import (
@@ -23,7 +25,11 @@ DARWINBOX_BOARD = re.compile(
     r"/ms/candidatev2/(?P<company>[A-Za-z0-9_-]+)/careers/(?:allJobs|home)(?=[/?#]|$)"
 )
 _PENDING = "darwinbox_search_page"
-_MAPPING = page_posting_declaration("darwinbox")
+# posted_on is epoch seconds; created_on records the requisition, not its publication.
+_MAPPING = page_posting_declaration(
+    "darwinbox",
+    posted=posted_on(("row", "publisher", "posted_on"), PostedDateGrade.BOARD_DATE),
+)
 
 
 def _read(

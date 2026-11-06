@@ -1053,6 +1053,59 @@ def test_relative_posted_text_is_never_a_posted_date(value: str) -> None:
     assert publisher_posted_date(value, basis="postedOn", grade=PostedDateGrade.BOARD_DATE) is None
 
 
+@pytest.mark.parametrize("pad", ["", " ", "\t", " \n"])
+@pytest.mark.parametrize(
+    ("value", "day"),
+    [
+        ("1792645200", date(2026, 10, 22)),
+        ("1792645200123", date(2026, 10, 22)),
+        ("179264520", None),
+        ("17926452001", None),
+        ("179264520012", None),
+        ("17926452001234", None),
+    ],
+)
+def test_only_ten_or_thirteen_digit_epochs_read_as_posted_dates(
+    pad: str, value: str, day: date | None
+) -> None:
+    from clearscout.application.discovery.posting_text import publisher_posted_date
+    from clearscout.domain.staged_facts import PostedDateGrade
+
+    fact = publisher_posted_date(
+        f"{pad}{value}{pad}", basis="posted_on", grade=PostedDateGrade.BOARD_DATE
+    )
+
+    assert (fact.day if fact else None) == day
+
+
+@pytest.mark.parametrize(
+    ("value", "month_first", "day"),
+    [
+        ("11/2/2026", True, date(2026, 11, 2)),
+        ("10/30/2026", True, date(2026, 10, 30)),
+        ("04/11/2026", True, date(2026, 4, 11)),
+        ("13/2/2026", True, None),
+        ("04/11/2026", False, None),
+    ],
+)
+def test_a_numeric_day_reads_month_first_only_for_a_board_that_writes_us_order(
+    value: str, month_first: bool, day: date | None
+) -> None:
+    from clearscout.application.discovery.posting_text import publisher_posted_date
+    from clearscout.domain.staged_facts import PostedDateGrade
+
+    fact = publisher_posted_date(
+        value,
+        basis="postingEffectiveDate",
+        grade=PostedDateGrade.BOARD_DATE,
+        month_first=month_first,
+    )
+
+    assert fact is not None
+    assert fact.earliest.wording == value
+    assert fact.day == day
+
+
 @pytest.mark.parametrize(
     "value",
     [

@@ -264,7 +264,9 @@ _MONTH_FIRST = re.compile(
     r"[ \t]+(?P<year>\d{4})(?!\d)"
 )
 _A_YEAR = re.compile(r"(?<!\d)\d{4}(?!\d)")
-_EPOCH_MILLISECONDS = re.compile(r"\d{13}")
+# Epoch seconds or milliseconds, by exact length so no other number reads as a date.
+_EPOCH = re.compile(r"\d{10}|\d{13}")
+_US_NUMERIC_DAY = re.compile(r"(?P<month>\d{1,2})/(?P<day>\d{1,2})/(?P<year>\d{2}|\d{4})")
 _UNPADDED_ISO_DAY = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})(?=$|[Tt ])")
 _COLONLESS_OFFSET = re.compile(r"(T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?[+-]\d{2})(\d{2})$")
 # Java's Date.toString: "Thu Sep 17 02:00:00 UTC 2026".
@@ -380,16 +382,17 @@ def _stated_date(value: str) -> tuple[str | None, str | None, str | None, str]:
 
 
 def publisher_posted_date(
-    value: str, *, basis: str, grade: PostedDateGrade
+    value: str, *, basis: str, grade: PostedDateGrade, month_first: bool = False
 ) -> PublisherPostedDate | None:
     """Return the posted date one publisher field states, or None when it states no dated day.
 
     Relative text such as "Posted 30+ Days Ago" names no year and is never a date.
+    ``month_first`` reads a numeric "11/2/2026" as a board known to write US order.
     """
     wording = value.strip()
-    if not _EPOCH_MILLISECONDS.fullmatch(wording) and not _A_YEAR.search(wording):
+    if not _EPOCH.fullmatch(wording) and not _A_YEAR.search(wording):
         return None
-    normalized, precision, zone, unclear = _stated_date(_iso_form(wording))
+    normalized, precision, zone, unclear = _stated_date(_iso_form(wording, month_first=month_first))
     return PublisherPostedDate.stated(
         PostedDateStatement(
             wording,
@@ -403,10 +406,25 @@ def publisher_posted_date(
     )
 
 
-def _iso_form(wording: str) -> str:
+def month_first_day(value: str) -> str:
+    """Return a US-order "11/5/26" or "11/5/2026" day as ISO, or "" when it is not one."""
+    found = _US_NUMERIC_DAY.fullmatch(value.strip())
+    if found is None:
+        return ""
+    year = int(found["year"]) + (2000 if len(found["year"]) == 2 else 0)
+    try:
+        return date(year, int(found["month"]), int(found["day"])).isoformat()
+    except ValueError:
+        return ""
+
+
+def _iso_form(wording: str, *, month_first: bool = False) -> str:
     """Rewrite the posted-date forms boards emit beyond ISO 8601 into the ISO the parser reads."""
-    if _EPOCH_MILLISECONDS.fullmatch(wording):
-        return datetime.fromtimestamp(int(wording) / 1000, UTC).isoformat()
+    if _EPOCH.fullmatch(wording):
+        scale = 1000 if len(wording) == 13 else 1
+        return datetime.fromtimestamp(int(wording) / scale, UTC).isoformat()
+    if month_first and (us_day := month_first_day(wording)):
+        return us_day
     found = _JAVA_DATE.fullmatch(wording)
     if found and (number := _MONTHS.get(found["month"].casefold())):
         # Another zone abbreviation is ambiguous, so the time stays naive.

@@ -25,6 +25,7 @@ from clearscout.application.discovery.content_resolution import (
     PrefetchedContent,
     ResolvedPostingContent,
     pending_discovery_readiness,
+    resolved_publisher_fetch,
     retained_text_cut_off,
 )
 from clearscout.application.discovery.dispositions import DiscoveryDispositionService
@@ -37,7 +38,10 @@ from clearscout.application.discovery.pending import (
 )
 from clearscout.application.discovery.posting_fetch import FetchedPosting
 from clearscout.application.discovery.posting_refresh import PostingRefreshService
-from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.posting_text import (
+    publisher_closing_date,
+    publisher_posted_date,
+)
 from clearscout.application.discovery.relevance_disputes import RelevanceDisputeService
 from clearscout.application.discovery.relevance_review import current_review_contract
 from clearscout.application.discovery.relevance_review_preparation import (
@@ -51,7 +55,12 @@ from clearscout.application.discovery.relevance_review_rejections import (
 )
 from clearscout.application.discovery.scan_queries import SourceScanQueries
 from clearscout.application.discovery.scan_staging import DiscoveryStaging
-from clearscout.application.discovery.source_reading import SourceListing, SourceReadOptions
+from clearscout.application.discovery.scan_staging.publisher_facts import apply_publisher_check
+from clearscout.application.discovery.source_reading import (
+    PostingCheck,
+    SourceListing,
+    SourceReadOptions,
+)
 from clearscout.application.failures import ConflictError, NotFoundError, ValidationError
 from clearscout.application.job_search.evaluation_targets import evaluated_jobs_for_pending
 from clearscout.application.job_search.models import (
@@ -84,7 +93,13 @@ from clearscout.domain.search_parameters import (
     Location,
     Seniority,
 )
-from clearscout.domain.staged_facts import ListingIdentityTrust, PublishedFact, StagedListingFacts
+from clearscout.domain.staged_facts import (
+    ListingIdentityTrust,
+    PostedDateGrade,
+    PublishedFact,
+    PublisherPostedDate,
+    StagedListingFacts,
+)
 from clearscout.infrastructure.artifacts.store import file_uri_path
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
@@ -3767,6 +3782,182 @@ def test_publisher_declaration_verifies_a_row_whose_title_a_person_corrected(
         evidence = session.get(PendingPostingContent, pending.current_content_id)
         assert evidence is not None
         assert evidence.identity_status == PostingIdentityStatus.VERIFIED
+
+
+def _greenhouse_check(wording: str, title: str = "Operations Lead") -> PostingCheck:
+    return PostingCheck(
+        status="readable",
+        note="",
+        platform="greenhouse",
+        title=title,
+        employer="Acme",
+        facts=StagedListingFacts(
+            posted_date=publisher_posted_date(
+                wording, basis="greenhouse.first_published", grade=PostedDateGrade.FIRST_POSTED
+            )
+        ),
+        text=f"{title}\n" + "Build reliable systems. " * 30,
+    )
+
+
+def _staged_posted(database: Database, pending_id: str) -> PublisherPostedDate | None:
+    with database.session() as session:
+        row = session.get_one(PendingDiscovery, pending_id)
+        return StagedListingFacts.from_json(row.staged_facts).posted_date
+
+
+def _read_detail(
+    database: Database,
+    tmp_path: Path,
+    target: tuple[str, str, str],
+    wording: str,
+    *,
+    on: date = date(2026, 8, 28),
+    title: str = "Operations Lead",
+    final_url: str = "",
+    refresh_check_first: bool = False,
+) -> PublisherPostedDate | None:
+    """Read one row's detail page; a refresh pass first applies the same publisher check."""
+    workspace_id, pending_id, url = target
+    check = _greenhouse_check(wording, title)
+    if refresh_check_first:
+        with database.session() as session:
+            apply_publisher_check(session.get_one(PendingDiscovery, pending_id), check, read_on=on)
+    resolver = DeterministicPostingContentResolver.__new__(DeterministicPostingContentResolver)
+    resolver.static = cast(
+        Any,
+        _DeclaringStatic(
+            FetchedPosting(
+                text=check.text,
+                posting_status="active",
+                method="Greenhouse API",
+                fetched_at=datetime(on.year, on.month, on.day, 9, tzinfo=UTC),
+                title=title,
+                employer="Acme",
+                final_url=final_url or url,
+                publisher_check=check,
+            )
+        ),
+    )
+    resolver.rendered = cast(Any, None)
+    resolver.client = cast(Any, None)
+    service = PostingContentResolutionService(
+        database, resolver, storage=runtime_storage(database, tmp_path)
+    )
+    service.resolve_batch(
+        workspace_id,
+        [pending_id],
+        service.preflight(workspace_id, [pending_id]).snapshot_sha256,
+        origin="discovery.refresh_batch",
+    )
+    return _staged_posted(database, pending_id)
+
+
+def test_a_detail_read_stages_the_posted_date_its_publisher_states(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    target = _pending(durable_database, tmp_path)
+
+    posted = _read_detail(durable_database, tmp_path, target, "2026-08-20")
+
+    assert posted is not None
+    assert posted.earliest.normalized_value == "2026-08-20"
+    assert posted.earliest.basis == "greenhouse.first_published"
+    assert posted.earliest.read_on == date(2026, 8, 28)
+
+
+def test_a_detail_read_keeps_the_earlier_posted_date_a_row_already_holds(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    target = _pending(durable_database, tmp_path)
+    prior = publisher_posted_date(
+        "2026-08-10", basis="greenhouse.first_published", grade=PostedDateGrade.FIRST_POSTED
+    )
+    with durable_database.session() as session:
+        row = session.get_one(PendingDiscovery, target[1])
+        row.staged_facts = StagedListingFacts(posted_date=prior).as_json()
+
+    posted = _read_detail(durable_database, tmp_path, target, "2026-08-20")
+
+    assert posted is not None
+    assert posted.earliest.normalized_value == "2026-08-10"
+    assert posted.latest.normalized_value == "2026-08-20"
+    assert posted.reads == 2
+
+
+def test_a_refresh_pass_counts_its_check_and_detail_read_as_one_posted_date_read(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    target = _pending(durable_database, tmp_path)
+    _read_detail(durable_database, tmp_path, target, "2026-08-20", on=date(2026, 8, 27))
+
+    posted = _read_detail(
+        durable_database, tmp_path, target, "2026-08-20", refresh_check_first=True
+    )
+
+    assert posted is not None
+    assert (posted.reads, posted.changes) == (2, 0)
+
+
+def test_a_date_that_rolls_across_refresh_passes_needs_clarification(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    target = _pending(durable_database, tmp_path)
+    posted = None
+    for day in (1, 2, 3, 4):
+        posted = _read_detail(
+            durable_database,
+            tmp_path,
+            target,
+            f"2026-09-0{day}",
+            on=date(2026, 9, day),
+            refresh_check_first=True,
+        )
+
+    assert posted is not None
+    assert posted.needs_clarification
+    assert posted.day is None
+
+
+def test_a_redirect_to_a_posting_not_verified_as_the_row_donates_no_posted_date(
+    durable_database: Database, tmp_path: Path
+) -> None:
+    target = _pending(durable_database, tmp_path)
+
+    posted = _read_detail(
+        durable_database,
+        tmp_path,
+        target,
+        "2026-08-20",
+        title="Different Role",
+        final_url="https://example.test/jobs/different-role",
+    )
+
+    with durable_database.session() as session:
+        row = session.get_one(PendingDiscovery, target[1])
+        evidence = session.get_one(PendingPostingContent, row.current_content_id)
+        assert evidence.identity_status != PostingIdentityStatus.VERIFIED
+    assert posted is None
+
+
+def test_a_retained_publisher_probe_carries_the_posted_date_its_check_states() -> None:
+    url = "https://example.test/jobs/operations-lead"
+    check = _greenhouse_check("2026-08-20")
+    fetched = FetchedPosting(
+        text=check.text,
+        posting_status="active",
+        method="Greenhouse API",
+        fetched_at=datetime(2026, 8, 28, tzinfo=UTC),
+        title=check.title,
+        employer="Acme",
+        final_url=url,
+        publisher_check=check,
+    )
+
+    result = resolved_publisher_fetch(url, fetched)
+
+    assert result is not None
+    assert result.publisher_posted_date == check.facts.posted_date
 
 
 @pytest.mark.parametrize("field", ["employer", "title"])

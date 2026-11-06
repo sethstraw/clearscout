@@ -17,7 +17,7 @@ from clearscout.domain import (
 )
 from clearscout.domain.artifacts import PostingSource
 from clearscout.domain.records import RobotsReadBasis
-from clearscout.domain.staged_facts import PublisherClosingDate
+from clearscout.domain.staged_facts import PublisherClosingDate, PublisherPostedDate
 
 MAX_IDENTITY_EVIDENCE_BYTES = 16_384
 
@@ -43,6 +43,7 @@ class ResolvedPostingContent:
     # What the body was converted from, stored beside it and never read here.
     source: PostingSource | None = None
     publisher_closing_date: PublisherClosingDate | None = None
+    publisher_posted_date: PublisherPostedDate | None = None
 
 
 LISTING_PAGE_NOTE = "The page this read retained lists many postings rather than this one."
@@ -83,6 +84,7 @@ def resolved_publisher_fetch(
         robots_basis=fetched.robots_basis,
         source=fetched.source,
         publisher_closing_date=fetched.publisher_closing_date,
+        publisher_posted_date=check.facts.posted_date,
     )
 
 

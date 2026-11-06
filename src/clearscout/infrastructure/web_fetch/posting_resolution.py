@@ -23,7 +23,7 @@ from clearscout.domain import (
 from clearscout.domain.artifacts import PostingSource
 from clearscout.domain.identity import employer_name_words
 from clearscout.domain.records import PageClassification, PostingReadIntent, RobotsReadBasis
-from clearscout.domain.staged_facts import PublisherClosingDate
+from clearscout.domain.staged_facts import PublisherClosingDate, PublisherPostedDate
 from clearscout.infrastructure.web_fetch.ingest import url as url_ingest
 from clearscout.infrastructure.web_fetch.ingest.careers import inspect_publisher_page
 from clearscout.infrastructure.web_fetch.policy import (
@@ -172,6 +172,11 @@ class DeterministicPostingContentResolver:
                 robots_basis=fetched.robots_basis,
                 source=fetched.source,
                 closing_date=fetched.publisher_closing_date,
+                posted_date=(
+                    fetched.publisher_check.facts.posted_date
+                    if fetched.publisher_check is not None
+                    else None
+                ),
             )
         if fetched.page_classification != PageClassification.POSTING:
             return None
@@ -199,6 +204,11 @@ class DeterministicPostingContentResolver:
             robots_basis=fetched.robots_basis,
             source=fetched.source,
             closing_date=fetched.publisher_closing_date,
+            posted_date=(
+                fetched.publisher_check.facts.posted_date
+                if fetched.publisher_check is not None
+                else None
+            ),
         )
 
     def _rendered(
@@ -425,6 +435,7 @@ def _readable(
     robots_basis: RobotsReadBasis | None = None,
     source: PostingSource | None = None,
     closing_date: PublisherClosingDate | None = None,
+    posted_date: PublisherPostedDate | None = None,
 ) -> ResolvedPostingContent:
     if closing_date is None:
         closing_date = publisher_closing_date(text, source_url=final_url, observed_at=fetched_at)
@@ -447,6 +458,7 @@ def _readable(
         note=note,
         robots_basis=robots_basis,
         publisher_closing_date=closing_date,
+        publisher_posted_date=posted_date,
     )
 
 

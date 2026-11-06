@@ -59,7 +59,11 @@ from clearscout.application.workspaces.parameters import SearchParametersService
 from clearscout.application.workspaces.records.access import audit_columns
 from clearscout.domain import ArtifactLogicalType, PostingIdentityStatus, PostingStatus, new_id
 from clearscout.domain.identity import normalize_text
-from clearscout.domain.staged_facts import PublisherClosingDate
+from clearscout.domain.staged_facts import (
+    PublisherClosingDate,
+    StagedListingFacts,
+    merged_posted_date,
+)
 from clearscout.infrastructure.persistence.database import Database
 from clearscout.infrastructure.persistence.models import (
     Artifact,
@@ -480,6 +484,7 @@ class ContentEvidenceStore:
             take_wrapped_lever_identity(pending, result)
             take_read_identity(pending, result)
             take_body_pay(pending, screen.pay_reading)
+            _take_posted_date(pending, result)
             self.link_regional_variant(
                 session,
                 workspace_id,
@@ -681,3 +686,17 @@ def _same_target(
 
 def _text_sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _take_posted_date(pending: PendingDiscovery, result: ResolvedPostingContent) -> None:
+    """Merge the posted date a verified publisher read states into the row's staged facts."""
+    if (
+        result.publisher_posted_date is None
+        or result.identity_status is not PostingIdentityStatus.VERIFIED
+    ):
+        return
+    staged = StagedListingFacts.from_json(pending.staged_facts)
+    merged = merged_posted_date(
+        staged.posted_date, result.publisher_posted_date, result.fetched_at.date()
+    )
+    pending.staged_facts = replace(staged, posted_date=merged).as_json()

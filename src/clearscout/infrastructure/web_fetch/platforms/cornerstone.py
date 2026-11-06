@@ -8,8 +8,13 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlencode, urlsplit
 
-from clearscout.application.discovery.posting_text import publisher_closing_date
+from clearscout.application.discovery.posting_text import (
+    publisher_closing_date,
+    publisher_posted_date,
+)
 from clearscout.domain.records import utc_now
+from clearscout.domain.staged_facts import PostedDateGrade
+from clearscout.infrastructure.web_fetch.board_mappings.mapper import stated_text
 from clearscout.infrastructure.web_fetch.board_mappings.page_posting import page_posting_declaration
 from clearscout.infrastructure.web_fetch.board_platform import HOST_START, BoardPlatform
 from clearscout.infrastructure.web_fetch.board_reads import (
@@ -30,7 +35,17 @@ CORNERSTONE_BOARD = re.compile(
 # Tenants declare either id for the anonymous career-site visitor.
 _ANONYMOUS_USERS = frozenset({-101, -103})
 _PENDING = "cornerstone_search_page"
-_MAPPING = page_posting_declaration("cornerstone")
+_EFFECTIVE = ("row", "publisher", "postingEffectiveDate")
+# The search API writes this date as US month-first numeric text.
+_MAPPING = page_posting_declaration(
+    "cornerstone",
+    posted=lambda posting: publisher_posted_date(
+        stated_text(posting.record, _EFFECTIVE),
+        basis=".".join(_EFFECTIVE),
+        grade=PostedDateGrade.BOARD_DATE,
+        month_first=True,
+    ),
+)
 
 
 def _object(page: str, name: str) -> dict[str, Any]:

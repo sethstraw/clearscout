@@ -343,6 +343,34 @@ def test_public_search_transfers_disjoint_pages_full_bodies_and_stable_identity(
     assert read.complete is True
 
 
+@pytest.mark.parametrize(
+    ("kind", "field", "stated", "day"),
+    [
+        (
+            "cornerstone",
+            "postingEffectiveDate",
+            ("11/2/2026", "04/11/2026"),
+            ("2026-11-02", "2026-04-11"),
+        ),
+        ("darwinbox", "posted_on", ("1792645200", "1792645200"), ("2026-10-22", "2026-10-22")),
+    ],
+)
+def test_public_search_rows_stage_the_posted_date_each_row_states(
+    kind: str, field: str, stated: tuple[str, str], day: tuple[str, str]
+) -> None:
+    rows = [
+        {**row, field: value, "created_on": "2026-01-05T00:00:00Z"}
+        for row, value in zip(_bootstrap_cases(kind)[3], stated, strict=True)
+    ]
+    fetcher, _ = _public_search_fetcher(kind, rows_override=rows)
+
+    read = fetcher.listings("Acme", _bootstrap_cases(kind)[0])
+
+    posted = [listing.facts.posted_date for listing in read.listings]
+    assert [str(fact.earliest.day) if fact else None for fact in posted] == list(day)
+    assert {fact.earliest.basis for fact in posted if fact} == {f"row.publisher.{field}"}
+
+
 @pytest.mark.parametrize("kind", ["cornerstone", "darwinbox"])
 def test_public_search_retains_success_when_a_later_page_fails(kind: str) -> None:
     fetcher, _ = _public_search_fetcher(kind, failure_page=2)

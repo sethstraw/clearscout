@@ -8,6 +8,7 @@ from datetime import date
 from typing import Any
 from urllib.parse import urlsplit
 
+from clearscout.application.discovery.posting_text import month_first_day
 from clearscout.infrastructure.web_fetch.board_mappings.page_posting import (
     og_titles,
     page_posting,
@@ -126,7 +127,6 @@ def successfactors_page_posting(page: str) -> Mapping[str, Any] | None:
 
 
 _POSTED_LABELS = frozenset({"posting start date", "date posted", "posted date"})
-_US_DATE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})")
 
 
 def _labelled_posted(page: str) -> str:
@@ -148,12 +148,8 @@ def _posted_day(value: str, attrs: Mapping[str, str]) -> str:
     try:
         if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
             return date.fromisoformat(value).isoformat()
-        us = _US_DATE.fullmatch(value)
         lang = (attrs.get("lang") or attrs.get("xml:lang") or "").casefold()
-        if us is None or lang != "en-us":
-            return ""
-        year = int(us.group(3)) + (2000 if len(us.group(3)) == 2 else 0)
-        return date(year, int(us.group(1)), int(us.group(2))).isoformat()
+        return month_first_day(value) if lang == "en-us" else ""
     except ValueError:
         return ""
 

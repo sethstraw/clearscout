@@ -393,7 +393,7 @@ def merged_posted_date(
 ) -> PublisherPostedDate | None:
     """Keep the earliest posted date stated, recording one read's statement as the latest.
 
-    A read stating no date keeps what is stored.
+    A read stating no date, or restating the latest value on its read day, keeps what is stored.
     """
     if read is None:
         return stored
@@ -403,6 +403,12 @@ def merged_posted_date(
         statement = replace(statement, clarification=statement.clarification or _READ_DAY_ECHO)
     if stored is None:
         return PublisherPostedDate.stated(statement)
+    # One pass can read the same fetch twice, through its check and its body.
+    if (stored.latest.read_on, stored.latest.normalized_value) == (
+        read_on,
+        statement.normalized_value,
+    ):
+        return stored
     changed = statement.normalized_value != stored.latest.normalized_value
     return PublisherPostedDate(
         earliest=min(stored.earliest, statement, key=_preference),
