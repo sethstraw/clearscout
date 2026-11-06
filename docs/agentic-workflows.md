@@ -37,7 +37,14 @@ A later live case written to measure when guided search picks a board page
 scored 0 of 0 on every trial: none of 104 picks across runs was a board. The
 prompt allows a board only when no detail URL turns up, and search almost never
 leaves that gap. The scoring is covered offline; the live case cannot force the
-path it was written for.
+path it was written for. The same happened to a fix: the draft eval scored only
+the first attempt, so a check made redraftable could never show its redraft
+pass. A two-attempt task then showed it (first attempt failed 3 of 3, redraft
+passed 3 of 3). The cover-letter twin of that task ran 16 of 16 with no second
+attempt, and two cases built to trip it passed the first attempt 6 of 6, so
+that path stays unmeasured. Before reading a pass, count how often the path
+under test actually ran: attempts used, boards picked, rows that reached the
+check.
 
 **Open.** [METHODOLOGY.md](../evals/inspect/METHODOLOGY.md) states what each
 mode cannot measure.
@@ -100,11 +107,24 @@ same model on the same instructions, and 106 of 631 shared reasons were
 word-for-word identical. The match gold set went through about ten relabel
 rounds, because each rubric edit shifted other borderline labels.
 
+One pre-release round of paid runs found the label wrong more often than the
+model. Three critic cases failed 3 of 3 under a boundary other than their
+label, and each time the prompt's own definitions sided with the critic: the
+cited entry reached a prototype, not a plan, and a rollout added to a
+"designed" entry is planned work written as shipped. A match row labelled
+`GAP` was answered `TRANSFERABLE` at `weak` 3 of 3, exactly what a rule added
+after the rubric froze tells the model to do. All five search-vocabulary misses
+were plausible titles the gold lists lacked. Each was settled by a free rescore
+of the stored outputs against the corrected label, with no new run bought.
+
 **What we concluded.** Check each scored miss against the source before
-touching the prompt. Record that model annotators share a model. Settle
-disagreements under written principles, and have a human review the rulings.
-Freeze the rubric by digest during each prompt cycle, and allow one relabel per
-cycle. A user's correction is calibration data, never gold.
+touching the prompt. A miss that repeats on every draw with a reading the
+prompt's definitions allow points at the label first. Record that model
+annotators share a model. Settle disagreements under written principles, and
+have a human review the rulings. Freeze the rubric by digest during each prompt
+cycle, allow one relabel per cycle, and record a per-case ruling when a later
+prompt rule makes a frozen label wrong. A user's correction is calibration
+data, never gold.
 
 **Open.** The agent session made the adjudication rulings, under written
 principles, for the maintainer to review afterwards.
@@ -172,6 +192,50 @@ the paired runs.
 
 **Open.** Medium effort masks the literal reading rather than removing it.
 
+### Compare two settings only on the same prompt and the same cases
+
+**What was tried.** The critic's low-effort arm caught every planted claim, so
+switching the stage to low looked settled.
+
+**What the numbers showed.** A reviewer blocked the switch: the low arm had run
+on the previous critic prompt, and nobody had measured low on clean documents,
+where the risk is a false fail. Rerun on the shipping prompt, both arms scored
+36 of 36 on clean cases and 59 of 63 on planted ones, with the same misses.
+Low cost about 18 per cent less and answered in about 10 seconds at p95 against
+24. The jobspec verbosity change was judged the same way: both arms ran on one
+tree, minutes apart, 52 of 52 requirements each, with low verbosity 22 per cent
+cheaper and twice as fast at p95.
+
+**What we concluded.** A comparison holds only when the two arms differ in the
+one setting under test. Run the paired arm on the prompt that will ship, cover
+the failure the cheaper setting risks (here clean documents), and keep the
+receipts side by side. A win measured on an older prompt is a reason to run the
+pair, not a result.
+
+**Open.** The critic ships at low on both providers. On Anthropic that is a
+drop from high and has not been measured.
+
+### A realistic case finds what single-requirement cases miss
+
+**What was tried.** Match was evaluated one requirement per case, 19 cases,
+each asserted status line restating its requirement exactly.
+
+**What the numbers showed.** The first whole-posting case, 33 requirements in
+one call with only Canadian work authorization asserted, read a United States
+authorization requirement as answered by that line 3 of 3. One prompt sentence
+fixed it, and a containment clause kept a place inside the one asked for, or a
+status that carries it, answering: a synthetic probe went 42 of 42 both ways
+and the 19-case set 57 of 57. One 33-requirement call also moves all its rows
+together, so its draws are not 33 independent samples.
+
+**What we concluded.** Keep a production-shaped case beside the unit cases:
+the same request size, the same mix of requirements, the same kind of asserted
+facts. Score it per requirement, since the whole row is all or nothing, and
+read movement across rows as one draw.
+
+**Open.** It is one posting. It reads 31 of 33 per draw; one row misses on
+every draw and two others intermittently.
+
 ### Eval effort lands where testing is easy, not where the risk is
 
 **What was tried.** The offline eval reported "37 case(s) match their
@@ -212,19 +276,31 @@ Skipping those hosts and reusing the page already fetched cut a read to 11
 requests and about 3 seconds faster, with posting text unchanged on three
 platforms.
 
+A round of cost changes, each held to "no quality loss" by a paired arm,
+showed which levers pay. Asking for low verbosity cut relevance output from
+19k to 11k tokens and cost by 32 per cent, with the rows that must stay open
+held at 19 of 20 on both arms, and cut jobspec cost by 22 per cent with every
+gold requirement still read (52 of 52). Constant draft and cover schemas raised cover cache
+share from 25 to 45 per cent. Letting repeated eval trials share one cache
+prefix took a critic run from USD 0.490 to 0.354 with identical prompt tokens.
+Lower search depth on guided search cut input tokens 9 per cent and saved
+nothing, because hosted-search fees and uncached search results are most of
+that bill (46 and 38 per cent).
+
 **What we concluded.** Log cache reads and writes per call and compare them per
 stage. Put stable instructions, evidence, and schema first, and check per-run
 ids in code. Treat schema docstrings as prompt text. Have the harness render the
 full production request before any paid run. Profile a slow step's requests
-before blaming the delay on politeness.
+before blaming the delay on politeness. Before cutting a cost, find the line
+that dominates that stage's bill; a cut elsewhere buys nothing.
 
 **Open.** Each cassette reseal costs money, so reseals come last in a cycle.
 
 ### A recording matched on the request body breaks on any request-shape change
 
-**What was tried.** One live tailoring run is recorded as a cassette and
-replayed through the real provider SDK, so the offline suite proves the adapter
-parses what a real server sent.
+**What was tried.** Each stage the recorder knows has one live call recorded
+as a cassette and replayed through the real provider SDK, so the offline suite
+proves the adapter parses what a real server sent.
 
 **What the numbers showed.** A replay matches on the method, the URL, and the
 request body. Top-level key order may differ, but a reordered schema property
@@ -238,10 +314,18 @@ paid re-record.
 together and re-record once, after prompts and paid tests settle, rather than
 landing them one at a time and paying for a reseal each.
 `scripts/record_cassette.py` lists what a recording is bound to, and
-`tests/delivery/test_recorded.py` pins the matching rules.
+`tests/delivery/test_recorded.py` pins the matching rules and fails a replay
+that leaves a recorded call unused, so a stale leftover cannot hide.
 
-**Open.** One recorded run covers one path. A request shape the recording never
-sent has no replay evidence.
+Recording the web-search stages captures the real pages a live search
+returned. They name real employers, which the public-data audit refuses
+elsewhere, and a hand review still found a third-party registry page for an
+individual in one response. The audit now exempts only those cassettes from
+its employer check, and each recording gets a read before it is committed.
+
+**Open.** Each cassette covers one path at the standard tier. Production asks
+for the flex tier on unattended work, and a request shape no recording sent
+has no replay evidence.
 
 ### A smoke call has to check what the scorer needs, not only that it was paid
 
@@ -270,7 +354,9 @@ about whether the answer is good.
 in place of an instruction to "only use the provided evidence".
 
 **What the numbers showed.** Every CV entry gets an id derived from its content.
-Response schemas are built at runtime as closed lists over those ids. The
+Match's response schema is a closed list over those ids. The drafting, cover
+letter, and search-vocabulary schemas stay constant, so the provider can cache
+them, and code refuses any id outside the run's selected evidence. The
 program copies titles, employers, dates, degrees, and citations verbatim. Code
 checks every cited id against the run's selected evidence and every quote
 against the stored posting. On one queue review, 493 of 493 cited CV ids and
@@ -279,8 +365,9 @@ upgraded to delivery, a draft crediting the model's own "reasoning", and an
 invented posting id. The checks caught each one.
 
 **What we concluded.** Let the program own the facts. Let the model choose,
-order, and rephrase. Enforce citations in the schema, check provenance in code,
-and report "verified" and "good" as two measures.
+order, and rephrase. Close a schema over a stable set, check per-run ids in
+code, check provenance in code, and report "verified" and "good" as two
+measures.
 
 **Open.** "Verified" is a floor. A cheaper model passed it while scoring a point
 lower on three critic axes. The design makes some failures impossible and
@@ -468,19 +555,25 @@ These are opinions. Each links the lesson above that backs it.
   ([lesson](#show-each-stage-the-rules-it-is-judged-by))
 - Rule out effort and model before a third prompt rewrite.
   ([lesson](#rule-out-the-setting-before-the-third-prompt-rewrite))
+- Compare two settings only when both arms ran the shipping prompt on the same
+  cases, including the cases the cheaper setting puts at risk.
+  ([lesson](#compare-two-settings-only-on-the-same-prompt-and-the-same-cases))
+- Keep one production-shaped case beside the unit cases, and score it per
+  requirement. ([lesson](#a-realistic-case-finds-what-single-requirement-cases-miss))
 - Rank eval work by spend and by how hard a wrong answer is to spot, and list
   every uncovered prompt with a reason.
   ([lesson](#eval-effort-lands-where-testing-is-easy-not-where-the-risk-is))
 - Measure the exact production request: put stable content first for caching,
-  treat schema docstrings as prompt text, and batch in the harness as
-  production does. ([lesson](#the-exact-request-decides-what-you-measure-and-what-you-pay))
+  treat schema docstrings as prompt text, batch in the harness as production
+  does, and cut the line that dominates the bill.
+  ([lesson](#the-exact-request-decides-what-you-measure-and-what-you-pay))
 - Batch request-shape changes and re-record a recorded run once, last, rather
   than paying for a reseal per change.
   ([lesson](#a-recording-matched-on-the-request-body-breaks-on-any-request-shape-change))
 - Make the smoke call before a long paid run score its output and fail on any
   field the scorer reads but the output lacks.
   ([lesson](#a-smoke-call-has-to-check-what-the-scorer-needs-not-only-that-it-was-paid))
-- Let the program own the facts and the model choose among closed ids that code
+- Let the program own the facts and the model choose among ids that code
   checks; report "verified" and "good" as separate measures.
   ([lesson](#make-fabrication-impossible-to-express))
 - Never give a provenance field a default. When an anchor misses, store nothing

@@ -965,11 +965,14 @@ make a whole supported platform report no board API.
 The rule the design serves: a model may rephrase supported evidence, and may
 not expand the record.
 
-It is enforced by construction, not instruction. The CV parser gives every
-usable entry a content-derived identifier. Response schemas are built at
-runtime as closed vocabularies over those identifiers. Matching may cite only
-identifiers that exist, and drafting only those selection kept. A citation to
-something absent cannot be expressed, so it never needs catching. Employers,
+It is enforced by code, not instruction. The CV parser gives every usable
+entry a content-derived identifier. Matching's response schema is built at
+runtime as a closed vocabulary over those identifiers, so a match cannot cite
+an absent entry. Drafting, cover-letter, and search-vocabulary schemas are
+constant, so the provider caches them; their identifier fields are plain
+strings. The `sources cited` check refuses a drafted line that cites an
+identifier outside the set offered for that run, and vocabulary screening drops
+unknown identifiers and refuses a proposal left citing none. Employers,
 titles, dates, degrees, and publication citations are copied from the parsed
 CV, not generated.
 
@@ -978,10 +981,10 @@ missing provenance, numbers absent from cited evidence, required or forbidden
 wording, and structural problems. The critic handles only what code settles badly:
 preservation, alignment, specificity, readability, and voice.
 
-Cover letters have two closed evidence vocabularies. Candidate claims cite
-selected CV entry identifiers. Claims about the role or employer cite
-identifiers from a bounded company-research block. That is not an exception to
-the rule: both vocabularies are closed.
+Cover letters have two evidence vocabularies. Candidate claims cite selected CV
+entry identifiers. Claims about the role or employer cite identifiers from a
+bounded company-research block. That is not an exception to the rule: the
+program refuses an identifier from neither set, and a line that mixes the two.
 
 The stored posting is always present. A workspace tailoring task may also read
 the employer's verified careers URL and one explicitly labeled same-host About
@@ -1398,7 +1401,9 @@ the quoted passages or either vendor's continuation blob.
 
 A stage states its image detail and verbosity as it states its effort. Only the
 OpenAI adapter renders either, because Anthropic publishes neither control.
-Ingest ships `high`. The image measurement reports a ceiling where the vendor
+`DEFAULT_STAGES` in `src/clearscout/application/config.py` holds the shipped
+values: ingest ships image detail `high`, and jobspec and relevance review ship
+verbosity `low`. The image measurement reports a ceiling where the vendor
 publishes a rule and nothing where it does not. Anthropic's is a 28-pixel
 patch, capped at the 4784 visual tokens an image is downscaled to. OpenAI's is
 a 32-pixel patch whose fitting edge, patch budget, and token multiplier depend
@@ -1518,8 +1523,12 @@ parity.
 Nor is the evidence behind the two adapters. Both are built from one schema
 builder and exercised offline through their real SDK, which makes it testable
 that a schema means the same thing to each. Only OpenAI has run against the
-live API. A recording is committed as `tests/cassettes/run_openai.json` and
-replayed through the real SDK. The Anthropic adapter is written against the
+live API. `scripts/record_cassette.py` records one OpenAI cassette per stage
+in its `STAGES`, from the synthetic inputs in `tests/cassettes/stages.json`,
+and `tests/delivery/test_recorded.py` replays each through the real SDK. The
+guided-campaign and posting-recovery cassettes hold the real pages a live web
+search returned, and `scripts/audit_public_data.py` exempts only those two
+from its employer-name check. The Anthropic adapter is written against the
 published API and has never been watched working. That is a different claim
 from the one the offline suite supports.
 [Validation status](validation.md#provider-claims-are-deliberately-uneven)

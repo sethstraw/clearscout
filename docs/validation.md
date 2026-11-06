@@ -35,9 +35,10 @@ file types and the paid restructuring path.
 ## Provider claims are deliberately uneven
 
 Only OpenAI has run against a live provider. That covers CV intake, screening,
-drafting, criticism, verification, cover-letter research, guided campaigns, and
-relevance review. Official-SDK contract tests and synthetic replay seams also
-exercise the OpenAI request and response boundary.
+drafting, criticism, verification, cover-letter research, guided campaigns,
+search vocabulary, posting recovery, and relevance review. Official-SDK
+contract tests, the recorded cassettes under `tests/cassettes/`, and synthetic
+replay seams also exercise the OpenAI request and response boundary.
 
 The Anthropic adapter uses the official SDK and has offline contract and
 synthetic replay coverage. It has never run against Anthropic's live API here,

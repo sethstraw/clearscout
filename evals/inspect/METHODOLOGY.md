@@ -28,7 +28,9 @@ no replay mode: nothing in the ledger stores a prior attempt to compare against.
 Their scripted mode declares the checks each case's planted defect must fail, so
 it measures the verifiers and the templates. Their live mode measures what the
 real provider's first attempt does against the checks the product already
-enforces.
+enforces. The `draft_redraft` and `cover_redraft` live tasks instead allow up to
+two attempts (`DRAFT_ATTEMPTS`), redrafting on the checks' findings, and score
+the attempt kept, reporting attempt one's result beside it.
 
 A live run needs explicit operator approval for that run and its stated scope.
 Approval does not carry over to the next run. Amounts are advisory estimates.
@@ -274,8 +276,9 @@ assignment of cases to slots exists. `_REQUIRED_SLOTS` in
 ## What the document families score against
 
 `draft` and `cover` score against the program's own verifiers rather than against
-a reviewed label. A live result says whether attempt one cleared `verify.check`
-or `verify.check_letter`, and names each check it failed. That is a claim about
+a reviewed label. A live result says whether the scored attempt (attempt one,
+or the kept attempt in a redraft task) cleared `verify.check` or
+`verify.check_letter`, and names each check it failed. That is a claim about
 provenance, traced figures, must-have coverage, and the other things those checks
 decide. It is not a claim that the prose is good, because no check decides that.
 
@@ -403,6 +406,23 @@ false positives, false negatives, and wrong boundaries per case and arm. It is
 live only, and its expected values are written into the fixture, not labeled by
 reviewer agents. Eight cases find defects; they do not measure a rate.
 
+## What the CV intake tasks score against
+
+`structure` imports each synthetic CV shape in
+`evals/fixtures/structure_cases.jsonl` live and compares the result with that
+shape's corpus `expected.toml`: the shipped import checks that fail must be the
+ones the row declares, and the name, each role's employer, title, dates and
+location in order, the extra section headings, and the dropped lines must
+match. A dropped line the corpus keeps fails; furniture the model kept is only
+reported. A pass says the fields the program copies verbatim survived for that
+shape. It says nothing about how well unlisted text was sectioned.
+
+`vision` transcribes the screenshots in `evals/fixtures/vision_cases.jsonl` and
+scores word recall against the source text, over the importer's own
+comparable-word set, against each row's declared `min_recall` and `min_lines`.
+Recall does not see word order, duplicated text, or invented words, so a pass
+is a floor on what was kept, not a claim the transcript is faithful.
+
 ## What a result can claim
 
 No model judge takes part in the shipped scoring path. The scorer compares a
@@ -444,8 +464,12 @@ names. It is not a lasting claim about the adapter or the provider.
   never written can inflate the agreement number.
 - `match-job-live` scores one reviewed posting as one row against its own
   labels, bound by a job manifest rather than the selection manifest, whose
-  frozen slots refuse cases sharing a source. No reviewed many-requirement row
-  is frozen yet, so the task has no dataset to run.
+  frozen slots refuse cases sharing a source. Its dataset is maintainer-private:
+  the task reads the gitignored `evals/golden/match_job.jsonl`, which a private
+  freeze step writes with `serialize_match_job_dataset` from a reviewed job
+  manifest. The run passes that job manifest through the same
+  `--selection-manifest` flag triple, and `load_live_manifest` accepts either
+  manifest shape and refuses dataset bytes the manifest does not bind.
 - A document case's plan comes from a canned match answer the case writes, so a
   change to the match prompt cannot move a `draft`, `cover`, or `critic` result.
   Selection is still the shipped one.

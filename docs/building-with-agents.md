@@ -109,6 +109,30 @@ data against the real wire schema.
 **Open.** Review saved for the end is the most expensive review, because one
 reviewer then reads 70 files at once.
 
+### Have a specialist read each paid result before you act on it
+
+**What was tried.** In one pre-release round of about 27 paid eval runs, every
+result that would change a shipped setting or prompt went to a read-only model
+review agent before it landed.
+
+**What the numbers showed.** The review changed the decision four times. It
+blocked a switch to low reasoning effort because the winning arm had run on an
+older prompt and had never been measured on clean documents. It found a new
+prompt sentence untested on its hardest shape, and the clause and probe that
+followed went 42 of 42. It blocked a check that counted program-copied lines as
+the model's own writing. On the recorded replays it found a third-party
+registry page for an individual among the real pages a live search returned.
+A read-only doc sweep after landing found the largest stale claim in a file
+outside the list it was handed.
+
+**What we concluded.** Paid evidence is cheap next to the decision it drives.
+Give one specialist reviewer the result and the diff, ask for ship, ship with
+notes, or block, and file its notes rather than building them on the spot.
+Brief a reviewer broadly enough to look past its list.
+
+**Open.** A reviewer is one more model reading. Each of the four calls above
+was confirmed by a run, a test, or a direct read before it changed anything.
+
 ### A safety check that has never fired may be unable to fire
 
 **What was tried.** Checks that always reported "all clear" were trusted.
@@ -162,7 +186,9 @@ tests a writer had just delivered. Shared scratch paths did quieter damage: a
 writer reported "83 passed" from a log another session overwrote, when the real
 result was 87. Six agents on one tree produced three spellings of one idiom,
 two byte-identical helpers, and a duplicate CSS class. The gate flagged none of
-it.
+it. Worktrees fix sharing but leave copies behind: an eval log recorded its
+dataset path inside a worktree, and a free rescore after a relabel read that
+old copy and reported no change until the worktree was removed.
 
 **What we concluded.** Give each file surface one writer and each agent its own
 scratch path. Enforce the git rules with hooks: one now refuses stash from any
@@ -229,6 +255,10 @@ to refute each finding. 20 of 21 were confirmed. About 130 verbatim runs of
 real posting text sat in tests, along with real CV sentences. In one incident
 the coordinating agent had pasted real sentences into a writer's task, and the
 writer copied them into tests. None of it was a secret or contact detail.
+Recordings of live calls are the other route in: a recorded web search carries
+whatever real pages the search returned. The audit allows real employer names
+only in those recordings, and a hand read of each one still found a page about
+an individual that had to come out.
 
 **What we concluded.** Give writer agents synthetic shapes, never live text.
 Before publishing, run a dedicated sweep against the real private sources, with
@@ -274,6 +304,9 @@ These are opinions. Each links the lesson above that backs it.
 - Review each agent's diff when it hands back, and treat every assertion it
   flipped or deleted as a product decision.
   ([lesson](#a-green-gate-is-not-a-review))
+- Send each paid result that would change a shipped setting to one specialist
+  reviewer before it lands, and file its notes.
+  ([lesson](#have-a-specialist-read-each-paid-result-before-you-act-on-it))
 - Feed every safety check the case it should block and watch it refuse; a
   check that has never fired is unproven.
   ([lesson](#a-safety-check-that-has-never-fired-may-be-unable-to-fire))
@@ -289,8 +322,9 @@ These are opinions. Each links the lesson above that backs it.
 - Plan a rename as a data migration: list every place the name is stored, and
   migrate each with a check.
   ([lesson](#renaming-a-project-with-agents-is-a-data-migration))
-- Give agents synthetic shapes, never live text, and sweep for real data
-  against the private sources before you publish anyway.
+- Give agents synthetic shapes, never live text, sweep for real data against
+  the private sources before you publish anyway, and read every recording of a
+  live call before committing it.
   ([lesson](#a-written-synthetic-only-rule-does-not-keep-real-data-out))
 - Keep everything recoverable, but send a person only the rows with real
   evidence; apply definite gates at admission.

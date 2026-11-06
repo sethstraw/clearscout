@@ -216,6 +216,13 @@ are in [evals/RESULTS.md](../evals/RESULTS.md).
 7. Keep the change only if it fixes the target behavior without weakening
    evidence preservation.
 
+A prompt edit also changes the request bodies the recorded cassettes hold, so
+`tests/delivery/test_recorded.py` fails until each affected stage is
+re-recorded with `scripts/record_cassette.py`, a paid live call that needs the
+maintainer's approval. The scripted baselines move with the prompt fingerprint:
+read the digest diff, then rewrite them with
+`uv run python -m evals --record-baselines`.
+
 Do not rewrite the whole suite during a model upgrade. First run the existing
 prompts on the new model, identify measured regressions, and change only what
 those cases justify.

@@ -7,10 +7,11 @@ human review is still needed.
 ## The vocabulary is closed
 
 Every usable entry in your master CV gets an identifier derived from its
-content. Response schemas are built at runtime over exactly those identifiers.
-Matching may cite any that exist; drafting may cite only the ones selection
-kept. The provider schema limits identifiers, and local validation also refuses
-unknown ones before they become accepted evidence.
+content. Matching's response schema is built at runtime as a closed list of
+exactly those identifiers, so a match can cite only entries that exist.
+Drafting's schema is constant, so the provider can cache it, and the program
+refuses any drafted line that cites an identifier outside the set selection
+kept.
 
 Every drafted line carries the identifiers it came from. Stored evidence keeps
 the artifact hash plus the locator or character anchors that point back at the
@@ -23,9 +24,9 @@ flowchart TD
     parse --> matchschema["match schema: entry identifiers as a closed enum"]
     matchschema --> match["match, by model"]
     match --> select["select, by code, within the length budget"]
-    select --> draftschema["draft schema: only the selected identifiers"]
-    draftschema --> draft["draft, by model"]
-    draft --> assemble["assemble: titles, employers, dates, degrees, citations copied"]
+    select --> draft["draft, by model, under a constant schema"]
+    draft --> idcheck["program refuses ids outside the selected set"]
+    idcheck --> assemble["assemble: titles, employers, dates, degrees, citations copied"]
     assemble --> checks{"deterministic checks pass?"}
     checks -->|no| rewrite["rewrite, within the attempt budget"]
     rewrite --> draft

@@ -4,6 +4,20 @@ Changes a user would notice, in [Keep a Changelog](https://keepachangelog.com/en
 
 ## [Unreleased]
 
+### Changed
+
+- The critic runs at low effort on both providers: down from medium on OpenAI
+  and from high on Anthropic.
+- Requirement extraction asks OpenAI for low verbosity, and matching has a
+  16000-token output ceiling instead of 8000.
+- Matching no longer reads an asserted status line about another country or
+  place as answering a requirement.
+- Each claim the critic doubts quotes the evidence entry it compared against,
+  and the report warns when that quote is not in your record.
+- Drafting, cover-letter, and search-vocabulary schemas are constant, so the
+  provider can cache them. The program refuses any cited identifier outside the
+  set offered for that run.
+
 ## [0.1.0] - 2026-11-05
 
 First public alpha, for technical early adopters. This is the first release;

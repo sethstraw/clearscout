@@ -6,6 +6,20 @@ Read these as defect discovery on small samples, not as accuracy claims. Most ru
 
 Runs on the maintainer's real job search appear here only as counts, costs, and neutral descriptions. Synthetic cases are named. Costs are in USD as the ledger priced them.
 
+## The pre-release round in one table
+
+On 2026-11-06, about 27 paid runs (USD 6.37 by the ledger) and six free rescores measured every model stage before the replay cassettes were re-recorded for release. The sections below hold the detail; this is what the round taught.
+
+| Lesson | What showed it | What changed |
+|---|---|---|
+| The label was wrong more often than the model. | Three critic cases failed 3 of 3 under another boundary, one match row answered as a newer prompt rule says, and all five vocabulary misses were plausible titles the gold lists lacked. For the critic and match cases, the prompt's own definitions sided with the model. | Labels and one ruling corrected, each settled by a free rescore. No prompt changed for them. |
+| A realistic input finds what single cases miss. | A 33-requirement posting read a United States work-authorization requirement as answered by a Canadian line, 3 of 3. | One prompt sentence and a containment clause: probe 42 of 42, match set 57 of 57, the whole posting 31 of 33 per draw. |
+| Compare settings only on the prompt that ships. | The critic's low-effort win was first measured on an older prompt and never on clean documents. Rerun, both efforts scored 36 of 36 clean and 59 of 63 planted. | The critic ships at low effort: about 18 per cent cheaper, p95 near 10 s against 24 s. |
+| Cut the cost that dominates the bill. | Low verbosity cut relevance cost 32 per cent and jobspec 22 per cent with no loss. Lower search depth saved nothing, because search fees and search results are most of that bill. | Low verbosity ships on jobspec and relevance; search depth unchanged. |
+| An eval that never takes the path proves nothing. | The draft eval scored only the first attempt; the cover redraft ran 22 draws with no second attempt; a board-pick case saw no board in 104 picks. | Two-attempt tasks built: draft redraft 42 of 42. The cover redraft path is recorded as unmeasured. |
+| Read every paid result before acting on it. | A reviewer blocked or reshaped three decisions and found a third-party registry page among a recording's real search results. | Its notes were filed and closed; the page was removed and the audit exemption kept to web-search recordings. |
+| The cost estimate overshoots when the cache is warm. | Smoke projections of USD 0.34 and 0.90 came in at 0.055 and 0.398. | Estimates stay advisory and never stop a run. |
+
 ## Model choice per stage
 
 **What was tried.** Every stage started on gpt-5.6-terra: extraction at low effort, drafting at high. On 2026-08-15 gpt-5.6-luna drafted one posting. On 2026-09-23 gpt-6-sol and gpt-6-luna were screened on match and relevance. On 2026-10-04 gpt-6.1-sol was screened against gpt-6-sol on match. The product has an Anthropic adapter, but the ledger records no paid Anthropic run, so nothing here compares vendors.
@@ -86,7 +100,7 @@ The cases became a permanent eval of eight synthetic postings. Its first run (81
 
 **Draft required phrases.** On 2026-11-06 a synthetic career-change draft failed 3 of 3 because it dropped the skill item carrying a phrase the guardrails require. The draft prompt never names required phrases, the program checks them after drafting, and that failure allowed no redraft, so one dropped item sank the document. With the check made redraftable, and its feedback naming the phrase the selected evidence carries, the first attempt still failed 3 of 3 and the redraft passed 3 of 3 (42 of 42 on the redraft task, USD 0.246). The fix costs one extra call on a case that trips it. Cover letters share that redraft loop but have no case that trips it live: a posting asking the letter to cite the request and to give figures the record lacks passed attempt one in 6 of 6 draws, so the cover-specific redraft path is unmeasured.
 
-**Asserted status lines.** The first whole-posting match case (33 requirements, one call) asserted only Canadian work authorization, and the match stage read a United States authorization requirement as answered by it 3 of 3. The single-requirement set never caught this, because both of its asserted cases restate their line exactly. The prompt now says a line about the same kind of fact for another country, place or status does not answer, while a place inside the one asked for, or a status that carries it, does. A synthetic probe went 42 of 42 across both directions, and the 19-case set went 57 of 57.
+**Asserted status lines.** The first whole-posting match case (33 requirements, one call) asserted only Canadian work authorization, and the match stage read a United States authorization requirement as answered by it 3 of 3. The single-requirement set never caught this, because both of its asserted cases restate their line exactly. The prompt now says a line about the same kind of fact for another country, place or status does not answer, while a place inside the one asked for, or a status that carries it, does. A synthetic probe went 42 of 42 across both directions, and the 19-case set went 57 of 57. The whole-posting case reads 31 of 33 per draw, after a ruling for one row whose `GAP` label predates the rule that answers a tool shown only through its platform `TRANSFERABLE` at `weak`.
 
 **Cover letter subject.** A prompt line saying the company paragraph states what the employer or the role does, not what the role calls for, cut sentences opening "The role" or "This role" from 5 and 7 per 14 letters to 1, with 14 of 14 letters still cleared (2026-11-06).
 
@@ -98,7 +112,7 @@ The cases became a permanent eval of eight synthetic postings. Its first run (81
 - Labels come from two blind reviewers and an adjudicator, frozen before a run. A relabel gets a new manifest digest, and rows compare only at the same digest. Rulings are calibration data, not gold.
 - A case can run green and measure nothing. A guided-search case written to see when a board page is picked scored 0 of 0 on every trial: none of 104 picks across it and the 13-case baseline was a board, because the prompt allows a board only as a fallback. The same baseline showed one pick in five pointing at a closed posting, stale search-index entries that repeated on both trials.
 - A wrong score is not always a wrong answer. On 2026-09-20 two relevance misses were the scorer reading a field the product deliberately empties. It was fixed from the stored logs, with no rerun bought.
-- `scripts/eval.sh run` runs a scripted task against a canned provider, or the match replay task against a stored calibration snapshot. Neither tests a prompt; only `--live` does. The cassette replay in `tests/delivery/test_recorded.py` runs the real SDK against a recording. Any change to a prompt, schema, or schema docstring changes the request and invalidates it. Reseals on 2026-09-18, 09-22, and 11-02 cost USD 0.12 to 0.31 each.
+- `scripts/eval.sh run` runs a scripted task against a canned provider, or the match replay task against a stored calibration snapshot. Neither tests a prompt; only `--live` does. The cassette replay in `tests/delivery/test_recorded.py` runs the real SDK against a recording. Any change to a prompt, schema, or schema docstring changes the request and invalidates it. Reseals on 2026-09-18, 09-22, and 11-02 cost USD 0.12 to 0.31 each, covering one tailoring run. The 2026-11-06 reseal recorded one call for each stage the recorder knows, seven cassettes, for USD 0.40.
 
 ## Structured outputs
 

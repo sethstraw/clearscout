@@ -9,8 +9,11 @@ and what it is not.
 The harness is a small in-repo runner with no third-party evaluation framework.
 
 Five families are measured: `match`, `relevance_review`, `draft`, `cover`, and
-`critic`, plus two jobspec tasks (the boundary task described below and
-requirement extraction) and three search tasks: `search_vocabulary`,
+`critic`. `match` adds a whole-posting `match_job` task, and `draft` and
+`cover` add `draft_redraft` and `cover_redraft`, which score the attempt kept
+after a redraft. Beside them sit two CV intake tasks (`structure`, and `vision`
+for the ingest stage), two jobspec tasks (the boundary task described below and
+requirement extraction), and three search tasks: `search_vocabulary`,
 `posting_recovery`, and `guided_campaign`. Each has a live task that spends.
 `match`, `draft`, `cover`, and `critic` also have a scripted task that runs
 offline in the suite; the others do not. `tasks/` is the list.
@@ -150,12 +153,13 @@ selection manifest:
 
 ```bash
 scripts/eval.sh --live evals/inspect/tasks/draft_live_task.py \
-  --data-root <root> --limit 6 --split development --provider <provider> \
+  --data-root <root> --limit 14 --split development --provider <provider> \
   --i-approve <usd> --output-dir <private-path>
 ```
 
-Swap in `cover_live_task.py` or `critic_live_task.py` with that family's case
-count. The log header names which checks failed and which warned, with counts,
+Swap in another live task, such as `cover_live_task.py`, `critic_live_task.py`,
+`draft_redraft_live_task.py`, `structure_live_task.py`, or
+`vision_live_task.py`, with that task's case count. The log header names which checks failed and which warned, with counts,
 and, for the critic, how the shipped outcomes were distributed.
 
 `--model <id>` and `--effort <level>` replace the shipped model or effort on the
