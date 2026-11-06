@@ -21,7 +21,19 @@ def closed_page_notice(body: str, text: str) -> str:
 
     ``text`` is the page's extracted text; a long page or a hidden notice is not a closure.
     """
-    if len(text.strip()) >= MINIMUM_USEFUL_CHARACTERS or not closure_signal(text):
+    if len(text.strip()) >= MINIMUM_USEFUL_CHARACTERS:
+        return ""
+    return _visible_closure(body, text)
+
+
+def shows_a_closure(body: str, text: str) -> bool:
+    """Return whether a page of any length shows a visible closure signal in ``text``."""
+    return bool(_visible_closure(body, text))
+
+
+def _visible_closure(body: str, text: str) -> str:
+    """Return the page's unhidden readable text when it and ``text`` both signal a closure."""
+    if not closure_signal(text):
         return ""
     visible, _within_blocks = readable_text(
         body,

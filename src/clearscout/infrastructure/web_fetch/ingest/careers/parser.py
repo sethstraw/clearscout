@@ -86,6 +86,7 @@ class PublisherPageParser(HTMLParser):
         self.heading_spans: list[tuple[int, int]] = []
         self.body_frames: list[tuple[int, int, str, bool]] = []
         self.canonical = ""
+        self.og_url = ""
         self.script_count = 0
         self._stack: list[_Element] = []
         self._active_link: tuple[str, str, LabelSource, StructuralContext] | None = None
@@ -128,8 +129,8 @@ class PublisherPageParser(HTMLParser):
             self.has_form |= not any(_is_hidden(item) for item in self._stack)
         elif lowered == "input":
             self._retain_input_signals(attributes)
-        elif lowered == "link" and "canonical" in attributes.get("rel", "").casefold().split():
-            self.canonical = self.canonical or attributes.get("href", "").strip()
+        elif lowered in ("link", "meta"):
+            self._retain_self_address(lowered, attributes)
         elif lowered == "script":
             self.script_count += 1
             self._script_parts = []
@@ -147,6 +148,12 @@ class PublisherPageParser(HTMLParser):
     def _close_header(self, element: _Element) -> None:
         if element.header_index >= 0:
             self.header_spans[element.header_index] = (element.text_start, len(self.text_chunks))
+
+    def _retain_self_address(self, tag: str, attributes: dict[str, str]) -> None:
+        if tag == "link" and "canonical" in attributes.get("rel", "").casefold().split():
+            self.canonical = self.canonical or attributes.get("href", "").strip()
+        elif tag == "meta" and attributes.get("property", "").casefold() == "og:url":
+            self.og_url = self.og_url or attributes.get("content", "").strip()
 
     def _retain_input_signals(self, attributes: dict[str, str]) -> None:
         input_type = attributes.get("type", "").casefold()

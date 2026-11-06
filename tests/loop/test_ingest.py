@@ -2675,6 +2675,158 @@ def test_a_publisher_page_declaring_a_posting_states_its_structured_facts() -> N
     assert checked.facts.freshness is FreshnessState.LIKELY_STALE
 
 
+_NUMBERED_POSTING = "https://recruiting.globex.example/Recruiting/Jobs/Details/4471"
+
+
+def _numbered_posting_page(
+    og_url: str, *, head: str = "", banner: str = "", valid_through: str = ""
+) -> str:
+    """Return a page whose lone block states neither url nor identifier, beside its og:url."""
+    if og_url:
+        head = f'<meta property="og:url" content="{og_url}" />{head}'
+
+    markup = {
+        "@context": "https://schema.org",
+        "@type": "JobPosting",
+        "title": "Clinical Systems Analyst",
+        "datePosted": "2026-10-20",
+        "description": f"<p>{LONG}</p>",
+        "hiringOrganization": {"name": "Globex Health"},
+        "jobLocation": {"address": {"addressLocality": "Northtown", "addressCountry": "US"}},
+        "baseSalary": {"currency": "USD", "value": {"minValue": 90000, "maxValue": 110000}},
+    }
+    if valid_through:
+        markup["validThrough"] = valid_through
+    return (
+        f"<html><head>{head}</head><body>{banner}"
+        f'<script type="application/ld+json">{json.dumps(markup)}</script>'
+        f'<a href="/Recruiting/Jobs/Apply/4471">Apply</a></body></html>'
+    )
+
+
+def test_a_lone_block_on_a_page_stating_the_requested_address_checks_readable() -> None:
+    page = _numbered_posting_page(_NUMBERED_POSTING)
+
+    checked = check_posting(
+        _NUMBERED_POSTING, client=policy_client(lambda target: text_response(target, page))
+    )
+
+    assert (checked.status, checked.title) == ("readable", "Clinical Systems Analyst")
+    assert checked.facts.posted_date is not None
+    assert checked.facts.posted_date.latest.wording == "2026-10-20"
+
+
+@pytest.mark.parametrize(
+    "og_url",
+    [
+        "https://recruiting.globex.example/Recruiting/Jobs/Details/5582",
+        "https://recruiting.globex.example/Recruiting/Jobs/All",
+    ],
+    ids=["another-posting", "the-index"],
+)
+def test_a_lone_block_on_a_page_stating_another_address_stays_unsupported(og_url: str) -> None:
+    page = _numbered_posting_page(og_url)
+
+    checked = check_posting(
+        _NUMBERED_POSTING, client=policy_client(lambda target: text_response(target, page))
+    )
+
+    assert checked.status == "unsupported"
+
+
+@pytest.mark.parametrize(
+    ("og_url", "head"),
+    [
+        ("", f'<link rel="canonical" href="{_NUMBERED_POSTING}" />'),
+        ("/Recruiting/Jobs/Details/4471", ""),
+    ],
+    ids=["canonical-only", "relative-og-url"],
+)
+def test_either_self_declared_address_vouches_for_the_requested_posting(
+    og_url: str, head: str
+) -> None:
+    page = _numbered_posting_page(og_url, head=head)
+
+    checked = check_posting(
+        _NUMBERED_POSTING, client=policy_client(lambda target: text_response(target, page))
+    )
+
+    assert checked.status == "readable"
+
+
+def test_an_og_url_and_canonical_that_disagree_vouch_for_neither() -> None:
+    other = "https://recruiting.globex.example/Recruiting/Jobs/Details/5582"
+    page = _numbered_posting_page(
+        _NUMBERED_POSTING, head=f'<link rel="canonical" href="{other}" />'
+    )
+
+    checked = check_posting(
+        _NUMBERED_POSTING, client=policy_client(lambda target: text_response(target, page))
+    )
+
+    assert checked.status == "unsupported"
+
+
+_CLOSURE_BANNER = "<h1>This job is no longer available</h1><p>This position has been filled.</p>"
+_SITE_NAV = (
+    "<header><nav><ul>"
+    + "".join(
+        f'<li><a href="/p{i}">Section link number {i} of the site</a></li>' for i in range(14)
+    )
+    + "</ul></nav></header>"
+)
+_SITE_FOOTER = (
+    "<footer><p>Globex Health is an equal opportunity employer. All qualified applicants "
+    "will receive consideration for employment without regard to protected status. "
+    "Copyright 2026 Globex Health. Privacy policy. Terms of use. Accessibility.</p></footer>"
+)
+_LARGER_FOOTER = _SITE_FOOTER.replace(
+    "</p>", " " + "Offices in Northtown, Southtown and Easttown. " * 4 + "</p>"
+)
+
+
+@pytest.mark.parametrize("valid_through", ["2025-03-01", "2099-03-01", ""])
+@pytest.mark.parametrize(
+    "banner",
+    [
+        _CLOSURE_BANNER,
+        f"<main>{_CLOSURE_BANNER}</main>{_SITE_FOOTER}",
+        f"<main>{_CLOSURE_BANNER}</main>{_LARGER_FOOTER}",
+        f"{_SITE_NAV}<main>{_CLOSURE_BANNER}</main>",
+        f"{_SITE_NAV}<main>{_CLOSURE_BANNER}</main>{_SITE_FOOTER}",
+    ],
+    ids=["banner", "footer", "larger-footer", "nav", "nav-and-footer"],
+)
+def test_a_closed_page_echoing_the_requested_address_stays_unsupported(
+    banner: str, valid_through: str
+) -> None:
+    page = _numbered_posting_page(_NUMBERED_POSTING, banner=banner, valid_through=valid_through)
+
+    checked = check_posting(
+        _NUMBERED_POSTING, client=policy_client(lambda target: text_response(target, page))
+    )
+
+    assert checked.status == "unsupported"
+
+
+def test_a_page_stating_the_requested_address_after_a_redirect_elsewhere_stays_unsupported() -> (
+    None
+):
+    landed = "https://recruiting.globex.example/Recruiting/Jobs/Details/5582"
+    page = _numbered_posting_page(_NUMBERED_POSTING)
+
+    def answer(target: str) -> httpx.Response:
+        if target == _NUMBERED_POSTING:
+            return httpx.Response(
+                302, request=httpx.Request("GET", target), headers={"Location": landed}
+            )
+        return text_response(target, page)
+
+    checked = check_posting(_NUMBERED_POSTING, client=policy_client(answer))
+
+    assert checked.status == "unsupported"
+
+
 def test_a_url_without_a_recognised_slug_leaves_the_body_alone() -> None:
     """A generic careers page has no derivable slug, so no title line is invented."""
     body = f"<html><body><h1>Real Title Here</h1><p>{LONG}</p></body></html>"

@@ -19,7 +19,11 @@ from clearscout.infrastructure.web_fetch.ingest.job_posting_markup import (
     JobPostingMarkup,
     job_postings,
 )
-from clearscout.infrastructure.web_fetch.ingest.readable import closed_page_notice, readable_text
+from clearscout.infrastructure.web_fetch.ingest.readable import (
+    closed_page_notice,
+    readable_text,
+    shows_a_closure,
+)
 from clearscout.infrastructure.web_fetch.ingest.text import (
     MINIMUM_USEFUL_CHARACTERS,
     require_enough_text,
@@ -52,6 +56,8 @@ class PageText:
     declared: JobPostingMarkup | None = None
     declared_count: int = 0
     bounded_markup: str = ""
+    # The addresses the page states for itself: its og:url and rel=canonical.
+    self_addresses: tuple[str, ...] = ()
 
 
 def from_html(url: str, body: str) -> UrlPostingText:
@@ -92,6 +98,11 @@ def read_page_text(body: str, page_url: str) -> PageText:
     """
     postings = job_postings(body)
     read_at = utc_now()
+    evidence = inspect_publisher_page(page_url, body)
+    # A closed page may still echo its own address, which must not vouch for an open posting.
+    closed = shows_a_closure(body, evidence.visible_text)
+    stated = (evidence.og_url, evidence.canonical_url)
+    self_addresses = () if closed else tuple(url for url in stated if url)
     for posting in postings:
         declared = plain_description(posting.description)
         if len(declared) >= MINIMUM_USEFUL_CHARACTERS:
@@ -105,8 +116,8 @@ def read_page_text(body: str, page_url: str) -> PageText:
                 declared_check(posting, page_url=page_url, read_at=read_at),
                 posting,
                 len(postings),
+                self_addresses=self_addresses,
             )
-    evidence = inspect_publisher_page(page_url, body)
     bounded = evidence.posting_body_markup
     text = _preview_text(bounded) if bounded else _extract(body, page_url)
     notice = closed_page_notice(body, text)
@@ -124,6 +135,7 @@ def read_page_text(body: str, page_url: str) -> PageText:
             postings[0],
             len(postings),
             bounded,
+            self_addresses,
         )
     return PageText(
         text,

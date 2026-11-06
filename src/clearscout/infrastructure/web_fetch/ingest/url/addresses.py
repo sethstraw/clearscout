@@ -91,7 +91,9 @@ def _carries_token(path: str, token: str) -> bool:
     return re.search(bounded, path, re.IGNORECASE) is not None
 
 
-def names_the_posting(declared: JobPostingMarkup, url: str, landed: str) -> bool:
+def names_the_posting(
+    declared: JobPostingMarkup, url: str, landed: str, self_addresses: tuple[str, ...] = ()
+) -> bool:
     """Return whether one declared block identifies the posting that was requested."""
     # A declared url claims the posting's address, so a different one names another
     # posting; an identifier claims nothing about the address, so a path that does
@@ -104,6 +106,10 @@ def names_the_posting(declared: JobPostingMarkup, url: str, landed: str) -> bool
     # A read that landed elsewhere shows another page, whatever its path spells.
     if unquote(urlparse(landed).path).rstrip("/") != path.rstrip("/"):
         return False
+    # A page that states one address for itself, the requested one, answers for that
+    # posting; an og:url and canonical that disagree vouch for neither.
+    if {normalize_url(address) for address in self_addresses} == {normalize_url(url)}:
+        return True
     return _path_spells_the_title(declared.title, path)
 
 

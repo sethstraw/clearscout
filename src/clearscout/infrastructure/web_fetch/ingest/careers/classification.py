@@ -94,6 +94,8 @@ class PageEvidence:
     # The document's <title>, which on an employer's own site often ends in the site's name.
     page_title: str = ""
     posting_body_markup: str = ""
+    # The page's og:url address, resolved against the page; empty when it names none.
+    og_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -162,6 +164,7 @@ def inspect_publisher_page(
         " ".join(parser.visible_parts),
         signals.page_title,
         signals.posting_body_markup if classification is PageClassification.POSTING else "",
+        og_url=urljoin(source_url, parser.og_url) if parser.og_url else "",
     )
 
 

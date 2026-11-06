@@ -135,7 +135,7 @@ def _declared_posting(page: PageText, url: str, landed: str) -> PostingCheck | N
     # so only a lone block naming this posting may answer for it.
     if page.declared is None or page.declared_count != 1:
         return None
-    if not names_the_posting(page.declared, url, landed):
+    if not names_the_posting(page.declared, url, landed, page.self_addresses):
         return None
     check = page.publisher_check
     return check if check is not None and check.status == "readable" else None
