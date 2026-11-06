@@ -42,6 +42,9 @@ classification equals the frozen label.
 | 2026-10-04 | gpt-6-sol     | medium / flex  | 19 x 3         | 57/57   | 0.101493 | -            | c5bd1b5b |
 | 2026-10-04 | gpt-6.1-sol   | medium / flex  | 19 x 3         | 54/57   | 0.075995 | -            | c5bd1b5b |
 | 2026-11-05 | gpt-6.1-sol   | medium / flex  | 5 x 1 holdout  | 5/5     | 0.010044 | 9fd6cdd01e3b | 8cfe9e02 |
+| 2026-11-06 | gpt-6.1-sol   | medium / flex  | 19 x 3         | 56/57   | 0.054996 | 9fd6cdd01e3b | 8cfe9e02 |
+| 2026-11-06 | gpt-6.1-sol   | medium / flex  | 19 x 3         | 56/57   | 0.056248 | 92750ef96a2e | 5a64a7aa |
+| 2026-11-06 | gpt-6.1-sol   | medium / flex  | 19 x 3         | 57/57   | 0.048491 | f809230df58d | 5a64a7aa |
 
 A `-` in the prompt column means the run's ledger entry did not record the
 fingerprint.
@@ -230,6 +233,24 @@ reasoning tokens (2,779 against 7,925), and 28 of its 57 calls reasoned not at
 all. One gpt-6.1-sol call ran 609 seconds and was billed at the standard tier.
 The product switched to gpt-6.1-sol on cost, with that regression recorded.
 
+### Whole-posting match
+
+One synthetic posting of 33 requirements, matched in a single call per draw as
+the product does. A draw passes only if all 33 requirements land on their
+labels, so the table counts requirements per draw. The dataset is
+maintainer-private, so only counts appear here.
+
+| date       | model       | effort / tier | draws | requirements per draw | cost     | prompt       | manifest |
+| ---------- | ----------- | ------------- | ----- | --------------------- | -------- | ------------ | -------- |
+| 2026-11-06 | gpt-6.1-sol | medium / flex | 1     | 28                    | 0.026874 | 12ff0886ba0f | ca029c25 |
+| 2026-11-06 | gpt-6.1-sol | medium / flex | 3     | 27, 28, 26            | 0.046448 | 12ff0886ba0f | ca029c25 |
+| 2026-11-06 | gpt-6.1-sol | medium / flex | 3     | 30, 28, 28            | 0.054426 | 92750ef96a2e | ca029c25 |
+| 2026-11-06 | gpt-6.1-sol | medium / flex | 3     | 30, 30, 30            | 0.055813 | f809230df58d | ca029c25 |
+
+The third row follows a fix to how an asserted status line is read, and the
+fourth a containment rule. After a ruling on one requirement, a free rescore of
+the fourth row on manifest `4c06bf7f` reads 31, 31, 31.
+
 ## Relevance review
 
 Scored against `golden/relevance_review.jsonl`; `correct` counts trials whose
@@ -348,27 +369,38 @@ under the search parameters the rows were reviewed with, 27 of 47 matched: 19 of
 Each case plants one defect in a document assembled offline, or plants none;
 the outcome is what the shipped floors assign the critic's merged verdict.
 
-| date       | note               | model         | effort / tier     | cases  | outcomes                 | cost     | prompt       | dataset  |
-| ---------- | ------------------ | ------------- | ----------------- | ------ | ------------------------ | -------- | ------------ | -------- |
-| 2026-09-20 | -                  | gpt-5.6-terra | medium / standard | 6      | 4 pass, 2 fail           | 0.080439 | faa0f4830e4d | 575e3c07 |
-| 2026-09-21 | -                  | gpt-5.6-terra | medium / standard | 6      | 4 pass, 2 fail           | 0.064252 | faa0f4830e4d | 575e3c07 |
-| 2026-09-21 | -                  | gpt-5.6-terra | medium / standard | 6      | 3 pass, 3 fail           | 0.073852 | faa0f4830e4d | 575e3c07 |
-| 2026-09-23 | -                  | gpt-6-sol     | medium / flex     | 10     | 7 fail, 3 warn           | 0.158845 | edf87418d908 | 2bec0bf3 |
-| 2026-09-23 | fixtures corrected | gpt-6-sol     | medium / flex     | 4      | 3 warn, 1 fail           | 0.061194 | edf87418d908 | 7ab7ff75 |
-| 2026-09-23 | fixtures corrected | gpt-6-sol     | low / flex        | 10     | 5 fail, 5 warn           | 0.092364 | edf87418d908 | 7ab7ff75 |
-| 2026-09-23 | -                  | gpt-6-sol     | medium / flex     | 11     | 6 fail, 5 warn           | 0.194565 | c1cc6951842f | 7b50dc9b |
-| 2026-09-23 | -                  | gpt-6-sol     | medium / flex     | 13 x 3 | 24 fail, 10 warn, 5 pass | 0.288156 | 38e1aa7c0f77 | 37818e8f |
-| 2026-09-23 | letters corrected  | gpt-6-sol     | medium / flex     | 2 x 3  | 6 warn                   | 0.040501 | 38e1aa7c0f77 | fba1467c |
-| 2026-09-23 | letter reworded    | gpt-6-sol     | medium / flex     | 1 x 3  | 2 pass, 1 warn           | 0.019305 | 38e1aa7c0f77 | 1793c30b |
-| 2026-11-05 | 3 draws merged     | gpt-6.1-sol   | medium / flex     | 9      | 8 fail, 1 warn           | 0.128626 | 01b3b875bf8d | 161e965d |
-| 2026-11-05 | duties letter      | gpt-6.1-sol   | medium / flex     | 1 x 5  | 3 warn, 2 fail           | 0.033727 | 01b3b875bf8d | 337623e3 |
-| 2026-11-05 | near boundary      | gpt-6.1-sol   | medium / flex     | 6      | 6 fail                   | 0.069119 | 01b3b875bf8d | b133da29 |
-| 2026-11-05 | restatement clause | gpt-6.1-sol   | medium / flex     | 1 x 5  | 5 warn                   | 0.026197 | a45be004ae75 | f818e4d2 |
-| 2026-11-05 | restatement clause | gpt-6.1-sol   | medium / flex     | 21     | 15 fail, 6 warn          | 0.113406 | a45be004ae75 | f818e4d2 |
-| 2026-11-06 | isolation          | gpt-6.1-sol   | medium / flex     | 1 x 5  | 5 fail                   | 0.040966 | 01b3b875bf8d | -        |
-| 2026-11-06 | letter shapes      | gpt-6.1-sol   | medium / flex     | 4 x 3  | 12 fail                  | 0.067603 | a45be004ae75 | -        |
-| 2026-11-06 | context line       | gpt-6.1-sol   | medium / flex     | 3 x 3  | 5 pass, 4 warn           | 0.046254 | a45be004ae75 | 0224f50d |
-| 2026-11-06 | 30 cases           | gpt-6.1-sol   | medium / flex     | 30 x 3 | 82/90; outcome 81/90     | 0.468946 | a45be004ae75 | d3713a99 |
+| date       | note                | model         | effort / tier     | cases  | outcomes                  | cost     | prompt       | dataset  |
+| ---------- | ------------------- | ------------- | ----------------- | ------ | ------------------------- | -------- | ------------ | -------- |
+| 2026-09-20 | -                   | gpt-5.6-terra | medium / standard | 6      | 4 pass, 2 fail            | 0.080439 | faa0f4830e4d | 575e3c07 |
+| 2026-09-21 | -                   | gpt-5.6-terra | medium / standard | 6      | 4 pass, 2 fail            | 0.064252 | faa0f4830e4d | 575e3c07 |
+| 2026-09-21 | -                   | gpt-5.6-terra | medium / standard | 6      | 3 pass, 3 fail            | 0.073852 | faa0f4830e4d | 575e3c07 |
+| 2026-09-23 | -                   | gpt-6-sol     | medium / flex     | 10     | 7 fail, 3 warn            | 0.158845 | edf87418d908 | 2bec0bf3 |
+| 2026-09-23 | fixtures corrected  | gpt-6-sol     | medium / flex     | 4      | 3 warn, 1 fail            | 0.061194 | edf87418d908 | 7ab7ff75 |
+| 2026-09-23 | fixtures corrected  | gpt-6-sol     | low / flex        | 10     | 5 fail, 5 warn            | 0.092364 | edf87418d908 | 7ab7ff75 |
+| 2026-09-23 | -                   | gpt-6-sol     | medium / flex     | 11     | 6 fail, 5 warn            | 0.194565 | c1cc6951842f | 7b50dc9b |
+| 2026-09-23 | -                   | gpt-6-sol     | medium / flex     | 13 x 3 | 24 fail, 10 warn, 5 pass  | 0.288156 | 38e1aa7c0f77 | 37818e8f |
+| 2026-09-23 | letters corrected   | gpt-6-sol     | medium / flex     | 2 x 3  | 6 warn                    | 0.040501 | 38e1aa7c0f77 | fba1467c |
+| 2026-09-23 | letter reworded     | gpt-6-sol     | medium / flex     | 1 x 3  | 2 pass, 1 warn            | 0.019305 | 38e1aa7c0f77 | 1793c30b |
+| 2026-11-05 | 3 draws merged      | gpt-6.1-sol   | medium / flex     | 9      | 8 fail, 1 warn            | 0.128626 | 01b3b875bf8d | 161e965d |
+| 2026-11-05 | duties letter       | gpt-6.1-sol   | medium / flex     | 1 x 5  | 3 warn, 2 fail            | 0.033727 | 01b3b875bf8d | 337623e3 |
+| 2026-11-05 | near boundary       | gpt-6.1-sol   | medium / flex     | 6      | 6 fail                    | 0.069119 | 01b3b875bf8d | b133da29 |
+| 2026-11-05 | restatement clause  | gpt-6.1-sol   | medium / flex     | 1 x 5  | 5 warn                    | 0.026197 | a45be004ae75 | f818e4d2 |
+| 2026-11-05 | restatement clause  | gpt-6.1-sol   | medium / flex     | 21     | 15 fail, 6 warn           | 0.113406 | a45be004ae75 | f818e4d2 |
+| 2026-11-06 | isolation           | gpt-6.1-sol   | medium / flex     | 1 x 5  | 5 fail                    | 0.040966 | 01b3b875bf8d | -        |
+| 2026-11-06 | letter shapes       | gpt-6.1-sol   | medium / flex     | 4 x 3  | 12 fail                   | 0.067603 | a45be004ae75 | -        |
+| 2026-11-06 | context line        | gpt-6.1-sol   | medium / flex     | 3 x 3  | 5 pass, 4 warn            | 0.046254 | a45be004ae75 | 0224f50d |
+| 2026-11-06 | 30 cases            | gpt-6.1-sol   | medium / flex     | 30 x 3 | 82/90; outcome 81/90      | 0.468946 | a45be004ae75 | d3713a99 |
+| 2026-11-06 | shared cache prefix | gpt-6.1-sol   | medium / flex     | 31 x 3 | 93/93                     | 0.354236 | f2e60fbde3b4 | 552738bb |
+| 2026-11-06 | round 2 proof       | gpt-6.1-sol   | medium / flex     | 31 x 3 | 93/93; outcome 84/93      | 0.489873 | f2e60fbde3b4 | 552738bb |
+| 2026-11-06 | flagged cases only  | gpt-6.1-sol   | low / flex        | 20 x 2 | 40/40                     | 0.187674 | f2e60fbde3b4 | 552738bb |
+| 2026-11-06 | quiet clean         | gpt-6.1-sol   | medium / flex     | 12 x 3 | 36/36                     | 0.179679 | f2e60fbde3b4 | 9981c4d1 |
+| 2026-11-06 | plan case           | gpt-6.1-sol   | medium / flex     | 1 x 3  | 0/3; caught as production | 0.016508 | f2e60fbde3b4 | 9a5127df |
+| 2026-11-06 | plan case           | gpt-6.1-sol   | medium / flex     | 1 x 3  | 0/3; caught as adjacent   | 0.015608 | f2e60fbde3b4 | 8d42ff46 |
+| 2026-11-06 | planned case        | gpt-6.1-sol   | medium / flex     | 2 x 3  | 3/6; caught as prototype  | 0.033500 | f2e60fbde3b4 | 41c8fb0f |
+| 2026-11-06 | reseal              | gpt-6.1-sol   | medium / flex     | 33 x 3 | 95/99; outcome 88/99      | 0.388303 | fee6c8bdf432 | c3b22deb |
+| 2026-11-06 | reseal, clean       | gpt-6.1-sol   | low / flex        | 12 x 3 | 36/36                     | 0.103829 | fee6c8bdf432 | c3b22deb |
+| 2026-11-06 | reseal, planted     | gpt-6.1-sol   | low / flex        | 21 x 3 | 59/63                     | 0.216271 | fee6c8bdf432 | c3b22deb |
+| 2026-11-06 | reseal, prototype   | gpt-6.1-sol   | low / flex        | 1 x 3  | 3/3                       | 0.010376 | fee6c8bdf432 | c3b22deb |
 
 The two 2026-09-21 rows are the same six cases run twice to measure spread.
 
@@ -403,9 +435,12 @@ company-wide, and an inserted tool name. It ran three draws per case, and every
 draw doubted its planted line (18 of 18, Wilson 95% lower bound 0.82). Scored
 for the planted boundary as well, 15 of 18 hold: every draw on the rollout line
 doubted it as team contribution or absent from the record, while the case then
-expected `planned_not_shipped`. The cited entry is silent on any rollout rather
-than recording one as planned, so `boundary_designed_as_shipped` carries
-`absent_from_record`. The duties-letter row ran the clean letter alone at one draw: 2 of 5
+expected `planned_not_shipped`. Because the cited entry was silent on any
+rollout rather than recording one as planned, `boundary_designed_as_shipped`
+was then labelled `absent_from_record`. It now carries `planned_not_shipped`
+and also accepts `production`: the cited entry says the registry was designed,
+and the critic prompt rules out `absent_from_record` when the cited entry
+touches the claim's subject. The duties-letter row ran the clean letter alone at one draw: 2 of 5
 trials failed it, every doubt marking a sentence that restates the posting's
 duties as miscited.
 
@@ -444,15 +479,38 @@ cutover and the added rollout (3 of 3 each) and a blanket letter fit (2 of 3). O
 summary sentence sits under one employer and so does imply that tenure, and the
 letter's company paragraph warned 3 of 3 as before.
 
+The shared-cache-prefix row is an eval harness change that lets repeated
+trials share a cache prefix: the prompt tokens are identical, the cached share
+rose from 51 to 83 per cent, and no outcome changed. In the round 2 proof the
+nine outcome disagreements are clean cases failed. The low-effort row runs the
+planted and flagged cases only, and the quiet-clean row the clean and
+warn-control cases under the quiet-document rule. The three plan-case rows
+caught the planted line every time, but at a boundary other than the label;
+the planned-case control passed 3 of 3, and its label was then corrected. The
+reseal row's p95 latency was 24.4 s and the low-effort planted row's 10.5 s.
+Rescored on the relabelled designed-as-shipped case, those rows read 98/99 and
+62/63.
+
 ## Draft and cover letter
 
-| date       | family | model         | effort / tier     | cases | result                                                      | cost     |
-| ---------- | ------ | ------------- | ----------------- | ----- | ----------------------------------------------------------- | -------- |
-| 2026-09-20 | draft  | gpt-5.6-terra | medium / standard | 6     | 6 cleared `verify.check`; factual review warned on 6        | 0.077315 |
-| 2026-09-20 | cover  | gpt-5.6-terra | medium / standard | 5     | 5 cleared `verify.check_letter`; letter echo warned on 5    | 0.039728 |
-| 2026-11-05 | draft  | gpt-6.1-sol   | medium / flex     | 6     | 6 cleared `verify.check`; factual review warned on 6        | 0.039893 |
-| 2026-11-05 | cover  | gpt-6.1-sol   | medium / flex     | 5     | 2 cleared; letter provenance failed 3 (harness, below)      | 0.027390 |
-| 2026-11-05 | cover  | gpt-6.1-sol   | medium / flex     | 5     | 5 cleared `verify.check_letter`; factual review warned on 5 | 0.023416 |
+| date       | family        | model         | effort / tier     | cases  | result                                                      | cost     |
+| ---------- | ------------- | ------------- | ----------------- | ------ | ----------------------------------------------------------- | -------- |
+| 2026-09-20 | draft         | gpt-5.6-terra | medium / standard | 6      | 6 cleared `verify.check`; factual review warned on 6        | 0.077315 |
+| 2026-09-20 | cover         | gpt-5.6-terra | medium / standard | 5      | 5 cleared `verify.check_letter`; letter echo warned on 5    | 0.039728 |
+| 2026-11-05 | draft         | gpt-6.1-sol   | medium / flex     | 6      | 6 cleared `verify.check`; factual review warned on 6        | 0.039893 |
+| 2026-11-05 | cover         | gpt-6.1-sol   | medium / flex     | 5      | 2 cleared; letter provenance failed 3 (harness, below)      | 0.027390 |
+| 2026-11-05 | cover         | gpt-6.1-sol   | medium / flex     | 5      | 5 cleared `verify.check_letter`; factual review warned on 5 | 0.023416 |
+| 2026-11-06 | draft         | gpt-6.1-sol   | medium / flex     | 4 x 3  | 9/12                                                        | 0.071278 |
+| 2026-11-06 | draft         | gpt-6.1-sol   | medium / flex     | 1 x 3  | 0/3; required-phrase proof                                  | 0.019670 |
+| 2026-11-06 | draft redraft | gpt-6.1-sol   | medium / flex     | 1 x 1  | 1/1; smoke                                                  | 0.013369 |
+| 2026-11-06 | draft redraft | gpt-6.1-sol   | medium / flex     | 14 x 3 | 42/42                                                       | 0.245550 |
+| 2026-11-06 | cover         | gpt-6.1-sol   | medium / flex     | 14 x 1 | 14/14; old company-paragraph rule                           | 0.075360 |
+| 2026-11-06 | cover         | gpt-6.1-sol   | medium / flex     | 14 x 1 | 14/14; arm B                                                | 0.076219 |
+| 2026-11-06 | cover         | gpt-6.1-sol   | medium / flex     | 14 x 1 | 14/14; role rule                                            | 0.080496 |
+| 2026-11-06 | cover         | gpt-6.1-sol   | medium / flex     | 16 x 1 | 16/16                                                       | 0.071918 |
+| 2026-11-06 | cover redraft | gpt-6.1-sol   | medium / flex     | 16 x 1 | 16/16; no case used a second attempt                        | 0.070378 |
+| 2026-11-06 | cover redraft | gpt-6.1-sol   | medium / flex     | 1 x 3  | 3/3; bait passed attempt one                                | 0.008959 |
+| 2026-11-06 | cover redraft | gpt-6.1-sol   | medium / flex     | 1 x 3  | 3/3; second bait passed attempt one                         | 0.007810 |
 
 The first 2026-11-05 cover run sent no company research, where the product
 always sends the stored posting as `company.posting`. With nothing to cite,
@@ -460,6 +518,14 @@ three letters carried a sentence saying no research was supplied, and
 provenance failed it. The second row writes each letter from the posting and
 the fixture's pages, and checks it against the same research, as the product
 does.
+
+The 2026-11-06 rows ran at these prompt fingerprints and manifests: draft
+`5340e87dd7b8` on `8758a3e6`, draft redraft `5340e87dd7b8` on `da0484de`, the
+three 14-case cover rows `84e440b5fd96`, `91642a71aaba` and `233d3a82caaf` on
+`d1fdc6fb`, and the later cover and cover redraft rows `233d3a82caaf` on
+`a4c30fe4`, `e0bf826b` and `e00cc3cb`. In the 14-case redraft run,
+`career_change_clinical` failed attempt one on 3 of 3 trials and passed the
+redraft each time, and `sparse_single_match` redrafted on 2 of 3.
 
 ## Stage experiments outside eval.sh
 
@@ -482,6 +548,7 @@ where the entry recorded it.
 | 2026-11-02 | cassette      | shipped settings                 | shipped prompt     | 4 calls              | reseal (re-recorded cassettes) over the synthetic fixtures; 15 recorded-replay tests pass        | 0.1459 |
 | 2026-11-02 | cassette      | shipped settings                 | amended prompt     | 3 calls              | reseal after the boundary fix; 15 recorded-replay tests pass                                     | 0.1230 |
 | 2026-11-02 | jobspec       | gpt-6.1-sol / low / flex         | 6c79be29, aa8a97be | 8 cases x 2 arms x 5 | first run of the permanent boundary eval, below                                                  | 0.5537 |
+| 2026-11-06 | cassette      | shipped settings                 | shipped prompt     | 7 calls              | reseal of one recorded call per stage the recorder knows; recorded-replay tests pass             | 0.4010 |
 
 The 2026-11-02 boundary fix compared the shipped jobspec prompt (`6c79be29`) with
 a candidate that rewrites rules 9 and 10 (`b0f44f4e`). The pass rule was fixed
@@ -542,6 +609,13 @@ are left to the importance field.
 | date       | model       | effort / tier | cases x trials | correct | requirements | cost     | prompt       | dataset  |
 | ---------- | ----------- | ------------- | -------------- | ------- | ------------ | -------- | ------------ | -------- |
 | 2026-11-05 | gpt-6.1-sol | low / flex    | 9 x 1          | 9/9     | 26/26        | 0.026207 | 9dbd3f6b59d5 | 8fb86622 |
+| 2026-11-06 | gpt-6.1-sol | low / flex    | 9 x 2          | 18/18   | 52/52        | 0.050833 | 9dbd3f6b59d5 | dd3bcb47 |
+| 2026-11-06 | gpt-6.1-sol | low / flex    | 9 x 2          | 18/18   | 52/52        | 0.039763 | 9dbd3f6b59d5 | dd3bcb47 |
+
+The two 2026-11-06 rows differ only in verbosity: the first sets none and the
+second low, which cut p95 latency from 14.7 s to 6.9 s. The boundary eval,
+`jobspec_boundary_live_task.py`, ran 8 x 3 at the same prompt on manifest
+`c0314f31`: 24/24 correct, USD 0.145626.
 
 Nine cases at one draw give a Wilson 95% lower bound of 0.70; the set finds
 regressions in these shapes and does not measure a rate. The stored log
@@ -561,6 +635,7 @@ labeled proposals only; unlabeled proposals are reported as coverage.
 | ---------- | ----------- | ------------- | -------------- | ------ | --------- | -------- | ------------ | -------- |
 | 2026-11-06 | gpt-6.1-sol | low / flex    | 4 x 1          | 4/4    | 23/34     | 0.048295 | 96e419874e91 | ced126de |
 | 2026-11-06 | gpt-6.1-sol | low / flex    | 13 x 2         | 22/26  | 180/236   | 0.235394 | 96e419874e91 | 60dd24b7 |
+| 2026-11-06 | gpt-6.1-sol | low / flex    | 15 x 2         | 25/30  | -         | 0.238040 | e069222c8292 | 902f15f7 |
 
 The run first scored 1 of 4, with unlabeled proposals counted against
 precision. No proposal was unacceptable, excluded, or a repeat of a stated
@@ -576,6 +651,9 @@ industry. Three of the four misses proposed only titles the labels do not name
 context line that does not support a principal-level title. Labels were not
 widened after this run, so 180 of 236 proposals remain unlabeled.
 
+The 15-case row runs after a prompt change; a free rescore on gold labels
+widened afterwards reads 30/30. Its log records no unlabeled count.
+
 ## Web stages
 
 [`posting_recovery_live_task.py`](inspect/tasks/posting_recovery_live_task.py)
@@ -583,12 +661,16 @@ and [`guided_campaign_live_task.py`](inspect/tasks/guided_campaign_live_task.py)
 read the real web through hosted search, so their cases are real postings and
 a real parameter set, kept in a private dataset passed with `--dataset`.
 
-| date       | stage            | model       | effort / tier | cases | result                                | cost     | prompt       |
-| ---------- | ---------------- | ----------- | ------------- | ----- | ------------------------------------- | -------- | ------------ |
-| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4     | 0/4 recovered the expected posting    | 0.118034 | 7428e1976831 |
-| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4     | 0/4; preflight settles 2 at no cost   | 0.147007 | dc85127c61db |
-| 2026-11-06 | guided_campaign  | gpt-6.1-sol | low / flex    | 1     | every check held; 4 searches, 3 picks | 0.076204 | 814417e97572 |
-| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 3 x 5 | 15/15; 10 settled by preflight        | 0.100680 | dc85127c61db |
+| date       | stage            | model       | effort / tier | cases  | result                                | cost     | prompt       |
+| ---------- | ---------------- | ----------- | ------------- | ------ | ------------------------------------- | -------- | ------------ |
+| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4      | 0/4 recovered the expected posting    | 0.118034 | 7428e1976831 |
+| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 4      | 0/4; preflight settles 2 at no cost   | 0.147007 | dc85127c61db |
+| 2026-11-06 | guided_campaign  | gpt-6.1-sol | low / flex    | 1      | every check held; 4 searches, 3 picks | 0.076204 | 814417e97572 |
+| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 3 x 5  | 15/15; 10 settled by preflight        | 0.100680 | dc85127c61db |
+| 2026-11-06 | posting_recovery | gpt-6.1-sol | low / flex    | 1 x 5  | 5/5; lower search depth               | 0.101890 | dc85127c61db |
+| 2026-11-06 | guided_campaign  | gpt-6.1-sol | low / flex    | 13 x 2 | 26/26; 87 picks, 69 admitted, 0 board | 1.438776 | 814417e97572 |
+| 2026-11-06 | guided_campaign  | gpt-6.1-sol | low / flex    | 6 x 1  | 6/6; lower search depth saved nothing | 0.373965 | 814417e97572 |
+| 2026-11-06 | guided_campaign  | gpt-6.1-sol | low / flex    | 2 x 2  | 4/4; board case picked no board       | 0.199133 | 814417e97572 |
 
 Recovery missed every case. Two targets sit behind an employer careers page
 that refuses ClearScout's reads; the model twice returned that same blocked
