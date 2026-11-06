@@ -60,8 +60,8 @@ class Guardrails(BaseModel):
     def prompt_block(self) -> str:
         """Render the rules the model can satisfy or break in its own drafted text.
 
-        ``required`` is excluded: it is checked against text the program copies
-        verbatim, which the model never writes.
+        ``required`` is excluded: it is checked after the draft, and a phrase the
+        drafter dropped from its evidence is named only in the redraft feedback.
         """
         sections = []
         if self.distinctions:

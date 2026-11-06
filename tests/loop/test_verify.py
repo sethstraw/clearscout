@@ -27,7 +27,7 @@ from clearscout.application.tailoring.stages.draft import (
 )
 from clearscout.application.tailoring.stages.jobspec import Importance, JobSpec, Requirement
 from clearscout.application.tailoring.stages.match import EvidenceMap
-from clearscout.application.tailoring.stages.select import build_plan
+from clearscout.application.tailoring.stages.select import Plan, build_plan
 from clearscout.application.tailoring.stages.verify import (
     LETTER_CRITIC,
     CriticVerdict,
@@ -621,9 +621,16 @@ def test_a_missing_required_string_fails(inventory, settings) -> None:
     assert outcome(report, "required strings") is Outcome.FAIL
 
 
-def _required_finding(inventory, settings, phrase: str) -> tuple[Finding, frozenset[str]]:
+def _required_finding(
+    inventory,
+    settings,
+    phrase: str,
+    excluded: frozenset[str] = frozenset(),
+    copied: tuple[str, ...] = (),
+) -> tuple[Finding, Plan]:
     spec = spec_with("schema registry")
     plan = build_plan(inventory, spec, EvidenceMap(), settings)
+    plan = plan.model_copy(update={"publication_ids": (*plan.publication_ids, *copied)})
     report = check(
         markdown="# JANE\n\n---\n\n## Summary\n\nText.\n",
         draft=simple_draft(inventory, "Text.", (inventory.entries[0].id,)),
@@ -631,37 +638,56 @@ def _required_finding(inventory, settings, phrase: str) -> tuple[Finding, frozen
         inventory=inventory,
         spec=spec,
         guardrails=Guardrails(required=[phrase]),
+        excluded=excluded,
     )
-    return finding(report, "required strings"), frozenset(plan.all_ids())
+    return finding(report, "required strings"), plan
 
 
-def test_a_required_phrase_the_selected_evidence_carries_is_sent_back_by_name(
+def _carrier(inventory, plan: Plan, phrase: str) -> str:
+    return next(entry for entry in plan.drafted_ids() if phrase in inventory.by_id(entry).full_text)
+
+
+def test_a_required_phrase_drafted_evidence_carries_is_sent_back_with_its_entry(
     inventory, settings
 ) -> None:
-    missing, chosen = _required_finding(inventory, settings, "schema registry")
+    missing, plan = _required_finding(inventory, settings, "schema registry")
 
-    assert any("schema registry" in inventory.by_id(entry).full_text for entry in chosen)
     assert missing.outcome is Outcome.FAIL
     assert missing.redraftable
-    assert "schema registry" in missing.detail
+    assert f"schema registry (in {_carrier(inventory, plan, 'schema registry')})" in missing.detail
     assert "add them there" not in missing.detail
 
 
-def test_a_required_phrase_only_in_unselected_evidence_is_not_blamed_on_the_cv(
-    inventory, settings
-) -> None:
-    _, chosen = _required_finding(inventory, settings, "schema registry")
-    phrase = next(
-        entry.text.split(",")[0]
-        for entry in inventory.entries
-        if entry.id not in chosen and entry.text.startswith("Wrote the Terraform")
+def test_a_required_phrase_in_a_trimmed_entry_is_not_sent_back(inventory, settings) -> None:
+    _, plan = _required_finding(inventory, settings, "schema registry")
+    carriers = frozenset(
+        entry
+        for entry in plan.drafted_ids()
+        if "schema registry" in inventory.by_id(entry).full_text
     )
 
-    missing, _ = _required_finding(inventory, settings, phrase)
+    missing, _ = _required_finding(inventory, settings, "schema registry", excluded=carriers)
 
+    assert not missing.redraftable
+    assert "not in evidence drafted" in missing.detail
+
+
+@pytest.mark.parametrize(
+    ("phrase", "copied"),
+    [("Wrote the Terraform modules", False), ("Schema governance at scale", True)],
+)
+def test_a_required_phrase_outside_drafted_evidence_is_not_blamed_on_the_cv(
+    inventory, settings, phrase: str, copied: bool
+) -> None:
+    """An unselected bullet, or a publication the program copies, was never the drafter's."""
+    holders = tuple(entry.id for entry in inventory.entries if phrase in entry.full_text)
+    missing, plan = _required_finding(inventory, settings, phrase, copied=holders if copied else ())
+
+    assert not set(holders) & set(plan.drafted_ids())
+    assert bool(set(holders) & set(plan.publication_ids)) is copied
     assert missing.outcome is Outcome.FAIL
     assert not missing.redraftable
-    assert "not in the evidence selected" in missing.detail
+    assert "not in evidence drafted" in missing.detail
 
 
 def test_a_required_phrase_the_cv_lacks_asks_for_it_in_the_cv(inventory, settings) -> None:

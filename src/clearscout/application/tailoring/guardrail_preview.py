@@ -88,9 +88,9 @@ def _forbidden_match(phrase: str, cv_markdown: str) -> PhraseMatch:
 def _required_match(phrase: str, cv_markdown: str) -> PhraseMatch:
     """Report whether a required phrase exists as evidence to draft from.
 
-    Reuses ``required``, which never treats a missing phrase as fixable by a
-    redraft: it is either already in the master CV, or a rule that can only be
-    satisfied by adding it there.
+    Reuses ``required`` with no drafted evidence, so a missing phrase is never
+    fixable by a redraft: it is either in the master CV, or a rule that can only
+    be satisfied by adding it there.
     """
     finding = required(cv_markdown, Guardrails(required=[phrase]) if phrase else Guardrails())
     matched = finding.outcome is not Outcome.FAIL

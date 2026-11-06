@@ -1947,6 +1947,47 @@ def failing_the_first_draft(provider: ScriptedProvider) -> None:
     provider.script["ResumeDraft"] = omit_then_repair
 
 
+def _without(value: Any, phrase: str) -> Any:
+    if isinstance(value, str):
+        return value.replace(phrase, "registry")
+    if isinstance(value, list):
+        return [_without(item, phrase) for item in value]
+    if isinstance(value, dict):
+        return {key: _without(item, phrase) for key, item in value.items()}
+    return value
+
+
+def test_a_required_phrase_the_first_draft_drops_is_named_in_the_redraft(
+    master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
+) -> None:
+    provider = scripted["provider"]
+    compliant = provider.script["ResumeDraft"]
+    drafts = 0
+
+    def drop_then_restore(schema: Any) -> dict[str, Any]:
+        nonlocal drafts
+        drafts += 1
+        payload: dict[str, Any] = compliant(schema)
+        return _without(payload, "schema registry") if drafts == 1 else payload
+
+    provider.script["ResumeDraft"] = drop_then_restore
+    rules = Guardrails(required=["schema registry"])
+    result = go(master_cv, tmp_path, settings_update={"rules": rules})
+
+    manifest = json.loads((written_run(result).directory / "run.json").read_text("utf-8"))
+    first, second = manifest["run"]["attempts"]["resume"]
+    required = next(item for item in first["findings"] if item["check"] == "required strings")
+    assert required["outcome"] == "fail"
+    redraft = next(plan for name, plan in reversed(provider.calls) if "ResumeDraft" in name)
+    assert f"- required strings: {required['detail']}" in redraft.task.text
+    assert "schema registry (in " in required["detail"]
+    assert manifest["run"]["kept"] == {"resume": 2}
+    assert all(
+        item["check"] != "required strings" or item["outcome"] == "pass"
+        for item in second["findings"]
+    )
+
+
 def test_the_manifest_records_every_attempt_and_the_feedback_that_followed_it(
     master_cv: Path, tmp_path: Path, scripted: dict[str, Any]
 ) -> None:

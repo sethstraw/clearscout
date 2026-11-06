@@ -53,9 +53,10 @@ def check(
     coverage = keyword_coverage(markdown, spec)
     # Copied master-CV text is an input defect, not a rewrite failure.
     written = "\n".join(line.text for line in draft.lines())
-    chosen = set(plan.all_ids())
-    selected = [entry.full_text for entry in inventory.entries if entry.id in chosen]
-    recorded = [entry.full_text for entry in inventory.entries if entry.id not in chosen]
+    # Copied and trimmed entries were never the drafter's to restore.
+    shown = set(plan.drafted_ids()) - excluded
+    drafted = {entry.id: entry.full_text for entry in inventory.entries if entry.id in shown}
+    recorded = [entry.full_text for entry in inventory.entries if entry.id not in shown]
     findings = (
         provenance(draft, plan),
         must_have_coverage(draft, plan, spec, excluded),
@@ -70,7 +71,7 @@ def check(
         characters(written, guardrails, source="the drafted text"),
         characters_in_source(markdown, written, guardrails),
         forbidden(markdown, written, guardrails),
-        required(markdown, guardrails, selected=selected, recorded=recorded),
+        required(markdown, guardrails, drafted=drafted, recorded=recorded),
         protected(markdown, guardrails),
         coverage_finding(coverage),
     )

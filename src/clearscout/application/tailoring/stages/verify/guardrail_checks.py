@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from clearscout.application.tailoring.guardrails import Guardrails
 from clearscout.shared.results import Finding, Outcome
@@ -137,33 +137,38 @@ def required(
     markdown: str,
     guardrails: Guardrails,
     *,
-    selected: Sequence[str] = (),
+    drafted: Mapping[str, str] | None = None,
     recorded: Sequence[str] = (),
 ) -> Finding:
     """Require every string the guardrails file says must always appear.
 
-    A phrase an entry in ``selected`` carries was dropped by the drafter, so a redraft
-    can restore it; ``recorded`` is the rest of the record, which only changes the advice.
+    ``drafted`` maps each entry the drafter was shown and that printed to its text: a
+    phrase one carries was dropped, so a redraft citing it can restore it. ``recorded``
+    is the rest of the record, which only changes the advice.
     """
     missing = [value for value in guardrails.required if value and value not in markdown]
     if not missing:
         return Finding("required strings", Outcome.PASS, "all present")
-    listed = ", ".join(missing)
-    if all(any(value in text for text in selected) for value in missing):
+    shown = drafted or {}
+    carriers = {
+        value: [entry for entry, text in shown.items() if value in text] for value in missing
+    }
+    if all(carriers.values()):
+        located = "; ".join(f"{value} (in {', '.join(ids)})" for value, ids in carriers.items())
         return Finding(
             "required strings",
             Outcome.FAIL,
-            f"missing: {listed}. The selected evidence carries each of these; "
-            "keep them word for word.",
+            f"missing: {located}. Restore each word for word on a line citing that entry.",
         )
-    if all(any(value in text for text in (*selected, *recorded)) for value in missing):
+    if all(any(value in text for text in (*shown.values(), *recorded)) for value in missing):
         return Finding(
             "required strings",
             Outcome.FAIL,
-            f"missing: {listed}. Your master CV has these, but not in the evidence "
-            "selected for this posting.",
+            f"missing: {', '.join(missing)}. Your master CV has these, but not in "
+            "evidence drafted for this posting.",
             redraftable=False,
         )
+    listed = ", ".join(missing)
     return Finding(
         "required strings",
         Outcome.FAIL,
