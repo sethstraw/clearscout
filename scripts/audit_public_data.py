@@ -74,6 +74,13 @@ EMPLOYER_SCOPES = (
     (WEB_SOURCE, (*SYNTHETIC_EMPLOYERS, *EVAL_EMPLOYERS)),
 )
 
+# Web-search cassettes hold the pages a live search returned, so their employer
+# names are real by design; every other check still reads them.
+WEB_SEARCH_CASSETTES = (
+    f"{TESTS}cassettes/guided_campaign_",
+    f"{TESTS}cassettes/posting_recovery_",
+)
+
 # An employer field carries the name as displayed; a lowercase value is a
 # different closed vocabulary.
 EMPLOYER_FIELD = re.compile(
@@ -151,6 +158,8 @@ def _folded(name: str) -> str:
 
 def allowed_employers(name: str) -> tuple[str, ...]:
     """Return the employer names one file may use, empty when it is not scanned."""
+    if name.startswith(WEB_SEARCH_CASSETTES):
+        return ()
     for prefix, allowed in EMPLOYER_SCOPES:
         if name.startswith(prefix):
             return allowed

@@ -165,6 +165,29 @@ def test_public_data_audit_names_the_file_and_the_employer_a_fixture_may_not_use
     assert f"use one of {', '.join(SYNTHETIC_EMPLOYERS)}" in output
 
 
+@pytest.mark.parametrize(
+    ("at", "expected"),
+    [
+        ("tests/cassettes/guided_campaign_openai.json", 0),
+        ("tests/cassettes/posting_recovery_openai.json", 0),
+        ("tests/cassettes/match_openai.json", 1),
+    ],
+)
+def test_public_data_audit_lets_only_a_web_search_cassette_name_a_real_employer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture[str],
+    at: str,
+    expected: int,
+) -> None:
+    planted = "Quantoria" + " Biosciences"
+    _fixture_repository(tmp_path, f'{{"company": "{planted}"}}\n', at=at)
+    monkeypatch.chdir(tmp_path)
+
+    assert audit_public_data() == expected
+    assert (f'employer name "{planted}"' in capsys.readouterr().out) is bool(expected)
+
+
 def test_public_data_audit_reads_a_board_platform_as_capability_rather_than_an_employer(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
