@@ -474,10 +474,18 @@ def _publisher_body_checkpoint(
         for identity in checkpoint.pending_ids
         if identity not in retained_bodies and identity not in protected
     )
+    set_aside = tuple(
+        (identity, url)
+        for identity, url in checkpoint.set_aside
+        if retained.get(identity) == url
+        and identity not in retained_bodies
+        and identity not in protected
+    )
     return replace(
         checkpoint,
         completed=tuple(retained_bodies.items()),
         protected=tuple(protected.items()),
+        set_aside=set_aside,
         pending_ids=pending,
         failed_attempts=tuple(pair for pair in checkpoint.failed_attempts if pair[0] in pending),
         listing_facts=tuple(pair for pair in checkpoint.listing_facts if pair[0] in pending),
@@ -561,8 +569,8 @@ def _publisher_settled_pairs(
     scan: SourceScan,
     scope: tuple[str, str],
     family: frozenset[str],
-) -> tuple[set[tuple[str, str]], set[tuple[str, str]]]:
-    """Return completed and protected pairs, counting same-day completions carried in."""
+) -> tuple[set[tuple[str, str]], set[tuple[str, str]], set[tuple[str, str]]]:
+    """Return completed, protected and set-aside pairs, counting same-day completions."""
     cutoff = rescreen_cutoff(session, continuation.workspace_id, continuation.id)
     rows = session.scalars(
         select_frontier_rows().where(SourceScanFrontierItem.continuation_id == continuation.id)
@@ -581,8 +589,11 @@ def _publisher_settled_pairs(
             )
         )
     ]
-    completed = {pair for checkpoint in checkpoints for pair in checkpoint.completed}
-    return completed, {pair for checkpoint in checkpoints for pair in checkpoint.protected}
+    return (
+        {pair for checkpoint in checkpoints for pair in checkpoint.completed},
+        {pair for checkpoint in checkpoints for pair in checkpoint.protected},
+        {pair for checkpoint in checkpoints for pair in checkpoint.set_aside},
+    )
 
 
 def publisher_listing_coverage(
@@ -590,7 +601,7 @@ def publisher_listing_coverage(
     continuation: SourceScanContinuation,
     scan: SourceScan,
 ) -> SourceDetailCoverage | None:
-    """Certify a publisher listing only when every identity it enumerated has a settled body."""
+    """Certify a publisher listing only when every identity it enumerated is settled."""
     if scan.exhausted_outcome is None or scan.discovery_truncated:
         return None
     source = session.get(Source, scan.source_id)
@@ -611,8 +622,10 @@ def publisher_listing_coverage(
     if not unscoped <= {normalize_fetch_url(url) for url in membership.values()}:
         return None
     listed = set(membership.items())
-    completed, protected = _publisher_settled_pairs(session, continuation, scan, scope, family)
-    if not listed <= completed | protected:
+    completed, protected, set_aside = _publisher_settled_pairs(
+        session, continuation, scan, scope, family
+    )
+    if not listed <= completed | protected | set_aside:
         return None
     scan.raw_count = len(membership)
     scan.read_count = len(listed & completed)

@@ -135,6 +135,7 @@ class SourceDetailCheckpoint:
     failed_attempts: tuple[tuple[str, StrictInt], ...] = ()
     pending_ids: tuple[str, ...] = ()
     protected: tuple[tuple[str, str], ...] = ()
+    set_aside: tuple[tuple[str, str], ...] = ()
     listing_ids: tuple[str, ...] = ()
     listing_urls: tuple[tuple[str, str], ...] = ()
     listing_facts: tuple[tuple[str, StagedListingFacts], ...] = ()
@@ -154,6 +155,7 @@ class SourceDetailCheckpoint:
         completed = tuple(item for item, _url in self.completed)
         failed = tuple(item for item, _attempts in self.failed_attempts)
         protected = tuple(item for item, _url in self.protected)
+        set_aside = tuple(item for item, _url in self.set_aside)
         url_ids = tuple(item for item, _url in self.listing_urls)
         fact_ids = tuple(item for item, _facts in self.listing_facts)
         for ids in (
@@ -162,6 +164,7 @@ class SourceDetailCheckpoint:
             failed,
             self.pending_ids,
             protected,
+            set_aside,
             self.listing_ids,
             self.pass_listing_ids,
             fact_ids,
@@ -174,12 +177,14 @@ class SourceDetailCheckpoint:
             raise ValueError("protected detail identities cannot be completed or closed")
         if set(completed) & set(self.closed_ids) or resolved & set(self.pending_ids):
             raise ValueError("resolved detail identities cannot remain pending or closed twice")
+        if set(set_aside) & (resolved | set(self.pending_ids)):
+            raise ValueError("set-aside identities cannot be resolved or pending")
         if self.listing_urls and set(url_ids) != set(self.listing_ids):
             raise ValueError("enumeration URLs must match listing identities")
         self._validate_pending_details(failed, fact_ids)
         if any(not re.fullmatch(r"[a-f0-9]{64}", digest) for digest in self.page_fingerprints):
             raise ValueError("listing page fingerprints must be SHA256 digests")
-        for _item, url in (*self.completed, *self.protected, *self.listing_urls):
+        for _item, url in (*self.completed, *self.protected, *self.set_aside, *self.listing_urls):
             _require_absolute_url(url, "completed detail posting URL")
 
     def _validate_listing(self) -> None:

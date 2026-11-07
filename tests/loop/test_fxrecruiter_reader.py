@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from collections.abc import Callable
 from html import escape
 from urllib.parse import urlsplit
 
@@ -17,8 +18,10 @@ from clearscout.application.discovery.source_reading import SourceListing, Sourc
 from clearscout.domain.search_parameters import JobSearchParameters, Seniority
 from clearscout.domain.staged_facts import PostedDateGrade
 from clearscout.infrastructure.web_fetch.board_adapters import BoardApiFetcher
+from clearscout.infrastructure.web_fetch.board_reads import PublisherSearchPage
 from clearscout.infrastructure.web_fetch.ingest import strip_tags
 from clearscout.infrastructure.web_fetch.ingest.careers import inspect_publisher_page
+from clearscout.infrastructure.web_fetch.platforms import fxrecruiter
 from clearscout.infrastructure.web_fetch.policy import PoliteHttpClient
 from tests.support.doubles import declaring_page
 from tests.support.http import public_resolver
@@ -429,6 +432,55 @@ def test_a_protected_posting_is_never_set_aside_by_its_title() -> None:
 
     assert site.url(2) in read.protected_posting_urls
     assert {row.requisition_id for row in read.listings} == {"1", "3"}
+
+
+def _row(item: str, url: str, title: str, body: str = "") -> dict[str, object]:
+    """Build one FX search row; a ``body`` makes the row carry its own detail."""
+    row: dict[str, object] = {"id": item, "url": url, "title": title}
+    if body:
+        row["detail"] = {"title": title, "description": body, "employer": "Acme"}
+    return row
+
+
+def _two_page_feed(
+    monkeypatch: pytest.MonkeyPatch,
+    pages: list[list[dict[str, object]]],
+    after_first: Callable[[], None] | None = None,
+) -> None:
+    """Serve the FX search as consecutive pages, calling ``after_first`` on the first."""
+
+    def request(_fetcher: object, _feed: str, _source: str, page: int) -> PublisherSearchPage:
+        if page == 0 and after_first is not None:
+            after_first()
+        return PublisherSearchPage(pages[page], page + 1 if page + 1 < len(pages) else None)
+
+    monkeypatch.setattr(fxrecruiter, "_request", request)
+
+
+def test_an_identity_relisted_at_an_off_target_address_is_counted_with_both_listings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    site = _FeedSite()
+    moved = site.origin + "/jobs/details/canada/ontario/forklift-operator/1"
+    # A row carrying its body is read on its own page, before the relisting arrives.
+    _two_page_feed(
+        monkeypatch,
+        [
+            [_row("1", site.url(1), "Data Analyst 1", _BODY)],
+            [
+                _row("1", moved, "Warehouse Forklift Operator"),
+                _row("4", site.url(4), "Data Analyst 4"),
+            ],
+        ],
+    )
+
+    read = site.fetcher.listings("Acme", site.root, options=_title_screened())
+
+    assert moved not in site.requested
+    assert sorted((row.url, bool(row.published_description)) for row in read.listings) == sorted(
+        [(site.url(1), True), (moved, False), (site.url(4), True)]
+    )
+    assert read.raw_count >= len(read.listings)
 
 
 @pytest.mark.parametrize("boundary", ["foreign_feed", "foreign_detail"])

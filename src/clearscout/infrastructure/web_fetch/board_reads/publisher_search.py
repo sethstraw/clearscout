@@ -86,6 +86,7 @@ class _SearchSlice:
     listed_titles: bool = False
     # Title-only listings whose stated title the read's screen rules out, keyed by URL.
     set_aside: dict[str, SourceListing] = field(default_factory=dict)
+    aside_urls: dict[str, str] = field(default_factory=dict)
 
     def listed(self) -> set[str]:
         """Return the identities the current listing pass has seen."""
@@ -121,6 +122,16 @@ class _SearchSlice:
         if rows and self.detail_phase is not None:
             self.detail_phase(rows)
 
+    def aside_pairs(self) -> tuple[tuple[str, str], ...]:
+        """Return set-aside identities still listed at their address and otherwise unsettled."""
+        return tuple(
+            (item, url)
+            for item, url in self.aside_urls.items()
+            if self.listing_urls.get(item) == url
+            and item not in self.completed
+            and url not in self.protected
+        )
+
     def cursor(self, page: int) -> SourceContinuationTarget:
         # Each relisted pass gets its own address so the frontier never treats it as read.
         address = (
@@ -145,6 +156,7 @@ class _SearchSlice:
                 protected=tuple(
                     (item, url) for item, url in self.listing_urls.items() if url in self.protected
                 ),
+                set_aside=self.aside_pairs() if not self.enumeration_only else (),
                 listing_ids=tuple(sorted(self.identities)),
                 listing_urls=tuple(sorted(self.listing_urls.items())),
                 listing_total=self.total,
@@ -219,6 +231,9 @@ class _SearchSlice:
         self.completed = {
             item: url for item, url in self.completed.items() if item in self.pass_ids
         }
+        self.aside_urls = {
+            item: url for item, url in self.aside_urls.items() if item in self.pass_ids
+        }
         current = set(self.listing_urls.values())
         self.protected = [url for url in self.protected if url in current]
 
@@ -290,6 +305,7 @@ class _SearchSlice:
             (listing.url, listing)
             for listing in _enumerated_search_read(mapping, aside, employer).listings
         )
+        self.aside_urls.update((row_id(row), str(row["url"])) for row in aside)
         ruled_out = {row_id(row) for row in aside}
         return [row for row in rows if row_id(row) not in ruled_out]
 
@@ -339,9 +355,11 @@ class _SearchSlice:
         protected = tuple(
             (item, url) for item, url in self.listing_urls.items() if url in self.protected
         )
+        set_aside = self.aside_pairs() if not self.enumeration_only else ()
         listing: dict[str, Any] = {
             "completed": completed,
             "protected": protected,
+            "set_aside": set_aside,
             "page_fingerprints": tuple(self.fingerprints),
             "listing_ids": listing_ids,
             "listing_urls": listing_urls,
@@ -369,17 +387,20 @@ class _SearchSlice:
             else target
             for target in self.deferred
         )
-        set_aside = [
-            listing
-            for url, listing in self.set_aside.items()
-            if url not in self.listings
-            and self.listing_urls.get(listing.requisition_id) == listing.url
+        listings = [
+            *self.listings.values(),
+            *(
+                listing
+                for url, listing in self.set_aside.items()
+                if url not in self.listings
+                and self.listing_urls.get(listing.requisition_id) == listing.url
+            ),
         ]
         return robots_short(
             SourceRead(
-                listings=[*self.listings.values(), *set_aside],
+                listings=listings,
                 complete=complete,
-                raw_count=max(len(self.identities), len(self.listings)),
+                raw_count=max(len(self.identities), len(listings)),
                 outcome=SourceReadOutcome.ATS_COMPLETE
                 if complete
                 else SourceReadOutcome.CRAWL_CONTINUATION
@@ -402,6 +423,7 @@ class _SearchSlice:
                         board_url=self.source_url,
                         completed=completed,
                         protected=protected,
+                        set_aside=set_aside,
                         listing_ids=listing_ids,
                         listing_urls=listing_urls,
                         page_fingerprints=tuple(self.fingerprints),
@@ -457,6 +479,7 @@ def _search_slice(
             if checkpoint.listing_urls:
                 state.completed.update(checkpoint.completed)
                 state.protected.extend(url for _item, url in checkpoint.protected)
+                state.aside_urls.update(checkpoint.set_aside)
             state.identities.update(target.detail_checkpoint.listing_ids)
             state.total = target.detail_checkpoint.listing_total
             state.unstable = target.detail_checkpoint.listing_unstable

@@ -1064,6 +1064,25 @@ def test_checkpoint_enumeration_urls_round_trip_without_completing_bodies() -> N
         replace(checkpoint, listing_urls=(("1", "relative"),))
 
 
+def test_checkpoint_set_aside_pairs_round_trip_and_never_overlap_a_settled_body() -> None:
+    url = "https://acme.example/jobs/role-1"
+    checkpoint = SourceDetailCheckpoint(
+        platform="search:fxrecruiter_search_page",
+        board_url="https://acme.example/jobs",
+        set_aside=(("1", url),),
+        listing_ids=("1",),
+        listing_urls=(("1", url),),
+    )
+    assert SourceDetailCheckpoint.from_json(checkpoint.as_json()) == checkpoint
+    stored = checkpoint.as_json()
+    del stored["set_aside"]
+    assert SourceDetailCheckpoint.from_json(stored).set_aside == ()
+    with pytest.raises(ValueError, match="set-aside"):
+        replace(checkpoint, completed=(("1", url),))
+    with pytest.raises(ValueError):
+        replace(checkpoint, set_aside=(("1", "relative"),))
+
+
 @pytest.mark.parametrize("failed_detail", [False, True])
 @pytest.mark.parametrize("unstable", [False, True])
 def test_legacy_alignerr_page_restarts_its_scope_without_losing_manual_details(
@@ -6798,6 +6817,46 @@ def test_a_relisted_search_continuation_reads_no_off_target_detail_and_counts_it
         ).all()
         counts = {(task.progress["matched"], task.progress["no_title_match"]) for task in tasks}
     assert counts == {(2, 1)}
+
+
+def test_a_stitched_search_certifies_a_row_set_aside_by_its_listed_title(
+    durable_database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests.loop.test_fxrecruiter_reader import _FeedSite, _row, _two_page_feed
+
+    workspace_id = _workspace(durable_database)
+    site = _FeedSite()
+    site.interrupt_after = 1
+    source_id = _source(durable_database, workspace_id, "Acme", site.root)
+    state_target_titles(durable_database, workspace_id, "Data Analyst")
+    known = (site.url(1), site.url(2), site.url(9))
+    _stage_known_rows(durable_database, workspace_id, source_id, known)
+    _missed_once(durable_database, *known)
+    _two_page_feed(
+        monkeypatch,
+        [
+            [_row("1", site.url(1), "Data Analyst 1"), _row("2", site.url(2), "Forklift Driver")],
+            [_row("3", site.url(3), "Data Analyst 3")],
+        ],
+    )
+
+    # The root task lists both pages, then its deadline defers one detail read.
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    site.stopped = False
+    for _ in range(6):
+        if not worker.run_once():
+            break
+
+    assert site.url(2) not in site.requested
+    scan = _board_scan_row(durable_database)
+    assert (scan.complete, scan.raw_count) == (True, 3)
+    assert _withdrawn_urls(durable_database) == {site.url(9)}
+    with durable_database.session() as session:
+        aside = session.scalars(
+            select(PendingDiscovery).where(PendingDiscovery.discovery_url == site.url(2))
+        ).one()
+        assert aside.absent_since is None
 
 
 def test_a_search_page_continuation_chain_reads_the_feed_and_each_detail_once(
