@@ -116,39 +116,47 @@ safest behavior against fabrication.
 treated as ground truth. (A gold label is the answer a person decided was
 correct, and a gold set is the set of cases scored against those answers.)
 
-**What the numbers showed.** The live critic scored 7 of 10, but it had judged
-all 10 correctly: three "clean" fixtures held real unsupported claims. A reader
-gold set showed alpha 0.973 between two blind annotators (Krippendorff's alpha
+**What the numbers showed.** The labels were wrong more often than expected.
+The live critic scored 7 of 10, but it had judged all 10 correctly. Three
+"clean" fixtures held real unsupported claims.
+
+Agreement between labellers was also weaker evidence than it looked. A reader
+gold set showed alpha 0.973 between two blind annotators. (Krippendorff's alpha
 measures how much labellers agree beyond chance, where 1.0 means they always
-agree), but both were the
-same model on the same instructions, and 106 of 631 shared reasons were
-word-for-word identical. The match gold set went through about ten relabel
-rounds, because each rubric edit shifted other borderline labels.
+agree.) But both annotators were the same model on the same instructions. Of
+631 shared reasons, 106 were word-for-word identical.
+
+The match gold set went through about ten relabel rounds. Each rubric edit
+shifted other borderline labels.
 
 One pre-release round of paid runs found the label wrong more often than the
 model. Three critic cases failed 3 of 3 under a boundary other than their
-label, and each time the prompt's own definitions sided with the critic: the
-cited entry reached a prototype, not a plan, and a rollout added to a
-"designed" entry is planned work written as shipped. A match row labelled
-`GAP` was answered `TRANSFERABLE` at `weak` 3 of 3, exactly what a rule added
-after the rubric froze tells the model to do. All five search-vocabulary misses
-were plausible titles the gold lists lacked. Each was settled by a free rescore
-of the stored outputs against the corrected label, with no new run bought. (A
-rescore runs the scorer again over model outputs already saved, which costs
-nothing.)
+label. Each time, the prompt's own definitions sided with the critic. The cited
+entry reached a prototype, not a plan. A rollout added to a "designed" entry is
+planned work written as shipped. A match row labelled `GAP` was answered
+`TRANSFERABLE` at `weak` 3 of 3. That is exactly what a rule added after the
+rubric froze tells the model to do. All five search-vocabulary misses were
+plausible titles the gold lists lacked.
+
+Each case was settled by a free rescore of the stored outputs against the
+corrected label, with no new run bought. (A rescore runs the scorer again over
+model outputs already saved, which costs nothing.)
 
 **What we concluded.** Check each scored miss against the source before
-touching the prompt. A miss that repeats on every draw with a reading the
-prompt's definitions allow points at the label first. Record that model
-annotators share a model. Settle disagreements under written principles, and
-have a human review the rulings. Freeze the rubric by digest (a short
-fingerprint, a hash, of a file or request; any change makes a different one)
-during each prompt cycle, allow one relabel per cycle, and record a per-case
-ruling when a later prompt rule makes a frozen label wrong. A user's correction
-is calibration data, never gold. Test-set labels are often wrong, and fixing
-them can reverse rankings ([Northcutt et al.](https://arxiv.org/abs/2103.14749));
-grading criteria also drift as people look at outputs
-([Shankar et al.](https://arxiv.org/abs/2404.12272)); and models often make the
+touching the prompt. Suppose a miss repeats on every draw, and the prompt's
+definitions allow the model's reading. Then suspect the label first.
+
+Record that model annotators share a model. Settle disagreements under written
+principles, and have a human review the rulings. Freeze the rubric by digest
+during each prompt cycle. (A digest is a short fingerprint, a hash, of a file
+or request; any change makes a different one.) Allow one relabel per cycle.
+When a later prompt rule makes a frozen label wrong, record a per-case ruling.
+A user's correction is calibration data, never gold.
+
+Others report the same problems. Test-set labels are often wrong, and fixing
+them can reverse rankings ([Northcutt et al.](https://arxiv.org/abs/2103.14749)).
+Grading criteria also drift as people look at outputs
+([Shankar et al.](https://arxiv.org/abs/2404.12272)). And models often make the
 same mistakes ([Kim et al.](https://arxiv.org/abs/2506.07962)).
 
 **Open.** The agent session made the adjudication rulings, under written
@@ -296,42 +304,51 @@ results.
 **What was tried.** Caching was switched on and assumed to work. The eval
 harness sent one posting per call because that was easier to write.
 
-**What the numbers showed.** One stage wrote 60,768 cache tokens and read back
-none, because shared evidence sat in the per-call part of the request. A
-response schema listed that run's ids, so every cache prefix (the opening part
-of a request that the provider stores and bills at a discount when the next
-request starts the same way) was unique and 576,180
-tokens were written that a stable prefix would have read. A two-sentence
-docstring edit on a response model changed every request digest and broke the
-recorded cassettes. The one-per-call harness cost about four times as much as
-production batching and could never reproduce batch-mode errors. The same holds
-for plain web reads: rendered page reads took 9 to 12 seconds, and the delay was
-assumed to be politeness. A profile showed 25 serial requests per read, 13 of
-them to analytics and cookie-consent hosts, with 7.6 seconds of polite sleeps.
-Skipping those hosts and reusing the page already fetched cut a read to 11
-requests and about 3 seconds faster, with posting text unchanged on three
-platforms.
+**What the numbers showed.** Small details of the request decided the cost.
+One stage wrote 60,768 cache tokens and read back none. The shared evidence sat
+in the per-call part of the request, so no call could reuse it.
 
-A round of cost changes, each held to "no quality loss" by a paired arm,
-showed which levers pay. Asking for low verbosity cut relevance output from
-19k to 11k tokens and cost by 32 per cent, with the rows that must stay open
-held at 19 of 20 on both arms, and cut jobspec cost by 22 per cent with every
-gold requirement still read (52 of 52). Constant draft and cover schemas raised cover cache
-share from 25 to 45 per cent. Letting repeated eval trials share one cache
-prefix took a critic run from USD 0.490 to 0.354 with identical prompt tokens.
-Lower search depth on guided search cut input tokens 9 per cent and saved
-nothing, because hosted-search fees and uncached search results are most of
-that bill (46 and 38 per cent).
+A response schema listed that run's ids, so every cache prefix was unique. (A
+cache prefix is the opening part of a request that the provider stores and
+bills at a discount when the next request starts the same way.) As a result,
+576,180 tokens were written that a stable prefix would have read.
 
-**What we concluded.** Log cache reads and writes per call and compare them per
-stage. Put stable instructions, evidence, and schema first, and check per-run
-ids in code ([OpenAI's caching guide](https://developers.openai.com/api/docs/guides/prompt-caching)
-lists what changes the cached prefix). Treat schema docstrings as prompt text,
-since field descriptions become part of the schema the model sees
-([Instructor](https://python.useinstructor.com/concepts/fields/)). Have the harness render the
-full production request before any paid run. Profile a slow step's requests
-before blaming the delay on politeness. Before cutting a cost, find the line
-that dominates that stage's bill; a cut elsewhere buys nothing.
+A two-sentence docstring edit on a response model changed every request digest.
+That broke the recorded cassettes.
+
+The one-per-call harness cost about four times as much as production batching.
+It could also never reproduce batch-mode errors.
+
+The same holds for plain web reads. Rendered page reads took 9 to 12 seconds,
+and the delay was assumed to be politeness. A profile showed 25 serial requests
+per read. Of those, 13 went to analytics and cookie-consent hosts, and 7.6
+seconds were polite sleeps. We skipped those hosts and reused the page already
+fetched. That cut a read to 11 requests and made it about 3 seconds faster. The
+posting text was unchanged on three platforms.
+
+A round of cost changes showed which levers pay. Each change was held to "no
+quality loss" by a paired arm. Asking for low verbosity cut relevance output
+from 19k to 11k tokens and cut its cost by 32 per cent. The rows that must stay
+open held at 19 of 20 on both arms. Low verbosity also cut jobspec cost by 22
+per cent, with every gold requirement still read (52 of 52). Constant draft and
+cover schemas raised cover cache share from 25 to 45 per cent. Letting repeated
+eval trials share one cache prefix took a critic run from USD 0.490 to 0.354,
+with identical prompt tokens. Lower search depth on guided search cut input
+tokens 9 per cent but saved nothing. Hosted-search fees and uncached search
+results are most of that bill (46 and 38 per cent).
+
+**What we concluded.** Log cache reads and writes per call, and compare them per
+stage. Put stable instructions, evidence, and schema first. Check per-run ids in
+code instead of in the schema.
+([OpenAI's caching guide](https://developers.openai.com/api/docs/guides/prompt-caching)
+lists what changes the cached prefix.) Treat schema docstrings as prompt text.
+Field descriptions become part of the schema the model sees
+([Instructor](https://python.useinstructor.com/concepts/fields/)).
+
+Have the harness render the full production request before any paid run.
+Profile a slow step's requests before blaming the delay on politeness. Before
+cutting a cost, find the line that dominates that stage's bill. A cut elsewhere
+buys nothing.
 
 **Open.** Each cassette reseal costs money, so reseals come last in a cycle.
 
