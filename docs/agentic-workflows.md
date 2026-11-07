@@ -10,8 +10,18 @@ Each lesson stands alone and comes from a real incident in this repository. The
 numbers describe the software, its tests, and its evals.
 [Architecture](architecture.md) describes the pipelines as they run now.
 
+Most lessons here are known practice with ClearScout's own measurements
+attached; where a lesson repeats published advice, the source is linked. Four
+things we did not find in the projects and write-ups we checked. First, the
+match answer can cite only CV ids from a fixed list the provider itself
+enforces, and the cost of that list is measured. Second, the record of paid
+runs is published, failures included. Third, a rule-based reader is shown
+beside the model's reading rather than blended into it. Fourth, spend on a paid
+eval run is an estimate and a record, never a hard stop.
+
 ## Evals and LLM quality
 
+An eval is a repeatable test of how well one model step does its job.
 [evals/FINDINGS.md](../evals/FINDINGS.md) holds the run-by-run detail. The
 lessons below are the parts that apply beyond this project.
 
@@ -56,17 +66,22 @@ application goes out, ran 18 times on one unchanged document with a real
 distortion.
 
 **What the numbers showed.** It caught the distortion 7 times: 38.9%, Wilson
-95% interval 0.20 to 0.61. Each verdict either saw it or did not, so a looser
-threshold would not help. The fix made the critic able to sample several times
-and fail the draft on any doubt. Building it showed the provider response cache
-was keyed on content alone, so three identical calls returned one answer. A
+95% interval 0.20 to 0.61. (A Wilson interval is a range around a pass rate
+showing how far it could move by chance, given how few cases there are.) Each
+verdict either saw it or did not, so a looser threshold would not help. The fix
+made the critic able to sample several times and fail the draft on any doubt.
+Building it showed the provider response cache was keyed on content alone, so
+three identical calls returned one answer. A
 test that counts real provider calls failed `1 == 3` against the old code. On
 the next model, one draw caught every planted defect on every draw, and three
 draws only turned a one-in-three false doubt into a sure fail, so the shipped
 default stays at one draw.
 
 **What we concluded.** Run a judge many times on one fixed input and report an
-interval. If verdicts split cleanly, sample several times and union them.
+interval, the same point as [Miller 2024](https://arxiv.org/abs/2411.00640);
+one sample of a judge can mislead
+([Schroeder and Wood-Doughty](https://arxiv.org/abs/2412.12509)). If verdicts
+split cleanly, sample several times and union them.
 Test that each sample really reaches the provider. Write down what the evidence
 supports separately from what it does not.
 
@@ -98,11 +113,14 @@ safest behavior against fabrication.
 ### Gold labels can be wrong, and model labellers are not independent
 
 **What was tried.** Hand-made fixtures and model-annotated gold sets were
-treated as ground truth.
+treated as ground truth. (A gold label is the answer a person decided was
+correct, and a gold set is the set of cases scored against those answers.)
 
 **What the numbers showed.** The live critic scored 7 of 10, but it had judged
 all 10 correctly: three "clean" fixtures held real unsupported claims. A reader
-gold set showed alpha 0.973 between two blind annotators, but both were the
+gold set showed alpha 0.973 between two blind annotators (Krippendorff's alpha
+measures how much labellers agree beyond chance, where 1.0 means they always
+agree), but both were the
 same model on the same instructions, and 106 of 631 shared reasons were
 word-for-word identical. The match gold set went through about ten relabel
 rounds, because each rubric edit shifted other borderline labels.
@@ -115,16 +133,23 @@ cited entry reached a prototype, not a plan, and a rollout added to a
 `GAP` was answered `TRANSFERABLE` at `weak` 3 of 3, exactly what a rule added
 after the rubric froze tells the model to do. All five search-vocabulary misses
 were plausible titles the gold lists lacked. Each was settled by a free rescore
-of the stored outputs against the corrected label, with no new run bought.
+of the stored outputs against the corrected label, with no new run bought. (A
+rescore runs the scorer again over model outputs already saved, which costs
+nothing.)
 
 **What we concluded.** Check each scored miss against the source before
 touching the prompt. A miss that repeats on every draw with a reading the
 prompt's definitions allow points at the label first. Record that model
 annotators share a model. Settle disagreements under written principles, and
-have a human review the rulings. Freeze the rubric by digest during each prompt
-cycle, allow one relabel per cycle, and record a per-case ruling when a later
-prompt rule makes a frozen label wrong. A user's correction is calibration
-data, never gold.
+have a human review the rulings. Freeze the rubric by digest (a short
+fingerprint, a hash, of a file or request; any change makes a different one)
+during each prompt cycle, allow one relabel per cycle, and record a per-case
+ruling when a later prompt rule makes a frozen label wrong. A user's correction
+is calibration data, never gold. Test-set labels are often wrong, and fixing
+them can reverse rankings ([Northcutt et al.](https://arxiv.org/abs/2103.14749));
+grading criteria also drift as people look at outputs
+([Shankar et al.](https://arxiv.org/abs/2404.12272)); and models often make the
+same mistakes ([Kim et al.](https://arxiv.org/abs/2506.07962)).
 
 **Open.** The agent session made the adjudication rulings, under written
 principles, for the maintainer to review afterwards.
@@ -144,6 +169,9 @@ dropped the qualifier. A rewording cut failures from 23 of 39 to 10 of 39 but
 moved a control, so it did not land.
 
 **What we concluded.** An explicit ordering beats a later sentence of caution.
+Published work finds the same sensitivity to format and position
+([Sclar et al.](https://arxiv.org/abs/2310.11324),
+[Liu et al.](https://arxiv.org/abs/2307.03172)).
 Have the domain owner dispute real outputs, and group the disputes by
 mechanism. Fix structure (order, definitions) rather than adding emphasis. Ask
 a negative verdict, in the prompt, to cite the evidence it weighed. Re-run a
@@ -155,7 +183,9 @@ citations.
 
 ### Show each stage the rules it is judged by
 
-**What was tried.** A paid cassette reseal failed on the critic's preservation
+**What was tried.** A paid cassette reseal (re-recording a cassette: a saved
+copy of a real request and the provider's reply, which the tests replay instead
+of paying for a new call) failed on the critic's preservation
 score, so the obvious moves were a looser floor or more redrafts.
 
 **What the numbers showed.** Every low draw named a line the program copies
@@ -176,7 +206,8 @@ a stage judged on text or distinctions it was never shown.
 ### Rule out the setting before the third prompt rewrite
 
 **What was tried.** A new match rule regressed two cases at low reasoning
-effort, and one wording fix recovered one.
+effort (how much the model may reason before it answers), and one wording fix
+recovered one.
 
 **What the numbers showed.** Before another rewrite, a control at medium effort
 with the same prompt scored 39 of 39. At low effort the model spent zero
@@ -202,15 +233,17 @@ on the previous critic prompt, and nobody had measured low on clean documents,
 where the risk is a false fail. Rerun on the shipping prompt, both arms scored
 36 of 36 on clean cases and 59 of 63 on planted ones, with the same misses.
 Low cost about 18 per cent less and answered in about 10 seconds at p95 against
-24. The jobspec verbosity change was judged the same way: both arms ran on one
+24. The jobspec verbosity change (an OpenAI setting for how long the answer
+is) was judged the same way: both arms ran on one
 tree, minutes apart, 52 of 52 requirements each, with low verbosity 22 per cent
 cheaper and twice as fast at p95.
 
 **What we concluded.** A comparison holds only when the two arms differ in the
 one setting under test. Run the paired arm on the prompt that will ship, cover
 the failure the cheaper setting risks (here clean documents), and keep the
-receipts side by side. A win measured on an older prompt is a reason to run the
-pair, not a result.
+receipts side by side, the paired comparison
+[Miller 2024](https://arxiv.org/abs/2411.00640) recommends. A win measured on
+an older prompt is a reason to run the pair, not a result.
 
 **Open.** The critic ships at low on both providers. On Anthropic that is a
 drop from high and has not been measured.
@@ -231,7 +264,8 @@ together, so its draws are not 33 independent samples.
 **What we concluded.** Keep a production-shaped case beside the unit cases:
 the same request size, the same mix of requirements, the same kind of asserted
 facts. Score it per requirement, since the whole row is all or nothing, and
-read movement across rows as one draw.
+read movement across rows as one draw. Development data should mirror
+production, as [Yan et al.](https://applied-llms.org/) also advise.
 
 **Open.** It is one posting. It reads 31 of 33 per draw; one row misses on
 every draw and two others intermittently.
@@ -264,7 +298,9 @@ harness sent one posting per call because that was easier to write.
 
 **What the numbers showed.** One stage wrote 60,768 cache tokens and read back
 none, because shared evidence sat in the per-call part of the request. A
-response schema listed that run's ids, so every prefix was unique and 576,180
+response schema listed that run's ids, so every cache prefix (the opening part
+of a request that the provider stores and bills at a discount when the next
+request starts the same way) was unique and 576,180
 tokens were written that a stable prefix would have read. A two-sentence
 docstring edit on a response model changed every request digest and broke the
 recorded cassettes. The one-per-call harness cost about four times as much as
@@ -289,7 +325,10 @@ that bill (46 and 38 per cent).
 
 **What we concluded.** Log cache reads and writes per call and compare them per
 stage. Put stable instructions, evidence, and schema first, and check per-run
-ids in code. Treat schema docstrings as prompt text. Have the harness render the
+ids in code ([OpenAI's caching guide](https://developers.openai.com/api/docs/guides/prompt-caching)
+lists what changes the cached prefix). Treat schema docstrings as prompt text,
+since field descriptions become part of the schema the model sees
+([Instructor](https://python.useinstructor.com/concepts/fields/)). Have the harness render the
 full production request before any paid run. Profile a slow step's requests
 before blaming the delay on politeness. Before cutting a cost, find the line
 that dominates that stage's bill; a cut elsewhere buys nothing.
@@ -308,7 +347,9 @@ or any changed value does not match, and an unrecorded request fails rather
 than going live. So any change that alters the request text breaks the replay:
 a prompt edit, a fixture edit, a response-model docstring that reaches the
 schema, or a setting copied into the request. Each break is fixed only by a
-paid re-record.
+paid re-record. This is the known cost of body matching
+([vcrpy](https://vcrpy.readthedocs.io/en/latest/advanced.html),
+[VCR cassettes for LLM tests](https://dev.to/multigrid/vcr-cassettes-for-llm-tests-in-python-20ac)).
 
 **What we concluded.** Treat request-shape changes as one batch. Park them
 together and re-record once, after prompts and paid tests settle, rather than
@@ -324,12 +365,13 @@ individual in one response. The audit now exempts only those cassettes from
 its employer check, and each recording gets a read before it is committed.
 
 **Open.** Each cassette covers one path at the standard tier. Production asks
-for the flex tier on unattended work, and a request shape no recording sent
+for the flex tier (OpenAI's cheaper, slower service tier) on unattended work, and a request shape no recording sent
 has no replay evidence.
 
 ### A smoke call has to check what the scorer needs, not only that it was paid
 
-**What was tried.** Before a long paid eval, the runner spent one call on the
+**What was tried.** Before a long paid eval, the runner made a smoke call (one
+cheap call made before a long paid run, to check the run works at all) on the
 first sample and stopped only if that call failed or cost too much.
 
 **What the numbers showed.** A call can be billed and well formed and still
@@ -367,7 +409,10 @@ invented posting id. The checks caught each one.
 **What we concluded.** Let the program own the facts. Let the model choose,
 order, and rephrase. Close a schema over a stable set, check per-run ids in
 code, check provenance in code, and report "verified" and "good" as two
-measures.
+measures. [JobCtrl](https://github.com/ebarti/JobCtrl/blob/main/docs/guides/resume-tailoring-without-fabrication.md)
+and [aarg](https://github.com/joseym/aarg#it-wont-make-things-up) are parallel
+designs where the model works in evidence ids; ClearScout differs by closing the
+ids in the provider schema.
 
 **Open.** "Verified" is a floor. A cheaper model passed it while scoring a point
 lower on three critic axes. The design makes some failures impossible and

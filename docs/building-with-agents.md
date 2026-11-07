@@ -9,8 +9,15 @@ Each lesson stands alone and comes from a real incident in this repository. The
 numbers describe the software, its tests, and its evals. Counts from the
 maintainer's own job search appear only as rates or are left out.
 [How it was built](contributing/agent-workflow.md) shows the agent setup itself.
-Lessons about the program's own model pipelines, its evals, grounding, and
-spend, are in [Agentic workflows](agentic-workflows.md).
+Lessons about the program's own model pipelines, its evals (repeatable tests of
+how well one model step does its job), grounding, and spend, are in
+[Agentic workflows](agentic-workflows.md).
+
+Most of these lessons match
+[Anthropic's Claude Code best practices](https://code.claude.com/docs/en/best-practices), and each one that does links
+there. What this page adds is measured numbers from one project: where the
+agent bill went, how precise a comment check was, and how many rounds a fix
+loop took.
 
 ## Building with AI agents
 
@@ -20,7 +27,8 @@ spend, are in [Agentic workflows](agentic-workflows.md).
 other files, change narration, and docstrings longer than their code. Rules
 were added to agent task instructions four times. The habit came back each
 time. The comment checker knew three mechanical rules and ran only at gate
-time, after every agent had finished.
+time (the gate is the project's full check script), after every agent had
+finished.
 
 **What the numbers showed.** The word "comment" showed up in the maintainer's
 own turns in 52 of 86 sessions, a proxy for hand corrections. A check that runs
@@ -31,11 +39,14 @@ noisy rules: bare "now", "no longer", and "previously" had 0 true positives in
 **What we concluded.** After the third identical correction, stop writing
 rules. Turn the correction into a check that runs on the write and names the
 file and line, and add a sheet of real good and bad examples. Measure the
-check's precision on a sample before enforcing it.
+check's precision on a sample before enforcing it. Anthropic's
+[Claude Code best practices](https://code.claude.com/docs/en/best-practices) make the same point: a rule Claude keeps
+missing belongs in a hook.
 
 **Open.** The record measures the check, not whether the habit stopped. For a
 sibling rule ("the main session never idles") the habit continued after a hook
-was added. A new hook is not proof the problem is gone.
+(a script Claude Code runs automatically before or after a tool call, which
+can refuse the call) was added. A new hook is not proof the problem is gone.
 
 ### Treat an agent's report as a lead to check
 
@@ -59,8 +70,11 @@ still disabled, which only a stray blur under load exposed.
 **What we concluded.** Agreement among agents is not evidence, and neither is a
 confident tone or an exit code. Make "is it really on main" a one-command
 check. Settle a disagreement with a query. Take provenance (model, dataset
-digest, rubric version) from what the system recorded. Read the end of the log
-before recording a pass.
+digest, rubric version) from what the system recorded. A digest is a short
+fingerprint (a hash) of a file or request; any change makes a different one.
+Read the end of the log before recording a pass. Anthropic's
+[Claude Code best practices](https://code.claude.com/docs/en/best-practices) also ask for evidence, because "all tests
+pass" on its own says very little.
 
 **Open.** Several readings of one misleading name are not independent. Nothing
 here detects that automatically.
@@ -104,7 +118,9 @@ generated API schema, all five had responses missing required fields.
 **What we concluded.** Review each writer's diff as soon as it hands back. List
 every assertion an agent flipped or deleted, and treat each as a product
 decision. Build test dependencies the way production builds them. Type test
-data against the real wire schema.
+data against the real wire schema. Agents gaming their own checks is a known
+behavior; [METR](https://metr.org/blog/2025-06-05-recent-reward-hacking)
+reports models tampering with scoring code or sidestepping the task.
 
 **Open.** Review saved for the end is the most expensive review, because one
 reviewer then reads 70 files at once.
@@ -116,7 +132,8 @@ result that would change a shipped setting or prompt went to a read-only model
 review agent before it landed.
 
 **What the numbers showed.** The review changed the decision four times. It
-blocked a switch to low reasoning effort because the winning arm had run on an
+blocked a switch to low reasoning effort (how much the model may reason before
+it answers) because the winning arm had run on an
 older prompt and had never been measured on clean documents. It found a new
 prompt sentence untested on its hardest shape, and the clause and probe that
 followed went 42 of 42. It blocked a check that counted program-copied lines as
@@ -166,7 +183,9 @@ on every request was about 27% of a later week: about 70K tokens in the main
 session and 51K per subagent.
 
 **What we concluded.** Agent count is the bill. Measure your own transcripts
-before changing settings, and dedupe streamed records by message id. Shrink the
+before changing settings, and dedupe streamed records by message id. Anthropic's
+[Claude Code best practices](https://code.claude.com/docs/en/best-practices) note the cause: every request sends the whole
+conversation. Shrink the
 fixed prompt, compact earlier, and cap agents per round: one reviewer per fix
 round, and one auditor with a list instead of one agent per item.
 
@@ -186,14 +205,17 @@ tests a writer had just delivered. Shared scratch paths did quieter damage: a
 writer reported "83 passed" from a log another session overwrote, when the real
 result was 87. Six agents on one tree produced three spellings of one idiom,
 two byte-identical helpers, and a duplicate CSS class. The gate flagged none of
-it. Worktrees fix sharing but leave copies behind: an eval log recorded its
-dataset path inside a worktree, and a free rescore after a relabel read that
+it. Worktrees (second checkouts of the same git repository, each in its own
+folder) fix sharing but leave copies behind: an eval log recorded its
+dataset path inside a worktree, and a free rescore (running the scorer again
+over model outputs already saved, which costs nothing) after a relabel read that
 old copy and reported no change until the worktree was removed.
 
 **What we concluded.** Give each file surface one writer and each agent its own
 scratch path. Enforce the git rules with hooks: one now refuses stash from any
 caller, and checkout, restore, reset, and clean from subagents. Stage named
-paths only. Review the combined diff for duplication across agents.
+paths only. Review the combined diff for duplication across agents. Anthropic's
+[Claude Code best practices](https://code.claude.com/docs/en/best-practices) also run parallel sessions in worktrees.
 
 **Open.** Guardrails apply to the coordinating session too. It caused one of
 the four incidents.
@@ -213,8 +235,11 @@ right.
 **What we concluded.** Put the stop rule in the script before work starts.
 Land what is accepted after 3 rounds, or after 2 with no net gain. File
 ship-with-notes items instead of building them. Send a reviewer back only after
-a block. Change one shape per round, and accept a round only at 0 gold
-regressions.
+a block; the
+[Claude Code best practices](https://code.claude.com/docs/en/best-practices)
+warn that a reviewer asked to find problems will always find something. Change one shape per round, and accept a round only at 0 gold
+regressions (cases a person had already decided the answer to, which the round
+now gets wrong).
 
 **Open.** Short prompts leave out the stop rule. The median prompt here was 11
 words.
@@ -255,7 +280,9 @@ to refute each finding. 20 of 21 were confirmed. About 130 verbatim runs of
 real posting text sat in tests, along with real CV sentences. In one incident
 the coordinating agent had pasted real sentences into a writer's task, and the
 writer copied them into tests. None of it was a secret or contact detail.
-Recordings of live calls are the other route in: a recorded web search carries
+Recordings of live calls are the other route in. These are cassettes: saved
+copies of a real request and the provider's reply, which the tests replay
+instead of paying for a new call. A recorded web search carries
 whatever real pages the search returned. The audit allows real employer names
 only in those recordings, and a hand read of each one still found a page about
 an individual that had to come out.
