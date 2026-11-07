@@ -240,8 +240,7 @@ switching the stage to low looked settled.
 on the previous critic prompt, and nobody had measured low on clean documents,
 where the risk is a false fail. Rerun on the shipping prompt, both arms scored
 36 of 36 on clean cases and 59 of 63 on planted ones, with the same misses.
-Low cost about 18 per cent less and answered in about 10 seconds at p95 against
-24. The jobspec verbosity change (an OpenAI setting for how long the answer
+Low cost about 18 per cent less and answered in about 10 seconds at p95 against 24. The jobspec verbosity change (an OpenAI setting for how long the answer
 is) was judged the same way: both arms ran on one
 tree, minutes apart, 52 of 52 requirements each, with low verbosity 22 per cent
 cheaper and twice as fast at p95.
