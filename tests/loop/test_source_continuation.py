@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime, timedelta
 from socket import AF_INET, SOCK_STREAM
@@ -464,7 +464,7 @@ def test_instability_seen_before_a_deadline_hold_is_relisted_without_truncating_
     assert relists == [True]
 
 
-@pytest.mark.parametrize("movement", ["added_before", "removed_before_added_after", "swapped"])
+@pytest.mark.parametrize("movement", ["added_before", "swapped"])
 def test_a_search_that_visibly_moves_across_a_listing_cut_is_relisted_from_its_first_page(
     durable_database: Database, movement: str
 ) -> None:
@@ -478,7 +478,6 @@ def test_a_search_that_visibly_moves_across_a_listing_cut_is_relisted_from_its_f
     site.stopped = False
     site.pages, site.totals = {
         "added_before": ([[4, 1], [2, 3], []], [4, 4, 4]),
-        "removed_before_added_after": ([[2, 3], [4], []], [3, 3, 3]),
         "swapped": ([[1, 3], [2], []], [3, 3, 3]),
     }[movement]
     while worker.run_once():
@@ -494,11 +493,37 @@ def test_a_search_that_visibly_moves_across_a_listing_cut_is_relisted_from_its_f
         assert "publisher_listing_changed" not in scan.skip_reasons
         assert "publisher_listing_total_mismatch" not in scan.skip_reasons
         assert not scan.discovery_truncated
-    relisted = movement != "removed_before_added_after"
-    assert [relist for relist, _status in pages if relist is not None] == (
-        [["2"]] if relisted else []
-    )
+    assert [relist for relist, _status in pages if relist is not None] == [["2"]]
     assert all(status != "pending" for _relist, status in pages)
+
+
+def test_a_listing_move_the_reader_cannot_see_certifies_and_only_marks_the_hidden_posting(
+    durable_database: Database,
+) -> None:
+    workspace_id = _workspace(durable_database)
+    site = _SearchSite("tbk")
+    site.stop_after_pages = 1
+    source_id = _source(durable_database, workspace_id, "Acme", site.root)
+    state_target_titles(durable_database, workspace_id, "Data Analyst")
+    hidden = site.detail_url(3)
+    _stage_known_rows(durable_database, workspace_id, source_id, (hidden,))
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    site.stopped = False
+    # Posting 3 moves onto the page already read while 1 leaves, keeping the total.
+    site.pages, site.totals = [[2, 3], [4], []], [3, 3, 3]
+    while worker.run_once():
+        pass
+
+    scan = _board_scan_row(durable_database)
+    assert scan.complete is True
+    assert scan.listing_pages > 1
+    assert hidden not in _withdrawn_urls(durable_database)
+    with durable_database.session() as session:
+        row = session.scalars(
+            select(PendingDiscovery).where(PendingDiscovery.discovery_url == hidden)
+        ).one()
+        assert row.absent_since is not None
 
 
 def test_a_search_page_cursor_loads_ahead_of_older_detail_rows(
@@ -6857,6 +6882,126 @@ def test_a_stitched_search_certifies_a_row_set_aside_by_its_listed_title(
             select(PendingDiscovery).where(PendingDiscovery.discovery_url == site.url(2))
         ).one()
         assert aside.absent_since is None
+    assert scan.read_count == 2
+
+
+def _held_after_first_page(
+    durable_database: Database,
+    monkeypatch: pytest.MonkeyPatch,
+    second_page: Callable[[Any], list[dict[str, object]]],
+) -> tuple[Any, Any]:
+    """Stage known rows 1, 2 and 9, then run a root scan that holds after page 0."""
+    from tests.loop.test_fxrecruiter_reader import _FeedSite, _row, _two_page_feed
+
+    workspace_id = _workspace(durable_database)
+    site = _FeedSite()
+    source_id = _source(durable_database, workspace_id, "Acme", site.root)
+    state_target_titles(durable_database, workspace_id, "Data Analyst")
+    known = (site.url(1), site.url(2), site.url(9))
+    _stage_known_rows(durable_database, workspace_id, source_id, known)
+    _missed_once(durable_database, *known)
+    _two_page_feed(
+        monkeypatch,
+        [
+            [_row("1", site.url(1), "Data Analyst 1"), _row("2", site.url(2), "Data Analyst 2")],
+            second_page(site),
+        ],
+        after_first=lambda: setattr(site, "stopped", True),
+    )
+    worker = _enqueue_scan(durable_database, workspace_id, site.fetcher)
+    assert worker.run_once()
+    with durable_database.session() as session:
+        reasons = set(session.scalars(select(SourceScanFrontierItem.deferred_reason)))
+    assert "fxrecruiter_search_page" in reasons
+    site.stopped = False
+    return site, worker
+
+
+def test_a_search_held_on_a_page_boundary_certifies_after_its_cursor_finishes(
+    durable_database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests.loop.test_fxrecruiter_reader import _row
+
+    held, worker = _held_after_first_page(
+        durable_database, monkeypatch, lambda site: [_row("3", site.url(3), "Data Analyst 3")]
+    )
+    for _ in range(6):
+        if not worker.run_once():
+            break
+
+    scan = _board_scan_row(durable_database)
+    assert (scan.complete, scan.status, scan.exhausted_outcome) == (
+        True,
+        "completed",
+        SourceReadOutcome.ATS_COMPLETE,
+    )
+    assert (scan.raw_count, scan.read_count, scan.listing_pages) == (3, 3, 2)
+    assert _withdrawn_urls(durable_database) == {held.url(9)}
+    with durable_database.session() as session:
+        absent = {
+            row.discovery_url: row.absent_since for row in session.scalars(select(PendingDiscovery))
+        }
+    assert [absent.get(held.url(n), "unstaged") for n in (1, 2, 3)] == [None, None, None]
+
+
+def test_a_cursor_task_certifies_a_row_its_page_sets_aside_by_listed_title(
+    durable_database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests.loop.test_fxrecruiter_reader import _row
+
+    held, worker = _held_after_first_page(
+        durable_database,
+        monkeypatch,
+        lambda site: [
+            _row("3", site.url(3), "Data Analyst 3"),
+            _row("4", site.url(4), "Forklift Driver"),
+        ],
+    )
+    for _ in range(6):
+        if not worker.run_once():
+            break
+
+    assert held.url(4) not in held.requested
+    scan = _board_scan_row(durable_database)
+    assert (scan.complete, scan.raw_count, scan.read_count) == (True, 4, 3)
+    assert _withdrawn_urls(durable_database) == {held.url(9)}
+
+
+def test_a_search_cursor_held_again_by_a_host_hold_leaves_the_scan_unsettled(
+    durable_database: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from clearscout.infrastructure.web_fetch.board_reads import PublisherSearchPage
+    from clearscout.infrastructure.web_fetch.platforms import fxrecruiter
+    from tests.loop.test_fxrecruiter_reader import _row
+
+    held, worker = _held_after_first_page(durable_database, monkeypatch, lambda _site: [])
+    feed = held.origin + "/feeds/jobs-rss"
+    original = held.fetcher.client.getter
+    assert original is not None
+
+    def hold_feed(address: str, **kwargs: Any) -> httpx.Response:
+        if address == feed:
+            held.requested.append(address)
+            return httpx.Response(
+                429, request=httpx.Request("GET", address), headers={"Retry-After": "120"}
+            )
+        return cast(httpx.Response, original(address, **kwargs))
+
+    def request(fetcher: Any, _feed: str, _source: str, page: int) -> PublisherSearchPage:
+        fetcher.get_feed(feed)
+        return PublisherSearchPage([_row("3", held.url(3), "Data Analyst 3")], None)
+
+    held.fetcher.client.getter = hold_feed
+    monkeypatch.setattr(fxrecruiter, "_request", request)
+    for _ in range(6):
+        if not worker.run_once():
+            break
+
+    assert feed in held.requested
+    scan = _board_scan_row(durable_database)
+    assert scan.complete is not True
+    assert scan.exhausted_outcome is None
+    assert _withdrawn_urls(durable_database) == set()
 
 
 def test_a_search_page_continuation_chain_reads_the_feed_and_each_detail_once(
@@ -9407,6 +9552,7 @@ def test_a_drained_icims_listing_counts_continued_bodies_and_certifies_its_listi
     assert (scan.raw_count, scan.read_count) == (2, 2)
     assert scan.complete is True
     assert scan.status != "incomplete"
+    assert scan.read_outcome == SourceReadOutcome.PUBLISHER_INDEX
     assert _withdrawn_urls(durable_database) == {unlisted}
 
 
@@ -13687,22 +13833,20 @@ def _stored_listing_pairs(database: Database) -> int:
 
 # A page stop leaves a cursor, so the later detail stop defers bodies from a continue task;
 # without one, the later stop interrupts the retries of bodies the scan task deferred.
-# A scan whose first task holds a page cursor stays uncertified on this portal.
 @pytest.mark.parametrize(
-    ("page_stop", "detail_stops", "certified"),
-    [(None, (100, 150), True), (5, (None, 150), False)],
+    ("page_stop", "detail_stops"),
+    [(None, (100, 150)), (5, (None, 150))],
 )
 def test_a_publisher_search_frontier_stores_listing_pairs_linear_in_the_listing(
     durable_database: Database,
     page_stop: int | None,
     detail_stops: tuple[int | None, int],
-    certified: bool,
 ) -> None:
     stored = _drain_large_portal_scan(durable_database, page_stop, detail_stops)
 
     scan = _board_scan_row(durable_database)
     assert scan.raw_count == scan.read_count == _LARGE_LISTING
-    assert scan.complete is certified
+    assert scan.complete is True
     assert max(stored) <= 4 * _LARGE_LISTING, stored
 
 

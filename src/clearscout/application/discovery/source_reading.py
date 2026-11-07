@@ -144,6 +144,8 @@ class SourceDetailCheckpoint:
     listing_unstable: bool = False
     listing_pass: StrictInt = 1
     pass_listing_ids: tuple[str, ...] = ()
+    # True on a stable page receipt whose read reached the listing's last page.
+    listing_exhausted: bool = False
     schema_version: Literal[1] = 1
 
     def __post_init__(self) -> None:

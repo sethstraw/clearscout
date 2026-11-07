@@ -431,6 +431,7 @@ class _SearchSlice:
                         listing_unstable=self.unstable,
                         listing_pass=self.listing_pass,
                         pass_listing_ids=pass_ids,
+                        listing_exhausted=exhausted and not self.unstable,
                     ),
                 )
                 if not self.enumeration_only and self.fingerprints

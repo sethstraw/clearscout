@@ -157,9 +157,8 @@ def _publisher_represented_membership(
 
 
 def _publisher_enumerated_membership(
-    items: list[SourceScanFrontierItem],
     checkpoints: tuple[SourceDetailCheckpoint, ...],
-    read: SourceRead,
+    scoped: tuple[SourceDetailCheckpoint, ...],
     scope: tuple[str, str],
 ) -> dict[str, str]:
     page_platform = (
@@ -169,6 +168,13 @@ def _publisher_enumerated_membership(
     )
     pages = tuple(checkpoint for checkpoint in checkpoints if checkpoint.platform == page_platform)
     enumeration = dict(pair for checkpoint in pages for pair in checkpoint.listing_urls)
+    enumeration.update(pair for checkpoint in scoped for pair in checkpoint.listing_urls)
+    return enumeration
+
+
+def _scoped_read_receipts(
+    items: list[SourceScanFrontierItem], read: SourceRead, scope: tuple[str, str]
+) -> tuple[SourceDetailCheckpoint, ...]:
     page_targets = tuple(
         frontier_target(item)
         for item in items
@@ -176,16 +182,14 @@ def _publisher_enumerated_membership(
             ("_search_page", "_sitemap_pending", "_detail_rows_pending")
         )
     )
-    enumeration.update(
-        pair
+    return tuple(
+        checkpoint
         for checkpoint in read.publisher_listing_receipts
         if any(
             publisher_search_scope(replace(target, detail_checkpoint=checkpoint)) == scope
             for target in page_targets
         )
-        for pair in checkpoint.listing_urls
     )
-    return enumeration
 
 
 def _retain_publisher_observation_counts(
@@ -432,9 +436,16 @@ def retain_publisher_body_receipt(
         item: url for item, url in bodies.items() if membership.get(item) == url and url in proof
     }
     page_platform = "listed:" + scope[0] if native else "search:" + scope[0] + "_search_page"
-    enumeration = _publisher_enumerated_membership(items, checkpoints, read, scope)
+    scoped = _scoped_read_receipts(items, read, scope)
+    enumeration = _publisher_enumerated_membership(checkpoints, scoped, scope)
     _persist_publisher_body_receipt(
-        session, items, checkpoints, bodies, read, enumeration=enumeration
+        session,
+        items,
+        checkpoints,
+        bodies,
+        read,
+        enumeration=enumeration,
+        scoped=scoped,
     )
     receipts = publisher_search_receipts(session, continuation, scope, family)
     represented = _publisher_represented_membership(receipts, membership, {} if native else current)
@@ -542,10 +553,13 @@ def _persist_publisher_body_receipt(
     read: SourceRead,
     *,
     enumeration: dict[str, str],
+    scoped: tuple[SourceDetailCheckpoint, ...],
 ) -> None:
     unstable = (
         any(checkpoint.listing_unstable for checkpoint in checkpoints) or read.discovery_truncated
     )
+    scoped_aside = dict(pair for receipt in scoped for pair in receipt.set_aside)
+    exhausted = any(receipt.listing_exhausted for receipt in scoped)
     for item in items:
         stored = session.get(SourceScanFrontierItem, item.id)
         if stored is None or item.detail_checkpoint is None:
@@ -557,7 +571,26 @@ def _persist_publisher_body_receipt(
         if item.deferred_reason.endswith("_search_detail"):
             # The scope's page rows hold the listing, so a detail row keeps only its own pair.
             listing = own_listing_pairs(listing, stored.normalized_url)
-        retained = enumeration if item.deferred_reason.endswith("_search_page") else dict(listing)
+        page = item.deferred_reason.endswith("_search_page")
+        retained = enumeration if page else dict(listing)
+        if page:
+            # A cursor task's read receipt holds the set-aside rows and last-page proof.
+            held = {
+                ident
+                for ident, _url in (
+                    *checkpoint.set_aside,
+                    *checkpoint.completed,
+                    *checkpoint.protected,
+                )
+            } | {*checkpoint.pending_ids, *checkpoint.closed_ids}
+            checkpoint = replace(
+                checkpoint,
+                set_aside=(
+                    *checkpoint.set_aside,
+                    *((i, u) for i, u in scoped_aside.items() if i not in held),
+                ),
+                listing_exhausted=checkpoint.listing_exhausted or exhausted,
+            )
         updated = _publisher_body_checkpoint(checkpoint, retained, bodies, read, unstable=unstable)
         stored.detail_checkpoint = updated.as_json()
     _record_native_page_receipts(session, items, read)
@@ -576,7 +609,7 @@ def _publisher_settled_pairs(
         select_frontier_rows().where(SourceScanFrontierItem.continuation_id == continuation.id)
     )
     checkpoints = [
-        SourceDetailCheckpoint.from_json(row.detail_checkpoint)
+        (row.correlation_id in family, SourceDetailCheckpoint.from_json(row.detail_checkpoint))
         for row in rows
         if row_publisher_scope(row) == scope
         and (
@@ -590,9 +623,9 @@ def _publisher_settled_pairs(
         )
     ]
     return (
-        {pair for checkpoint in checkpoints for pair in checkpoint.completed},
-        {pair for checkpoint in checkpoints for pair in checkpoint.protected},
-        {pair for checkpoint in checkpoints for pair in checkpoint.set_aside},
+        {pair for _own, checkpoint in checkpoints for pair in checkpoint.completed},
+        {pair for _own, checkpoint in checkpoints for pair in checkpoint.protected},
+        {pair for own, checkpoint in checkpoints if own for pair in checkpoint.set_aside},
     )
 
 
@@ -602,7 +635,7 @@ def publisher_listing_coverage(
     scan: SourceScan,
 ) -> SourceDetailCoverage | None:
     """Certify a publisher listing only when every identity it enumerated is settled."""
-    if scan.exhausted_outcome is None or scan.discovery_truncated:
+    if scan.discovery_truncated:
         return None
     source = session.get(Source, scan.source_id)
     if source is None:
@@ -618,6 +651,10 @@ def publisher_listing_coverage(
     membership = publisher_page_membership(receipts, scope)
     if membership is None or not listing_receipts_agree(receipts, membership):
         return None
+    if scan.exhausted_outcome is None and not any(
+        receipt.listing_exhausted for receipt in receipts
+    ):
+        return None
     # A row with no scope is a member body the scan's recent read already supplied.
     if not unscoped <= {normalize_fetch_url(url) for url in membership.values()}:
         return None
@@ -629,6 +666,8 @@ def publisher_listing_coverage(
         return None
     scan.raw_count = len(membership)
     scan.read_count = len(listed & completed)
+    if scan.exhausted_outcome is None:
+        scan.exhausted_outcome = SourceReadOutcome.ATS_COMPLETE
     return SourceDetailCoverage(
         platform=scope[0], board_url=root_url, posting_urls=tuple(membership.values())
     )

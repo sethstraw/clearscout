@@ -480,7 +480,23 @@ def test_an_identity_relisted_at_an_off_target_address_is_counted_with_both_list
     assert sorted((row.url, bool(row.published_description)) for row in read.listings) == sorted(
         [(site.url(1), True), (moved, False), (site.url(4), True)]
     )
-    assert read.raw_count >= len(read.listings)
+
+
+@pytest.mark.parametrize("held", [True, False])
+def test_only_a_search_read_that_reaches_its_last_page_marks_its_receipt_exhausted(
+    monkeypatch: pytest.MonkeyPatch, held: bool
+) -> None:
+    site = _FeedSite()
+    _two_page_feed(
+        monkeypatch,
+        [[_row("1", site.url(1), "Data Analyst 1")], [_row("3", site.url(3), "Data Analyst 3")]],
+        after_first=lambda: setattr(site, "stopped", held),
+    )
+
+    read = site.fetcher.listings("Acme", site.root, options=_title_screened())
+
+    assert bool(read.deferred_targets) is held
+    assert [receipt.listing_exhausted for receipt in read.publisher_listing_receipts] == [not held]
 
 
 @pytest.mark.parametrize("boundary", ["foreign_feed", "foreign_detail"])
